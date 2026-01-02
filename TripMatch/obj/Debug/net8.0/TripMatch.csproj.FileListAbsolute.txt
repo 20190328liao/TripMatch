@@ -161,3 +161,4 @@ C:\TripMatch\TripMatch\obj\Debug\net8.0\TripMatch.pdb
 C:\TripMatch\TripMatch\obj\Debug\net8.0\TripMatch.genruntimeconfig.cache
 C:\TripMatch\TripMatch\obj\Debug\net8.0\ref\TripMatch.dll
 C:\TripMatch\TripMatch\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\TripMatch\TripMatch\obj\Debug\net8.0\TripMatch.sourcelink.json

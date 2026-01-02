@@ -1,5 +1,35 @@
 [
   {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Login",
+    "RelativePath": "api/auth",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Signup",
+    "RelativePath": "api/auth",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "CheckEmail",
+    "RelativePath": "api/auth",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
     "Method": "\u003CMapAuthEndpoints\u003Eb__1_7",
     "RelativePath": "api/auth/check-db-status",
@@ -103,6 +133,22 @@
     ]
   },
   {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Login",
+    "RelativePath": "api/auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "data",
+        "Type": "TripMatch.Models.InputModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
     "Method": "\u003CMapAuthEndpoints\u003Eb__1_2",
     "RelativePath": "api/auth/login-google",
@@ -155,6 +201,22 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Register",
+    "RelativePath": "api/auth/register",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "data",
+        "Type": "TripMatch.Models.InputModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
