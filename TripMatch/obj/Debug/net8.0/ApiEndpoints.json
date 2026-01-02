@@ -1,0 +1,197 @@
+[
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_7",
+    "RelativePath": "api/auth/check-db-status",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_8",
+    "RelativePath": "api/auth/check-email-status",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "email",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_9",
+    "RelativePath": "api/auth/confirm-email",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "code",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_3",
+    "RelativePath": "api/auth/google-response",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_4",
+    "RelativePath": "api/auth/login",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "TripMatch.Models.Settings.LoginModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_2",
+    "RelativePath": "api/auth/login-google",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_6",
+    "RelativePath": "api/auth/logout",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_1",
+    "RelativePath": "api/auth/register",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "TripMatch.Models.Settings.Register",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_5",
+    "RelativePath": "api/auth/send-confirmation",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "email",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_0",
+    "RelativePath": "api/auth/test-generate-user",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  }
+]

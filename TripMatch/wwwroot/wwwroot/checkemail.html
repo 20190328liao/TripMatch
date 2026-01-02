@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <!-- Reset / Base -->
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/variables.css">
+
+    <!-- Components: 按鈕、標題、卡片等通用元件 -->
+    <link rel="stylesheet" href="./css/components.css">
+
+    <!-- Layout: 主要版面配置，如 header, nav, footer -->
+    <link rel="stylesheet" href="./css/layout.css">
+
+    <!-- Responsive: RWD 斷點樣式 -->
+    <link rel="stylesheet" href="./css/responsive.css">
+    <script src="./js/jquery-3.7.1.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    </head>
+
+        <body>
+            <div class="check-container text-center">
+                <div class="logo-header">
+                    <span> Logo</span> <span style="font-weight: normal; font-size: 1.1rem; margin-left: 10px;"> 旅遊規劃平台</span>
+                </div>
+
+                <div id="displayArea">
+                    <img src="./img/checkEmailimg.png" alt="Success" class="main-img" id="statusImg">
+                    <div class="titleWrap titleH4" id="statusTitle"> 恭喜您，信箱驗證成功！</div>
+                    <button class="btn btn_light" id="btnMainAction"> 請繼續下一步</button>
+                </div>
+            </div>
+
+            <script>
+                $(document).ready(function () {
+                    const params = new URLSearchParams(window.location.search);
+                    const status = params.get('status');
+
+                    if (status === 'success') {
+                        // 成功狀態保持原樣
+                        $('#btnMainAction').on('click', function () {
+                            window.location.href = '/signup.html'; // 導向登入
+                        });
+                    } else {
+                        // 失敗狀態切換
+                        $('#statusImg').attr('src', './images/mail_error.png'); // 假設你有失敗圖
+                        $('#statusTitle').text('驗證連結已失效').css('color', '#FF6B6B');
+                        $('#btnMainAction').text('重新發送驗證信').on('click', function () {
+                            window.location.href = '/signup.html';
+                        });
+                    }
+                });
+            </script>
+        </body>
+</html>

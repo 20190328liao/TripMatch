@@ -1,0 +1,23 @@
+/* 響應式設計以後再改 */
+
+@media (max-width: 992px) {
+  /*字大小*/
+  .titleWrap.titleH1 {
+    font-size: var(--f_h1);
+  }
+  .titleWrap.titleH2 {
+    font-size: var(--f_h2);
+  }
+  .titleWrap.titleH3 {
+    font-size: var(--f_h3);
+  }
+  .titleWrap.titleH4 {
+    font-size: var(--f_h4);
+  }
+  .titleWrap.titleH5 {
+    font-size: var(--f_h5);
+  }
+.contentWrap {
+    font-size: var(--f_body);
+  }
+}

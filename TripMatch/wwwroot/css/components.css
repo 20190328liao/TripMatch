@@ -1,0 +1,222 @@
+/*各種通用元件（按鈕、標題）會放class*/
+
+/*標題*/
+.titleWrap {
+    color: var(--color_font);
+    /*一次改title顏色*/
+}
+
+.titleWrap.titleH1 {
+    font-size: var(--font_H1);
+}
+
+.titleWrap.titleH2 {
+    font-size: var(--font_H2);
+}
+
+.titleWrap.titleH3 {
+    font-size: var(--font_H3);
+}
+
+.titleWrap.titleH4 {
+    font-size: var(--font_H4);
+}
+
+.titleWrap.titleH5 {
+    font-size: var(--font_H5);
+}
+
+.contentWrap{
+    color: var(--color_font);
+    font-size: var(--fontBody);
+}
+/*狀態*/
+.statusTrue {
+    color: var(--color_Green);
+    font-size: 16pt;
+}
+.statusFalse {
+    color: var(--color_Contrast);
+    font-size: 16pt;
+}
+
+
+/*按鈕*/
+.btn {
+    width:10rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.5em 1.5em;
+    margin: 0 0.5rem 0 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn.btn_light {
+    background: var(--color_Light);
+    color: var(--color_font);
+}
+.btn.btn_dark {
+    background: var(--color_Dark);
+    color: var(--colorBtnLight);
+}
+
+.btn.btn_Gray {
+    background: var(--color_Gray);
+    color: var(--color_font);
+}
+
+/*表單*/
+.formWrap {
+    display: flex;
+    flex-direction: column; 
+}
+
+.formWrap .label1 {
+    font-size: var(--fontBody);
+    color: var(--color_font);
+    margin-bottom: 0.5rem; 
+    align-self: flex-start; 
+}
+.formWrap .input1 {
+    color: var(--color_font);
+    background-color: var(--color_bk);
+    border: 1px solid var(--color_Border);
+    font-size: var(--fontBody);
+}
+.signContent.s1 {
+            background-color: var(--color_Dark);
+        }
+
+        .signContent.s2 {
+            background-color: var(--color_bk);
+        }
+
+
+.email {
+    height: 3rem;
+}
+.psw {    
+    max-width: 28rem; 
+    height: 3rem;
+}
+.eLabel{
+    font-size: 1.2rem;
+    white-space: nowrap;
+}
+.confirmCheck{
+    width: 27.5rem;
+}
+
+/* --- 輸入框狀態切換 --- */
+.input1.input_error {
+    border: 2px solid var(--color_Contrast);
+}
+
+/* 驗證通過綠色*/
+.input1.input_success {
+    border: 2px solid var(--color_Green);
+}
+
+/* --- 彈窗樣式 --- */
+.popup_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+}
+
+.reg_popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color_bk);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    min-width: 320px;
+    text-align: center;
+}
+
+.popup_title {
+    font-size: var(--font_H4);
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.popup_success {
+    color: var(--color_Green);
+}
+
+.popup_error {
+    color: var(--color_Contrast);
+}
+
+.btn_popup_close {
+    margin-top: 20px;
+    padding: 8px 25px;
+    background-color: var(--color_Dark);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.popH5 {
+    margin: 15px 0;
+}
+.popTime {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;    
+}
+.privacy {
+font-size:14px;
+}
+.systemMessage {
+    border-radius: 4px;
+}
+.incomplete {
+    color: var(--color_Contrast); 
+    font-size: var(--f_small);
+    font-weight: bold;
+}
+
+.main-img {
+    width: 50%;
+    height: 50%;
+}
+
+
+/*輸入提示*/
+.inputHint {
+    min-height: 1.2em; /* 防止跳版 */
+    font-size: 14px;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+    /* 成功 / 錯誤狀態 */
+    .inputHint.success {
+        color: var(--color_Green);
+    }
+
+    .inputHint.error {
+        color: var(--color_Contrast);
+    }
+
+/* input 本身狀態 */
+.input_success {
+    border-color: var(--color_Green);
+}
+
+.input_error {
+    border-color: var(--color_Contrast);
+}
