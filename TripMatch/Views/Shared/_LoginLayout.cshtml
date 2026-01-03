@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - TripMatch</title>
+
+    @* 使用 ~/ 符號，Razor 會自動解析正確的根目錄路徑 *@
+    <link rel="stylesheet" href="~/css/reset.css">
+    <link rel="stylesheet" href="~/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/css/variables.css">
+    <link rel="stylesheet" href="~/css/components.css">
+    <link rel="stylesheet" href="~/css/layout.css">
+    <link rel="stylesheet" href="~/css/responsive.css">
+
+    @* 這裡可以預留給各別頁面加入額外的 CSS *@
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+    @* 在這裡放共用的 Header/Nav *@
+
+    @* 這裡是各個頁面內容插入的位置 *@
+    @RenderBody()
+
+    @* 共用的 Scripts *@
+    <script src="~/js/jquery-3.7.1.js"></script>
+    <script src="~/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/helper.js"></script>
+    <script src="~/js/popup.js"></script>
+
+    @* 這裡預留給各別頁面加入專屬 JS (如 login.js) *@
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // 後端動態生成路由表， Controller 設定
+        window.AppUrls = {
+            Auth: {
+                Login: '@Url.Action("Login", "AuthApi")',
+                Register: '@Url.Action("Register", "AuthApi")',
+                SendConfirmation: '@Url.Action("SendConfirmation", "AuthApi")',
+                CheckDbStatus: '@Url.Action("CheckDbStatus", "AuthApi")',
+                Logout: '@Url.Action("Logout", "AuthApi")',
+                CheckEmail:'@Url.Action("CheckEmail", "AuthApi")'
+            },
+            Home: {
+                Index: '@Url.Action("Index", "Home")'
+            }
+        };
+    </script>
+</body>
+</html>

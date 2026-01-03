@@ -2,10 +2,10 @@
 $(#btnLogout).on("click", function () {
     $.ajax({
         type: "post",
-        url: "/api/auth/logout",
+        url: window.AppUrls.Auth.Logout,
         xhrFields: { withCredentials: true },
         success: function () {
-            window.location.href = loginUrl;
+            window.location.href = window.AppUrls.Auth.Login;
         }
     });
 });

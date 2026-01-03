@@ -1,4 +1,18 @@
 ﻿$(function () {
+    // --- 定義全域 API 路徑變數 ---
+    window.AppUrls = window.AppUrls || {
+        Auth: {
+            Login: '/AuthApi/Login',
+            Register: '/AuthApi/Register',
+            SendConfirmation: '/AuthApi/SendConfirmation',
+            CheckDbStatus: '/AuthApi/CheckDbStatus',
+            Logout: '/AuthApi/Logout',
+            CheckEmail: '/AuthApi/CheckEmail'
+        },
+        Home: {
+            Index: '/Home/Index'
+        }
+    };
     //放通用的
 $.ajaxSetup({
         headers: { "RequestVerificationToken": window.csrfToken }

@@ -85,6 +85,10 @@
               "target": "Package",
               "version": "[8.0.22, )"
             },
+            "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
+              "target": "Package",
+              "version": "[8.0.22, )"
+            },
             "SendGrid": {
               "target": "Package",
               "version": "[9.29.3, )"

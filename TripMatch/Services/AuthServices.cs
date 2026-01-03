@@ -13,13 +13,11 @@ using System.Security.Claims;
 using System.Text;
 using TripMatch.Data;
 using TripMatch.Models;
+using Microsoft.AspNetCore.WebUtilities; 
 using static TripMatch.Services.AuthServicesExtensions.AuthService;
-
-
 
 namespace TripMatch.Services
 {
-
     public static class AuthServicesExtensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
@@ -64,7 +62,7 @@ namespace TripMatch.Services
                 googleOptions.ClientId = config["Authentication:Google:ClientId"] ?? string.Empty;
                 googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"] ?? string.Empty;
 
-   
+
                 googleOptions.CallbackPath = "/signin-google";
             });
             // 3. 搬移 Configure<IdentityOptions>
@@ -164,7 +162,7 @@ namespace TripMatch.Services
 
                 return Results.BadRequest(new { errors = result.Errors });
             });
-            
+
             // 引導使用者去 Google 登入頁面
             group.MapGet("/login-google", (HttpContext context) =>
             {
@@ -172,7 +170,7 @@ namespace TripMatch.Services
                 {
                     RedirectUri = "/api/auth/google-response" // Google 回來
                 };
-                return Results.Challenge(properties, new[] { "Google" });
+                return Results.Challenge(properties, ["Google"]);
             });
 
             // Google 登入完畢
@@ -200,36 +198,7 @@ namespace TripMatch.Services
                 // 登入成功後跳轉回前端首頁
                 return Results.Redirect("/index.html");
             });
-            // 登入
-            group.MapPost("/login", async ([FromBody] LoginModel model, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, AuthService authService, HttpContext context) =>
-            {
-                var user = await userManager.FindByEmailAsync(model.Email);
-                if (user == null) return Results.Unauthorized();
 
-                var result = await signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: true);
-
-                if (result.Succeeded)
-                {
-                    // 產生 JWT
-                    var token = authService.GenerateJwtToken(user);
-
-                    authService.SetAuthCookie(context, token);
-                    authService.SetPendingCookie(context, user.Email);
-
-                    return Results.Ok(new { message = "登入成功" });
-                }
-
-                if (result.IsLockedOut)
-                {
-                    return Results.Json(new { message = "帳號已被鎖定，請於 5 分鐘後再試。" }, statusCode: 423);
-                }
-
-                // 計算剩餘次數
-                var accessFailedCount = await userManager.GetAccessFailedCountAsync(user);
-                var remainingAttempts = 5 - accessFailedCount;
-
-                return Results.BadRequest(new { message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
-            });
 
             // 發送驗證信
             group.MapPost("/send-confirmation", async ([FromBody] string email, UserManager<ApplicationUser> userManager, IEmailSender<ApplicationUser> emailSender, AuthService authService, HttpContext context) =>
@@ -239,9 +208,7 @@ namespace TripMatch.Services
                 var user = await userManager.FindByEmailAsync(email);
                 if (user != null)
                 {
-                    var reCode = await userManager.GenerateEmailConfirmationTokenAsync(user);
-                    _ = $"{request.Scheme}://{request.Host}/api/auth/confirm-email?userId={user.Id}&code={System.Net.WebUtility.UrlEncode(reCode)}";
-
+                 
                     // 情況 A: 已經完全註冊好（有密碼） -> 叫他去登入
                     if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != "TempP@ss123")
                     {
@@ -267,6 +234,7 @@ namespace TripMatch.Services
                 // 產生驗證 Token
                 var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
+                // 這裡會呼叫我們修正後的 GenerateConfirmUrl
                 var callbackUrl = authService.GenerateConfirmUrl(context, user.Id, code);
 
                 await emailSender.SendConfirmationLinkAsync(user, email, callbackUrl);
@@ -326,7 +294,7 @@ namespace TripMatch.Services
                     // ★ 補發或寫入 PendingEmail Cookie
                     authService.SetPendingCookie(context, user.Email);
 
-                    // 驗證成功，導向美化頁面
+                    // 驗證成功
                     return Results.Redirect("/checkemail.html?status=success");
                 }
 
@@ -336,19 +304,19 @@ namespace TripMatch.Services
 
         public static int GetUserId(this ClaimsPrincipal user)
         {
-            // 優先找 sub (JWT 標準)，再找 NameIdentifier
+            // 優先找 JWT，再找 NameIdentifier
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                              ?? user.FindFirst("sub")?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                return 0; // 或拋出異常，視你們的邏輯而定
+                return 0;
             }
 
             return int.Parse(userIdClaim);
         }
 
-   
+
         public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<SendGridSettings>(configuration.GetSection("checkemail"));
@@ -450,6 +418,7 @@ namespace TripMatch.Services
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
 
+            //使用者點擊連結，瀏覽器記住 Email，跳轉回註冊頁時自動帶入顯示已驗證。
             public void SetPendingCookie(HttpContext context, string? email)
             {
                 if (string.IsNullOrEmpty(email)) return;
@@ -474,11 +443,16 @@ namespace TripMatch.Services
                 });
             }
 
+            // 2. 修正此方法：改用 Base64UrlEncode 並指向正確的 Controller Action
             public string GenerateConfirmUrl(HttpContext ctx, object userId, string code)
             {
                 ArgumentNullException.ThrowIfNull(ctx);
 
-                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/Home/ConfirmEmail?userId={userId}&code={System.Net.WebUtility.UrlEncode(code)}";
+                // 修正：配合 AuthApiController 的 Base64UrlDecode，這裡需使用 Base64UrlEncode
+                var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                // 修正：指向 AuthApiController 的 ConfirmEmail Action (/AuthApi/ConfirmEmail)
+                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/AuthApi/ConfirmEmail?userId={userId}&code={encodedCode}";
             }
 
             public sealed class EmailSender : IEmailSender<ApplicationUser>

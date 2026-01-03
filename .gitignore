@@ -1,0 +1,12 @@
+# 排除 Visual Studio 暫存與環境設定
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+
+# 排除資料庫備份檔
+*.bacpac
+
+# 排除 .NET Core 設定檔中的私密資訊 (選用)
+appsettings.Development.json

@@ -1,0 +1,54 @@
+﻿@{
+    ViewData["Title"] = "信箱驗證";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+
+    // 取得後端傳來的狀態 (Success 或 Error)
+    var status = ViewData["Status"] as string;
+    var message = ViewData["Message"] as string;
+
+    // 預設圖片與文字
+    var imgSrc = "~/img/checkEmailimg.png"; 
+    var titleText = "恭喜您，信箱驗證成功！";
+    var btnText = "請繼續下一步";
+    var btnLink = Url.Action("Signup", "AuthApi"); 
+    var titleColor = "";
+
+    if (status == "Error")
+    {
+        imgSrc = "~/img/checkEmailimg_2.png"; // 請確認失敗圖片路徑
+        titleText = message ?? "驗證連結已失效";
+        btnText = "重新發送驗證信";
+        btnLink = Url.Action("Signup", "AuthApi"); // 失敗也回註冊頁重發
+        titleColor = "color: #FF6B6B;";
+    }
+}
+
+<div class="check-container text-center" style="padding-top: 50px;">
+    <div class="logo-header mb-4">
+        <span class="h3">TripMatch</span>
+        <span style="font-weight: normal; font-size: 1.1rem; margin-left: 10px;">旅遊規劃平台</span>
+    </div>
+
+    <div id="displayArea">
+
+        <img src="@Url.Content(imgSrc)" alt="@status" class="main-img" style="max-width: 200px; margin-bottom: 20px;">
+
+
+        <div class="titleWrap titleH4 mb-4" style="@titleColor">
+            @titleText
+        </div>
+
+
+        <a href="@btnLink" class="btn btn_light">
+            @btnText
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function() {
+            // 這裡可以加一些額外的特效或邏輯
+        });
+    </script>
+}

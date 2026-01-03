@@ -1,24 +1,44 @@
 ﻿$(function () {
 
-    let isSending = false;//防止觸發多次
-    let isEmailVerified = false;// 假設有一個變數追蹤 Email 是否已驗證
-    let lastSentEmail = "";//記錄上次發送的 Email
+    let isSending = false; // 防止觸發多次
+    let isEmailVerified = false; // 追蹤 Email 是否已驗證
+    let lastSentEmail = ""; // 記錄上次發送的 Email
     let cooldownTime = 0;
-    checkStatusFromBackend();// 頁面載入時檢查驗證狀態
+    let cooldownTimer = null;
 
+    // 頁面載入時檢查驗證狀態
+    checkStatusFromBackend();
 
+    // 倒數計時器函式
+    function startCooldown(seconds) {
+        cooldownTime = seconds;
+        const $btn = $("#checkEmail");
+        
+        $btn.prop("disabled", true).addClass("btn_Gray");
+
+        if (cooldownTimer) clearInterval(cooldownTimer);
+
+        cooldownTimer = setInterval(() => {
+            cooldownTime--;
+            if (cooldownTime <= 0) {
+                clearInterval(cooldownTimer);
+                $btn.prop("disabled", false).removeClass("btn_Gray").text("寄驗證信");
+                setFieldHint("email", "☑ Email 格式正確，可重新發送驗證信", "success");
+            } else {
+                $btn.text(`重送(${cooldownTime}s)`);
+            }
+        }, 1000);
+    }
 
     async function checkStatusFromBackend() {
         try {
-            const res = await fetch("/api/auth/check-db-status", { credentials: 'include' });
+            const res = await fetch(window.AppUrls.Auth.CheckDbStatus, { credentials: 'include' });
             const data = await res.json();
             if (data.verified && data.email) {
                 isEmailVerified = true;
-
                 $("#email").val(data.email).prop("readonly", true);
                 setFieldHint("email", `☑ 偵測到信箱 ${data.email} 已驗證成功！`, "success");
-                $("#btnSendCode").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
-                // 重新驗證表單，讓「註冊」按鈕根據密碼欄位決定是否啟用
+                $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
                 validateForm();
             }
         }
@@ -26,7 +46,6 @@
             console.error("檢查 Pending 狀態失敗", e);
         }
     }
-
 
     function validateForm() {
         const pwd = $("#password").val();
@@ -40,28 +59,22 @@
 
         // --- Email 驗證流程 ---
         if (!email) {
-            // 1. 完全沒填
             setFieldHint("email", "☐ 請輸入 Email", "error");
         }
         else if (!email.includes("@")) {
-            // 2. 還沒填到 @ (這會解決輸入 f3366559 就跳格式錯誤的問題)
             setFieldHint("email", "☐ 缺少 @ 符號", "error");
         }
         else if (!email.includes(".") || email.lastIndexOf(".") < email.indexOf("@")) {
-            // 3. 有了 @ 但還沒填到網域的點
             setFieldHint("email", "☐ 缺少網域點 (.com 等)", "error");
         }
         else if (!emailRegex.test(email)) {
-            // 4. 結構還是不對 (例如點後面沒字，或是空白)
             setFieldHint("email", "☐ Email 格式不正確", "error");
         }
         else if (domain !== "gmail.com" && gmailMistakeRegex.test(domain)) {
-            // 5. 格式對了但疑似拼錯
             setFieldHint("email", "⚠ 您是指 gmail.com 嗎？", "error");
             isEmailValid = false;
         }
         else {
-            // 6. 通過所有檢查
             isEmailValid = true;
 
             if (isEmailVerified) {
@@ -137,7 +150,7 @@
         lastSentEmail = email;
         $.ajax({
             type: 'POST',
-            url: '/api/auth/send-confirmation',
+            url: window.AppUrls.Auth.SendConfirmation,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function (res) {
@@ -150,7 +163,7 @@
                 lastSentEmail = "";//重置
                 const data = err.responseJSON;
                 if (data && data.action === "redirect_login") {
-                    window.location.href = loginUrl;
+                    window.location.href = window.AppUrls.Auth.Login;
                 }
             }
         });
@@ -165,31 +178,55 @@
             return;
         }
 
+        // 1. 檢查是否已驗證
+        if (isEmailVerified) {
+            showPopup({ title: "提示", message: "此信箱已完成驗證，請直接設定密碼。", type: "success" });
+            return;
+        }
+
+        // 2. 檢查是否在冷卻中
+        if (cooldownTime > 0) {
+            showPopup({ title: "提示", message: `請稍候 ${cooldownTime} 秒再試`, type: "warning" });
+            return;
+        }
+
+        // 3. 檢查是否正在發送中
+        if (isSending) return;
+
+        isSending = true;
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('發送中...');
+
         $.ajax({
             type: 'POST',
-            url: '/api/auth/send-confirmation',
+            url: window.AppUrls.Auth.SendConfirmation,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function (res) {
+                isSending = false;
+                
                 if (res.verified) {
+                    // 已經驗證過了 (後端回傳 verified: true)
                     isEmailVerified = true;
-                    $("#email").val(email).prop("readonly", true); // 鎖定 Email
-                    $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
+                    $("#email").val(email).prop("readonly", true);
+                    $btn.prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
                     setFieldHint("email", "☑ 此信箱已驗證成功！請直接設定密碼。", "success");
-                    validateForm(); // 重新整理按鈕狀態
+                    validateForm();
                     showPopup({ title: "提示", message: "您先前已完成驗證，請直接設定密碼即可。", type: "success" });
                 } else {
-                    // 一般寄信成功的狀況
-                    showPopup({ title: "發送成功", message: res.message, type: "success" });
+                    // 成功寄出
+                    startCooldown(30); // 開始 30 秒倒數
+                    showPopup({ title: "發送成功", message: res.message || "驗證信已發送，請檢查信箱。", type: "success" });
                 }
-
             },
             error: function (err) {
+                isSending = false;
+                $btn.prop('disabled', false).text('寄驗證信'); // 失敗則恢復按鈕
+                
                 const data = err.responseJSON;
-                // 只有在「真的已經註冊完畢（有密碼）」的情況下才跳轉
                 if (data && data.action === "redirect_login") {
                     showPopup({ title: "提示", message: data.message, type: "warning" }).then(() => {
-                        window.location.href = loginUrl;
+                        window.location.href = window.AppUrls.Auth.Login;
                     });
                 } else {
                     showPopup({ title: "發送失敗", message: data?.message || "請稍後再試", type: "error" });
@@ -209,11 +246,7 @@
         .removeClass("btn_light");
     $("#email, #password, #confirmPassword").on("keyup input", validateForm);
 
-
-
-
     $('#btnRegister').on("click", function () {
-        // 抓取欄位資料
         const userData = {
             email: $('#email').val().trim(),
             password: $('#password').val(),
@@ -222,19 +255,14 @@
         $("#btnRegister").prop("disabled", true).text("處理中...");
         $.ajax({
             type: 'post',
-            url: '/api/auth/register',
+            url: window.AppUrls.Auth.Register,
             contentType: 'application/json',
             data: JSON.stringify(userData),
-
             success: function (res) {
-
-             window.location.href = res.redirectUrl || '/Home/Login';
-
+                window.location.href = res.redirectUrl || window.AppUrls.Auth.Login;
             },
-
             error: async function (err) {
                 $("#btnRegister").prop("disabled", false).text("建立帳戶");
-
                 let msg = err.responseJSON?.message || "註冊失敗，請稍後再試";
                 if (err.responseJSON?.errors) {
                     msg = Object.values(err.responseJSON.errors).flat().map(e => e.description).join("、");

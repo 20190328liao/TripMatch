@@ -1,37 +1,7 @@
 [
   {
-    "ContainingType": "TripMatch.Controllers.AuthApiController",
-    "Method": "Login",
-    "RelativePath": "api/auth",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TripMatch.Controllers.AuthApiController",
-    "Method": "Signup",
-    "RelativePath": "api/auth",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TripMatch.Controllers.AuthApiController",
-    "Method": "CheckEmail",
-    "RelativePath": "api/auth",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_7",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_6",
     "RelativePath": "api/auth/check-db-status",
     "HttpMethod": "GET",
     "IsController": false,
@@ -47,7 +17,7 @@
   },
   {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_8",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_7",
     "RelativePath": "api/auth/check-email-status",
     "HttpMethod": "POST",
     "IsController": false,
@@ -69,7 +39,7 @@
   },
   {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_9",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_8",
     "RelativePath": "api/auth/confirm-email",
     "HttpMethod": "GET",
     "IsController": false,
@@ -112,44 +82,6 @@
   },
   {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_4",
-    "RelativePath": "api/auth/login",
-    "HttpMethod": "POST",
-    "IsController": false,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "model",
-        "Type": "TripMatch.Models.Settings.LoginModel",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "TripMatch.Controllers.AuthApiController",
-    "Method": "Login",
-    "RelativePath": "api/auth/login",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "data",
-        "Type": "TripMatch.Models.InputModel",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
     "Method": "\u003CMapAuthEndpoints\u003Eb__1_2",
     "RelativePath": "api/auth/login-google",
     "HttpMethod": "GET",
@@ -166,7 +98,7 @@
   },
   {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_6",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_5",
     "RelativePath": "api/auth/logout",
     "HttpMethod": "POST",
     "IsController": false,
@@ -203,24 +135,8 @@
     ]
   },
   {
-    "ContainingType": "TripMatch.Controllers.AuthApiController",
-    "Method": "Register",
-    "RelativePath": "api/auth/register",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "data",
-        "Type": "TripMatch.Models.InputModel",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "TripMatch.Services.AuthServicesExtensions\u002B\u003C\u003Ec",
-    "Method": "\u003CMapAuthEndpoints\u003Eb__1_5",
+    "Method": "\u003CMapAuthEndpoints\u003Eb__1_4",
     "RelativePath": "api/auth/send-confirmation",
     "HttpMethod": "POST",
     "IsController": false,
@@ -255,5 +171,170 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "CheckDbStatus",
+    "RelativePath": "AuthApi/CheckDbStatus",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "CheckEmail",
+    "RelativePath": "AuthApi/CheckEmail",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "CheckEmailStatus",
+    "RelativePath": "AuthApi/CheckEmailStatus",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "email",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "ConfirmEmail",
+    "RelativePath": "AuthApi/ConfirmEmail",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "code",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "GoogleResponse",
+    "RelativePath": "AuthApi/GoogleResponse",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Login",
+    "RelativePath": "AuthApi/Login",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Login",
+    "RelativePath": "AuthApi/Login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "data",
+        "Type": "TripMatch.Models.InputModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "LoginGoogle",
+    "RelativePath": "AuthApi/LoginGoogle",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Logout",
+    "RelativePath": "AuthApi/Logout",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Register",
+    "RelativePath": "AuthApi/Register",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "TripMatch.Models.Settings.Register",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "SendConfirmation",
+    "RelativePath": "AuthApi/SendConfirmation",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "email",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "Signup",
+    "RelativePath": "AuthApi/Signup",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TripMatch.Controllers.AuthApiController",
+    "Method": "TestGenerateUser",
+    "RelativePath": "AuthApi/TestGenerateUser",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
   }
 ]

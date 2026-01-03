@@ -1,0 +1,59 @@
+﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var tokens = Antiforgery.GetAndStoreTokens(Context);
+    ViewData["Title"] = "註冊";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="signWrap">
+    <div class="container-fluid p-0">
+        <div class="row g-0 min-vh-100">
+            <div class="signContent s1 col-12 col-md-6">
+                廣告區
+            </div>
+            <div class="signContent s2 col-12 col-md-6 ">
+                <div class="mb-4">
+                    @* 使用 Url.Action 跳轉到登入頁 *@
+                    <a href="@Url.Action("Login", "AuthApi")" class="titleWrap titleH1" style="text-decoration:none; color:inherit;">登入</a>
+                    <a href="@Url.Action("Signup", "AuthApi")" class="titleWrap titleH1" style="border-bottom: 3px solid black; text-decoration:none; color:inherit; margin-left:10px;">註冊</a>
+                </div>
+
+                <div class="formWrap">
+                    <div class="mb-2">
+                        <label class="titleWrap titleH3 d-block">帳號 (電子郵件)</label>
+                        <input id="email" class="input1 psw" type="email" placeholder="example@gmail.com">
+                        <button type="button" class="btn btn_light eLabel" id="checkEmail">寄驗證信</button>
+                        <div id="emailHint" class="inputHint"></div>
+                    </div>
+
+                    <div class="formWrap">
+                        <label class="titleWrap titleH3 d-block">密碼 *</label>
+                        <input type="password" id="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
+                        <div id="pwdHint" class="inputHint"></div>
+
+                        <div><label class="titleWrap titleH3">確認密碼 *</label></div>
+                        <input type="password" id="confirmPassword" class="input1 psw" placeholder="請再次輸入密碼">
+                        <div id="confirmHint" class="inputHint"></div>
+                    </div>
+
+                    <div id="incompleteMessage" class="mt-2 incomplete">
+                        * 您好，尚未完成，全部完成才可下一步
+                    </div>
+                    <div id="systemMessage" class="mt-3 p-2 d-none"></div>
+                    <p class="privacy">* 註冊即表示您同意隱私權政策。</p>
+                    <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnRegister" disabled>建立帳戶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 將 Anti-Forgery Token 存入全域供 AJAX 使用
+        window.csrfToken = "@tokens.RequestToken";
+    </script>
+    <script src="~/js/helper.js"></script>
+    <script src="~/js/signup.js"></script>
+}
+
