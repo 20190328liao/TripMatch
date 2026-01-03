@@ -17,20 +17,17 @@ namespace TripMatch.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
-        private readonly TestingService _testingService; // 新增注入
 
         public AuthApiController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             AuthService authService,
-            IEmailSender<ApplicationUser> emailSender,
-            TestingService testingService) // 新增注入
+            IEmailSender<ApplicationUser> emailSender)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _authService = authService;
             _emailSender = emailSender;
-            _testingService = testingService;
         }
 
         #region Views (頁面)
@@ -56,6 +53,12 @@ namespace TripMatch.Controllers
         public IActionResult CheckEmail()
         {
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View("ForgotPassword");
         }
 
         #endregion
@@ -331,35 +334,117 @@ namespace TripMatch.Controllers
             var newToken = _authService.GenerateJwtToken(userByEmail);
             _authService.SetAuthCookie(HttpContext, newToken);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Home"); 
         }
 
         // 測試用產生假會員 API
         [HttpPost]
         public async Task<IActionResult> TestGenerateUser()
         {
-            // 1. 呼叫服務直接取得 userId
-            var (succeeded, userId, userName, error) = await _testingService.CreateFakeUserAsync();
+            var randomId = Guid.NewGuid().ToString().Substring(0, 5);
+            var fakeUser = new ApplicationUser
+            {
+                UserName = $"Tester_{randomId}",
+                Email = $"test_{randomId}@example.com",
+                EmailConfirmed = true
+            };
 
-            if (!succeeded) return BadRequest(new { message = error });
+            // 使用 UserManager 建立使用者 (密碼需符合您的 Identity 規則)
+            var createResult = await _userManager.CreateAsync(fakeUser, "Test1234!");
 
-            // 2. 為了產生 Token，我們還是需要 User 物件
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (!createResult.Succeeded)
+            {
+                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errorMsg });
+            }
+
+            // 4. 為了產生 Token，我們需要 User 物件 (其實 fakeUser 已經有了，但為了保險可重查)
+            var user = await _userManager.FindByIdAsync(fakeUser.Id.ToString());
             if (user == null) return NotFound();
 
-            // 3. 產生 JWT 並寫入 Cookie
+            // 5. 產生 JWT 並寫入 Cookie
             var token = _authService.GenerateJwtToken(user);
             _authService.SetAuthCookie(HttpContext, token);
 
-            // 4. 回傳給前端
+            // 6. 回傳給前端
             return Ok(new
             {
                 message = "成功新增假會員並自動登入",
-                userId = userId,
-                userName = userName
+                userId = user.Id,
+                userName = user.UserName
             });
         }
 
+        // 1. 發送重設密碼信件
+        [HttpPost]
+        public async Task<IActionResult> SendPasswordReset([FromBody] string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // 為了安全，即使找不到使用者也不要報錯
+            if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
+            {
+                // 這裡回傳成功訊息，避免被枚舉帳號
+                return Ok(new { message = "若帳號存在且已驗證，我們將發送重設信件。" });
+            }
+
+            // 產生原始 Token
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // ★ 進行 Base64Url 編碼 (避免 URL 特殊字元問題)
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            // 產生重設連結，指向前端頁面 (帶有 userId 和 code 參數)
+            // 這裡假設您的 ForgotPassword 頁面路徑是 /AuthApi/ForgotPassword
+            // 這樣使用者點擊連結後，會回到該頁面，JS 會讀取 URL 參數並顯示重設密碼表單
+            var callbackUrl = Url.Action("ForgotPassword", "AuthApi",
+                new { userId = user.Id, code = code }, Request.Scheme);
+
+            await _emailSender.SendPasswordResetLinkAsync(user, email, callbackUrl!);
+
+            return Ok(new { message = "重設密碼信件已發送，請檢查信箱。" });
+        }
+
+        // 2. 執行重設密碼
+        // 對應 forgotPassword.js 的 AJAX 呼叫
+        [HttpPost]
+        public async Task<IActionResult> PerformPasswordReset([FromBody] ResetPasswordModel model)
+        {
+            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Code) || string.IsNullOrEmpty(model.Password))
+            {
+                return BadRequest(new { message = "無效的請求資料。" });
+            }
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                // 為了安全，通常回傳模糊的錯誤，但這裡為了除錯先回傳明確訊息
+                return BadRequest(new { message = "使用者不存在。" });
+            }
+
+            try
+            {
+                // ★ 進行 Base64Url 解碼
+                var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Code));
+
+                var result = await _userManager.ResetPasswordAsync(user, decodedCode, model.Password);
+
+                if (result.Succeeded)
+                {
+                    return Ok(new { message = "密碼重設成功！" });
+                }
+
+                var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "重設失敗";
+                return BadRequest(new { message = errorMsg, errors = result.Errors });
+            }
+            catch
+            {
+                return BadRequest(new { message = "無效的驗證碼。" });
+            }
+        }
+
+        // 定義接收參數的模型 (可以放在 Models 資料夾或檔案下方)
+     
         #endregion
     }
 }

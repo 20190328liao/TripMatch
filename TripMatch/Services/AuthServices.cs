@@ -18,6 +18,9 @@ using static TripMatch.Services.AuthServicesExtensions.AuthService;
 
 namespace TripMatch.Services
 {
+    // 定義一個簡單的 Record 用於接收重設密碼請求
+    public record ResetPasswordRequest(string Password);
+
     public static class AuthServicesExtensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
@@ -58,12 +61,16 @@ namespace TripMatch.Services
             })
             .AddGoogle(googleOptions =>
             {
+                // ★ 修正：指定 SignInScheme 為 ExternalScheme
+                // 這是解決 "Correlation failed" 的關鍵。因為預設方案是 JWT，Google 必須明確知道要使用 Cookie 來存取暫存狀態。
+                googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
+
                 // 從 Configuration 讀取 secrets.json 的設定
                 googleOptions.ClientId = config["Authentication:Google:ClientId"] ?? string.Empty;
                 googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"] ?? string.Empty;
 
 
-                googleOptions.CallbackPath = "/signin-google";
+                googleOptions.CallbackPath = "/LoginGoogle";
             });
             // 3. 搬移 Configure<IdentityOptions>
             services.Configure<IdentityOptions>(options =>
@@ -95,223 +102,9 @@ namespace TripMatch.Services
             return services;
         }
 
-        public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
-        {
-            var group = app.MapGroup("/api/auth");
-
-            //新使用者：
-            //建帳號 -> 寄信 -> 點連結領 Cookie -> 填密碼。
-            //Cookie 掉了的老客戶：
-            //輸入 Email -> 系統發現沒密碼 -> 重新寄信 -> 點連結「補領」Cookie -> 回原頁填密碼。
-
-            //測試用：自動產生假會員並登入
-            group.MapPost("/test-generate-user", async (TestingService testingService, AuthService authService, HttpContext context, UserManager<ApplicationUser> userManager) =>
-            {
-                // 1. 呼叫服務直接取得 userId
-                var (succeeded, userId, userName, error) = await testingService.CreateFakeUserAsync();
-
-                if (!succeeded) return Results.BadRequest(new { message = error });
-
-                // 2. 為了產生 Token，我們還是需要 User 物件
-                var user = await userManager.FindByIdAsync(userId.ToString());
-                if (user == null) return Results.NotFound();
-
-                // 3. 產生 JWT 並寫入 Cookie
-                var token = authService.GenerateJwtToken(user);
-                authService.SetAuthCookie(context, token);
-
-                // 4. 回傳給前端 (組員 B 測試時可以看到目前是哪位 ID)
-                return Results.Ok(new
-                {
-                    message = "成功新增假會員並自動登入",
-                    userId = userId, // 這就是您要的 userID (int)
-                    userName = userName
-                });
-            });
-
-            // 註冊
-            group.MapPost("/register", async ([FromBody] Register model, UserManager<ApplicationUser> userManager, HttpContext context) =>
-            {
-                // 1. 修改：取出 Cookie 值並進行比對
-                if (!context.Request.Cookies.TryGetValue("PendingEmail", out var pendingEmail))
-                {
-                    return Results.BadRequest(new { message = "驗證逾時，請重新驗證 Email" });
-                }
-
-                // 2. ★關鍵修正：檢查 Cookie 內的 Email 是否與目前提交的 Email 一致
-                // 防止使用者驗證了 A 信箱，卻拿來註冊 B 信箱
-                if (!string.Equals(pendingEmail, model.Email, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Results.BadRequest(new { message = "驗證資訊不符，請重新驗證 Email" });
-                }
-
-                var user = await userManager.FindByEmailAsync(model.Email);
-                if (user == null || !user.EmailConfirmed)
-                {
-                    return Results.BadRequest(new { message = "請先完成Email驗證" });
-                }
-
-                // 防止重複註冊
-                var hasPassword = await userManager.HasPasswordAsync(user);
-                if (hasPassword)
-                {
-                    return Results.Conflict(new { message = "該帳號已完成設定，請直接登入" });
-                }
-
-                // 正式設定密碼
-                var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
-                var result = await userManager.ResetPasswordAsync(user, resetToken, model.Password);
-                if (result.Succeeded)
-                {
-                    // 註冊成功後，刪除暫存的 PendingEmail Cookie
-                    context.Response.Cookies.Delete("PendingEmail");
-                    return Results.Ok(new { message = "帳戶設定成功！請登入" });
-                }
-
-                return Results.BadRequest(new { errors = result.Errors });
-            });
-
-            // 引導使用者去 Google 登入頁面
-            group.MapGet("/login-google", (HttpContext context) =>
-            {
-                var properties = new AuthenticationProperties
-                {
-                    RedirectUri = "/api/auth/google-response" // Google 回來
-                };
-                return Results.Challenge(properties, ["Google"]);
-            });
-
-            // Google 登入完畢
-            group.MapGet("/google-response", async (HttpContext context, AuthService authService, UserManager<ApplicationUser> userManager) =>
-            {
-                var result = await context.AuthenticateAsync("ExternalCookie");
-                if (!result.Succeeded) return Results.BadRequest("Google 驗證失敗");
-
-                var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-                if (string.IsNullOrEmpty(email)) return Results.BadRequest("無法從 Google 取得 Email");
-
-                // 檢查資料庫是否有此人
-                var user = await userManager.FindByEmailAsync(email);
-                if (user == null)
-                {
-                    // 如果沒帳號，直接幫他建立一個
-                    user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
-                    await userManager.CreateAsync(user);
-                }
-
-                // 產生你專案內用的 JWT
-                var token = authService.GenerateJwtToken(user);
-                authService.SetAuthCookie(context, token);
-
-                // 登入成功後跳轉回前端首頁
-                return Results.Redirect("/index.html");
-            });
-
-
-            // 發送驗證信
-            group.MapPost("/send-confirmation", async ([FromBody] string email, UserManager<ApplicationUser> userManager, IEmailSender<ApplicationUser> emailSender, AuthService authService, HttpContext context) =>
-            {
-                var request = context.Request;
-
-                var user = await userManager.FindByEmailAsync(email);
-                if (user != null)
-                {
-                    // 修正邏輯：
-                    // 只有當使用者「有密碼」且「已驗證信箱」時，才視為已完成註冊，阻擋並要求登入。
-                    // 如果使用者有密碼但沒驗證 (EmailConfirmed = false)，應該允許他重發驗證信 (否則會卡死)。
-                    bool hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
-
-                    if (hasPassword && user.EmailConfirmed)
-                    {
-                        return Results.Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
-                    }
-
-                    // 情況 B: 已驗證信箱但還沒設密碼 (例如 Google 登入使用者想補設密碼)
-                    // 注意：如果有密碼但沒驗證，不會進這裡 (EmailConfirmed is false)，會往下走去寄信
-                    if (user.EmailConfirmed && !hasPassword)
-                    {
-                        authService.SetPendingCookie(context, user.Email); 
-                        return Results.Ok(new { verified = true, message = "此帳號已驗證成功，請直接設定密碼。" });
-                    }
-                }
-
-                // 情況C:完全沒有帳號的新使用者 (或有帳號但未驗證且需要重發信)
-                if (user == null)
-                {
-                    user = new ApplicationUser { UserName = email, Email = email };
-                    // 修正：建立時不給預設密碼
-                    var createResult = await userManager.CreateAsync(user);
-                    if (!createResult.Succeeded) return Results.BadRequest("系統錯誤，請重新發送驗證信");
-                }
-
-                // 產生驗證 Token
-                var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
-                // 這裡會呼叫我們修正後的 GenerateConfirmUrl
-                var callbackUrl = authService.GenerateConfirmUrl(context, user.Id, code);
-                await emailSender.SendConfirmationLinkAsync(user, email, callbackUrl);
-                authService.SetPendingCookie(context, user.Email);
-
-                return Results.Ok(new { message = "驗證信已發送，請檢查信箱或垃圾郵件。" });
-            });
-
-            // 登出
-            group.MapPost("/logout", async (SignInManager<ApplicationUser> signInManager, HttpContext context) =>
-            {
-                await signInManager.SignOutAsync();
-                context.Response.Cookies.Delete("AuthToken");
-                return Results.Ok(new { message = "已登出" });
-            }).RequireAuthorization();
-
-            group.MapGet("/check-db-status", async (HttpContext context, UserManager<ApplicationUser> userManager) =>
-            {
-                // 後端直接從 Cookie 拿 Email，前端無法偽造
-                if (!context.Request.Cookies.TryGetValue("PendingEmail", out var email))
-                {
-                    return Results.Ok(new { verified = false });
-                }
-
-                var user = await userManager.FindByEmailAsync(email);
-
-                if (user != null && user.EmailConfirmed)
-                {
-                    return Results.Ok(new { verified = true, email });
-                }
-
-                return Results.Ok(new { verified = false });
-            });
-
-            group.MapPost("/check-email-status", async ([FromBody] string email, UserManager<ApplicationUser> userManager) =>
-            {
-                var user = await userManager.FindByEmailAsync(email);
-                if (user != null && user.EmailConfirmed)
-                {
-                    return Results.Ok(new { verified = true });
-                }
-
-                return Results.Ok(new { verified = false });
-            });
-
-            group.MapGet("/confirm-email", async ([FromQuery] string userId, [FromQuery] string code, UserManager<ApplicationUser> userManager, AuthService authService, HttpContext context) =>
-            {
-                var user = await userManager.FindByIdAsync(userId);
-                if (user == null) return Results.Redirect("/checkemail.html?status=error");
-
-                var result = await userManager.ConfirmEmailAsync(user, code);
-
-                // 驗證成功,或是已經驗證過但需要重新給Cookie
-                if (result.Succeeded || user.EmailConfirmed)
-                {
-                    // ★ 補發或寫入 PendingEmail Cookie
-                    authService.SetPendingCookie(context, user.Email);
-
-                    // 驗證成功
-                    return Results.Redirect("/checkemail.html?status=success");
-                }
-
-                return Results.Redirect("/checkemail.html?status=error");
-            });
-        }
+      
+        
+ 
 
         public static int GetUserId(this ClaimsPrincipal user)
         {
@@ -488,7 +281,23 @@ namespace TripMatch.Services
                     await client.SendEmailAsync(msg);
                 }
 
-                public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink) => Task.CompletedTask;
+                // 實作重設密碼信件發送
+                public async Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
+                {
+                    var client = new SendGridClient(_settings.SendGridKey);
+                    var from = new EmailAddress(_settings.FromEmail, "想想TripMatch");
+                    var to = new EmailAddress(email);
+                    var subject = "重設您的密碼 - TripMatch";
+                    var htmlContent = $@"
+                        <h3>重設密碼請求</h3>
+                        <p>我們收到了重設您 TripMatch 帳號密碼的請求。</p>
+                        <p>請點擊下方連結以設定新密碼：</p>
+                        <a href='{resetLink}' style='padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;'>重設密碼</a>
+                        <p>若您未提出此請求，請忽略此信件。</p>";
+
+                    var msg = MailHelper.CreateSingleEmail(from, to, subject, "", htmlContent);
+                    await client.SendEmailAsync(msg);
+                }
 
                 public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode) => Task.CompletedTask;
             }

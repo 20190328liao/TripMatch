@@ -14,8 +14,8 @@
             <div class="signContent s2 col-12 col-md-6 ">
                 <div class="mb-4">
                     @* 使用 Url.Action 跳轉到登入頁 *@
-                    <a href="@Url.Action("Login", "AuthApi")" class="titleWrap titleH1" style="text-decoration:none; color:inherit;">登入</a>
-                    <a href="@Url.Action("Signup", "AuthApi")" class="titleWrap titleH1" style="border-bottom: 3px solid black; text-decoration:none; color:inherit; margin-left:10px;">註冊</a>
+                    <a href="@Url.Action("Login", "AuthApi")" class="titleWrap titleH1 inputNone">登入</a>
+                    <a href="@Url.Action("Signup", "AuthApi")" class="titleWrap titleH1 inputLine">註冊</a>
                 </div>
 
                 <div class="formWrap">
@@ -50,7 +50,6 @@
 
 @section Scripts {
     <script>
-        // 將 Anti-Forgery Token 存入全域供 AJAX 使用
         window.csrfToken = "@tokens.RequestToken";
     </script>
     <script src="~/js/helper.js"></script>

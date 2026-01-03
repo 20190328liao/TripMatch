@@ -6,27 +6,27 @@
     /*一次改title顏色*/
 }
 
-.titleWrap.titleH1 {
-    font-size: var(--font_H1);
-}
+    .titleWrap.titleH1 {
+        font-size: var(--font_H1);
+    }
 
-.titleWrap.titleH2 {
-    font-size: var(--font_H2);
-}
+    .titleWrap.titleH2 {
+        font-size: var(--font_H2);
+    }
 
-.titleWrap.titleH3 {
-    font-size: var(--font_H3);
-}
+    .titleWrap.titleH3 {
+        font-size: var(--font_H3);
+    }
 
-.titleWrap.titleH4 {
-    font-size: var(--font_H4);
-}
+    .titleWrap.titleH4 {
+        font-size: var(--font_H4);
+    }
 
-.titleWrap.titleH5 {
-    font-size: var(--font_H5);
-}
+    .titleWrap.titleH5 {
+        font-size: var(--font_H5);
+    }
 
-.contentWrap{
+.contentWrap {
     color: var(--color_font);
     font-size: var(--fontBody);
 }
@@ -35,6 +35,7 @@
     color: var(--color_Green);
     font-size: 16pt;
 }
+
 .statusFalse {
     color: var(--color_Contrast);
     font-size: 16pt;
@@ -43,7 +44,7 @@
 
 /*按鈕*/
 .btn {
-    width:10rem;
+    width: 10rem;
     border: none;
     border-radius: 4px;
     font-size: 1rem;
@@ -54,59 +55,66 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-.btn.btn_light {
-    background: var(--color_Light);
-    color: var(--color_font);
-}
-.btn.btn_dark {
-    background: var(--color_Dark);
-    color: var(--colorBtnLight);
-}
 
-.btn.btn_Gray {
-    background: var(--color_Gray);
-    color: var(--color_font);
-}
+    .btn.btn_light {
+        background: var(--color_Light);
+        color: var(--color_font);
+    }
+
+    .btn.btn_dark {
+        background: var(--color_Dark);
+        color: var(--colorBtnLight);
+    }
+
+    .btn.btn_Gray {
+        background: var(--color_Gray);
+        color: var(--color_font);
+    }
 
 /*表單*/
 .formWrap {
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
 }
 
-.formWrap .label1 {
-    font-size: var(--fontBody);
-    color: var(--color_font);
-    margin-bottom: 0.5rem; 
-    align-self: flex-start; 
-}
-.formWrap .input1 {
-    color: var(--color_font);
-    background-color: var(--color_bk);
-    border: 1px solid var(--color_Border);
-    font-size: var(--fontBody);
-}
+    .formWrap .label1 {
+        font-size: var(--fontBody);
+        color: var(--color_font);
+        margin-bottom: 0.5rem;
+        align-self: flex-start;
+    }
+
+    .formWrap .input1 {
+        color: var(--color_font);
+        background-color: var(--color_bk);
+        border: 1px solid var(--color_Border);
+        font-size: var(--fontBody);
+    }
+
 .signContent.s1 {
-            background-color: var(--color_Dark);
-        }
+    background-color: var(--color_Dark);
+}
 
-        .signContent.s2 {
-            background-color: var(--color_bk);
-        }
+.signContent.s2 {
+    background-color: var(--color_bk);
+}
 
 
 .email {
     height: 3rem;
 }
-.psw {    
-    max-width: 28rem; 
+
+.psw {
+    max-width: 28rem;
     height: 3rem;
 }
-.eLabel{
+
+.eLabel {
     font-size: 1.2rem;
     white-space: nowrap;
 }
-.confirmCheck{
+
+.confirmCheck {
     width: 27.5rem;
 }
 
@@ -169,22 +177,27 @@
     border-radius: 4px;
     cursor: pointer;
 }
+
 .popH5 {
     margin: 15px 0;
 }
+
 .popTime {
     font-size: 12px;
     color: #888;
-    margin-bottom: 10px;    
+    margin-bottom: 10px;
 }
+
 .privacy {
-font-size:14px;
+    font-size: 14px;
 }
+
 .systemMessage {
     border-radius: 4px;
 }
+
 .incomplete {
-    color: var(--color_Contrast); 
+    color: var(--color_Contrast);
     font-size: var(--f_small);
     font-weight: bold;
 }
@@ -219,4 +232,269 @@ font-size:14px;
 
 .input_error {
     border-color: var(--color_Contrast);
+}
+
+/*線條切換*/
+.inputLine {
+    border-bottom: 3px solid black;
+    text-decoration: none;
+    color: inherit;
+}
+
+.inputNone {
+    text-decoration: none;
+    color: inherit;
+    margin-left: 10px;
+}
+
+/*瀏覽器自動填入導致改顏色我要改回來*/
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    /* 1. 利用 transition 凍結樣式變更 */
+    transition: background-color 5000s ease-in-out 0s, font-size 5000s ease-in-out 0s;
+    -webkit-box-shadow: 0 0 0 1000px var(--color_bk) inset !important;
+    -webkit-text-fill-color: var(--color_font) !important;
+    height: auto;
+    font-size: var(--fontBody) !important;
+}
+
+    /* 2. 針對首行文字加強宣告 */
+    input:-webkit-autofill::first-line {
+        font-size: 24px !important;
+    }
+
+input:is(:-webkit-autofill, :autofill) {
+    font-size: var(--fontBody) !important;
+}
+
+.googleBtn {
+    width: 50%;
+    cursor:pointer;
+}
+
+/*忘記密碼*/
+
+/* 步驟指示器 */
+.step_indicators {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 450px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    gap: 1rem;
+}
+
+.step_item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    text-align: center;
+}
+
+.step_badge {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background-color: var(--color_Gray);
+    color: white;
+}
+
+.step_item.active .step_badge {
+    background-color: var(--color_Contrast);
+}
+
+.step_item.active .step_badge i {
+    color: var(--color_DarkGray);
+}
+
+.step_number {
+    font-size: 1.2rem;
+    color: white;
+}
+
+.step_label {
+    font-size: 0.9rem;
+    color: var(--color_DarkGray);
+    font-weight: 500;
+}
+
+.step_item.active .step_label {
+    color: var(--color_font);
+    font-weight: 600;
+}
+
+/* 輸入框組 */
+.input_group_custom {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input_custom {
+    width: 100%;
+    color: var(--color_font);
+    background-color: var(--color_bk);
+    border: 1px solid var(--color_Border);
+    font-size: var(--fontBody);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+    .input_custom:focus {
+        outline: none;
+        border-color: var(--color_Light);
+    }
+
+    .input_custom.input_success {
+        border-color: var(--color_Green);
+    }
+
+    .input_custom.input_error {
+        border-color: var(--color_Contrast);
+    }
+
+/* 輸入框列 (Email + 按鈕) */
+.input_row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+    max-width: 450px;
+}
+
+    .input_row .input_group_custom {
+        flex: 1;
+    }
+
+/* 發送驗證信按鈕 */
+.btn_send_verify {
+    background: var(--color_Light);
+    color: var(--color_font);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+    .btn_send_verify:hover:not(:disabled) {
+        background: #4fc89f;
+    }
+
+    .btn_send_verify:disabled {
+        background: var(--color_Gray);
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+/* 下一步按鈕 */
+.btn_next_step {
+    background: var(--color_Gray);
+    color: var(--color_font);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    width: 100%;
+    max-width: 450px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 1.5rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+    .btn_next_step:hover:not(:disabled) {
+        background: #a8a8a8;
+    }
+
+    .btn_next_step:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+/* 提示框 */
+.alert_custom {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    background-color: #f0f8ff;
+    border-left: 4px solid var(--color_Light);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: var(--color_font);
+    max-width: 450px;
+    margin: 0 auto;
+}
+
+    .alert_custom i {
+        font-size: 1.3rem;
+        color: var(--color_Light);
+        flex-shrink: 0;
+    }
+
+    .alert_custom strong {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+/* 輸入提示 */
+.inputHint {
+    min-height: 1.2em;
+    font-size: 14px;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+    .inputHint.success {
+        color: var(--color_Green);
+    }
+
+    .inputHint.error {
+        color: var(--color_Contrast);
+    }
+
+/* 文字 */
+.text_start_align {
+    text-align: left;
+}
+
+/* RWD 調整 */
+@media (max-width: 768px) {
+    .step_indicators {
+        gap: 0.5rem;
+    }
+
+    .step_badge {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.2rem;
+    }
+
+    .step_label {
+        font-size: 0.8rem;
+    }
+
+    .input_row {
+        flex-direction: column;
+    }
+
+    .btn_next_step {
+        max-width: 100%;
+    }
 }

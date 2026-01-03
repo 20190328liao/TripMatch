@@ -19,7 +19,7 @@ namespace TripMatch
             
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
             
-            builder.Services.AddScoped<TestingService>();
+          
             // Swagger 與 授權
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
@@ -45,9 +45,6 @@ namespace TripMatch
 
             app.UseAuthentication();
             app.UseAuthorization();
-            // --- 4. 路由映射 ---
-            // A. 映射你封裝好的 API 端點
-            app.MapAuthEndpoints();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
