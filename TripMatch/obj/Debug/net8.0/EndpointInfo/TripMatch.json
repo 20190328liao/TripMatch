@@ -24,17 +24,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InputModel"
+                "$ref": "#/components/schemas/LoginModel"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/InputModel"
+                "$ref": "#/components/schemas/LoginModel"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/InputModel"
+                "$ref": "#/components/schemas/LoginModel"
               }
             }
           }
@@ -410,7 +410,7 @@
   },
   "components": {
     "schemas": {
-      "InputModel": {
+      "LoginModel": {
         "required": [
           "email",
           "password"
@@ -427,11 +427,6 @@
             "minLength": 6,
             "type": "string",
             "format": "password"
-          },
-          "confirmPassword": {
-            "type": "string",
-            "format": "password",
-            "nullable": true
           }
         },
         "additionalProperties": false

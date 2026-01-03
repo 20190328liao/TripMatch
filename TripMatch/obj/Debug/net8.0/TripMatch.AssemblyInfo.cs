@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TripMatch")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+deafd2d44ac8b3351da711689e6f51ad08f5f7e0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d336bc13af2c934193e0a0a9787b4b32f84dfa33")]
 [assembly: System.Reflection.AssemblyProductAttribute("TripMatch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TripMatch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TripMatch.Models
+namespace TripMatch.Models.Settings
 {
     public class InputModel
     {
@@ -14,8 +14,10 @@ namespace TripMatch.Models
         [Display(Name = "Password")]
         public string? Password { get; set; }
         [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
+        [Display(Name = "confirmPassword")]
         [Compare("Password", ErrorMessage = "密碼和確認密碼不符。")]
         public string? confirmPassword { get; set; }
     }
+
+    
 }

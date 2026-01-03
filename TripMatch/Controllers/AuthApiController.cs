@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
-using TripMatch.Services; // 引用 TestingService
+using TripMatch.Services; 
 using static TripMatch.Services.AuthServicesExtensions;
 
 namespace TripMatch.Controllers
@@ -64,7 +64,7 @@ namespace TripMatch.Controllers
 
         // 登入 API
         [HttpPost]
-        public async Task<IActionResult> Login([FromBody] InputModel data)
+        public async Task<IActionResult> Login([FromBody] LoginModel data)
         {
             if (!ModelState.IsValid)
             {
@@ -112,7 +112,8 @@ namespace TripMatch.Controllers
             if (user != null)
             {
                 // 情況 A: 已經完全註冊好（有密碼） -> 叫他去登入
-                if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != "TempP@ss123")
+                // 修正：只要 PasswordHash 有值，就代表已設定過密碼 (因為下方修正為建立時不給密碼)
+                if (!string.IsNullOrEmpty(user.PasswordHash))
                 {
                     return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
                 }
@@ -129,14 +130,15 @@ namespace TripMatch.Controllers
             if (user == null)
             {
                 user = new ApplicationUser { UserName = email, Email = email };
-                var createResult = await _userManager.CreateAsync(user, "TempP@ss123");
+                // 修正：建立時不給預設密碼，這樣 PasswordHash 會是 null
+                var createResult = await _userManager.CreateAsync(user);
                 if (!createResult.Succeeded) return BadRequest(new { message = "系統錯誤，請重新發送驗證信" });
             }
 
             // 1. 產生原始 Token
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             
-            // 2. ★ 進行 Base64Url 編碼 (避免 URL 特殊字元問題)
+            // 2. ★ 進行 Base64Url 編碼
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             // 3. 生成連結指向 ConfirmEmail Action
@@ -274,7 +276,7 @@ namespace TripMatch.Controllers
         {
             await _signInManager.SignOutAsync();
             Response.Cookies.Delete("AuthToken");
-            return Ok(new { message = "已登出", redirectUrl = Url.Action("Index", "Home") });
+            return RedirectToAction("Index", "Home");
         }
 
         // Google 登入跳轉

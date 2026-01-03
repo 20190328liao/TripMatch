@@ -259,7 +259,7 @@
     "Parameters": [
       {
         "Name": "data",
-        "Type": "TripMatch.Models.InputModel",
+        "Type": "TripMatch.Models.Settings.LoginModel",
         "IsRequired": true
       }
     ],

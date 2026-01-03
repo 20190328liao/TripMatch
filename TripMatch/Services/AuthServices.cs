@@ -132,9 +132,17 @@ namespace TripMatch.Services
             // 註冊
             group.MapPost("/register", async ([FromBody] Register model, UserManager<ApplicationUser> userManager, HttpContext context) =>
             {
-                if (!context.Request.Cookies.TryGetValue("PendingEmail", out _))
+                // 1. 修改：取出 Cookie 值並進行比對
+                if (!context.Request.Cookies.TryGetValue("PendingEmail", out var pendingEmail))
                 {
                     return Results.BadRequest(new { message = "驗證逾時，請重新驗證 Email" });
+                }
+
+                // 2. ★關鍵修正：檢查 Cookie 內的 Email 是否與目前提交的 Email 一致
+                // 防止使用者驗證了 A 信箱，卻拿來註冊 B 信箱
+                if (!string.Equals(pendingEmail, model.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.BadRequest(new { message = "驗證資訊不符，請重新驗證 Email" });
                 }
 
                 var user = await userManager.FindByEmailAsync(model.Email);
@@ -208,26 +216,31 @@ namespace TripMatch.Services
                 var user = await userManager.FindByEmailAsync(email);
                 if (user != null)
                 {
-                 
-                    // 情況 A: 已經完全註冊好（有密碼） -> 叫他去登入
-                    if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != "TempP@ss123")
+                    // 修正邏輯：
+                    // 只有當使用者「有密碼」且「已驗證信箱」時，才視為已完成註冊，阻擋並要求登入。
+                    // 如果使用者有密碼但沒驗證 (EmailConfirmed = false)，應該允許他重發驗證信 (否則會卡死)。
+                    bool hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
+
+                    if (hasPassword && user.EmailConfirmed)
                     {
                         return Results.Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
                     }
 
-                    // 情況 B: 已驗證信箱但還沒設密碼 (這就是你要的停留原頁)
-                    if (user.EmailConfirmed)
+                    // 情況 B: 已驗證信箱但還沒設密碼 (例如 Google 登入使用者想補設密碼)
+                    // 注意：如果有密碼但沒驗證，不會進這裡 (EmailConfirmed is false)，會往下走去寄信
+                    if (user.EmailConfirmed && !hasPassword)
                     {
-                        authService.SetPendingCookie(context, user.Email); // 補發 Cookie 確保同步
+                        authService.SetPendingCookie(context, user.Email); 
                         return Results.Ok(new { verified = true, message = "此帳號已驗證成功，請直接設定密碼。" });
                     }
                 }
 
-                // 情況C:完全沒有帳號的新使用者，先建立一個虛擬使用者
+                // 情況C:完全沒有帳號的新使用者 (或有帳號但未驗證且需要重發信)
                 if (user == null)
                 {
                     user = new ApplicationUser { UserName = email, Email = email };
-                    var createResult = await userManager.CreateAsync(user, "TempP@ss123");
+                    // 修正：建立時不給預設密碼
+                    var createResult = await userManager.CreateAsync(user);
                     if (!createResult.Succeeded) return Results.BadRequest("系統錯誤，請重新發送驗證信");
                 }
 
@@ -236,9 +249,7 @@ namespace TripMatch.Services
 
                 // 這裡會呼叫我們修正後的 GenerateConfirmUrl
                 var callbackUrl = authService.GenerateConfirmUrl(context, user.Id, code);
-
                 await emailSender.SendConfirmationLinkAsync(user, email, callbackUrl);
-
                 authService.SetPendingCookie(context, user.Email);
 
                 return Results.Ok(new { message = "驗證信已發送，請檢查信箱或垃圾郵件。" });
@@ -401,7 +412,8 @@ namespace TripMatch.Services
                     new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty)
+                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                    new Claim("Avatar", user.Avatar ?? "") //不用常常查資料庫，直接放在 JWT 裡
                 };
 
                 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key));

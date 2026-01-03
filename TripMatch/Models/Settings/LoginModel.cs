@@ -7,9 +7,12 @@ namespace TripMatch.Models.Settings
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        [Display(Name = "Email")]
+        public string? Email { get; set; }
         [Required]
+        [StringLength(18, ErrorMessage = "{0} 長度必須在 {2} 到 {1} 個字元之間。", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        public string Password { get; set; } = string.Empty;
+        [Display(Name = "Password")]
+        public string? Password { get; set; }
     }
 }
