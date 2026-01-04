@@ -24,6 +24,15 @@ namespace TripMatch.Controllers
             return View();
         }
 
+        #region 登入相關頁面
+
+        #endregion
+
+        #region 時間媒合相關頁面
+
+        #endregion
+
+        #region 行程相關頁面
         public IActionResult MyTrip()
         {
             return View("~/Views/Trip/index.cshtml");
@@ -33,6 +42,21 @@ namespace TripMatch.Controllers
         {
             return View("~/Views/Trip/createTrip.cshtml");
         }
+
+        [HttpPost]
+        public IActionResult EditTrip()
+        {
+            return View("~/Views/Trip/editTrip.cshtml");
+        }
+        #endregion
+
+        #region 景點探索相關頁面
+
+        #endregion
+
+        #region 記帳相關頁面
+
+        #endregion
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
