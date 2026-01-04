@@ -1,4 +1,9 @@
 ﻿$(function () {
+        // ★ 檢查 URL 是否包含驗證參數
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
 
     let isSending = false; // 防止觸發多次
     let isEmailVerified = false; // 追蹤 Email 是否已驗證

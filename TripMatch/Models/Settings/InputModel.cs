@@ -21,9 +21,9 @@ namespace TripMatch.Models.Settings
 
     public class ResetPasswordModel
     {
-        public string UserId { get; set; } = string.Empty;
-        public string Code { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string? UserId { get; set; } = string.Empty;
+        public string? Code { get; set; } = string.Empty;
+        public string? Password { get; set; } = string.Empty;
     }
     public class LoginModel
     {
@@ -36,5 +36,22 @@ namespace TripMatch.Models.Settings
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string? Password { get; set; }
+    }
+    // 新增此模型
+    public class ValidatePasswordResetLinkModel
+    {
+        public string? UserId { get; set; } = string.Empty;
+        public string? Code { get; set; } = string.Empty;
+    }
+    public class ValidateEmailConfirmationLinkModel
+    {
+        public string? UserId { get; set; } = string.Empty;
+        public string? Code { get; set; } = string.Empty;
+    }
+
+    public class SetPasswordResetSessionModel
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
     }
 }

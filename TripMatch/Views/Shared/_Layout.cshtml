@@ -12,7 +12,19 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" />
+ 
+    <link rel="stylesheet" href="~/css/reset.css">
+    <link rel="stylesheet" href="~/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/css/variables.css">
+    <link rel="stylesheet" href="~/css/components.css">
+    <link rel="stylesheet" href="~/css/layout.css">
+    <link rel="stylesheet" href="~/css/responsive.css">
+    <link rel="stylesheet" href="~/css/member.css">
+    @* Favicon 圖示 - 加上版本控制防止快取問題 *@
+    <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+        @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <header>
@@ -47,7 +59,7 @@
 
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #ddd;">
+                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2">
             
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
@@ -92,5 +104,6 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+  
 </body>
 </html>

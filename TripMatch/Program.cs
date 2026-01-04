@@ -24,6 +24,15 @@ namespace TripMatch
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
 
+            // ★ 新增：配置 Session 服務
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromHours(24); // Session 有效期為 24 小時
+                options.Cookie.HttpOnly = true; // 防止 JavaScript 存取
+                options.Cookie.IsEssential = true; // 即使未同意 Cookie 也要設定
+                options.Cookie.SameSite = SameSiteMode.Lax;
+            });
+
             // --- 建立應用程式 ---
             var app = builder.Build();
             // --- 3. 中間件配置 ---
@@ -42,6 +51,7 @@ namespace TripMatch
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();
             app.UseAuthorization();
