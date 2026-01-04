@@ -15,6 +15,7 @@ using TripMatch.Data;
 using TripMatch.Models;
 using Microsoft.AspNetCore.WebUtilities; 
 using static TripMatch.Services.AuthServicesExtensions.AuthService;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 
 namespace TripMatch.Services
 {
@@ -69,8 +70,13 @@ namespace TripMatch.Services
                 googleOptions.ClientId = config["Authentication:Google:ClientId"] ?? string.Empty;
                 googleOptions.ClientSecret = config["Authentication:Google:ClientSecret"] ?? string.Empty;
 
-
                 googleOptions.CallbackPath = "/LoginGoogle";
+
+                // 請求 profile scope 以取得頭像
+                googleOptions.Scope.Add("profile");
+                
+                // 將頭像 Claim 映射到 Principal
+                googleOptions.ClaimActions.MapJsonKey("picture", "picture");
             });
             // 3. 搬移 Configure<IdentityOptions>
             services.Configure<IdentityOptions>(options =>

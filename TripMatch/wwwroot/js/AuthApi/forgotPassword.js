@@ -20,7 +20,7 @@
     }
     initializeStepIndicators();
 
-    // 錯誤處理（保持與原本一致）
+    // 錯誤處理
     if (error) {
         let errorMsg = "驗證失敗，請重新嘗試";
         let shouldReset = false;
@@ -31,13 +31,13 @@
         if (error === "code_already_used") { errorMsg = "此驗證連結已被使用過，請回到忘記密碼頁面按重寄驗證信"; shouldReset = true; }
 
         showPopup({ title: "驗證失敗", message: errorMsg, type: "error" });
-        if (shouldReset) window.history.replaceState({}, document.title, '/AuthApi/ForgotPassword');
+        if (shouldReset) window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
     }
 
-    // ★ 修改：頁面加載時，優先檢查 Session 中是否有存儲的有效連結
+    // ★ 檢查 Session 中是否有存儲的有效連結
     async function checkStoredPasswordResetLink() {
         try {
-            const res = await fetch('/AuthApi/CheckPasswordResetSession', { 
+            const res = await fetch(window.AppUrls.Auth.CheckPasswordResetSession, { 
                 method: 'POST',
                 credentials: 'include'
             });
@@ -59,7 +59,6 @@
     if (currentUserId && currentCode) {
         validateAndGoToStep2(currentUserId, currentCode, { cache: true, storeSession: true });
     } else {
-        // 沒有 URL 參數，檢查 Session 中是否有存儲的連結
         checkStoredPasswordResetLink();
     }
 
@@ -67,7 +66,7 @@
     function validateAndGoToStep2(userId, code, opt = { cache: false, storeSession: false }) {
         $.ajax({
             type: 'POST',
-            url: '/AuthApi/ValidatePasswordResetLink',
+            url: window.AppUrls.Auth.ValidatePasswordResetLink,
             contentType: 'application/json',
             data: JSON.stringify({ userId, code }),
             success: function (res) {
@@ -77,11 +76,10 @@
                     currentCode = code;
                     enableNext(true);
 
-                    // ★ 新增：存儲到 Session（用戶點擊郵件連結時調用）
                     if (opt.storeSession) {
                         $.ajax({
                             type: 'POST',
-                            url: '/AuthApi/SetPasswordResetSession',
+                            url: window.AppUrls.Auth.SetPasswordResetSession,
                             contentType: 'application/json',
                             data: JSON.stringify({ userId, code })
                         });
@@ -94,21 +92,21 @@
                         message: res.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信",
                         type: "error"
                     });
-                    window.history.replaceState({}, document.title, '/AuthApi/ForgotPassword');
+                    window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
                 }
             },
             error: function (err) {
                 const errorMsg = err.responseJSON?.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信";
                 showPopup({ title: "驗證失敗", message: errorMsg, type: "error" });
-                window.history.replaceState({}, document.title, '/AuthApi/ForgotPassword');
+                window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
             }
         });
     }
 
-    // 檢查 Pending Cookie（已驗證的 Email）
+    // 檢查 Pending Cookie
     async function checkPendingThenToggleNext() {
         try {
-            const res = await fetch('/AuthApi/CheckDbStatus', { credentials: 'include' });
+            const res = await fetch(window.AppUrls.Auth.CheckDbStatus, { credentials: 'include' });
             const data = await res.json();
             if (data.verified) {
                 verified = true;
@@ -156,7 +154,7 @@
 
         $.ajax({
             type: 'POST',
-            url: '/AuthApi/SendPasswordReset',
+            url: window.AppUrls.Auth.SendPasswordReset,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function () {
@@ -168,7 +166,7 @@
                     message: "請至信箱點擊重設連結。驗證連結有效期 24 小時，且只能驗證一次。",
                     type: "success"
                 });
-                enableNext(false); // 等待驗證後再開啟
+                enableNext(false);
             },
             error: function (err) {
                 btn.prop("disabled", false).text("寄驗證信").removeClass("btn_Gray").addClass("btn_light");
@@ -178,13 +176,12 @@
         });
     });
 
-    // 下一步：需已驗證
+    // 下一步
     $("#btn_next_step").on("click", async function () {
         if (currentUserId && currentCode) {
             validateAndGoToStep2(currentUserId, currentCode);
             return;
         }
-        // 沒有 userId/code，用 pending cookie 重新檢查
         await checkPendingThenToggleNext();
         if (verified) {
             goToStep2();
@@ -201,23 +198,13 @@
         $("#step1_content").addClass("d-none");
         $("#step2_content").removeClass("d-none");
 
-        // Step1 完成：綠底白數字 1
-        $("#step1_indicator")
-            .removeClass("step_incomplete step_active")
-            .addClass("step_completed");
+        $("#step1_indicator").removeClass("step_incomplete step_active").addClass("step_completed");
         $("#step1_indicator .step_badge").html('<span class="step_number">1</span>');
 
-        // Step2 當前：橘底 + SVG 勾號
-        $("#step2_indicator")
-            .removeClass("step_incomplete step_completed")
-            .addClass("step_active");
-        // ★ 修正：移除 ~ 和 wwwroot，使用絕對路徑
+        $("#step2_indicator").removeClass("step_incomplete step_completed").addClass("step_active");
         $("#step2_indicator .step_badge").html('<img src="/img/check2.svg" alt="進行中" style="width: 24px; height: 24px;">');
 
-        // Step3 未完成：灰底數字 3
-        $("#step3_indicator")
-            .removeClass("step_completed step_active")
-            .addClass("step_incomplete");
+        $("#step3_indicator").removeClass("step_completed step_active").addClass("step_incomplete");
         $("#step3_indicator .step_badge").html('<span class="step_number">3</span>');
 
         $("#new_password").val("");
@@ -225,11 +212,9 @@
         setFieldHint("new_password");
         setFieldHint("confirm_new_password");
         $("#btn_reset_password").prop("disabled", true).addClass("btn_Gray").removeClass("btn_light");
-
-     
     }
 
-    // --- Step 2: 密碼重設 ---
+    // Step 2: 密碼驗證
     $("#new_password, #confirm_new_password").on("keyup input", validatePasswordForm);
 
     function validatePasswordForm() {
@@ -267,7 +252,7 @@
 
         $.ajax({
             type: 'POST',
-            url: '/AuthApi/PerformPasswordReset',
+            url: window.AppUrls.Auth.PerformPasswordReset,
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: function () {
@@ -277,10 +262,9 @@
                     type: "success"
                 });
                 
-                // ★ 新增：清除 Session
                 $.ajax({
                     type: 'POST',
-                    url: '/AuthApi/ClearPasswordResetSession',
+                    url: window.AppUrls.Auth.ClearPasswordResetSession,
                     success: function () {
                         goToStep3();
                     }
@@ -301,24 +285,15 @@
     });
 
     function goToStep3() {
-        // 指示器：1、2 綠底白數字；3 橘底灰勾
-        $("#step1_indicator")
-            .removeClass("step_incomplete step_active")
-            .addClass("step_completed");
+        $("#step1_indicator").removeClass("step_incomplete step_active").addClass("step_completed");
         $("#step1_indicator .step_badge").html('<span class="step_number">1</span>');
 
-        $("#step2_indicator")
-            .removeClass("step_incomplete step_active")
-            .addClass("step_completed");
+        $("#step2_indicator").removeClass("step_incomplete step_active").addClass("step_completed");
         $("#step2_indicator .step_badge").html('<span class="step_number">2</span>');
 
-        $("#step3_indicator")
-            .removeClass("step_incomplete step_completed")
-            .addClass("step_active");
+        $("#step3_indicator").removeClass("step_incomplete step_completed").addClass("step_active");
         $("#step3_indicator .step_badge").html('<i class="bi bi-check-lg"></i>');
 
-        // 直接導向登入頁
-        window.location.href = '/AuthApi/Login';
+        window.location.href = window.AppUrls.Auth.Login;
     }
-
 });

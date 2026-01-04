@@ -134,6 +134,14 @@ input[type="password"]::-ms-clear {
     border: 1px solid #ddd;
 }
 
+.memberAvatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
 /* =============================================
    goodHint - 強制 Hint 獨立一行區塊
    ============================================= */

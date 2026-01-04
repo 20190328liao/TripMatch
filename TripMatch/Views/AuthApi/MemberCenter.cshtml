@@ -1,12 +1,160 @@
-﻿
-@{
-    ViewData["Title"] = "MemberCenter";
+﻿@{
+    ViewData["Title"] = "會員中心";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
+    
+    // ★ 從 JWT Claims 取得頭像 URL
+    var avatarUrl = User.FindFirst("Avatar")?.Value;
+    if (string.IsNullOrEmpty(avatarUrl))
+    {
+        avatarUrl = Url.Content("~/img/default_avatar.png");
+    }
 }
 
-<h1 class="titleWrap titleH1">個人資料</h1>
-<div>
+<div class="member_center_wrap">
 
+    <!-- =============================================
+         區塊一：個人資料
+         ============================================= -->
+    <section class="member_section" id="profile_section">
+        <h2 class="titleWrap titleH2">個人資料</h2>
+
+        <!-- 通知列 -->
+        <div class="notification_bar">
+            <i class="bi bi-bell"></i>
+        </div>
+
+        <div class="profile_container">
+            <!-- 左側：頭像區 -->
+            <div class="profile_avatar_section ">
+                <div class="avatar_frame">
+                    @* ★ 使用從 Claims 取得的頭像 URL *@
+                    <img src="@avatarUrl" alt="會員頭像" id="memberAvatar" class="memberAvatar">
+                </div>
+                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+                <button type="button" class="btn btn_light w-100 mt-2" id="btnEditAvatar">編輯頭像</button>
+                <button type="button" class="btn btn_Gray w-100 mt-2" id="btnLogout">登 出</button>
+            </div>
+
+            <!-- 右側：資料區 -->
+            <div class="profile_info_section">
+                <div class="info_row">
+                    <div class="info_item">
+                        <label class="info_label"><i class="bi bi-square-fill text-success me-2"></i>電子郵件</label>
+                        <div class="info_value">
+                            <span id="displayEmail">example@gmail.com</span>
+                            <a href="#" class="edit_link" id="editEmailLink">編輯</a>
+                        </div>
+                    </div>
+                    <div class="info_item">
+                        <label class="info_label"><i class="bi bi-square-fill text-success me-2"></i>常用出發地</label>
+                        <select class="form_select" id="departureLocation">
+                            <option value="">桃園國際機場</option>
+                            <option value="tpe">台北松山機場</option>
+                            <option value="khh">高雄國際機場</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info_row">
+                    <div class="info_item">
+                        <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>備援信箱</label>
+                        <div class="info_value">
+                            <span id="displayBackupEmail">example2@gmail.com</span>
+                            <a href="#" class="edit_link" id="editBackupEmailLink">編輯</a>
+                        </div>
+                    </div>
+                    <div class="info_item">
+                        <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>重設密碼</label>
+                        <a href="@Url.Action("ForgotPassword", "AuthApi")" class="edit_link">前往重設</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================================
+         區塊二：媒合行事曆
+         ============================================= -->
+    <section class="member_section" id="calendar_section">
+        <h2 class="titleWrap titleH2">媒合行事曆</h2>
+
+        <div class="calendar_hints">
+            <span class="hint_item"><i class="bi bi-square-fill text-success me-2"></i>請先選取年度和月份，無選默認皆可出發</span>
+            <span class="hint_item"><i class="bi bi-square-fill text-warning me-2"></i>請標註休假開始日期到休假結束日期</span>
+        </div>
+
+        <div class="calendar_container">
+            <!-- 左側：年份月份選擇 -->
+            <div class="calendar_year_month">
+                <!-- 年份選擇器 -->
+                <div class="year_selector">
+                    <button type="button" class="nav_btn" id="prevYear"><i class="bi bi-chevron-left"></i></button>
+                    <span class="year_display" id="currentYear">2026</span>
+                    <button type="button" class="nav_btn" id="nextYear"><i class="bi bi-chevron-right"></i></button>
+                </div>
+                <!-- 月份格子 -->
+                <div class="month_grid">
+                    <div class="month_item" data-month="1"><span class="month_num">1 月</span><span class="month_name">January</span></div>
+                    <div class="month_item" data-month="2"><span class="month_num">2 月</span><span class="month_name">February</span></div>
+                    <div class="month_item" data-month="3"><span class="month_num">3 月</span><span class="month_name">March</span></div>
+                    <div class="month_item" data-month="4"><span class="month_num">4 月</span><span class="month_name">April</span></div>
+                    <div class="month_item" data-month="5"><span class="month_num">5 月</span><span class="month_name">May</span></div>
+                    <div class="month_item" data-month="6"><span class="month_num">6 月</span><span class="month_name">June</span></div>
+                    <div class="month_item" data-month="7"><span class="month_num">7 月</span><span class="month_name">July</span></div>
+                    <div class="month_item" data-month="8"><span class="month_num">8 月</span><span class="month_name">August</span></div>
+                    <div class="month_item" data-month="9"><span class="month_num">9 月</span><span class="month_name">September</span></div>
+                    <div class="month_item" data-month="10"><span class="month_num">10 月</span><span class="month_name">October</span></div>
+                    <div class="month_item" data-month="11"><span class="month_num">11 月</span><span class="month_name">November</span></div>
+                    <div class="month_item" data-month="12"><span class="month_num">12 月</span><span class="month_name">December</span></div>
+                </div>
+            </div>
+
+            <!-- 右側：日期選擇 -->
+            <div class="calendar_days">
+                <div class="month_nav">
+                    <button type="button" class="nav_btn" id="prevMonth"><i class="bi bi-chevron-left"></i></button>
+                    <span class="month_display" id="currentMonth">1 月</span>
+                    <button type="button" class="nav_btn" id="nextMonth"><i class="bi bi-chevron-right"></i></button>
+                </div>
+                <div class="days_grid" id="daysGrid">
+                    <!-- JS 動態產生日期格子 -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- =============================================
+         區塊：願望清單
+         ============================================= -->
+    <section class="member_section" id="wishlist_section">
+        <div class="section_header">
+            <h2 class="titleWrap titleH2">願望清單</h2>
+            <a href="#" class="edit_cards_link"><i class="bi bi-pencil-square me-1"></i>點擊卡片編輯 ▼</a>
+        </div>
+
+        <!-- 願望清單卡片 -->
+        <div class="wishlist_cards_container" id="wishlistCardsContainer">
+            <div class="wish_card">
+                <div class="card_image">
+                    <img src="~/img/wish_sample1.jpg" alt="台灣九份之旅">
+                    <button type="button" class="wish_heart active"><i class="bi bi-heart-fill"></i></button>
+                </div>
+                <div class="card_content">
+                    <h4 class="card_title"></h4>
+                    <p class="card_date"></p>
+                    <div class="card_footer">
+                        <span class="travelers"></span>
+                        <span class="price highlight"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="view_more_wrap">
+            <a href="#" class="view_more_link">View more...</a>
+        </div>
+    </section>
 
 </div>
 

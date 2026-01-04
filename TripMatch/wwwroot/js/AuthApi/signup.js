@@ -1,5 +1,5 @@
 ﻿$(function () {
-        // ★ 檢查 URL 是否包含驗證參數
+        // 檢查 URL 是否包含驗證參數
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
     const code = urlParams.get('code');

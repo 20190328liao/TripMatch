@@ -1,5 +1,4 @@
 ﻿$(function () {
-    // --- 定義全域 API 路徑變數 ---
     window.AppUrls = window.AppUrls || {
         Auth: {
             Login: '/AuthApi/Login',
@@ -7,7 +6,19 @@
             SendConfirmation: '/AuthApi/SendConfirmation',
             CheckDbStatus: '/AuthApi/CheckDbStatus',
             Logout: '/AuthApi/Logout',
-            CheckEmail: '/AuthApi/CheckEmail'
+            CheckEmail: '/AuthApi/CheckEmail',
+            // 忘記密碼相關路由
+            ForgotPassword: '/AuthApi/ForgotPassword',
+            SendPasswordReset: '/AuthApi/SendPasswordReset',
+            ValidatePasswordResetLink: '/AuthApi/ValidatePasswordResetLink',
+            PerformPasswordReset: '/AuthApi/PerformPasswordReset',
+            CheckPasswordResetSession: '/AuthApi/CheckPasswordResetSession',
+            SetPasswordResetSession: '/AuthApi/SetPasswordResetSession',
+            ClearPasswordResetSession: '/AuthApi/ClearPasswordResetSession',
+            //會員中心相關路由
+            MemberCenter: '/AuthApi/MemberCenter',
+            GetMemberProfile: '/AuthApi/GetMemberProfile',
+            UploadAvatar: '/AuthApi/UploadAvatar'
         },
         Home: {
             Index: '/Home/Index'
@@ -27,12 +38,12 @@
         };
     }
     
-    // ★ 修正：根據 Signup.cshtml 中的實際 ID 對應
+    // 根據 Signup.cshtml 中的實際 ID 對應
     function getHintSelector(fieldId) {
         switch (fieldId) {
-            case "email": return "#emailHint";  // ★ 修正：改為 emailHint（符合 Signup.cshtml）
+            case "email": return "#emailHint"; 
             case "password": return "#pwdHint";
-            case "confirmPassword": return "#confirmHint";  // ★ 修正：改為 confirmHint（符合 Signup.cshtml）
+            case "confirmPassword": return "#confirmHint";  
             case "new_password": return "#new_password_hint";
             case "confirm_new_password": return "#confirm_new_password_hint";
             default: return "#" + fieldId + "_hint";
@@ -43,7 +54,6 @@
         if ($(selector).length === 0) {
             var input = $("#" + fieldId);
             if (input.length) {
-                // ★ 修正：找到輸入框的父容器（input_row 或 input_group_custom），在其後插入 hint
                 var $parent = input.closest('.input_row, .input_group_custom');
                 var $hint = $('<div>')
                     .attr('id', selector.replace('#', ''))
@@ -153,14 +163,13 @@
         });
     }
 
-    // ★ 通用：密碼顯示/隱藏切換（眼睛）
+    //密碼顯示/隱藏切換（眼睛）
     function bindPasswordToggle(selector = ".btn-toggle-pwd") {
-        // 先移除舊的，再綁定，避免重複
         $(document).off("click", selector).on("click", selector, function (e) {
             e.preventDefault();
             const target = $(this).data("target");
             const $input = $(target);
-            const $img = $(this).find("img"); // 改找 img 標籤
+            const $img = $(this).find("img"); 
             
             if (!$input.length) return;
 
@@ -168,14 +177,12 @@
             $input.attr("type", isPwd ? "text" : "password");
             
             // 切換圖片路徑
-            // 原本是密碼(isPwd=true) -> 變成明文 -> 顯示睜眼 (eye.svg)
-            // 原本是明文(isPwd=false) -> 變成密碼 -> 顯示閉眼 (eye-closed.svg)
             const newSrc = isPwd ? "/img/eye.svg" : "/img/eye-closed.svg";
             $img.attr("src", newSrc);
         });
     }
 
-    // 將函式暴露到全域
+    // 全域
     window.setFieldHint = setFieldHint;
     window.showPopup = showPopup;
     window.bindPasswordToggle = bindPasswordToggle;

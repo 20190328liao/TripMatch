@@ -12,19 +12,18 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" />
- 
     <link rel="stylesheet" href="~/css/reset.css">
-    <link rel="stylesheet" href="~/css/bootstrap.min.css">
     <link rel="stylesheet" href="~/css/variables.css">
     <link rel="stylesheet" href="~/css/components.css">
     <link rel="stylesheet" href="~/css/layout.css">
     <link rel="stylesheet" href="~/css/responsive.css">
-    <link rel="stylesheet" href="~/css/member.css">
+    <link rel="stylesheet" href="~/css/AuthApi/member.css">
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
+
     @await RenderSectionAsync("Styles", required: false)
-        @await RenderSectionAsync("Styles", required: false)
+
 </head>
 <body>
     <header>
@@ -58,13 +57,14 @@
                             }
 
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2">
-            
+                                <a class="nav-link d-flex align-items-center" asp-controller="AuthApi" asp-action="MemberCenter">
+                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2" style="cursor: pointer;">
+                                </a>
+                                <a class="nav-link dropdown-toggle p-0" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                     <li>
-                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">會員中心</a>
+                                        <a class="dropdown-item" asp-controller="AuthApi" asp-action="MemberCenter">個人資料</a>
                                     </li>
                                     <li><hr class="dropdown-divider" /></li>
                                     <li>

@@ -7,12 +7,12 @@
 
     @* 使用 ~/ 符號，Razor 會自動解析正確的根目錄路徑 *@
     <link rel="stylesheet" href="~/css/reset.css">
-    <link rel="stylesheet" href="~/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/variables.css">
     <link rel="stylesheet" href="~/css/components.css">
     <link rel="stylesheet" href="~/css/layout.css">
     <link rel="stylesheet" href="~/css/responsive.css">
-    <link rel="stylesheet" href="~/css/member.css">
+    <link rel="stylesheet" href="~/css/AuthApi/member.css">
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
@@ -28,27 +28,18 @@
 
     @* 共用的 Scripts *@
     <script src="~/js/jquery-3.7.1.js"></script>
-    <script src="~/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/helper.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/AuthApi/helper.js"></script>
+    <script src="~/js/AuthApi/login.js"></script>
+    <script src="~/js/AuthApi/signup.js"></script>
+    <script src="~/js/AuthApi/logout.js"></script>
+    <script src="~/js/AuthApi/forgotPassword.js"></script>
+    <script src="~/js/AuthApi/memberCenter.js"></script>
 
     @* 這裡預留給各別頁面加入專屬 JS (如 login.js) *@
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
-        // 後端動態生成路由表， Controller 設定
-        window.AppUrls = {
-            Auth: {
-                Login: '@Url.Action("Login", "AuthApi")',
-                Register: '@Url.Action("Register", "AuthApi")',
-                SendConfirmation: '@Url.Action("SendConfirmation", "AuthApi")',
-                CheckDbStatus: '@Url.Action("CheckDbStatus", "AuthApi")',
-                Logout: '@Url.Action("Logout", "AuthApi")',
-                CheckEmail:'@Url.Action("CheckEmail", "AuthApi")'
-            },
-            Home: { 
-                Index: '/Home/Index' 
-            }
-        };
     </script>
 </body>
 </html>

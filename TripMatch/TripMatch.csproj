@@ -47,7 +47,7 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="wwwroot\img\avatars\" />
+    <Folder Include="wwwroot\img\Avatars\" />
   </ItemGroup>
 
 </Project>

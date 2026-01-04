@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using TripMatch.Models;
@@ -62,9 +64,32 @@ namespace TripMatch.Controllers
         }
 
         [HttpGet]
+        [Authorize]  // ★ 自動驗證，未登入會導向預設登入頁
         public IActionResult MemberCenter()
         {
             return View();
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetMemberInfo()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "找不到使用者" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                userId = user.Id,
+                email = user.Email,
+                userName = user.FullName,
+                emailConfirmed = user.EmailConfirmed
+            });
         }
 
 
@@ -313,18 +338,27 @@ namespace TripMatch.Controllers
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
             {
-                return RedirectToAction("Login"); // 或顯示錯誤
+                return RedirectToAction("Login");
             }
+
+            // ★ 從 Google Claims 取得頭像 URL
+            var googleAvatar = info.Principal.FindFirstValue("picture");
 
             // 1. 嘗試用外部登入資訊登入
             var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
             if (result.Succeeded)
             {
-                // 登入成功，發 JWT
                 var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
                 if (user != null)
                 {
+                    // ★ 更新頭像（如果 Google 有提供且使用者尚未設定自訂頭像）
+                    if (!string.IsNullOrEmpty(googleAvatar) && string.IsNullOrEmpty(user.Avatar))
+                    {
+                        user.Avatar = googleAvatar;
+                        await _userManager.UpdateAsync(user);
+                    }
+
                     var token = _authService.GenerateJwtToken(user);
                     _authService.SetAuthCookie(HttpContext, token);
                     return RedirectToAction("Index", "Home");
@@ -338,9 +372,23 @@ namespace TripMatch.Controllers
             var userByEmail = await _userManager.FindByEmailAsync(email);
             if (userByEmail == null)
             {
-                userByEmail = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
+                // 建立新帳號時直接設定頭像
+                userByEmail = new ApplicationUser 
+                { 
+                    UserName = email, 
+                    Email = email, 
+                    EmailConfirmed = true,
+                    Avatar = googleAvatar,  // 設定 Google 頭像
+                    FullName = info.Principal.FindFirstValue(ClaimTypes.Name)  // ★ 可選：設定名稱
+                };
                 var createResult = await _userManager.CreateAsync(userByEmail);
                 if (!createResult.Succeeded) return BadRequest("自動註冊失敗");
+            }
+            else if (string.IsNullOrEmpty(userByEmail.Avatar) && !string.IsNullOrEmpty(googleAvatar))
+            {
+                // 已有帳號但沒頭像，更新頭像
+                userByEmail.Avatar = googleAvatar;
+                await _userManager.UpdateAsync(userByEmail);
             }
 
             // 連結 Google 帳號
@@ -636,6 +684,134 @@ namespace TripMatch.Controllers
             HttpContext.Session.Remove("PasswordResetTime");
             return Ok(new { message = "已清除密碼重設資訊" });
         }
+        [HttpPost]
+        [Authorize]
+        [RequestSizeLimit(5*1024*1024)]
+        public async Task<IActionResult> UploadAvatar(IFormFile avatarFile)
+        {
+            if (avatarFile == null || avatarFile.Length == 0)
+            {
+                return BadRequest(new { success=false,message="請選擇圖片檔案"});
+            }
+
+            const long maxFileSize = 2 * 1024 * 1024; // 2 MB
+            if (avatarFile.Length > maxFileSize)
+            {
+                return BadRequest(new { success = false, message = "檔案大小超過限制 2 MB" });
+            }
+
+            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { ".jpg", ".jpeg", ".png", ".gif" };
+            var extension = Path.GetExtension(avatarFile.FileName);
+            if (string.IsNullOrEmpty(extension))
+            { 
+            return BadRequest(new { success = false, message = "僅支援 JPG、PNG、GIF 格式"});
+            }
+
+            var allowedMimeTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+  {
+    "image/jpeg", "image/png", "image/gif", "image/jpg"
+  };
+            if (!allowedMimeTypes.Contains(avatarFile.ContentType))
+            {
+                return BadRequest(new { success = false, message = "不支援的圖片格式" });
+            }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "找不到使用者" });
+            }
+            try
+            {
+                // 7. 建立專用的上傳資料夾（與應用程式分離）
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "Avatars");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                // 8. 刪除舊頭像檔案（如果是本地檔案）
+                if (!string.IsNullOrEmpty(user.Avatar) && user.Avatar.StartsWith("/Uploads/Avatars/"))
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.Avatar.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                // 9. 產生安全的唯一檔名（不使用使用者提供的檔名）
+                var safeFileName = $"{Guid.NewGuid()}{extension.ToLowerInvariant()}";
+                var filePath = Path.Combine(uploadsFolder, safeFileName);
+
+                // 10. 儲存檔案
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await avatarFile.CopyToAsync(stream);
+                }
+
+                // 11. 更新資料庫
+                var avatarUrl = $"/Uploads/Avatars/{safeFileName}";
+                user.Avatar = avatarUrl;
+                var result = await _userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    // 12. 重新產生 JWT Token（更新 Avatar Claim）
+                    var token = _authService.GenerateJwtToken(user);
+                    _authService.SetAuthCookie(HttpContext, token);
+
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "頭像上傳成功",
+                        avatarUrl = avatarUrl
+                    });
+                }
+
+                // 上傳成功但資料庫更新失敗，刪除已上傳的檔案
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+
+                return BadRequest(new { success = false, message = "更新失敗，請稍後再試" });
+            }
+            catch
+            {
+                return StatusCode(500, new { success = false, message = "上傳過程發生錯誤，請稍後再試" });
+            }
+        }
+
+        private static Task<bool> IsValidImageAsync(IFormFile file)
+        {
+            // 定義各圖片格式的 Magic Bytes
+            var imageSignatures = new Dictionary<string, List<byte[]>>
+    {
+        { ".jpg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".jpeg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".png", new List<byte[]> { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
+        { ".gif", new List<byte[]> { new byte[] { 0x47, 0x49, 0x46, 0x38 } } },
+        { ".webp", new List<byte[]> { new byte[] { 0x52, 0x49, 0x46, 0x46 } } } // RIFF
+    };
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!imageSignatures.TryGetValue(extension, out var signatures))
+            {
+                return Task.FromResult(false);
+            }
+
+            using var reader = new BinaryReader(file.OpenReadStream());
+            var maxSignatureLength = signatures.Max(s => s.Length);
+            var headerBytes = reader.ReadBytes(maxSignatureLength);
+
+            var isValid = signatures.Any(signature =>
+                headerBytes.Length >= signature.Length &&
+                headerBytes.Take(signature.Length).SequenceEqual(signature));
+            return Task.FromResult(isValid);
+        }
+
         #endregion
     }
 }
