@@ -12,7 +12,10 @@
     <link rel="stylesheet" href="~/css/components.css">
     <link rel="stylesheet" href="~/css/layout.css">
     <link rel="stylesheet" href="~/css/responsive.css">
-
+    <link rel="stylesheet" href="~/css/member.css">
+    @* Favicon 圖示 - 加上版本控制防止快取問題 *@
+    <link rel="icon" type="image/png" href="~/img/Logo/Part14.png" asp-append-version="true" />
+    <link rel="shortcut icon" href="~/img/Logo/Part14.png" asp-append-version="true" />
     @* 這裡可以預留給各別頁面加入額外的 CSS *@
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -27,7 +30,6 @@
     <script src="~/js/jquery-3.7.1.js"></script>
     <script src="~/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/helper.js"></script>
-    <script src="~/js/popup.js"></script>
 
     @* 這裡預留給各別頁面加入專屬 JS (如 login.js) *@
     @await RenderSectionAsync("Scripts", required: false)

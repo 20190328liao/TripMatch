@@ -13,39 +13,48 @@
             Index: '/Home/Index'
         }
     };
-    //放通用的
-$.ajaxSetup({
+
+    $.ajaxSetup({
         headers: { "RequestVerificationToken": window.csrfToken }
     });
+
     let popupOpen = false;
     function getThemeColors() {
         const rootStyles = getComputedStyle(document.documentElement);
         return {
             error: rootStyles.getPropertyValue('--color_Contrast').trim(),
             success: rootStyles.getPropertyValue('--color_Green').trim()
-
         };
     }
+    
+    // ★ 修正：根據 Signup.cshtml 中的實際 ID 對應
     function getHintSelector(fieldId) {
         switch (fieldId) {
-            case "email": return "#emailHint";
+            case "email": return "#emailHint";  // ★ 修正：改為 emailHint（符合 Signup.cshtml）
             case "password": return "#pwdHint";
-            case "confirmPassword": return "#confirmPwdHint";
-            default: return "#systemMessage";
+            case "confirmPassword": return "#confirmHint";  // ★ 修正：改為 confirmHint（符合 Signup.cshtml）
+            case "new_password": return "#new_password_hint";
+            case "confirm_new_password": return "#confirm_new_password_hint";
+            default: return "#" + fieldId + "_hint";
         }
     }
+    
     function ensureHintElement(selector, fieldId) {
         if ($(selector).length === 0) {
-            // 嘗試在對應 input 元素後建立
             var input = $("#" + fieldId);
             if (input.length) {
+                // ★ 修正：找到輸入框的父容器（input_row 或 input_group_custom），在其後插入 hint
+                var $parent = input.closest('.input_row, .input_group_custom');
                 var $hint = $('<div>')
                     .attr('id', selector.replace('#', ''))
                     .addClass('inputHint');
-                input.after($hint);
+                if ($parent.length) {
+                    $parent.after($hint);
+                } else {
+                    input.after($hint);
+                }
                 return $hint;
             }
-
             var $fallback = $('<div>')
                 .attr('id', selector.replace('#', ''))
                 .addClass('inputHint');
@@ -54,34 +63,30 @@ $.ajaxSetup({
         }
         return $(selector);
     }
+    
     function setFieldHint(fieldId, message, status) {
         try {
             var sel = getHintSelector(fieldId);
             var $el = ensureHintElement(sel, fieldId);
-
-            // 確保元素存在
             if (!$el || $el.length === 0) return;
 
-            // 清除舊樣式
-            $el.removeClass('input_success input_error d-none');
+            $el.removeClass('input_success input_error success error d-none');
 
             if (!message) {
-                // 若無訊息則隱藏
-                $el.text('').addClass('d-none');
+                $el.html('').addClass('d-none');
                 return;
             }
 
-            // 顯示文字
-            $el.text(message);
+            var htmlMessage = message.replace(/\n/g, '<br>');
+            $el.html(htmlMessage);
 
-            // 根據狀態套用樣式
             var colors = getThemeColors();
 
             if (status === 'success') {
-                $el.addClass('input_success');
+                $el.addClass('success');
                 $el.css('color', colors.success || '#0a0');
             } else if (status === 'error') {
-                $el.addClass('input_error');
+                $el.addClass('error');
                 $el.css('color', colors.error || '#c00');
             } else {
                 $el.css('color', '');
@@ -91,20 +96,13 @@ $.ajaxSetup({
         }
     }
 
-
-
-
     function showPopup(options) {
-
-
         if (popupOpen) {
             return Promise.resolve();
         }
-
         popupOpen = true;
 
         return new Promise((resolve) => {
-
             const {
                 title = "",
                 message = "",
@@ -148,15 +146,40 @@ $.ajaxSetup({
 
                 $(".popup_overlay, .reg_popup").fadeOut(300, function () {
                     $(this).remove();
-                    popupOpen = false;   // ★ 解鎖
+                    popupOpen = false;
                     resolve();
                 });
             }
         });
     }
 
-    // 將函式暴露到全域，login.js / signup.js 可直接呼叫
-    window.setFieldHint = setFieldHint;
+    // ★ 通用：密碼顯示/隱藏切換（眼睛）
+    function bindPasswordToggle(selector = ".btn-toggle-pwd") {
+        // 先移除舊的，再綁定，避免重複
+        $(document).off("click", selector).on("click", selector, function (e) {
+            e.preventDefault();
+            const target = $(this).data("target");
+            const $input = $(target);
+            const $img = $(this).find("img"); // 改找 img 標籤
+            
+            if (!$input.length) return;
 
+            const isPwd = $input.attr("type") === "password";
+            $input.attr("type", isPwd ? "text" : "password");
+            
+            // 切換圖片路徑
+            // 原本是密碼(isPwd=true) -> 變成明文 -> 顯示睜眼 (eye.svg)
+            // 原本是明文(isPwd=false) -> 變成密碼 -> 顯示閉眼 (eye-closed.svg)
+            const newSrc = isPwd ? "/img/eye.svg" : "/img/eye-closed.svg";
+            $img.attr("src", newSrc);
+        });
+    }
+
+    // 將函式暴露到全域
+    window.setFieldHint = setFieldHint;
     window.showPopup = showPopup;
+    window.bindPasswordToggle = bindPasswordToggle;
+
+    // 預設啟用
+    bindPasswordToggle();
 });

@@ -25,13 +25,13 @@ namespace TripMatch.Services
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
         {
-            // 1. 搬移 JwtSettings 綁定
+     
             // Authentication 讀取 Cookie 中的 JWT
             var jwtSettings = new JwtSettings();
             config.GetSection("Jwt").Bind(jwtSettings);
             services.Configure<JwtSettings>(config.GetSection("Jwt"));
 
-            // 2. 搬移 AddAuthentication & AddJwtBearer
+           
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -61,7 +61,7 @@ namespace TripMatch.Services
             })
             .AddGoogle(googleOptions =>
             {
-                // ★ 修正：指定 SignInScheme 為 ExternalScheme
+                // 指定 SignInScheme 為 ExternalScheme
                 // 這是解決 "Correlation failed" 的關鍵。因為預設方案是 JWT，Google 必須明確知道要使用 Cookie 來存取暫存狀態。
                 googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
 
@@ -135,7 +135,7 @@ namespace TripMatch.Services
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            services.AddIdentityApiEndpoints<ApplicationUser>() // 這行會幫你註冊 UserManager
+            services.AddIdentityApiEndpoints<ApplicationUser>() 
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
             services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
@@ -248,15 +248,15 @@ namespace TripMatch.Services
                 });
             }
 
-            // 2. 修正此方法：改用 Base64UrlEncode 並指向正確的 Controller Action
+            // 2. 改用 Base64UrlEncode 並指向正確的 Controller Action
             public string GenerateConfirmUrl(HttpContext ctx, object userId, string code)
             {
                 ArgumentNullException.ThrowIfNull(ctx);
 
-                // 修正：配合 AuthApiController 的 Base64UrlDecode，這裡需使用 Base64UrlEncode
+                // 配合 AuthApiController 的 Base64UrlDecode，這裡需使用 Base64UrlEncode
                 var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                // 修正：指向 AuthApiController 的 ConfirmEmail Action (/AuthApi/ConfirmEmail)
+                // 指向 AuthApiController 的 ConfirmEmail Action (/AuthApi/ConfirmEmail)
                 return $"{ctx.Request.Scheme}://{ctx.Request.Host}/AuthApi/ConfirmEmail?userId={userId}&code={encodedCode}";
             }
 

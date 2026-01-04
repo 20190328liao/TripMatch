@@ -20,19 +20,27 @@
                 </div>
 
                 <form id="loginForm">
-
                     <div class="formWrap">
                         <label class="titleWrap titleH3 d-block">帳號 (電子郵件)</label>
-                        <input id="email" name="email" class="input1 psw" type="email" placeholder="example@gmail.com">
+                        
+                        <div class="input_group_custom">
+                            <input id="email" name="email" class="input1 psw" type="email" placeholder="example@gmail.com">
+                        </div>
+                        
                         <div id="emailHint" class="inputHint"></div>
                     </div>
 
                     <div class="formWrap">
                         <label class="titleWrap titleH3 d-block">密碼 *</label>
-                        <input type="password" id="password" name="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
+                        <div class="input_group_custom">
+                            <input type="password" id="password" name="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
+                            <span type="button" class="btn-toggle-pwd" data-target="#password" tabindex="-1">
+                                <img src="~/img/eye-closed.svg" alt="顯示密碼">
+                            </span>
+                        </div>
                         <div id="pwdHint" class="inputHint"></div>
                     </div>
-
+                    
                     <div>
                         <a href="/AuthApi/ForgotPassword">忘記密碼</a>
                     </div>
@@ -41,12 +49,20 @@
                     <p class="privacy">* 登入即表示您同意隱私權政策。</p>
 
                     <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnLogin" disabled>登入</button>
+                    <hr />
                     <div class="lineBlack">或</div>
                     <div class="mt-4">
                        
                         <a href="/AuthApi/LoginGoogle">
                             <img src="~/img/googleBtn.png" alt="Google 登入" class="googleBtn">
                         </a>
+                    </div>
+                    <div class="mt-4">
+                        <div class="backIndex mt-4 text-center">
+                         <a href="@Url.Action("Index", "Home")" class="back-home-link">
+                                回到首頁
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -56,13 +72,19 @@
 
 
 @section Scripts {
-    <script>
-        // 將 Anti-Forgery Token 存入全域供 AJAX 使用
+ <script>
         window.csrfToken = "@tokens.RequestToken";
     </script>
     <script src="~/js/helper.js"></script>
-    <script src="~/js/login.js"></script> 
-    
+    <script src="~/js/login.js"></script>
+    <script>
+        $(function () {
+            // 確保 helper.js 載入後執行綁定
+            if (typeof bindPasswordToggle === 'function') {
+                bindPasswordToggle();
+            }
+        });
+    </script>
     @if (TempData["RegSuccess"]?.ToString() == "true")
     {
         <script>
