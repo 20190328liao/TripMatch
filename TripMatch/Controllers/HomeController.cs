@@ -24,9 +24,14 @@ namespace TripMatch.Controllers
             return View();
         }
 
-        public IActionResult Trip()
+        public IActionResult MyTrip()
         {
             return View("~/Views/Trip/index.cshtml");
+        }
+
+        public IActionResult CreateTrip()
+        {
+            return View("~/Views/Trip/createTrip.cshtml");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

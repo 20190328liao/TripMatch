@@ -1,4 +1,5 @@
 ﻿$(document).ready(function () {
+
     $.get('/api/TripApi', function (data) {
         let content = '';
         data.forEach(item => {
@@ -8,5 +9,8 @@
                         </div>`;
         });
         $('#trip-list').html(content);
-    });
+    });  
+
+  
+
 });
