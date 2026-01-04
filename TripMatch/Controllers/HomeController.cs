@@ -24,6 +24,11 @@ namespace TripMatch.Controllers
             return View();
         }
 
+        public IActionResult Trip()
+        {
+            return View("~/Views/Trip/index.cshtml");
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
