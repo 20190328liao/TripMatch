@@ -8,7 +8,41 @@
     let currentUserId = userIdParam || "";
     let currentCode = codeParam || "";
 
-    // 初始化：灰底數字 1/2/3
+    let cooldownTime = 0;
+    let cooldownTimer = null;
+
+    function startCooldown(seconds, $btn, hintSelector) {
+        cooldownTime = seconds;
+        $btn.prop("disabled", true).addClass("btn_Gray").removeClass("btn_light");
+        if (cooldownTimer) clearInterval(cooldownTimer);
+        cooldownTimer = setInterval(() => {
+            cooldownTime--;
+            if (cooldownTime <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+                $btn.prop("disabled", false).removeClass("btn_Gray").addClass("btn_light").text("重新寄驗證信");
+                if (hintSelector) $(hintSelector).text("");
+            } else {
+                $btn.text(`重送(${cooldownTime}s)`);
+                if (hintSelector) $(hintSelector).text(`請稍候 ${cooldownTime} 秒後可重寄`);
+            }
+        }, 1000);
+    }
+
+    // 顯示或隱藏重寄提示（但實際寄/重寄用同一按鈕 #btn_send_reset）
+    function showResendSection(show, message) {
+        if (show) {
+            $("#resend_wrap").removeClass("d-none");
+            if (message) $("#resend_hint").text(message);
+            // 啟用主按鈕為「重新寄驗證信」
+            $("#btn_send_reset").prop("disabled", false).removeClass("btn_Gray").addClass("btn_light").text("重新寄驗證信");
+        } else {
+            $("#resend_wrap").addClass("d-none");
+            $("#resend_hint").text("");
+        }
+    }
+
+    // 初始化步驟指示器
     function initializeStepIndicators() {
         $("#step1_indicator").removeClass().addClass("step_item step_incomplete");
         $("#step2_indicator").removeClass().addClass("step_item step_incomplete");
@@ -20,7 +54,7 @@
     }
     initializeStepIndicators();
 
-    // 錯誤處理
+    // 處理 URL 錯誤訊息
     if (error) {
         let errorMsg = "驗證失敗，請重新嘗試";
         let shouldReset = false;
@@ -31,18 +65,25 @@
         if (error === "code_already_used") { errorMsg = "此驗證連結已被使用過，請回到忘記密碼頁面按重寄驗證信"; shouldReset = true; }
 
         showPopup({ title: "驗證失敗", message: errorMsg, type: "error" });
-        if (shouldReset) window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
+        if (shouldReset) {
+            // 顯示重寄提示並清掉舊的 session/cookie
+            showResendSection(true, errorMsg);
+            $.post(window.AppUrls.Auth.ClearPasswordResetSession).always(() => {
+                // 保險呼叫一次（若第一個失敗）
+                $.post(window.AppUrls.Auth.ClearPasswordResetSession);
+            });
+            window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
+        }
     }
 
-    // ★ 檢查 Session 中是否有存儲的有效連結
+    // 檢查是否有已儲存的重設連結（session）
     async function checkStoredPasswordResetLink() {
         try {
-            const res = await fetch(window.AppUrls.Auth.CheckPasswordResetSession, { 
+            const res = await fetch(window.AppUrls.Auth.CheckPasswordResetSession, {
                 method: 'POST',
                 credentials: 'include'
             });
             const data = await res.json();
-            
             if (data.hasValidLink) {
                 verified = true;
                 currentUserId = data.userId;
@@ -55,15 +96,15 @@
         }
     }
 
-    // 有連結參數先驗證
+    // 若網址帶參數，先驗證並進入 Step2
     if (currentUserId && currentCode) {
-        validateAndGoToStep2(currentUserId, currentCode, { cache: true, storeSession: true });
+        validateAndGoToStep2(currentUserId, currentCode, { storeSession: true });
     } else {
         checkStoredPasswordResetLink();
     }
 
-    // 驗證重設密碼連結有效性
-    function validateAndGoToStep2(userId, code, opt = { cache: false, storeSession: false }) {
+    // 驗證重設密碼連結有效性 (呼叫後端驗證)
+    function validateAndGoToStep2(userId, code, opt = { storeSession: false }) {
         $.ajax({
             type: 'POST',
             url: window.AppUrls.Auth.ValidatePasswordResetLink,
@@ -85,25 +126,28 @@
                         });
                     }
 
+                    showResendSection(false);
                     goToStep2();
                 } else {
-                    showPopup({
-                        title: "連結無效",
-                        message: res.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信",
-                        type: "error"
-                    });
+                    // token 無效或過期：顯示重寄並清除舊 session
+                    const msg = res.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信";
+                    showPopup({ title: "連結無效", message: msg, type: "error" });
+                    showResendSection(true, msg);
+                    $.post(window.AppUrls.Auth.ClearPasswordResetSession);
                     window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
                 }
             },
             error: function (err) {
                 const errorMsg = err.responseJSON?.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信";
                 showPopup({ title: "驗證失敗", message: errorMsg, type: "error" });
+                showResendSection(true, errorMsg);
+                $.post(window.AppUrls.Auth.ClearPasswordResetSession);
                 window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
             }
         });
     }
 
-    // 檢查 Pending Cookie
+    // 檢查 Pending Cookie，並控制下一步按鈕
     async function checkPendingThenToggleNext() {
         try {
             const res = await fetch(window.AppUrls.Auth.CheckDbStatus, { credentials: 'include' });
@@ -128,22 +172,29 @@
             .toggleClass("btn_light", enable);
     }
 
-    // Email 輸入驗證
+    // Email input 驗證
     $("#email").on("keyup input", function () {
         const email = $(this).val().trim();
         const emailResult = Validator.validateEmail(email);
 
         setFieldHint("email", emailResult.message, emailResult.valid ? "success" : "error");
+
+        const canSend = emailResult.valid && cooldownTime <= 0;
         $("#btn_send_reset")
-            .prop("disabled", !emailResult.valid)
-            .toggleClass("btn_Gray", !emailResult.valid)
-            .toggleClass("btn_light", emailResult.valid);
+            .prop("disabled", !canSend)
+            .toggleClass("btn_Gray", !canSend)
+            .toggleClass("btn_light", canSend);
     });
 
-    // Step 1: 寄送重設信件
+    // Step 1: 寄送或重寄驗證信（同一顆按鈕）
     $("#btn_send_reset").on("click", function () {
         const email = $("#email").val().trim();
         const btn = $(this);
+
+        if (!Validator.validateEmail(email).valid) {
+            showPopup({ title: "提示", message: "請輸入有效 Email", type: "error" });
+            return;
+        }
 
         btn.prop("disabled", true).text("發送中...");
 
@@ -161,17 +212,23 @@
                     message: "請至信箱點擊重設連結。驗證連結有效期 24 小時，且只能驗證一次。",
                     type: "success"
                 });
+                startCooldown(30, $("#btn_send_reset"), "#resend_hint");
                 enableNext(false);
+                showResendSection(false);
             },
             error: function (err) {
                 btn.prop("disabled", false).text("寄驗證信").removeClass("btn_Gray").addClass("btn_light");
-                const errorMsg = err.responseJSON?.message || "發送失敗，請稍後再試";
-                showPopup({ title: "錯誤", message: errorMsg, type: "error" });
+                const data = err.responseJSON || {};
+                const message = data.message || "發送失敗，請稍後再試";
+                showPopup({ title: "錯誤", message: message, type: "error" });
+                if (data.action === "redirect_signup") {
+                    setTimeout(() => { window.location.href = window.AppUrls.Auth.Signup; }, 1500);
+                }
             }
         });
     });
 
-    // 下一步
+    // 下一步按鈕：檢查是否有 pending 並進入 Step2
     $("#btn_next_step").on("click", async function () {
         if (currentUserId && currentCode) {
             validateAndGoToStep2(currentUserId, currentCode);
@@ -209,41 +266,25 @@
         $("#btn_reset_password").prop("disabled", true).addClass("btn_Gray").removeClass("btn_light");
     }
 
-    // Step 2: 密碼驗證
+    // Step 2 驗證與重設（維持原有邏輯）
     $("#new_password, #confirm_new_password").on("keyup input", validatePasswordForm);
 
     function validatePasswordForm() {
         const pwd = $("#new_password").val();
         const confirmPwd = $("#confirm_new_password").val();
-
         const pwdResult = Validator.validatePassword(pwd);
 
-        // 密碼欄位
-        if (!pwd) {
-            setFieldHint("new_password");
-        } else {
-            setFieldHint("new_password",
-                pwdResult.valid ? "☑ 格式正確" : "☐ 需包含：" + pwdResult.missingRules.join("、"),
-                pwdResult.valid ? "success" : "error");
-        }
+        if (!pwd) setFieldHint("new_password");
+        else setFieldHint("new_password", pwdResult.valid ? "☑ 格式正確" : "☐ 需包含：" + pwdResult.missingRules.join("、"), pwdResult.valid ? "success" : "error");
 
-        // 確認密碼欄位
-        if (!confirmPwd) {
-            setFieldHint("confirm_new_password");
-        } else if (pwd === confirmPwd && pwdResult.valid) {
-            setFieldHint("confirm_new_password", "☑ 密碼一致", "success");
-        } else if (pwd !== confirmPwd) {
-            setFieldHint("confirm_new_password", "☐ 密碼不一致", "error");
-        }
+        if (!confirmPwd) setFieldHint("confirm_new_password");
+        else if (pwd === confirmPwd && pwdResult.valid) setFieldHint("confirm_new_password", "☑ 密碼一致", "success");
+        else if (pwd !== confirmPwd) setFieldHint("confirm_new_password", "☐ 密碼不一致", "error");
 
         const canSubmit = pwdResult.valid && pwd === confirmPwd;
-        $("#btn_reset_password")
-            .prop("disabled", !canSubmit)
-            .toggleClass("btn_Gray", !canSubmit)
-            .toggleClass("btn_light", canSubmit);
+        $("#btn_reset_password").prop("disabled", !canSubmit).toggleClass("btn_Gray", !canSubmit).toggleClass("btn_light", canSubmit);
     }
 
-    // Step 2: 執行密碼重設
     $("#btn_reset_password").on("click", function () {
         const password = $("#new_password").val();
         const btn = $(this);
@@ -258,25 +299,15 @@
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: function () {
-                showPopup({
-                    title: "成功",
-                    message: "密碼已重設，將直接前往登入頁。",
-                    type: "success"
-                });
-                
-                $.ajax({
-                    type: 'POST',
-                    url: window.AppUrls.Auth.ClearPasswordResetSession,
-                    success: function () {
-                        goToStep3();
-                    }
-                });
+                showPopup({ title: "成功", message: "密碼已重設，將直接前往登入頁。", type: "success" });
+                $.ajax({ type: 'POST', url: window.AppUrls.Auth.ClearPasswordResetSession, success: goToStep3 });
             },
             error: function (err) {
                 btn.prop("disabled", false).text("重設密碼");
                 let msg = err.responseJSON?.message || "重設失敗";
                 if (msg.includes("已使用") || msg.includes("已過期")) {
                     msg = "驗證連結已失效，請回到忘記密碼頁面按重寄驗證信";
+                    showResendSection(true, msg);
                 }
                 if (err.responseJSON?.errors) {
                     msg = Object.values(err.responseJSON.errors).flat().map(e => typeof e === 'string' ? e : e.description).join("、");

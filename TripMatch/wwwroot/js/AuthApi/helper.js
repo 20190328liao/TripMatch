@@ -35,6 +35,8 @@
     // 共用格式驗證
     const Validator = {
         validateEmail(email) {
+            // 防禦性處理：確保 email 為字串
+            email = (email === null || email === undefined) ? '' : String(email);
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const gmailMistakeRegex = /^g[amill]{3,6}\.com$/i;
             const domain = email.includes("@") ? email.split("@")[1].toLowerCase() : "";
@@ -55,6 +57,8 @@
         // (?=.*\d)    : 至少包含一個數字
         // .{6,18}     : 長度在 6 到 18 之間
         validatePassword(password) {
+            // 防護：確保 password 為字串，避免外部傳入 undefined/event 物件導致 .length 拋錯
+            password = (password === null || password === undefined) ? '' : String(password);
             let pwdRules = [];
             if (password.length < 6 || password.length > 18) pwdRules.push("6~18位");
             if (!/[A-Z]/.test(password)) pwdRules.push("大寫英文");
@@ -69,6 +73,10 @@
         },
 
         validateConfirmPassword(password, confirmPassword) {
+            // 也要防護參數
+            password = (password === null || password === undefined) ? '' : String(password);
+            confirmPassword = (confirmPassword === null || confirmPassword === undefined) ? '' : String(confirmPassword);
+
             const pwdResult = this.validatePassword(password);
             if (!confirmPassword) return { valid: false, message: "" };
             if (!pwdResult.valid) return { valid: false, message: "☐ 密碼格式不符，請參考上方提示" };

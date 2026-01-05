@@ -54,4 +54,21 @@ namespace TripMatch.Models.Settings
         public string UserId { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
     }
+
+    public class ChangePasswordModel
+    {
+        [Required(ErrorMessage = "請輸入舊密碼")]
+        [DataType(DataType.Password)]
+        public string? OldPassword { get; set; }
+
+        [Required(ErrorMessage = "請輸入新密碼")]
+        [StringLength(18, MinimumLength = 6, ErrorMessage = "{0} 長度必須在 {2} 到 {1} 個字元之間。")]
+        [DataType(DataType.Password)]
+        public string? NewPassword { get; set; }
+
+        [Required(ErrorMessage = "請再次輸入新密碼")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "新密碼和確認密碼不符。")]
+        public string? ConfirmPassword { get; set; }
+    }
 }

@@ -134,5 +134,52 @@ const MemberProfile = {
     }
 };
 
+// 密碼變更
+$(function () {
+    $("#btnChangePwd").on("click", function () {
+        const oldPwd = $("#cp_old").val();
+        const newPwd = $("#cp_new").val();
+        const confirm = $("#cp_confirm").val();
+
+        if (!oldPwd || !newPwd || !confirm) {
+            showPopup({ title: "提示", message: "請完整填寫欄位", type: "error" });
+            return;
+        }
+        if (newPwd !== confirm) {
+            showPopup({ title: "提示", message: "新密碼與確認不符", type: "error" });
+            return;
+        }
+
+        // 可額外用 Validator.validatePassword(newPwd) 先在前端檢查格式
+        const pwdResult = Validator.validatePassword(newPwd);
+        if (!pwdResult.valid) {
+            setFieldHint("password", pwdResult.message, "error");
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop("disabled", true).text("處理中...");
+
+        $.ajax({
+            type: "POST",
+            url: "/AuthApi/ChangePassword",
+            contentType: "application/json",
+            data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirm }),
+            success: function (res) {
+                showPopup({ title: "成功", message: res.message || "密碼已變更", type: "success" }).then(() => {
+                    // 可選：清空欄位
+                    $("#cp_old, #cp_new, #cp_confirm").val("");
+                    $btn.prop("disabled", false).text("變更密碼");
+                });
+            },
+            error: function (err) {
+                $btn.prop("disabled", false).text("變更密碼");
+                const msg = err.responseJSON?.message || "變更失敗";
+                showPopup({ title: "錯誤", message: msg, type: "error" });
+            }
+        });
+    });
+});
+
 // DOM Ready
 $(() => MemberProfile.init());

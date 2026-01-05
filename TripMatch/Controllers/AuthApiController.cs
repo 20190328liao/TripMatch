@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
@@ -70,6 +71,12 @@ namespace TripMatch.Controllers
             return View();
         }
 
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
 
 
         [HttpGet]
@@ -91,6 +98,34 @@ namespace TripMatch.Controllers
                 backupEmail = user.BackupEmail,
                 avatar = user.Avatar ?? "/img/default_avatar.png"
             });
+        }
+        // 新增於 AuthApiController 類別內（放在其他 action 同區塊）
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> InitiatePasswordReset()
+        {
+            // 取得目前使用者 Id（Claims）
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // 若找不到使用者，導回會員中心或忘記密碼頁
+                return RedirectToAction("MemberCenter");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return RedirectToAction("MemberCenter");
+            }
+
+            // 產生原始 Token
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Base64Url 編碼（與其它流程一致）
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            // 導向 ForgotPassword，帶上參數 userId & code
+            return RedirectToAction("ForgotPassword", new { userId = user.Id, code = code });
         }
 
         #endregion
@@ -450,15 +485,34 @@ namespace TripMatch.Controllers
         {
             // 寄信前檢查：使用者不存在
             var user = await _userManager.FindByEmailAsync(email);
+            var usedBackup = false;
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new { message = "請提供信箱。" });
+            }
+
+            if (user == null)
+            {
+                user = await _userManager.Users.FirstOrDefaultAsync(u => u.BackupEmail == email);
+                usedBackup = user != null;
+            }
+
             if (user == null)
             {
                 return BadRequest(new { message = "此信箱尚未註冊，請先進行註冊。" });
             }
-
-            // 寄信前檢查：Email 未驗證
-            if (!await _userManager.IsEmailConfirmedAsync(user))
+            if (!usedBackup)
             {
-                return BadRequest(new { message = "此 Email 尚未驗證，請先完成 Email 驗證。" });
+                // 寄信前檢查：Email 未驗證
+                if (!await _userManager.IsEmailConfirmedAsync(user))
+                {
+                    return BadRequest(new { message = "此信箱尚未驗證，請先完成信箱驗證。" });
+                }
+            }
+            else
+            { 
+            if(!user.BackupEmailConfirmed)
+                return BadRequest(new { message = "此備援信箱尚未驗證，請先完成備援信箱驗證。" });
             }
 
             // 產生原始 Token
@@ -549,8 +603,7 @@ namespace TripMatch.Controllers
                 // 進行 Base64Url 解碼
                 var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
 
-                // 使用 VerifyUserTokenAsync 而不是 ResetPasswordAsync
-                // 這樣可以驗證 token 有效性，且不需要密碼參數
+                // 驗證 token 有效性（但不立即重設密碼）
                 var isValidToken = await _userManager.VerifyUserTokenAsync(user,
                     _userManager.Options.Tokens.PasswordResetTokenProvider,
                     "ResetPassword",
@@ -561,8 +614,13 @@ namespace TripMatch.Controllers
                     return RedirectToAction("ForgotPassword", new { error = "invalid_code" });
                 }
 
-                // Code 有效，導向回 ForgotPassword 頁面，帶有 userId 和 code
-                return RedirectToAction("ForgotPassword", new { userId = userId, code = code });
+                // Token 有效：把重設資訊存入 Session（24 小時內有效）
+                HttpContext.Session.SetString("PasswordResetUserId", userId);
+                HttpContext.Session.SetString("PasswordResetCode", code);
+                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
+
+                // 導回 ForgotPassword 頁面（前端會以 CheckPasswordResetSession 判斷）
+                return RedirectToAction("ForgotPassword");
             }
             catch
             {
@@ -818,6 +876,76 @@ namespace TripMatch.Controllers
                 headerBytes.Length >= signature.Length &&
                 headerBytes.Take(signature.Length).SequenceEqual(signature));
             return Task.FromResult(isValid);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+        { 
+            if(model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
+            if (string.IsNullOrWhiteSpace(model.OldPassword) ||
+                string.IsNullOrWhiteSpace(model.NewPassword) ||
+                string.IsNullOrWhiteSpace(model.ConfirmPassword))
+            { 
+                return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
+            }
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                return BadRequest(new { success = false, message = "新密碼與確認密碼不符。" });
+            }
+            //格式驗證同前端
+            var pwdCheck = ValidatePasswordRules(model.NewPassword);
+            if (!pwdCheck.IsValid)
+            {
+                return BadRequest(new { success=false,message="密碼格式不符："+pwdCheck.Message,missingRules=pwdCheck.MissingRules});
+            }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            { 
+                return Unauthorized(new { success = false, message = "找不到使用者。" });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)return NotFound(new { success = false, message = "找不到使用者。" });
+
+            //第三方登入回傳提示
+            if (!await _userManager.HasPasswordAsync(user))
+            {
+                return Conflict(new { action="external",message="請前往 google 重設密碼流程。"});
+            }
+            var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
+            if (!changeResult.Succeeded)
+            { 
+                var errors = changeResult.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(new { success = false, message = errors.FirstOrDefault() ??  "密碼修改失敗。", errors });
+            }
+
+            //安全性
+            await _signInManager.RefreshSignInAsync(user);
+            var newToken = _authService.GenerateJwtToken(user);
+            _authService.SetAuthCookie(HttpContext, newToken);
+
+            HttpContext.Session.Remove("PasswordResetUserId");
+            HttpContext.Session.Remove("PasswordResetCode");
+            HttpContext.Session.Remove("PasswordResetTime");
+            Response.Cookies.Delete("PendingEmail");
+
+            return Ok(new { success = true, message = "密碼已更新。" });
+
+        }
+
+        // Private helper：與前端 Validator 一致的密碼規則檢查
+        private static (bool IsValid, string Message, string[] MissingRules) ValidatePasswordRules(string password)
+        {
+            var missing = new List<string>();
+
+            if (string.IsNullOrEmpty(password) || password.Length < 6 || password.Length > 18) missing.Add("6~18位");
+            if (!password.Any(char.IsUpper)) missing.Add("大寫英文");
+            if (!password.Any(char.IsLower)) missing.Add("小寫英文");
+            if (!password.Any(char.IsDigit)) missing.Add("數字");
+
+            if (missing.Count == 0) return (true, "密碼格式符合規則", Array.Empty<string>());
+            return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
         }
 
         #endregion
