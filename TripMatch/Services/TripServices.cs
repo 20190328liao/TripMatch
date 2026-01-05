@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TripMatch.Models;
 using TripMatch.Models.DTOs;
 
@@ -15,15 +16,23 @@ namespace TripMatch.Services
             _context = context;
         }
 
-        public List<TripDto> GetMockTrips()
+        public async Task<List<TripDto>> GetTrips()
         {
-            return new List<TripDto> {
-            new TripDto { TripId = 1, TripName = "東京探險", LocationName = "日本" },
-            new TripDto { TripId = 2, TripName = "墾丁衝浪", LocationName = "台灣" }
-        };
+            List<TripDto> tripDtos = [];
+
+           
+            var trips = await _context.Trips.ToListAsync();            
+
+            foreach (var trip in trips)
+            {
+                TripDto tripDto = new ()
+                {
+                    Title = trip.Title,
+                };
+                tripDtos.Add(tripDto);
+            }
+            return tripDtos;
         }
 
-
-        
     }
 }

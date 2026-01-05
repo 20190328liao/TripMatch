@@ -19,9 +19,9 @@ namespace TripMatch.Controllers.Api
         }
 
         [HttpGet]
-        public IActionResult GetTrips()
+        public async Task<IActionResult> GetTrips()
         {
-            List<Models.DTOs.TripDto> trips = _tripServices.GetMockTrips();
+            List<Models.DTOs.TripDto> trips = await _tripServices.GetTrips();
             return Ok(trips);
         }
 

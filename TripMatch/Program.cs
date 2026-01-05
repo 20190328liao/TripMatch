@@ -57,6 +57,13 @@ namespace TripMatch
 
             // --- 建立應用程式 ---
             var app = builder.Build();
+
+            // --- 測試代碼開始 ---
+            var connString = app.Configuration.GetConnectionString("DefaultConnection");
+            Console.WriteLine($"==== 目前使用的資料庫連線是：{connString} ====");
+            // --- 測試代碼結束 ---
+
+
             // --- 3. 中間件配置 ---
             if (app.Environment.IsDevelopment())
             {
