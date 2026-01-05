@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using TripMatch.Models;
 using TripMatch.Services;
 
 
@@ -15,8 +17,12 @@ namespace TripMatch
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
+
+
             // 註冊身分驗證基礎設施
-            
+
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
             
           
