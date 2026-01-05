@@ -2,8 +2,9 @@
 {
     public class TripCreateDto
     {
-        public string TripName { get; set; } = string.Empty;
-        public List<string> LocationName { get; set; } = [];
+        public string Title { get; set; } = string.Empty;
+
+        public List<int> Regions = [];
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
     }
