@@ -25,6 +25,46 @@
         }
     };
 
+    //共用格式驗證
+    const Validator = {
+        validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const gmailMistakeRegex = /^g[amill]{3,6}\.com$/i;
+            const domain = email.includes("@") ? email.split("@")[1].toLowerCase() : "";
+
+            // --- Email 驗證 ---
+            if (!email) {
+                setFieldHint("email", "☐ 請輸入 Email", "error");
+            }
+            else if (!email.includes("@")) {
+                setFieldHint("email", "☐ 缺少 @ 符號", "error");
+            }
+            else if (!email.includes(".") || email.lastIndexOf(".") < email.indexOf("@")) {
+                setFieldHint("email", "☐ 缺少網域點 (.com 等)", "error");
+            }
+            else if (!emailRegex.test(email)) {
+                setFieldHint("email", "☐ Email 格式不正確", "error");
+            }
+            else if (domain !== "gmail.com" && gmailMistakeRegex.test(domain)) {
+                setFieldHint("email", "⚠ 您是指 gmail.com 嗎？", "error");
+            }
+            else {
+                isEmailValid = true;
+                setFieldHint("email", "☑ Email 格式正確", "success");
+            }
+        },
+
+        // --- Password 驗證 ---
+        validatePassword(password) {
+            let pwdRules = [];
+            if (pwd.length < 6 || pwd.length > 18) pwdRules.push("6~18位");
+            if (!/[A-Z]/.test(pwd)) pwdRules.push("大寫英文");
+            if (!/[a-z]/.test(pwd)) pwdRules.push("小寫英文");
+            if (!/\d/.test(pwd)) pwdRules.push("數字");
+
+        },
+    };
+
     $.ajaxSetup({
         headers: { "RequestVerificationToken": window.csrfToken }
     });

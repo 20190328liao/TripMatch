@@ -684,6 +684,9 @@ namespace TripMatch.Controllers
             HttpContext.Session.Remove("PasswordResetTime");
             return Ok(new { message = "已清除密碼重設資訊" });
         }
+
+
+        // 上傳頭像 API
         [HttpPost]
         [Authorize]
         [RequestSizeLimit(5*1024*1024)]
@@ -709,9 +712,9 @@ namespace TripMatch.Controllers
             }
 
             var allowedMimeTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-  {
-    "image/jpeg", "image/png", "image/gif", "image/jpg"
-  };
+             {
+               "image/jpeg", "image/png", "image/gif", "image/jpg"
+            };
             if (!allowedMimeTypes.Contains(avatarFile.ContentType))
             {
                 return BadRequest(new { success = false, message = "不支援的圖片格式" });
