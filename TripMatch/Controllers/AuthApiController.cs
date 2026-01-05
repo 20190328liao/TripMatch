@@ -70,33 +70,38 @@ namespace TripMatch.Controllers
             return View();
         }
 
+
+
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetMemberInfo()
+        public async Task<IActionResult> GetMemberProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByIdAsync(userId!);
 
             if (user == null)
             {
-                return NotFound(new { message = "找不到使用者" });
+                return NotFound(new { success = false, message = "找不到使用者" });
             }
 
             return Ok(new
             {
                 success = true,
-                userId = user.Id,
                 email = user.Email,
-                userName = user.FullName,
-                emailConfirmed = user.EmailConfirmed
+                backupEmail = user.BackupEmail,
+                avatar = user.Avatar ?? "/img/default_avatar.png"
             });
         }
-
 
         #endregion
 
         #region API (邏輯)
-
+        [HttpPost]
+        public IActionResult ClearPendingSession()
+        { 
+        Response.Cookies.Delete("PendingEmail");
+         return Ok(new { message = "已清除狀態" });
+        }
         // 登入 API
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginModel data)
@@ -176,8 +181,8 @@ namespace TripMatch.Controllers
             // 2. 進行 Base64Url 編碼
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-            // 3. 生成連結指向 VerifyEmailConfirmationLink Action
-            var callbackUrl = Url.Action("VerifyEmailConfirmationLink", "AuthApi", 
+            // 3. 生成連結指向
+            var callbackUrl = Url.Action("ConfirmEmail", "AuthApi", 
                 new { userId = user.Id, code = code }, Request.Scheme);
 
             try

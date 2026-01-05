@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using TripMatch.Services;
 
 
@@ -38,6 +39,11 @@ namespace TripMatch
                 options.LoginPath = "/AuthApi/Login";
                 options.AccessDeniedPath = "/AuthApi/Login";
             });
+
+            // 持久化 Data Protection Key（防止重啟後 Token 失效）
+            builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "Keys")))
+                .SetApplicationName("TripMatch");
 
             // --- 建立應用程式 ---
             var app = builder.Build();

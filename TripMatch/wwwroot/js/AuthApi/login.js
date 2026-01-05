@@ -13,62 +13,28 @@
 
     // 2. 驗證邏輯函式
     function validateLoginForm() {
-        const pwd = $("#password").val();
-        const email = $("#email").val().trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const domain = email.includes("@") ? email.split("@")[1].toLowerCase() : "";
+        const email = $('#email').val().trim();
+        const pwd = $('#password').val();
+        const emailResult = Validator.validateEmail(email);
+        const pwdResult = Validator.validatePassword(pwd);
 
-        let isEmailValid = false;
-        let isPwdValid = false;
-
-        // --- Email 驗證流程 ---
-        if (!email) {
-            setFieldHint("email", "☐ 請輸入 Email", "error");
-        }
-        else if (!email.includes("@")) {
-            setFieldHint("email", "☐ 缺少 @ 符號", "error");
-        }
-        else if (!email.includes(".") || email.lastIndexOf(".") < email.indexOf("@")) {
-            setFieldHint("email", "☐ 缺少網域點 (.com 等)", "error");
-        }
-        else if (!emailRegex.test(email)) {
-            setFieldHint("email", "☐ Email 格式不正確", "error");
-        }
-        else if (domain !== "gmail.com" && /^g[amill]{3,6}\.com$/i.test(domain)) {
-            setFieldHint("email", "⚠ 您是指 gmail.com 嗎？", "error");
-        }
-        else {
-            isEmailValid = true;
-            setFieldHint("email", "☑ Email 格式正確", "success");
-        }
-
-        // 密碼驗證：6~18碼、大寫、小寫、數字
-        let pwdRules = [];
-        if (pwd.length < 6 || pwd.length > 18) pwdRules.push("6~18位");
-        if (!/[A-Z]/.test(pwd)) pwdRules.push("大寫英文");
-        if (!/[a-z]/.test(pwd)) pwdRules.push("小寫英文");
-        if (!/\d/.test(pwd)) pwdRules.push("數字");
-
-        isPwdValid = (pwdRules.length === 0);
-
-        if (!pwd) {
+        setFieldHint("email", emailResult.message, emailResult.valid ? "success" : "error");
+        if (pwd) {
+            setFieldHint("password", pwdResult.message, pwdResult.valid ? "success" : "error");
+        } else {
             setFieldHint("password");
-        } else if (isPwdValid) {
-            setFieldHint("password", "☑ 密碼格式符合規則", "success");
-        } else {
-            setFieldHint("password", "☐ 請修改：" + pwdRules.join("、"), "error");
         }
 
-        if (isEmailValid && isPwdValid) {
-            $("#btnLogin").prop("disabled", false).removeClass("btn_Gray").addClass("btn_light");
-            $("#incompleteMessage").addClass("d-none");
-        } else {
-            $("#btnLogin").prop("disabled", true).removeClass("btn_light").addClass("btn_Gray");
-            if (email && pwd) {
-                $("#incompleteMessage").removeClass("d-none").text("請修正紅字標示的格式錯誤");
-            } else {
-                $("#incompleteMessage").addClass("d-none");
-            }
+        const canLogin = emailResult.valid && pwdResult.valid;
+
+        $("#btnLogin")
+            .prop("disabled", !canLogin)
+            .toggleClass("btn_Gray", !canLogin)
+            .toggleClass("btn_light", canLogin);
+
+        $("#incompleteMessage").toggleClass("d-none", canLogin || !email || !pwd);
+        if (!canLogin && email && pwd) {
+            $("#incompleteMessage").text("請修正紅字標示的格式錯誤");
         }
     }
 
@@ -84,7 +50,7 @@
 
         $.ajax({
             type: 'post',
-            url: window.AppUrls.Auth.Login, 
+            url: window.AppUrls.Auth.Login,
             contentType: 'application/json; charset=utf-8',
             data: JSON.stringify(loginData),
             headers: {
@@ -105,20 +71,15 @@
                 });
             },
             error: function (err) {
-                let errorMsg = "帳號或密碼錯誤，請重新輸入。";
-                if (err.responseJSON && err.responseJSON.message) {
-                    errorMsg = err.responseJSON.message;
-                }
                 showPopup({
                     title: "登入失敗",
-                    message: errorMsg,
+                    message: err.responseJSON?.message || "帳號或密碼錯誤，請重新輸入。",
                     type: "error"
                 });
             }
         });
     });
 
-    // 初始執行一次，確保提示/按鈕狀態正確
+    // 初始執行一次
     validateLoginForm();
-
 });

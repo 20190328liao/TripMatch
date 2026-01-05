@@ -33,12 +33,22 @@ const MemberProfile = {
     // 取得會員資料
     async loadProfile() {
         try {
-            const response = await $.get('/AuthApi/GetMemberProfile');
+            const response = await $.ajax({
+                url: '/AuthApi/GetMemberInfo',
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true  // ★ 確保攜帶 Cookie
+                }
+            });
             if (response.success) {
                 this.updateUI(response);
             }
         } catch (error) {
             console.error('載入會員資料失敗:', error);
+            // 如果是 401，可能需要重新登入
+            if (error.status === 401) {
+                window.location.href = '/AuthApi/Login';
+            }
         }
     },
 
@@ -86,12 +96,14 @@ const MemberProfile = {
                 url: '/AuthApi/UploadAvatar',
                 method: 'POST',
                 data: formData,
-                processData: false, // 必備：告訴 jQuery 不要處理資料
-                contentType: false  // 必備：告訴 jQuery 不要設定 Content-Type
+                processData: false,
+                contentType: false,
+                xhrFields: {
+                    withCredentials: true  // ★ 確保攜帶 Cookie
+                }
             });
 
             if (response.success) {
-                // 上傳成功，更新為後端回傳的正式路徑
                 this.$avatarImg.attr('src', response.avatarUrl);
                 this.$navAvatar.attr('src', response.avatarUrl);
                 alert('頭像上傳成功！');
@@ -99,10 +111,8 @@ const MemberProfile = {
         } catch (xhr) {
             const errorMsg = xhr.responseJSON?.message || '上傳失敗';
             alert(errorMsg);
-            // 失敗時還原回舊頭像
             this.loadProfile();
         } finally {
-            // 釋放記憶體
             URL.revokeObjectURL(objectUrl);
         }
     },
@@ -110,7 +120,13 @@ const MemberProfile = {
     // 登出處理
     async handleLogout() {
         try {
-            await $.post('/AuthApi/Logout');
+            await $.ajax({
+                url: '/AuthApi/Logout',
+                method: 'POST',
+                xhrFields: {
+                    withCredentials: true  // ★ 確保攜帶 Cookie
+                }
+            });
             window.location.href = '/';
         } catch (error) {
             alert('登出失敗');

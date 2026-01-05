@@ -53,103 +53,64 @@
     }
 
     function validateForm() {
+        const email = $("#email").val().trim();
         const pwd = $("#password").val();
         const confirmPwd = $("#confirmPassword").val();
-        const email = $("#email").val().trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const gmailMistakeRegex = /^g[amill]{3,6}\.com$/i;
-        const domain = email.includes("@") ? email.split("@")[1].toLowerCase() : "";
 
-        let isEmailValid = false;
+        // 使用共用 Validator
+        const emailResult = Validator.validateEmail(email);
+        const passwordResult = Validator.validatePassword(pwd);
+        const confirmPwdResult = Validator.validateConfirmPassword(pwd, confirmPwd);
 
         // --- Email 驗證流程 ---
-        if (!email) {
-            setFieldHint("email", "☐ 請輸入 Email", "error");
-        }
-        else if (!email.includes("@")) {
-            setFieldHint("email", "☐ 缺少 @ 符號", "error");
-        }
-        else if (!email.includes(".") || email.lastIndexOf(".") < email.indexOf("@")) {
-            setFieldHint("email", "☐ 缺少網域點 (.com 等)", "error");
-        }
-        else if (!emailRegex.test(email)) {
-            setFieldHint("email", "☐ Email 格式不正確", "error");
-        }
-        else if (domain !== "gmail.com" && gmailMistakeRegex.test(domain)) {
-            setFieldHint("email", "⚠ 您是指 gmail.com 嗎？", "error");
-            isEmailValid = false;
-        }
-        else {
-            isEmailValid = true;
-
+        let isEmailValid = emailResult.valid;
+        if (isEmailValid) {
             if (isEmailVerified) {
                 setFieldHint("email", "☑ Email 驗證成功！", "success");
-            }
-            else if (cooldownTime > 0) {
+            } else if (cooldownTime > 0) {
                 setFieldHint("email", `☑ 驗證信已寄出（${cooldownTime} 秒後可重送）`, "success");
-            }
-            else {
+            } else {
                 setFieldHint("email", "☑ Email 格式正確，請寄送驗證信", "success");
             }
+        } else {
+            setFieldHint("email", emailResult.message, "error");
         }
 
-
-
-
-        // 密碼驗證：6~18碼、大寫、小寫、數字
-        // (?=.*[a-z]) : 至少包含一個小寫
-        // (?=.*[A-Z]) : 至少包含一個大寫
-        // (?=.*\d)    : 至少包含一個數字
-        // .{6,18}     : 長度在 6 到 18 之間
-        let pwdRules = [];
-        if (pwd.length < 6 || pwd.length > 18) pwdRules.push("6~18位");
-        if (!/[A-Z]/.test(pwd)) pwdRules.push("大寫英文");
-        if (!/[a-z]/.test(pwd)) pwdRules.push("小寫英文");
-        if (!/\d/.test(pwd)) pwdRules.push("數字");
-
-        const isPwdValid = pwdRules.length === 0;
-
+        // --- 密碼驗證 ---
         if (!pwd) {
             setFieldHint("password");
-        } else if (isPwdValid) {
-            setFieldHint("password", "☑ 密碼格式符合規則", "success");
         } else {
-            setFieldHint("password", "☐ 請修改：" + pwdRules.join("、"), "error");
+            setFieldHint("password", passwordResult.message, passwordResult.valid ? "success" : "error");
         }
+
+        // --- 確認密碼驗證 ---
         if (!confirmPwd) {
             setFieldHint("confirmPassword");
-        }
-        else if (!isPwdValid) {
-            // 狀況 A：兩次輸入可能一致，但「原始格式」根本不對
-            setFieldHint("confirmPassword", "☐ 密碼格式不符，請參考上方提示", "error");
-        }
-        else if (pwd !== confirmPwd) {
-            // 狀況 B：格式對了，但兩次打的不一樣
-            setFieldHint("confirmPassword", "☐ 密碼不一致", "error");
-        }
-        else {
-            // 狀況 C：格式正確 且 兩次一致
-            setFieldHint("confirmPassword", "☑ 密碼一致且符合規範", "success");
+        } else {
+            setFieldHint("confirmPassword", confirmPwdResult.message, confirmPwdResult.valid ? "success" : "error");
         }
 
-        const canRegister = isEmailValid && isPwdValid && (pwd === confirmPwd) && isEmailVerified;
+        // --- 按鈕狀態 ---
+        const canRegister = isEmailValid && passwordResult.valid && confirmPwdResult.valid && isEmailVerified;
 
         if (canRegister) {
-            // 全部完成：隱藏提示文字，按鈕變亮色
             $("#incompleteMessage").addClass("d-none");
             $("#btnRegister")
                 .prop("disabled", false)
                 .removeClass("btn_Gray")
                 .addClass("btn_light");
         } else {
-            // 任一未完成：顯示提示文字，按鈕維持灰色
             $("#incompleteMessage").removeClass("d-none");
             if (!isEmailVerified && isEmailValid) {
                 $("#incompleteMessage").text("您好，請完成 Email 驗證");
             }
-
+            $("#btnRegister")
+                .prop("disabled", true)
+                .removeClass("btn_light")
+                .addClass("btn_Gray");
         }
     }
+
     function autoSendEmail(email) {
         isSending = true;
         lastSentEmail = email;
@@ -273,6 +234,42 @@
                     msg = Object.values(err.responseJSON.errors).flat().map(e => e.description).join("、");
                 }
                 showPopup({ title: "錯誤", message: msg, type: "error" });
+            }
+        });
+    });
+
+    // 點擊「清除並重新開始」
+    $("#btnClearAndNew").on("click", function () {
+        $.ajax({
+            type: 'POST',
+            url: window.AppUrls.Auth.ClearPendingSession,
+            success: function () {
+                // 清除表單
+                $("#email").val("").prop("readonly", false);
+                $("#password").val("");
+                $("#confirmPassword").val("");
+
+                // 清除提示
+                setFieldHint("email");
+                setFieldHint("password");
+                setFieldHint("confirmPassword");
+
+                // 重置按鈕狀態
+                $("#checkEmail").prop("disabled", false).text("寄驗證信").removeClass("btn_Gray");
+                $("#btnRegister").prop("disabled", true).addClass("btn_Gray").removeClass("btn_light");
+                $("#incompleteMessage").addClass("d-none");
+
+                showPopup({
+                    title: "已清除",
+                    message: "現在可以輸入新的 Email 註冊了！",
+                    type: "success",
+                    autoClose: true,
+                    seconds: 2
+                });
+            },
+            error: function () {
+                // 即使 API 失敗，也清除前端
+                location.reload();
             }
         });
     });

@@ -131,18 +131,13 @@
     // Email 輸入驗證
     $("#email").on("keyup input", function () {
         const email = $(this).val().trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const domain = email.includes("@") ? email.split("@")[1].toLowerCase() : "";
-        let isEmailValid = false;
+        const emailResult = Validator.validateEmail(email);
 
-        if (!email) setFieldHint("email", "☐ 請輸入 Email", "error");
-        else if (!email.includes("@")) setFieldHint("email", "☐ 缺少 @ 符號", "error");
-        else if (!email.includes(".") || email.lastIndexOf(".") < email.indexOf("@")) setFieldHint("email", "☐ 缺少網域點 (.com 等)", "error");
-        else if (!emailRegex.test(email)) setFieldHint("email", "☐ Email 格式不正確", "error");
-        else if (domain !== "gmail.com" && /^g[amill]{3,6}\.com$/i.test(domain)) setFieldHint("email", "⚠ 您是指 gmail.com 嗎？", "error");
-        else { isEmailValid = true; setFieldHint("email", "☑ Email 格式正確", "success"); }
-
-        $("#btn_send_reset").prop("disabled", !isEmailValid).toggleClass("btn_Gray", !isEmailValid).toggleClass("btn_light", isEmailValid);
+        setFieldHint("email", emailResult.message, emailResult.valid ? "success" : "error");
+        $("#btn_send_reset")
+            .prop("disabled", !emailResult.valid)
+            .toggleClass("btn_Gray", !emailResult.valid)
+            .toggleClass("btn_light", emailResult.valid);
     });
 
     // Step 1: 寄送重設信件
@@ -220,25 +215,32 @@
     function validatePasswordForm() {
         const pwd = $("#new_password").val();
         const confirmPwd = $("#confirm_new_password").val();
-        let pwdRules = [];
-        if (pwd.length < 6 || pwd.length > 18) pwdRules.push("6~18位");
-        if (!/[A-Z]/.test(pwd)) pwdRules.push("大寫英文");
-        if (!/[a-z]/.test(pwd)) pwdRules.push("小寫英文");
-        if (!/\d/.test(pwd)) pwdRules.push("數字");
 
-        const isPwdValid = pwdRules.length === 0;
+        const pwdResult = Validator.validatePassword(pwd);
 
-        if (!pwd) setFieldHint("new_password");
-        else if (isPwdValid) setFieldHint("new_password", "☑ 格式正確", "success");
-        else setFieldHint("new_password", "☐ 需包含：" + pwdRules.join("、"), "error");
+        // 密碼欄位
+        if (!pwd) {
+            setFieldHint("new_password");
+        } else {
+            setFieldHint("new_password",
+                pwdResult.valid ? "☑ 格式正確" : "☐ 需包含：" + pwdResult.missingRules.join("、"),
+                pwdResult.valid ? "success" : "error");
+        }
 
-        if (!confirmPwd) setFieldHint("confirm_new_password");
-        else if (pwd === confirmPwd && isPwdValid) setFieldHint("confirm_new_password", "☑ 密碼一致", "success");
-        else if (pwd !== confirmPwd) setFieldHint("confirm_new_password", "☐ 密碼不一致", "error");
+        // 確認密碼欄位
+        if (!confirmPwd) {
+            setFieldHint("confirm_new_password");
+        } else if (pwd === confirmPwd && pwdResult.valid) {
+            setFieldHint("confirm_new_password", "☑ 密碼一致", "success");
+        } else if (pwd !== confirmPwd) {
+            setFieldHint("confirm_new_password", "☐ 密碼不一致", "error");
+        }
 
-        const canSubmit = isPwdValid && pwd === confirmPwd;
-        $("#btn_reset_password").prop("disabled", !canSubmit)
-            .toggleClass("btn_Gray", !canSubmit).toggleClass("btn_light", canSubmit);
+        const canSubmit = pwdResult.valid && pwd === confirmPwd;
+        $("#btn_reset_password")
+            .prop("disabled", !canSubmit)
+            .toggleClass("btn_Gray", !canSubmit)
+            .toggleClass("btn_light", canSubmit);
     }
 
     // Step 2: 執行密碼重設

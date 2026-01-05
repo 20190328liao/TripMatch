@@ -131,7 +131,6 @@ namespace TripMatch.Services
         {
             services.Configure<SendGridSettings>(configuration.GetSection("checkemail"));
 
-            // Add services to the container.
             var connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -141,8 +140,15 @@ namespace TripMatch.Services
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            services.AddIdentityApiEndpoints<ApplicationUser>() 
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddIdentityApiEndpoints<ApplicationUser>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();  // ★ 確保加入這行
+
+            //設定 Token 有效期限
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromHours(24); // Email 確認 Token 有效 24 小時
+            });
 
             services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
