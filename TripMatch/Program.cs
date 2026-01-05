@@ -22,6 +22,10 @@ namespace TripMatch
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
 
 
+            // 註冊各個模組的services
+            builder.Services.AddScoped<TripServices>();
+
+
             // 註冊身分驗證基礎設施
 
             builder.Services.AddIdentityInfrastructure(builder.Configuration);

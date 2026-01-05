@@ -9,11 +9,19 @@ namespace TripMatch.Controllers.Api
     [ApiController]
     public class TripApiController : ControllerBase
     {
+        // 直接使用類別型別
+        private readonly TripServices _tripServices;
+
+        // 透過DI，給tripSerivces實體
+        public TripApiController(TripServices tripServices)
+        {
+            _tripServices = tripServices;
+        }
+
         [HttpGet]
         public IActionResult GetTrips()
         {
-            TripServices tripServices = new TripServices(); // 建立 TripServices 的實例，之後要改成注入
-            List<Models.DTOs.TripDto> trips = tripServices.GetMockTrips();
+            List<Models.DTOs.TripDto> trips = _tripServices.GetMockTrips();
             return Ok(trips);
         }
 
