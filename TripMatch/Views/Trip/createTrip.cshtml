@@ -15,7 +15,8 @@
             <div class="card border-0 shadow-sm p-4 p-md-5 bg-white rounded-3">
                 <h2 class="mb-4 fw-bold">建立行程</h2>
 
-                <form asp-controller="Trip" asp-action="EditTrip" method="post">
+                @* <form asp-controller="Trip" asp-action="EditTrip" method="post"> *@
+                    <form>
                     <div class="mb-4">
                         <label class="form-label text-danger-emphasis small">* 行程名稱</label>
                         <input type="text" id="title" class="form-control form-control-lg" placeholder="請輸入您的行程名稱">
@@ -23,9 +24,7 @@
 
                     <div class="mb-4">
                         <label class="form-label text-danger-emphasis small">* 目的地</label>
-                        <div class="form-control d-flex flex-wrap gap-2 align-items-center">
-                            <span class="badge bg-light text-dark border p-2">東京 ✕</span>
-                            <span class="badge bg-light text-dark border p-2">大阪 ✕</span>
+                        <div class="form-control d-flex flex-wrap gap-2 align-items-center">                           
                             <input type="text" class="border-0 flex-grow-1" style="outline:none;" placeholder="輸入後按 Enter">
                         </div>
                     </div>
@@ -51,5 +50,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/trip/createTrip.js"></script>
+    <script src="~/js/trip/createTrip.js" asp-append-version="true"></script>
 }

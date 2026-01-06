@@ -22,7 +22,7 @@ function SaveDataToFile() {
 
     // 2. 透過 POST 傳送到 Create API
     $.ajax({
-        url: 'api/TripApi/Create',
+        url: '/api/TripApi/Create',
         type: 'post',
         contentType: 'application/json',
         data: JSON.stringify(tripData),

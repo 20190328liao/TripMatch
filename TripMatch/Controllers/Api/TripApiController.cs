@@ -29,7 +29,7 @@ namespace TripMatch.Controllers.Api
         [HttpPost("Create")]
         public IActionResult Create([FromBody] TripCreateDto dto)
         {
-            return Ok();
+            return Ok(new { id = 1 });
         }
     }
 }

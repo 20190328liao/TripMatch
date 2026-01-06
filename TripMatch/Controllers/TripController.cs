@@ -14,8 +14,8 @@ namespace TripMatch.Controllers
             return View();
         }
 
-        [HttpPost]
-        public IActionResult EditTrip()
+        [HttpGet]
+        public IActionResult EditTrip(int id) 
         {
             return View();
         }
