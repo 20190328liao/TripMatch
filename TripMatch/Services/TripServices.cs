@@ -20,18 +20,35 @@ namespace TripMatch.Services
         {
             List<TripDto> tripDtos = [];
 
-           
-            var trips = await _context.Trips.ToListAsync();            
+
+            var trips = await _context.Trips.ToListAsync();
 
             foreach (var trip in trips)
             {
-                TripDto tripDto = new ()
+                TripDto tripDto = new()
                 {
                     Title = trip.Title,
                 };
                 tripDtos.Add(tripDto);
             }
             return tripDtos;
+        }
+
+        public async Task<int> AddTrip(TripCreateDto tripDto)
+        {
+            Trip trip = new Trip()
+            {
+                Title = tripDto.Title,
+                StartDate = tripDto.StartDate,
+                EndDate = tripDto.EndDate,
+                InviteCode = Guid.NewGuid(),
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now
+            };
+            _context.Trips.Add(trip);
+            await _context.SaveChangesAsync();
+            return trip.Id;
+
         }
 
     }

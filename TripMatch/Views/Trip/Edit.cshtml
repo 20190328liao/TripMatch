@@ -3,15 +3,18 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@model int;
+
+
 @* 1. 頁面專屬 CSS 區塊 *@
 @section Styles {
     <link rel="stylesheet" href="~/css/trip/editTrip.css" />
 }
 
 <div class="container py-5">
-    <h2>編輯行程</h2>
+    <h2>編輯行程 @Model</h2>
 </div>
 
 @section Scripts {
-    <script src="~/js/trip/editTrip.js"></script>
+    <script src="~/js/trip/editTrip.js" asp-append-version="true"></script>
 }

@@ -27,9 +27,10 @@ namespace TripMatch.Controllers.Api
 
 
         [HttpPost("Create")]
-        public IActionResult Create([FromBody] TripCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] TripCreateDto dto)
         {
-            return Ok(new { id = 1 });
+            int tripId = await _tripServices.AddTrip(dto);
+            return Ok(new { id = tripId });
         }
     }
 }
