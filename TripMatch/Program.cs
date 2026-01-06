@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using TripMatch.Models;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using TripMatch.Extensions;
+using TripMatch.Models;
 using TripMatch.Services;
 
 
@@ -24,6 +25,9 @@ namespace TripMatch
 
             // 註冊各個模組的services
             builder.Services.AddScoped<TripServices>();
+
+            // 取得UserId服務註冊（必須在 Build 之前）
+            builder.Services.AddTagUserId();
 
 
             // 註冊身分驗證基礎設施
@@ -63,7 +67,7 @@ namespace TripMatch
             Console.WriteLine($"==== 目前使用的資料庫連線是：{connString} ====");
             // --- 測試代碼結束 ---
 
-
+        
             // --- 3. 中間件配置 ---
             if (app.Environment.IsDevelopment())
             {
@@ -83,6 +87,12 @@ namespace TripMatch
             app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();
+
+            //中間件管道：將 TagUserId 放在 Authentication 之後、Authorization 之前
+            //TagUserId 為 Scoped，只在 HTTP 請求週期內有效。
+            app.UseTagUserId();
+
+         
             app.UseAuthorization();
             app.MapControllerRoute(
                 name: "default",

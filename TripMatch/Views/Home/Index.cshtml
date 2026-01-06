@@ -1,9 +1,19 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var taggedUserId = ViewBag.TaggedUserId as string;
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
+
+@if (!string.IsNullOrEmpty(taggedUserId))
+{
+    <p>Current tagged UserId: <strong>@taggedUserId</strong></p>
+}
+else
+{
+    <p>No tagged UserId found. 確認已登入且 middleware 已啟用。</p>
+}
