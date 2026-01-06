@@ -11,6 +11,12 @@ const monthRight = document.querySelector('.month-right');
 const days = document.querySelector('.days');
 const selected = document.querySelector('.selected');
 
+// New buttons
+const singleSelectBtn = document.querySelector('.single-select');
+const multiSelectBtn = document.querySelector('.multi-select');
+const confirmBtn = document.querySelector('.confirm');
+const editBtn = document.querySelector('.edit');
+
 const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -19,6 +25,12 @@ const monthNames = [
 let today = new Date();
 let selectedYear = today.getFullYear();
 let selectedMonth = today.getMonth();
+
+let mode = 'multi'; // 'single' or 'multi'
+let startDate = null;
+let endDate = null;
+let lockedDates = []; // array of date strings from Recommandations
+let savedDates = []; // array of date strings from Leaves
 
 function renderMonthsGrid() {
     monthsGrid.innerHTML = '';
@@ -66,15 +78,69 @@ function renderRightCalendar() {
     for (let d = 1; d <= numberOfDays; d++) {
         const cell = document.createElement('div');
         const cur = new Date(selectedYear, selectedMonth, d);
-        cell.textContent = d;
+        cell.textContent = `${selectedMonth + 1}/${d}`;
         cell.dataset.date = cur.toDateString();
+        
+        // Check if date is locked
+        if (lockedDates.includes(cur.toDateString())) {
+            cell.classList.add('locked');
+            cell.style.pointerEvents = 'none'; // disable click
+        }
+        
+        // Check if date is saved
+        if (savedDates.includes(cur.toDateString())) {
+            cell.classList.add('saved');
+        }
+        
         cell.addEventListener('click', (e) => {
-            selected.textContent = `Selected Date : ${e.target.dataset.date}`;
+            if (cell.classList.contains('locked')) return; // cannot select locked dates
+            
+            const dateStr = e.target.dataset.date;
+            if (mode === 'single') {
+                startDate = dateStr;
+                endDate = null;
+                selected.textContent = `Selected Date: ${dateStr}`;
+            } else { // multi
+                if (!startDate) {
+                    startDate = dateStr;
+                    endDate = null;
+                    selected.textContent = `Start Date: ${dateStr}`;
+                } else if (!endDate) {
+                    if (new Date(dateStr) < new Date(startDate)) {
+                        endDate = startDate;
+                        startDate = dateStr;
+                    } else {
+                        endDate = dateStr;
+                    }
+                    selected.textContent = `Selected Range: ${startDate} to ${endDate}`;
+                } else {
+                    // reset and start new
+                    startDate = dateStr;
+                    endDate = null;
+                    selected.textContent = `Start Date: ${dateStr}`;
+                }
+            }
+            renderRightCalendar(); // re-render to update highlights
         });
 
         // highlight today's date
         if (cur.getFullYear() === today.getFullYear() && cur.getMonth() === today.getMonth() && cur.getDate() === today.getDate()) {
             cell.classList.add('current-date');
+        }
+
+        // highlight selected range
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (cur >= start && cur <= end) {
+                cell.classList.add('selected-range');
+            }
+        }
+        if (startDate && cur.toDateString() === startDate) {
+            cell.classList.add('start-circle');
+        }
+        if (endDate && cur.toDateString() === endDate) {
+            cell.classList.add('end-circle');
         }
 
         days.appendChild(cell);
@@ -108,7 +174,80 @@ monthRight.addEventListener('click', () => {
     renderRightCalendar();
 });
 
+// button events
+singleSelectBtn.addEventListener('click', () => {
+    mode = 'single';
+    startDate = null;
+    endDate = null;
+    selected.textContent = '';
+    renderRightCalendar();
+});
+
+multiSelectBtn.addEventListener('click', () => {
+    mode = 'multi';
+    startDate = null;
+    endDate = null;
+    selected.textContent = '';
+    renderRightCalendar();
+});
+
+confirmBtn.addEventListener('click', async () => {
+    if (!startDate) return;
+    const dates = mode === 'single' ? [startDate] : getDatesInRange(startDate, endDate);
+    try {
+        const response = await fetch('/api/authapi/saveleaves', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dates })
+        });
+        if (response.ok) {
+            await fetchSavedDates(); // refresh saved dates
+            renderRightCalendar();
+            startDate = null;
+            endDate = null;
+            selected.textContent = 'Dates saved successfully';
+        }
+    } catch (error) {
+        console.error('Error saving dates:', error);
+    }
+});
+
+editBtn.addEventListener('click', async () => {
+    if (!savedDates.length) return;
+    try {
+        const response = await fetch('/api/authapi/deleteleaves', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dates: savedDates })
+        });
+        if (response.ok) {
+            savedDates = [];
+            renderRightCalendar();
+            selected.textContent = 'Edit mode: select new dates';
+        }
+    } catch (error) {
+        console.error('Error deleting dates:', error);
+    }
+});
+
+// helper function
+function getDatesInRange(start, end) {
+    const dates = [];
+    const startD = new Date(start);
+    const endD = new Date(end);
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toDateString());
+    }
+    return dates;       
+}
+
 // initialize
-renderMonthsGrid();
-updateDisplays();
-renderRightCalendar();
+async function init() {
+    await fetchLockedDates();
+    await fetchSavedDates();
+    renderMonthsGrid();
+    updateDisplays();
+    renderRightCalendar();
+}
+
+init();     

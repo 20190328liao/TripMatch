@@ -540,9 +540,10 @@ namespace TripMatch.Controllers
         // 2. 執行重設密碼
         // 對應 forgotPassword.js 的 AJAX 呼叫
         [HttpPost]
-        public async Task<IActionResult> PerformPasswordReset([FromBody] ResetPasswordModel model)
+        public async Task<IActionResult> PerformPasswordReset([FromBody] ResetPasswordModel? model)
         {
-            // 模型驗證 - 自動處理 null 檢查
+            if (model == null) return BadRequest(new { message = "無效的請求資料。" });
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new { message = "無效的請求資料。" });

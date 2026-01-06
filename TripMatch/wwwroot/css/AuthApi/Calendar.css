@@ -137,6 +137,33 @@
     margin-bottom: 12px;
 }
 
+.locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.saved {
+    background-color: yellow;
+}
+
+.selected-range {
+    background-color: lightblue;
+}
+
+.start-circle {
+    border: 2px solid green;
+    border-radius: 50%;
+}
+
+.end-circle {
+    border: 2px solid red;
+    border-radius: 50%;
+}
+
+.current-date {
+    font-weight: bold;
+}
+
 @media (max-width: 800px) {
     .two-column {
         flex-direction: column;

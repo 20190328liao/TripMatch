@@ -299,8 +299,20 @@
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: function () {
-                showPopup({ title: "成功", message: "密碼已重設，將直接前往登入頁。", type: "success" });
-                $.ajax({ type: 'POST', url: window.AppUrls.Auth.ClearPasswordResetSession, success: goToStep3 });
+                // ★★★ 密碼重設成功後，呼叫清除 Session（加上錯誤處理） ★★★
+                $.ajax({
+                    type: 'POST',
+                    url: window.AppUrls.Auth.ClearPasswordResetSession,
+                    success: function () {
+                        // Session 清除成功，前往 Step3
+                        goToStep3();
+                    },
+                    error: function () {
+                        // Session 清除失敗，但仍前往 Step3（避免卡住）
+                        console.warn("清除 Session 失敗，但繼續前往登入頁");
+                        goToStep3();
+                    }
+                });
             },
             error: function (err) {
                 btn.prop("disabled", false).text("重設密碼");
