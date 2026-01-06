@@ -1,17 +1,17 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var taggedUserId = ViewBag.TaggedUserId as string;
+    // 修改這裡：將轉型改為 int?
+    var taggedUserId = ViewBag.TaggedUserId as int?;
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
 
-@if (!string.IsNullOrEmpty(taggedUserId))
+@if (taggedUserId.HasValue) // 判斷是否有整數值
 {
-    <p>Current tagged UserId: <strong>@ViewBag.TaggedUserId</strong></p>
+    <p>Current tagged UserId: <strong>@taggedUserId.Value</strong></p>
 }
 else
 {

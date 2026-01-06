@@ -19,9 +19,11 @@ namespace TripMatch.Middleware
             {
                 var userIdStr = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                              ?? context.User.FindFirst("sub")?.Value;
+
                 if (int.TryParse(userIdStr, out var userId))
                 {
-                    tagUserId.Set(userId);
+                    tagUserId.Set(userId); // 給注入 ITagUserId 的地方用
+                    context.Items["TaggedUserId"] = userId; // 給 HttpContextExtensions 用
                 }
             }
             await _next(context);
