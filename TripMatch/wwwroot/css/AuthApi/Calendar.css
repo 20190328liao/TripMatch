@@ -1,0 +1,148 @@
+﻿body {
+}
+/*variables*/
+:root {
+    --white: #fff;
+    --main: #eaedf0;
+    --accent: #0041ff;
+    --accent-2: #ebedf0;
+}
+
+
+.container {
+    display: inline-block;
+    background-color: var(--white);
+    border-radius: 18px;
+    padding: 1em;
+    margin-top: 2em;
+}
+
+.two-column {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.months-panel {
+    width: 36%;
+    padding: 10px;
+}
+
+.month-panel {
+    width: 60%;
+    padding: 10px 6px;
+}
+
+/* header styles adjusted for two panels */
+.year-header,
+.month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+}
+
+    .year-header .year-display,
+    .month-header .month-display {
+        color: var(--accent);
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .year-header button,
+    .month-header button {
+        background: transparent;
+        border: none;
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 6px 10px;
+        color: var(--accent);
+    }
+
+.days,
+.week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin: auto;
+    padding: 0 10px;
+    justify-content: space-between;
+}
+
+    .week div,
+    .days div {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 3rem;
+        width: 3em;
+        border-radius: 100%;
+    }
+
+        .days div:hover {
+            background: var(--accent-2);
+            color: rgb(25, 25, 201);
+            cursor: pointer;
+        }
+
+    .week div {
+        opacity: 0.5;
+    }
+
+.current-date {
+    background-color: var(--accent);
+    color: var(--white);
+}
+
+.display-selected {
+    margin-bottom: 10px;
+    padding: 20px 20px;
+    text-align: center;
+}
+
+/* months grid on left */
+.months-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 8px;
+}
+
+.month-btn {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.14);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,128,96,0.04);
+}
+
+    .month-btn .mn {
+        font-weight: 700;
+        color: #333;
+    }
+
+    .month-btn .en {
+        font-size: 0.85rem;
+        color: #777;
+    }
+
+    .month-btn.active {
+        outline: 3px solid rgba(0,128,128,0.12);
+        background: linear-gradient(180deg, #f5fffb, #fff);
+    }
+
+.months-panel .year-header {
+    margin-bottom: 12px;
+}
+
+@media (max-width: 800px) {
+    .two-column {
+        flex-direction: column;
+    }
+
+    .months-panel, .month-panel {
+        width: 100%;
+    }
+}
