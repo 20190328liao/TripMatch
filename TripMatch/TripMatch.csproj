@@ -50,7 +50,9 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="wwwroot\css\AttractionExplorer\" />
     <Folder Include="wwwroot\img\Avatars\" />
+    <Folder Include="wwwroot\js\AttractionExplorer\" />
   </ItemGroup>
 
 </Project>
