@@ -8,9 +8,9 @@ using System.Security.Claims;
 using System.Text;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
-using TripMatch.Services; 
+using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
-    
+
 namespace TripMatch.Controllers
 {
     [Route("[controller]/[action]")]
@@ -133,9 +133,9 @@ namespace TripMatch.Controllers
         #region API (邏輯)
         [HttpPost]
         public IActionResult ClearPendingSession()
-        { 
-        Response.Cookies.Delete("PendingEmail");
-         return Ok(new { message = "已清除狀態" });
+        {
+            Response.Cookies.Delete("PendingEmail");
+            return Ok(new { message = "已清除狀態" });
         }
         // 登入 API
         [HttpPost]
@@ -155,7 +155,7 @@ namespace TripMatch.Controllers
             var result = await _signInManager.PasswordSignInAsync(user, data.Password!, isPersistent: false, lockoutOnFailure: true);
 
             if (result.Succeeded)
-            {               
+            {
                 var token = _authService.GenerateJwtToken(user);
                 _authService.SetAuthCookie(HttpContext, token);
                 _authService.SetPendingCookie(HttpContext, user.Email);
@@ -206,24 +206,24 @@ namespace TripMatch.Controllers
             {
                 user = new ApplicationUser { UserName = email, Email = email };
                 var createResult = await _userManager.CreateAsync(user);
-                if (!createResult.Succeeded) 
+                if (!createResult.Succeeded)
                     return BadRequest(new { message = "系統錯誤，請重新發送驗證信" });
             }
 
             // 1. 產生原始 Token
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            
+
             // 2. 進行 Base64Url 編碼
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             // 3. 生成連結指向
-            var callbackUrl = Url.Action("ConfirmEmail", "AuthApi", 
+            var callbackUrl = Url.Action("ConfirmEmail", "AuthApi",
                 new { userId = user.Id, code = code }, Request.Scheme);
 
             try
             {
                 await _emailSender.SendConfirmationLinkAsync(user, email, callbackUrl!);
-                
+
                 _authService.SetPendingCookie(HttpContext, user.Email);
 
                 return Ok(new { message = "驗證信已發送，請檢查信箱或垃圾郵件。" });
@@ -259,12 +259,12 @@ namespace TripMatch.Controllers
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
             var result = await _userManager.ResetPasswordAsync(user, resetToken, model.Password ?? string.Empty);
-            
+
             if (result.Succeeded)
             {
                 Response.Cookies.Delete("PendingEmail");
-                return Ok(new 
-                { 
+                return Ok(new
+                {
                     success = true,
                     message = "帳戶設定成功！請登入",
                     redirectUrl = Url.Action("Login", "AuthApi")
@@ -284,7 +284,7 @@ namespace TripMatch.Controllers
                 // 參數不足，顯示失敗畫面
                 ViewData["Status"] = "Error";
                 ViewData["Message"] = "無效的驗證連結。";
-                return View("CheckEmail"); 
+                return View("CheckEmail");
             }
 
             var user = await _userManager.FindByIdAsync(userId);
@@ -299,14 +299,14 @@ namespace TripMatch.Controllers
             {
                 // 1. ★ 進行 Base64Url 解碼
                 var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-                
+
                 // 2. 驗證
                 var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
 
                 if (result.Succeeded)
                 {
                     _authService.SetPendingCookie(HttpContext, user.Email);
-                    
+
                     // 成功：設定 ViewData 讓 View 顯示成功畫面
                     ViewData["Status"] = "Success";
                     return View("CheckEmail");
@@ -413,10 +413,10 @@ namespace TripMatch.Controllers
             if (userByEmail == null)
             {
                 // 建立新帳號時直接設定頭像
-                userByEmail = new ApplicationUser 
-                { 
-                    UserName = email, 
-                    Email = email, 
+                userByEmail = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
                     EmailConfirmed = true,
                     Avatar = googleAvatar,  // 設定 Google 頭像
                     FullName = info.Principal.FindFirstValue(ClaimTypes.Name)  // ★ 可選：設定名稱
@@ -438,7 +438,7 @@ namespace TripMatch.Controllers
             var newToken = _authService.GenerateJwtToken(userByEmail);
             _authService.SetAuthCookie(HttpContext, newToken);
 
-            return RedirectToAction("Index", "Home"); 
+            return RedirectToAction("Index", "Home");
         }
 
         // 測試用產生假會員 API
@@ -510,9 +510,9 @@ namespace TripMatch.Controllers
                 }
             }
             else
-            { 
-            if(!user.BackupEmailConfirmed)
-                return BadRequest(new { message = "此備援信箱尚未驗證，請先完成備援信箱驗證。" });
+            {
+                if (!user.BackupEmailConfirmed)
+                    return BadRequest(new { message = "此備援信箱尚未驗證，請先完成備援信箱驗證。" });
             }
 
             // 產生原始 Token
@@ -549,8 +549,8 @@ namespace TripMatch.Controllers
             }
 
             // 額外檢查空白值
-            if (string.IsNullOrWhiteSpace(model.UserId) || 
-                string.IsNullOrWhiteSpace(model.Code) || 
+            if (string.IsNullOrWhiteSpace(model.UserId) ||
+                string.IsNullOrWhiteSpace(model.Code) ||
                 string.IsNullOrWhiteSpace(model.Password))
             {
                 return BadRequest(new { message = "所有欄位都是必填的。" });
@@ -647,12 +647,12 @@ namespace TripMatch.Controllers
             {
                 // 進行 Base64Url 解碼
                 var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Code));
-                
+
                 // 驗證 code 是否有效（不實際執行重設）
                 // 使用 UserManager 的驗證方法檢查 token 有效性
-                var isValidToken = await _userManager.VerifyUserTokenAsync(user, 
-                    _userManager.Options.Tokens.PasswordResetTokenProvider, 
-                    "ResetPassword", 
+                var isValidToken = await _userManager.VerifyUserTokenAsync(user,
+                    _userManager.Options.Tokens.PasswordResetTokenProvider,
+                    "ResetPassword",
                     decodedCode);
 
                 if (isValidToken)
@@ -752,12 +752,12 @@ namespace TripMatch.Controllers
         // 上傳頭像 API
         [HttpPost]
         [Authorize]
-        [RequestSizeLimit(5*1024*1024)]
+        [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> UploadAvatar(IFormFile avatarFile)
         {
             if (avatarFile == null || avatarFile.Length == 0)
             {
-                return BadRequest(new { success=false,message="請選擇圖片檔案"});
+                return BadRequest(new { success = false, message = "請選擇圖片檔案" });
             }
 
             const long maxFileSize = 2 * 1024 * 1024; // 2 MB
@@ -770,8 +770,8 @@ namespace TripMatch.Controllers
             { ".jpg", ".jpeg", ".png", ".gif" };
             var extension = Path.GetExtension(avatarFile.FileName);
             if (string.IsNullOrEmpty(extension))
-            { 
-            return BadRequest(new { success = false, message = "僅支援 JPG、PNG、GIF 格式"});
+            {
+                return BadRequest(new { success = false, message = "僅支援 JPG、PNG、GIF 格式" });
             }
 
             var allowedMimeTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -881,12 +881,12 @@ namespace TripMatch.Controllers
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
-        { 
-            if(model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
+        {
+            if (model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
             if (string.IsNullOrWhiteSpace(model.OldPassword) ||
                 string.IsNullOrWhiteSpace(model.NewPassword) ||
                 string.IsNullOrWhiteSpace(model.ConfirmPassword))
-            { 
+            {
                 return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
             }
             if (model.NewPassword != model.ConfirmPassword)
@@ -897,27 +897,27 @@ namespace TripMatch.Controllers
             var pwdCheck = ValidatePasswordRules(model.NewPassword);
             if (!pwdCheck.IsValid)
             {
-                return BadRequest(new { success=false,message="密碼格式不符："+pwdCheck.Message,missingRules=pwdCheck.MissingRules});
+                return BadRequest(new { success = false, message = "密碼格式不符：" + pwdCheck.Message, missingRules = pwdCheck.MissingRules });
             }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-            { 
+            {
                 return Unauthorized(new { success = false, message = "找不到使用者。" });
             }
 
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)return NotFound(new { success = false, message = "找不到使用者。" });
+            if (user == null) return NotFound(new { success = false, message = "找不到使用者。" });
 
             //第三方登入回傳提示
             if (!await _userManager.HasPasswordAsync(user))
             {
-                return Conflict(new { action="external",message="請前往 google 重設密碼流程。"});
+                return Conflict(new { action = "external", message = "請前往 google 重設密碼流程。" });
             }
             var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
             if (!changeResult.Succeeded)
-            { 
+            {
                 var errors = changeResult.Errors.Select(e => e.Description).ToArray();
-                return BadRequest(new { success = false, message = errors.FirstOrDefault() ??  "密碼修改失敗。", errors });
+                return BadRequest(new { success = false, message = errors.FirstOrDefault() ?? "密碼修改失敗。", errors });
             }
 
             //安全性
