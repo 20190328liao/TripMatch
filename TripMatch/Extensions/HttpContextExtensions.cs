@@ -1,20 +1,25 @@
 ﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace TripMatch.Extensions
 {
     public static class HttpContextExtensions
     {
-        // 優先從 Items["TaggedUserId"] 取得，fallback 讀 Claims
-        public static string? GetTaggedUserId(this HttpContext context)
+        // 優先從 Items["TaggedUserId"] 取得，fallback 讀 Claims（並嘗試轉為 int）
+        public static int? GetTaggedUserId(this HttpContext context)
         {
             if (context == null) return null;
 
-            if (context.Items.TryGetValue("TaggedUserId", out var val) && val is string s && !string.IsNullOrEmpty(s))
+            if (context.Items.TryGetValue("TaggedUserId", out var val))
             {
-                return s;
+                if (val is int i) return i;
+                if (val is string s && int.TryParse(s, out var parsed)) return parsed;
             }
 
-            return context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var claim = context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(claim) && int.TryParse(claim, out var c)) return c;
+
+            return null;
         }
     }
 }

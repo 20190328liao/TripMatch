@@ -3,15 +3,15 @@
     //做成介面方便DI注入
     public interface TagUserId
     {
-        string? UserId { get; set; }
-        void Set(string userId);
+        int? UserId { get; set; }
+        void Set(int userId);
     }
 
     //訪問器
     public class TagUserIdAccessor : TagUserId
     {
-        public string? UserId { get; set; }
-        public void Set(string userId)
+        public int? UserId { get; set; }
+        public void Set(int userId)
         {
             UserId = userId;
         }

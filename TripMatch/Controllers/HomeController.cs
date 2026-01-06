@@ -9,8 +9,7 @@ namespace TripMatch.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly TagUserId _tagUserId;// 加上欄位宣告
-
+        private readonly TagUserId _tagUserId; // 加上欄位宣告並配合 int? 類型
 
         public HomeController(ILogger<HomeController> logger, TagUserId tagUserId)
         {
@@ -22,7 +21,7 @@ namespace TripMatch.Controllers
 
         public IActionResult Index()
         {
-            // 優先用注入的 TagUserId，若為 null 則 fallback 備援機制 到 HttpContext extension
+            // 優先用注入的 TagUserId，若為 null 則 fallback 到 HttpContext extension
             var userId = _tagUserId?.UserId ?? HttpContext.GetTaggedUserId();
             ViewBag.TaggedUserId = userId;
             return View();
@@ -32,8 +31,6 @@ namespace TripMatch.Controllers
         {
             return View();
         }      
-
-       
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
