@@ -8,9 +8,9 @@ namespace TripMatch.Controllers.Api
     [Route("api/[controller]")]
     public class UserIdApiController : ControllerBase
     {
-        private readonly TagUserId _tag;
+        private readonly ITagUserId _tag;
 
-        public UserIdApiController(TagUserId tag)
+        public UserIdApiController(ITagUserId tag)
         {
             _tag = tag;
         }

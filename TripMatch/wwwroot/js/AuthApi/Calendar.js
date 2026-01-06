@@ -241,13 +241,23 @@ function getDatesInRange(start, end) {
     return dates;       
 }
 
-// initialize
+// Safe initialization: 若 fetchLockedDates / fetchSavedDates 未定義也不會拋例外中斷
 async function init() {
-    await fetchLockedDates();
-    await fetchSavedDates();
+    try {
+        if (typeof fetchLockedDates === 'function') {
+            await fetchLockedDates();
+        }
+        if (typeof fetchSavedDates === 'function') {
+            await fetchSavedDates();
+        }
+    } catch (err) {
+        console.error('Init fetch error (non-fatal):', err);
+    }
+
+    // Always render calendar UI even if optional fetches failed/missing
     renderMonthsGrid();
     updateDisplays();
     renderRightCalendar();
 }
 
-init();     
+init();

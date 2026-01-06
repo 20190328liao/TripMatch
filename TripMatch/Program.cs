@@ -33,14 +33,13 @@ namespace TripMatch
 
 
             // 取得UserId服務註冊（必須在 Build 之前）
-            builder.Services.AddTagUserId();
+            builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
 
 
             // 註冊身分驗證基礎設施
 
-            builder.Services.AddIdentityInfrastructure(builder.Configuration);
-            
-          
+
+
             // Swagger 與 授權
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
@@ -93,13 +92,11 @@ namespace TripMatch
             app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();
+            app.UseTagUserId();  // 假設你有 extension 方法註冊 Middleware
 
-            //中間件管道：將 TagUserId 放在 Authentication 之後、Authorization 之前
-            //TagUserId 為 Scoped，只在 HTTP 請求週期內有效。
-            app.UseTagUserId();
-
-         
+      
             app.UseAuthorization();
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");

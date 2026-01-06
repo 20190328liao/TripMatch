@@ -140,9 +140,13 @@ namespace TripMatch.Services
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            services.AddIdentityApiEndpoints<ApplicationUser>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();  // ★ 確保加入這行
+            // 將 services.AddIdentityApiEndpoints<ApplicationUser>() 改回傳統的 AddIdentity
+            // 指定只用 ApplicationUser，讓 Role 保持預設
+            services.AddIdentity<ApplicationUser, IdentityRole<int>>(options => {
+                // 這裡可以放你的密碼設定
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
             //設定 Token 有效期限
             services.Configure<DataProtectionTokenProviderOptions>(options =>

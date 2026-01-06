@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using TripMatch.Services;
 
@@ -14,19 +13,17 @@ namespace TripMatch.Middleware
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context, TagUserId tagUserId)
+        public async Task InvokeAsync(HttpContext context, ITagUserId tagUserId)
         {
-            // 以 ClaimTypes.NameIdentifier 為準（Claims 是字串，嘗試轉為 int）
-            var userIdStr = context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out var userId))
+            if (context.User.Identity?.IsAuthenticated == true)
             {
-                // 放到 HttpContext.Items，方便中間層或外部直接讀取
-                context.Items["TaggedUserId"] = userId;
-
-                // 並寫入注入的 accessor（Scoped）
-                tagUserId?.Set(userId);
+                var userIdStr = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                             ?? context.User.FindFirst("sub")?.Value;
+                if (int.TryParse(userIdStr, out var userId))
+                {
+                    tagUserId.Set(userId);
+                }
             }
-
             await _next(context);
         }
     }

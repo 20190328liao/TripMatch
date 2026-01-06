@@ -12,7 +12,7 @@ namespace TripMatch.Extensions
         public static IServiceCollection AddTagUserId(this IServiceCollection services)
         {
             services.AddHttpContextAccessor();
-            services.AddScoped<TagUserId, TagUserIdAccessor>();
+            services.AddScoped<ITagUserId, TagUserIdAccessor>();
             return services;
         }
 
