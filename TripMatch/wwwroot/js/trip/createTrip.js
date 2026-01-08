@@ -177,38 +177,22 @@ function SaveDataToFile() {
 
     const tripData = {
         title: document.querySelector('#title')?.value?.trim(),
-        regions: Array.from(selectedPlaceIds),
+        placeIds: Array.from(selectedPlaceIds),
         startDate: document.querySelector('#startDate')?.value,
         endDate: document.querySelector('#endDate')?.value
     };
 
-    if (!tripData.title || tripData.regions.length === 0) {
+    if (!tripData.title || tripData.placeIds.length === 0) {
         alert("請輸入行程名稱並選擇目的地");
         btnSave.disabled = false;
         btnSave.innerText = originalText;
         return;
     }
 
-    if (typeof $ === 'undefined' || !$.ajax) {
-        // 若未載入 jQuery，使用 fetch 作為後備
-        fetch('/api/TripApi/Create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(tripData)
-        }).then(async (resp) => {
-            if (resp.ok) {
-                const res = await resp.json();
-                alert('行程建立成功');
-                window.location.href = `/Trip/Edit/${res.id}`;
-            } else {
-                const msg = await resp.text();
-                throw new Error(msg || '建立失敗');
-            }
-        }).catch(err => {
-            alert(err.message || '建立失敗');
-            btnSave.disabled = false;
-            btnSave.innerText = originalText;
-        });
+    if(new Date(tripData.startDate) > new Date(tripData.endDate)) {
+        alert("結束日期必須在開始日期之後");
+        btnSave.disabled = false;
+        btnSave.innerText = originalText;
         return;
     }
 

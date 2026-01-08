@@ -47,6 +47,22 @@ namespace TripMatch.Services
             };
             _context.Trips.Add(trip);
             await _context.SaveChangesAsync();
+
+            foreach (var placeID in tripDto.PlaceIds)
+            {
+                GlobalRegion globalRegion = new GlobalRegion()
+                {
+                    Name = "Unknown",
+                    NameEn = "Unknown",
+                    Level = 2,
+                    IsHot = true,
+                    PlaceId = placeID,
+                };
+                _context.GlobalRegions.Add(globalRegion);
+                await _context.SaveChangesAsync();
+            }
+
+
             return trip.Id;
 
         }

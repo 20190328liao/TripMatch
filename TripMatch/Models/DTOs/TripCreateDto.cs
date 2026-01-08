@@ -4,7 +4,7 @@
     {
         public string Title { get; set; } = string.Empty;
 
-        public List<int> Regions = [];
+        public string[] PlaceIds  { get; set; }  = [];
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
     }

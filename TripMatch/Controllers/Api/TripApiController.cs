@@ -32,5 +32,7 @@ namespace TripMatch.Controllers.Api
             int tripId = await _tripServices.AddTrip(dto);
             return Ok(new { id = tripId });
         }
+
+
     }
 }

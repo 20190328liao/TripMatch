@@ -1,4 +1,3 @@
-<style >
 /* Chip 標籤樣式 - 配合 Bootstrap 的顏色 */
 .chip {
     display: flex;
@@ -57,4 +56,6 @@
     border-radius: 4px;
 }
 
-</style >
+#required {
+    color: red;
+}
