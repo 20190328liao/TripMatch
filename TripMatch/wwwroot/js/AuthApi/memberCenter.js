@@ -34,7 +34,7 @@ const MemberProfile = {
     async loadProfile() {
         try {
             const response = await $.ajax({
-                url: '/AuthApi/GetMemberInfo',
+                url: window.Routes.AuthApi.GetMemberProfile,
                 method: 'GET',
                 xhrFields: {
                     withCredentials: true  // ★ 確保攜帶 Cookie
@@ -47,7 +47,7 @@ const MemberProfile = {
             console.error('載入會員資料失敗:', error);
             // 如果是 401，可能需要重新登入
             if (error.status === 401) {
-                window.location.href = '/AuthApi/Login';
+                window.location.href = window.Routes.Auth.Login;
             }
         }
     },
@@ -93,7 +93,7 @@ const MemberProfile = {
 
         try {
             const response = await $.ajax({
-                url: '/AuthApi/UploadAvatar',
+                url: window.Routes.AuthApi.UploadAvatar,
                 method: 'POST',
                 data: formData,
                 processData: false,
@@ -121,7 +121,7 @@ const MemberProfile = {
     async handleLogout() {
         try {
             await $.ajax({
-                url: '/AuthApi/Logout',
+                url: window.Routes.AuthApi.Logout,
                 method: 'POST',
                 xhrFields: {
                     withCredentials: true  // ★ 確保攜帶 Cookie
@@ -162,7 +162,7 @@ $(function () {
 
         $.ajax({
             type: "POST",
-            url: "/AuthApi/ChangePassword",
+            url: window.Routes.Auth.ChangePassword,
             contentType: "application/json",
             data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirm }),
             success: function (res) {

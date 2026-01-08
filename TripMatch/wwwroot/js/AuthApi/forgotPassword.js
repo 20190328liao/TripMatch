@@ -68,18 +68,18 @@
         if (shouldReset) {
             // 顯示重寄提示並清掉舊的 session/cookie
             showResendSection(true, errorMsg);
-            $.post(window.AppUrls.Auth.ClearPasswordResetSession).always(() => {
+            $.post(window.Routes.AuthApi.ClearPasswordResetSession).always(() => {
                 // 保險呼叫一次（若第一個失敗）
-                $.post(window.AppUrls.Auth.ClearPasswordResetSession);
+                $.post(window.Routes.AuthApi.ClearPasswordResetSession);
             });
-            window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
+            window.history.replaceState({}, document.title, window.Routes.Auth.ForgotPassword);
         }
     }
 
     // 檢查是否有已儲存的重設連結（session）
     async function checkStoredPasswordResetLink() {
         try {
-            const res = await fetch(window.AppUrls.Auth.CheckPasswordResetSession, {
+            const res = await fetch(window.Routes.AuthApi.CheckPasswordResetSession, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -107,7 +107,7 @@
     function validateAndGoToStep2(userId, code, opt = { storeSession: false }) {
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.ValidatePasswordResetLink,
+            url: window.Routes.AuthApi.ValidatePasswordResetLink,
             contentType: 'application/json',
             data: JSON.stringify({ userId, code }),
             success: function (res) {
@@ -120,7 +120,7 @@
                     if (opt.storeSession) {
                         $.ajax({
                             type: 'POST',
-                            url: window.AppUrls.Auth.SetPasswordResetSession,
+                            url: window.Routes.AuthApi.SetPasswordResetSession,
                             contentType: 'application/json',
                             data: JSON.stringify({ userId, code })
                         });
@@ -133,16 +133,16 @@
                     const msg = res.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信";
                     showPopup({ title: "連結無效", message: msg, type: "error" });
                     showResendSection(true, msg);
-                    $.post(window.AppUrls.Auth.ClearPasswordResetSession);
-                    window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
+                    $.post(window.Routes.AuthApi.ClearPasswordResetSession);
+                    window.history.replaceState({}, document.title, window.Routes.Auth.ForgotPassword);
                 }
             },
             error: function (err) {
                 const errorMsg = err.responseJSON?.message || "驗證碼已過期或已被使用，請回到忘記密碼頁面按重寄驗證信";
                 showPopup({ title: "驗證失敗", message: errorMsg, type: "error" });
                 showResendSection(true, errorMsg);
-                $.post(window.AppUrls.Auth.ClearPasswordResetSession);
-                window.history.replaceState({}, document.title, window.AppUrls.Auth.ForgotPassword);
+                $.post(window.Routes.AuthApi.ClearPasswordResetSession);
+                window.history.replaceState({}, document.title, window.Routes.Auth.ForgotPassword);
             }
         });
     }
@@ -150,7 +150,7 @@
     // 檢查 Pending Cookie，並控制下一步按鈕
     async function checkPendingThenToggleNext() {
         try {
-            const res = await fetch(window.AppUrls.Auth.CheckDbStatus, { credentials: 'include' });
+            const res = await fetch(window.Routes.AuthApi.CheckDbStatus, { credentials: 'include' });
             const data = await res.json();
             if (data.verified) {
                 verified = true;
@@ -200,7 +200,7 @@
 
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.SendPasswordReset,
+            url: window.Routes.AuthApi.SendPasswordReset,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function () {
@@ -222,7 +222,7 @@
                 const message = data.message || "發送失敗，請稍後再試";
                 showPopup({ title: "錯誤", message: message, type: "error" });
                 if (data.action === "redirect_signup") {
-                    setTimeout(() => { window.location.href = window.AppUrls.Auth.Signup; }, 1500);
+                    setTimeout(() => { window.location.href = window.Routes.AuthApi.Register; }, 1500);
                 }
             }
         });
@@ -295,14 +295,14 @@
 
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.PerformPasswordReset,
+            url: window.Routes.AuthApi.PerformPasswordReset,
             contentType: 'application/json',
             data: JSON.stringify(payload),
             success: function () {
                 // ★★★ 密碼重設成功後，呼叫清除 Session（加上錯誤處理） ★★★
                 $.ajax({
                     type: 'POST',
-                    url: window.AppUrls.Auth.ClearPasswordResetSession,
+                    url: window.Routes.AuthApi.ClearPasswordResetSession,
                     success: function () {
                         // Session 清除成功，前往 Step3
                         goToStep3();
@@ -339,6 +339,6 @@
         $("#step3_indicator").removeClass("step_incomplete step_completed").addClass("step_active");
         $("#step3_indicator .step_badge").html('<i class="bi bi-check-lg"></i>');
 
-        window.location.href = window.AppUrls.Auth.Login;
+        window.location.href = window.Routes.Auth.Login;
     }
 });

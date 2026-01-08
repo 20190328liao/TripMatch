@@ -14,8 +14,8 @@
             <div class="signContent s2 col-12 col-md-6 ">
                 <div class="mb-4">
                     @* 使用 Url.Action 跳轉到登入頁 *@
-                    <a href="@Url.Action("Login", "AuthApi")" class="titleWrap titleH1 inputNone">登入</a>
-                    <a href="@Url.Action("Signup", "AuthApi")" class="titleWrap titleH1 inputLine">註冊</a>
+                    <a href="@Url.Action("Login", "Auth")" class="titleWrap titleH1 inputNone">登入</a>
+                    <a href="@Url.Action("Signup", "Auth")" class="titleWrap titleH1 inputLine">註冊</a>
                 </div>
 
                 <div class="formWrap">
@@ -79,5 +79,9 @@
     }
     });
 </script>
+
+    <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/signup.js" asp-append-version="true"></script>
+
 }
 

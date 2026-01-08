@@ -6,26 +6,34 @@
         },
         headers: { "RequestVerificationToken": window.csrfToken }
     });
-    
-    window.AppUrls = window.AppUrls || {
+
+    // 分為 AuthApi (JSON API) 與 Auth (MVC/View) 兩組路徑
+    window.Routes = window.Routes || {
+        AuthApi: {
+            Signin: '/api/auth/Signin',
+            Logout: '/api/auth/Logout', 
+            Register: '/api/auth/Register',
+            SendConfirmation: '/api/auth/SendConfirmation',
+            CheckDbStatus: '/api/auth/CheckDbStatus',
+            SendPasswordReset: '/api/auth/SendPasswordReset',
+            ValidatePasswordResetLink: '/api/auth/ValidatePasswordResetLink',
+            PerformPasswordReset: '/api/auth/PerformPasswordReset',
+            CheckPasswordResetSession: '/api/auth/CheckPasswordResetSession',
+            SetPasswordResetSession: '/api/auth/SetPasswordResetSession',
+            ClearPasswordResetSession: '/api/auth/ClearPasswordResetSession',
+            GetMemberProfile: '/api/auth/GetMemberProfile',
+            UploadAvatar: '/api/auth/UploadAvatar',
+            ClearPendingSession: '/api/auth/ClearPendingSession',
+            SaveLeaves: '/api/auth/SaveLeaves',
+            DeleteLeaves: '/api/auth/DeleteLeaves'
+        },
         Auth: {
-            Login: '/AuthApi/Login',
-            Register: '/AuthApi/Register',
-            SendConfirmation: '/AuthApi/SendConfirmation',
-            CheckDbStatus: '/AuthApi/CheckDbStatus',
-            Logout: '/AuthApi/Logout',
-            CheckEmail: '/AuthApi/CheckEmail',
-            ForgotPassword: '/AuthApi/ForgotPassword',
-            SendPasswordReset: '/AuthApi/SendPasswordReset',
-            ValidatePasswordResetLink: '/AuthApi/ValidatePasswordResetLink',
-            PerformPasswordReset: '/AuthApi/PerformPasswordReset',
-            CheckPasswordResetSession: '/AuthApi/CheckPasswordResetSession',
-            SetPasswordResetSession: '/AuthApi/SetPasswordResetSession',
-            ClearPasswordResetSession: '/AuthApi/ClearPasswordResetSession',
-            MemberCenter: '/AuthApi/MemberCenter',
-            GetMemberProfile: '/AuthApi/GetMemberProfile',
-            UploadAvatar: '/AuthApi/UploadAvatar',
-            ClearPendingSession: '/AuthApi/ClearPendingSession'
+            Login: '/Auth/Login',
+            Signup: '/Auth/Signup',
+            CheckEmail: '/Auth/CheckEmail',
+            ForgotPassword: '/Auth/ForgotPassword',
+            MemberCenter: '/Auth/MemberCenter',
+            ChangePassword: '/Auth/ChangePassword'
         },
         Home: {
             Index: '/Home/Index'

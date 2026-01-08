@@ -55,8 +55,30 @@ namespace TripMatch
            
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.LoginPath = "/AuthApi/Login";
-                options.AccessDeniedPath = "/AuthApi/Login";
+                options.LoginPath = "/Auth/Login";
+                options.AccessDeniedPath = "/Auth/Login";
+
+                options.Events.OnRedirectToLogin = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnRedirectToAccessDenied = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
             });
 
             // 持久化 Data Protection Key（防止重啟後 Token 失效）

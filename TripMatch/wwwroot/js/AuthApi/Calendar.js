@@ -195,7 +195,7 @@ confirmBtn.addEventListener('click', async () => {
     if (!startDate) return;
     const dates = mode === 'single' ? [startDate] : getDatesInRange(startDate, endDate);
     try {
-        const response = await fetch('/api/authapi/saveleaves', {
+        const response = await fetch(window.Routes.AuthApi.SavedDates, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dates })
@@ -215,7 +215,7 @@ confirmBtn.addEventListener('click', async () => {
 editBtn.addEventListener('click', async () => {
     if (!savedDates.length) return;
     try {
-        const response = await fetch('/api/authapi/deleteleaves', {
+        const response = await fetch(window.Routes.AuthApi.Deleteleaves, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dates: savedDates })

@@ -204,10 +204,7 @@ namespace TripMatch.Services
             private readonly IOptions<JwtSettings> _jwtSettings;
 
             public AuthService(UserManager<ApplicationUser> userManager, IOptions<JwtSettings> jwtSettings)
-            {
-                _userManager = userManager;
-                _jwtSettings = jwtSettings;
-            }
+                => (_userManager, _jwtSettings) = (userManager, jwtSettings);
 
             public string GenerateJwtToken(ApplicationUser user)
             {
@@ -272,8 +269,8 @@ namespace TripMatch.Services
                 // 配合 AuthApiController 的 Base64UrlDecode，這裡需使用 Base64UrlEncode
                 var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                // 指向 AuthApiController 的 ConfirmEmail Action (/AuthApi/ConfirmEmail)
-                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/AuthApi/ConfirmEmail?userId={userId}&code={encodedCode}";
+                // 指向 AuthApiController 的 ConfirmEmail Action (/Auth/ConfirmEmail)
+                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/Auth/ConfirmEmail?userId={userId}&code={encodedCode}";
             }
 
             public sealed class EmailSender : IEmailSender<ApplicationUser>
@@ -281,9 +278,7 @@ namespace TripMatch.Services
                 private readonly SendGridSettings _settings;
 
                 public EmailSender(IOptions<SendGridSettings> settings)
-                {
-                    _settings = settings.Value;
-                }
+                    => _settings = settings.Value;
 
                 public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
                 {

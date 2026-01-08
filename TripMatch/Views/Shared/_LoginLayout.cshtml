@@ -1,4 +1,29 @@
 ﻿<!DOCTYPE html>
+@using System.Text.Json
+@{
+    // 以 Url.Action 產生 server 路徑（MVC view），安全序列化給 client
+    // 明確區分「頁面路由」（Auth）與「API 路由」（api/auth）
+    var apiBase = Url.Content("~/api/auth");
+    var authPages = new
+    {
+        Login = Url.Action("Login", "Auth"),
+        Signup = Url.Action("Signup", "Auth"),
+        CheckEmail = Url.Action("CheckEmail", "Auth"),
+        ForgotPassword = Url.Action("ForgotPassword", "Auth"),
+        MemberCenter = Url.Action("MemberCenter", "Auth"),
+        ChangePassword = Url.Action("ChangePassword", "Auth")
+    };
+    var authApis = new
+    {
+        Login = apiBase + "/Login",
+        Signup = apiBase + "/Register",
+        CheckEmail = apiBase + "/CheckEmailStatus",
+        ForgotPassword = apiBase + "/SendPasswordReset",
+        MemberCenter = apiBase + "/GetMemberProfile",
+        ChangePassword = apiBase + "/ChangePassword"
+    };
+}
+
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
@@ -28,20 +53,11 @@
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
 
-    @* 共用的 Scripts *@
-    <script src="~/js/jquery-3.7.1.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/AuthApi/helper.js"></script>
-    <script src="~/js/AuthApi/login.js"></script>
-    <script src="~/js/AuthApi/signup.js"></script>
-    <script src="~/js/AuthApi/logout.js"></script>
-    <script src="~/js/AuthApi/forgotPassword.js"></script>
-    <script src="~/js/AuthApi/memberCenter.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
+    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
 
-    @* 這裡預留給各別頁面加入專屬 JS (如 login.js) *@
-    @await RenderSectionAsync("Scripts", required: false)
-
-    <script>
-    </script>
+    @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

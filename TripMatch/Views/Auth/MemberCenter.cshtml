@@ -66,7 +66,7 @@
                     </div>
                     <div class="info_item">
                         <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>重設密碼</label>
-                        <a href="@Url.Action("ChangePassword", "AuthApi")" class="edit_link">前往重設</a>
+                        <a href="@Url.Action("ChangePassword", "Auth")" class="edit_link">前往重設</a>
                     </div>
                 </div>
             </div>
@@ -154,6 +154,9 @@
     </section>
 
 </div>
+<a href="@Url.Action("Index", "Home")" class="back-home-link">
+    回到首頁
+</a>
 
 @section Styles {
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
@@ -167,5 +170,6 @@
     <script src="~/js/AuthApi/Calendar.js"></script>
     <!-- 載入並執行 memberCenter.js（包含 month-picker + calendar 整合） -->
     <script src="~/js/AuthApi/memberCenter.js"></script>
+    <script src="~/js/AuthApi/logout.js"></script>
 }
 

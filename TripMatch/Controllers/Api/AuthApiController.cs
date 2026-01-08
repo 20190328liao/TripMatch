@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
@@ -11,10 +12,12 @@ using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
 
-namespace TripMatch.Controllers
+
+namespace TripMatch.Controllers.Api
 {
-    [Route("[controller]/[action]")]
-    public class AuthApiController : Controller
+    [ApiController]
+    [Route("api/auth")]
+    public class AuthApiController : ControllerBase
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -33,113 +36,8 @@ namespace TripMatch.Controllers
             _emailSender = emailSender;
         }
 
-        #region Views (頁面)
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-            return View();
-        }
-
-        [HttpGet]
-        public IActionResult Signup()
-        {
-            return View();
-        }
-
-
-        [HttpGet]
-        public IActionResult CheckEmail()
-        {
-            return View();
-        }
-
-        [HttpGet]
-        public IActionResult ForgotPassword()
-        {
-            return View("ForgotPassword");
-        }
-
-        [HttpGet]
-        [Authorize]  // ★ 自動驗證，未登入會導向預設登入頁
-        public IActionResult MemberCenter()
-        {
-            return View();
-        }
-
-        [HttpGet]
-        [Authorize]
-        public IActionResult ChangePassword()
-        {
-            return View();
-        }
-
-
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> GetMemberProfile()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId!);
-
-            if (user == null)
-            {
-                return NotFound(new { success = false, message = "找不到使用者" });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                email = user.Email,
-                backupEmail = user.BackupEmail,
-                avatar = user.Avatar ?? "/img/default_avatar.png"
-            });
-        }
-        // 新增於 AuthApiController 類別內（放在其他 action 同區塊）
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> InitiatePasswordReset()
-        {
-            // 取得目前使用者 Id（Claims）
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                // 若找不到使用者，導回會員中心或忘記密碼頁
-                return RedirectToAction("MemberCenter");
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return RedirectToAction("MemberCenter");
-            }
-
-            // 產生原始 Token
-            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            // Base64Url 編碼（與其它流程一致）
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-            // 導向 ForgotPassword，帶上參數 userId & code
-            return RedirectToAction("ForgotPassword", new { userId = user.Id, code = code });
-        }
-
-        #endregion
-
-        #region API (邏輯)
-        [HttpPost]
-        public IActionResult ClearPendingSession()
-        {
-            Response.Cookies.Delete("PendingEmail");
-            return Ok(new { message = "已清除狀態" });
-        }
-        // 登入 API
-        [HttpPost]
-        public async Task<IActionResult> Login([FromBody] LoginModel data)
+        [HttpPost("Signin")]
+        public async Task<IActionResult> Signin([FromBody] LoginModel data)
         {
             if (!ModelState.IsValid)
             {
@@ -178,9 +76,27 @@ namespace TripMatch.Controllers
 
             return BadRequest(new { success = false, message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
         }
+        // 登出 API
+        [HttpPost("Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            Response.Cookies.Delete("AuthToken");
+
+           var redirectUrl = Url.Action("Index", "Home");
+            return Ok(new { redirectUrl});
+        }
+
+        [HttpPost("ClearPendingSession")]
+        public IActionResult ClearPendingSession()
+        {
+            Response.Cookies.Delete("PendingEmail");
+            return Ok(new { message = "已清除狀態" });
+        }
+
 
         // 寄送驗證信 API
-        [HttpPost]
+        [HttpPost("SendConfirmation")]
         public async Task<IActionResult> SendConfirmation([FromBody] string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -217,7 +133,7 @@ namespace TripMatch.Controllers
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             // 3. 生成連結指向
-            var callbackUrl = Url.Action("ConfirmEmail", "AuthApi",
+            var callbackUrl = Url.Action("ConfirmEmail", "Auth",
                 new { userId = user.Id, code = code }, Request.Scheme);
 
             try
@@ -235,9 +151,9 @@ namespace TripMatch.Controllers
             }
         }
 
+
         // 註冊 (設定密碼) API
-        // 對應 signup.js: /AuthApi/Register
-        [HttpPost]
+        [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] Register model)
         {
             if (!Request.Cookies.TryGetValue("PendingEmail", out _))
@@ -267,7 +183,7 @@ namespace TripMatch.Controllers
                 {
                     success = true,
                     message = "帳戶設定成功！請登入",
-                    redirectUrl = Url.Action("Login", "AuthApi")
+                    redirectUrl = Url.Action("Login", "Auth")
                 });
             }
 
@@ -275,56 +191,8 @@ namespace TripMatch.Controllers
             return BadRequest(new { message = errorMsg, errors = result.Errors });
         }
 
-        // 驗證信箱 (加入 WebEncoders 解碼 & 回傳 View)
-        [HttpGet]
-        public async Task<IActionResult> ConfirmEmail(string userId, string code)
-        {
-            if (userId == null || code == null)
-            {
-                // 參數不足，顯示失敗畫面
-                ViewData["Status"] = "Error";
-                ViewData["Message"] = "無效的驗證連結。";
-                return View("CheckEmail");
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                ViewData["Status"] = "Error";
-                ViewData["Message"] = "找不到此使用者。";
-                return View("CheckEmail");
-            }
-
-            try
-            {
-                // 1. ★ 進行 Base64Url 解碼
-                var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-
-                // 2. 驗證
-                var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
-
-                if (result.Succeeded)
-                {
-                    _authService.SetPendingCookie(HttpContext, user.Email);
-
-                    // 成功：設定 ViewData 讓 View 顯示成功畫面
-                    ViewData["Status"] = "Success";
-                    return View("CheckEmail");
-                }
-            }
-            catch
-            {
-                // 解碼失敗或其他錯誤
-            }
-
-            // 失敗
-            ViewData["Status"] = "Error";
-            ViewData["Message"] = "驗證失敗或連結已過期。";
-            return View("CheckEmail");
-        }
-
         // 檢查 DB 狀態 (前端 Polling 用)
-        [HttpGet]
+        [HttpGet("CheckDbStatus")]
         public async Task<IActionResult> CheckDbStatus()
         {
             if (!Request.Cookies.TryGetValue("PendingEmail", out var email))
@@ -342,8 +210,9 @@ namespace TripMatch.Controllers
             return Ok(new { verified = false });
         }
 
+
         //檢查 Email 狀態
-        [HttpPost]
+        [HttpPost("CheckEmailStatus")]
         public async Task<IActionResult> CheckEmailStatus([FromBody] string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -354,133 +223,10 @@ namespace TripMatch.Controllers
 
             return Ok(new { verified = false });
         }
-        // 登出 API
-        [HttpPost]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            Response.Cookies.Delete("AuthToken");
-            return RedirectToAction("Index", "Home");
-        }
 
-        // Google 登入跳轉
-        [HttpGet]
-        public IActionResult LoginGoogle()
-        {
-            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", Url.Action("GoogleResponse", "AuthApi"));
-            return Challenge(properties, "Google");
-        }
 
-        // Google 登入回調
-        [HttpGet]
-        public async Task<IActionResult> GoogleResponse()
-        {
-            var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            // ★ 從 Google Claims 取得頭像 URL
-            var googleAvatar = info.Principal.FindFirstValue("picture");
-
-            // 1. 嘗試用外部登入資訊登入
-            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
-
-            if (result.Succeeded)
-            {
-                var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
-                if (user != null)
-                {
-                    // ★ 更新頭像（如果 Google 有提供且使用者尚未設定自訂頭像）
-                    if (!string.IsNullOrEmpty(googleAvatar) && string.IsNullOrEmpty(user.Avatar))
-                    {
-                        user.Avatar = googleAvatar;
-                        await _userManager.UpdateAsync(user);
-                    }
-
-                    var token = _authService.GenerateJwtToken(user);
-                    _authService.SetAuthCookie(HttpContext, token);
-                    return RedirectToAction("Index", "Home");
-                }
-            }
-
-            // 2. 如果沒帳號，自動註冊
-            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-            if (string.IsNullOrEmpty(email)) return BadRequest("無法從 Google 取得 Email");
-
-            var userByEmail = await _userManager.FindByEmailAsync(email);
-            if (userByEmail == null)
-            {
-                // 建立新帳號時直接設定頭像
-                userByEmail = new ApplicationUser
-                {
-                    UserName = email,
-                    Email = email,
-                    EmailConfirmed = true,
-                    Avatar = googleAvatar,  // 設定 Google 頭像
-                    FullName = info.Principal.FindFirstValue(ClaimTypes.Name)  // ★ 可選：設定名稱
-                };
-                var createResult = await _userManager.CreateAsync(userByEmail);
-                if (!createResult.Succeeded) return BadRequest("自動註冊失敗");
-            }
-            else if (string.IsNullOrEmpty(userByEmail.Avatar) && !string.IsNullOrEmpty(googleAvatar))
-            {
-                // 已有帳號但沒頭像，更新頭像
-                userByEmail.Avatar = googleAvatar;
-                await _userManager.UpdateAsync(userByEmail);
-            }
-
-            // 連結 Google 帳號
-            await _userManager.AddLoginAsync(userByEmail, info);
-            await _signInManager.SignInAsync(userByEmail, isPersistent: false);
-
-            var newToken = _authService.GenerateJwtToken(userByEmail);
-            _authService.SetAuthCookie(HttpContext, newToken);
-
-            return RedirectToAction("Index", "Home");
-        }
-
-        // 測試用產生假會員 API
-        [HttpPost]
-        public async Task<IActionResult> TestGenerateUser()
-        {
-            var randomId = Guid.NewGuid().ToString().Substring(0, 5);
-            var fakeUser = new ApplicationUser
-            {
-                UserName = $"Tester_{randomId}",
-                Email = $"test_{randomId}@example.com",
-                EmailConfirmed = true
-            };
-
-            // 使用 UserManager 建立使用者 
-            var createResult = await _userManager.CreateAsync(fakeUser, "Test1234!");
-
-            if (!createResult.Succeeded)
-            {
-                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errorMsg });
-            }
-
-            // 4. 為了產生 Token，需要 User 物件
-            var user = await _userManager.FindByIdAsync(fakeUser.Id.ToString());
-            if (user == null) return NotFound();
-
-            // 5. 產生 JWT 並寫入 Cookie
-            var token = _authService.GenerateJwtToken(user);
-            _authService.SetAuthCookie(HttpContext, token);
-
-            // 6. 回傳給前端
-            return Ok(new
-            {
-                message = "成功新增假會員並自動登入",
-                userId = user.Id,
-                userName = user.UserName
-            });
-        }
-
-        // 1. 發送重設密碼信件
-        [HttpPost]
+        //發送重設密碼信件
+        [HttpPost("SendPasswordReset")]
         public async Task<IActionResult> SendPasswordReset([FromBody] string email)
         {
             // 寄信前檢查：使用者不存在
@@ -522,8 +268,8 @@ namespace TripMatch.Controllers
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
             // 生成重設連結
-            var callbackUrl = Url.Action("VerifyPasswordResetLink", "AuthApi",
-                new { userId = user.Id, code = code }, Request.Scheme);
+            var callbackUrl = Url.Action("VerifyPasswordResetLink", "Auth",
+       new { userId = user.Id, code = code }, Request.Scheme);
 
             try
             {
@@ -537,9 +283,9 @@ namespace TripMatch.Controllers
             }
         }
 
-        // 2. 執行重設密碼
+        // 執行重設密碼
         // 對應 forgotPassword.js 的 AJAX 呼叫
-        [HttpPost]
+        [HttpPost("PerformPasswordReset")]
         public async Task<IActionResult> PerformPasswordReset([FromBody] ResetPasswordModel? model)
         {
             if (model == null) return BadRequest(new { message = "無效的請求資料。" });
@@ -580,57 +326,15 @@ namespace TripMatch.Controllers
             }
             catch
             {
-                return BadRequest(new { message = "無效的驗證碼。" });
+                return BadRequest(new { message = "無效的驗證。" });
             }
         }
 
         // 驗證重設密碼連結
-        [HttpGet]
-        public async Task<IActionResult> VerifyPasswordResetLink(string userId, string code)
-        {
-            if (userId == null || code == null)
-            {
-                return RedirectToAction("ForgotPassword", new { error = "invalid_link" });
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return RedirectToAction("ForgotPassword", new { error = "user_not_found_reset" });
-            }
-
-            try
-            {
-                // 進行 Base64Url 解碼
-                var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-
-                // 驗證 token 有效性（但不立即重設密碼）
-                var isValidToken = await _userManager.VerifyUserTokenAsync(user,
-                    _userManager.Options.Tokens.PasswordResetTokenProvider,
-                    "ResetPassword",
-                    decodedCode);
-
-                if (!isValidToken)
-                {
-                    return RedirectToAction("ForgotPassword", new { error = "invalid_code" });
-                }
-
-                // Token 有效：把重設資訊存入 Session（24 小時內有效）
-                HttpContext.Session.SetString("PasswordResetUserId", userId);
-                HttpContext.Session.SetString("PasswordResetCode", code);
-                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
-
-                // 導回 ForgotPassword 頁面（前端會以 CheckPasswordResetSession 判斷）
-                return RedirectToAction("ForgotPassword");
-            }
-            catch
-            {
-                return RedirectToAction("ForgotPassword", new { error = "invalid_code" });
-            }
-        }
+    
 
         // 驗證重設密碼連結有效性
-        [HttpPost]
+        [HttpPost("ValidatePasswordResetLink")]
         public async Task<IActionResult> ValidatePasswordResetLink([FromBody] ValidatePasswordResetLinkModel model)
         {
             if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Code))
@@ -671,8 +375,9 @@ namespace TripMatch.Controllers
             }
         }
 
+
         // 存儲重設密碼連結狀態（用戶點擊郵件連結時調用）
-        [HttpPost]
+        [HttpPost("SetPasswordResetSession")]
         public IActionResult SetPasswordResetSession([FromBody] SetPasswordResetSessionModel model)
         {
             if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Code))
@@ -689,7 +394,7 @@ namespace TripMatch.Controllers
         }
 
         //檢查用戶是否有有效的密碼重設連結
-        [HttpPost]
+        [HttpPost("CheckPasswordResetSession")]
         public async Task<IActionResult> CheckPasswordResetSession()
         {
             var userId = HttpContext.Session.GetString("PasswordResetUserId");
@@ -740,7 +445,7 @@ namespace TripMatch.Controllers
         }
 
         //重設密碼完成後清除 Session
-        [HttpPost]
+        [HttpPost("ClearPasswordResetSession")]
         public IActionResult ClearPasswordResetSession()
         {
             HttpContext.Session.Remove("PasswordResetUserId");
@@ -750,8 +455,129 @@ namespace TripMatch.Controllers
         }
 
 
+        [HttpPost("ChangePassword")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+        {
+            if (model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
+            if (string.IsNullOrWhiteSpace(model.OldPassword) ||
+                string.IsNullOrWhiteSpace(model.NewPassword) ||
+                string.IsNullOrWhiteSpace(model.ConfirmPassword))
+            {
+                return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
+            }
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                return BadRequest(new { success = false, message = "新密碼與確認密碼不符。" });
+            }
+            //格式驗證同前端
+            var pwdCheck = ValidatePasswordRules(model.NewPassword);
+            if (!pwdCheck.IsValid)
+            {
+                return BadRequest(new { success = false, message = "密碼格式不符：" + pwdCheck.Message, missingRules = pwdCheck.MissingRules });
+            }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { success = false, message = "找不到使用者。" });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(new { success = false, message = "找不到使用者。" });
+
+            //第三方登入回傳提示
+            if (!await _userManager.HasPasswordAsync(user))
+            {
+                return Conflict(new { action = "external", message = "請前往 google 重設密碼流程。" });
+            }
+            var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
+            if (!changeResult.Succeeded)
+            {
+                var errors = changeResult.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(new { success = false, message = errors.FirstOrDefault() ?? "密碼修改失敗。", errors });
+            }
+
+            //安全性
+            await _signInManager.RefreshSignInAsync(user);
+            var newToken = _authService.GenerateJwtToken(user);
+            _authService.SetAuthCookie(HttpContext, newToken);
+
+            HttpContext.Session.Remove("PasswordResetUserId");
+            HttpContext.Session.Remove("PasswordResetCode");
+            HttpContext.Session.Remove("PasswordResetTime");
+            Response.Cookies.Delete("PendingEmail");
+
+            return Ok(new { success = true, message = "密碼已更新。" });
+
+        }
+
+
+        private static Task<bool> IsValidImageAsync(IFormFile file)
+        {
+            // 定義各圖片格式的 Magic Bytes
+            var imageSignatures = new Dictionary<string, List<byte[]>>
+    {
+        { ".jpg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".jpeg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".png", new List<byte[]> { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
+        { ".gif", new List<byte[]> { "GIF8"u8.ToArray() } }
+    };
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!imageSignatures.TryGetValue(extension, out var signatures))
+            {
+                return Task.FromResult(false);
+            }
+
+            using var reader = new BinaryReader(file.OpenReadStream());
+            var maxSignatureLength = signatures.Max(s => s.Length);
+            var headerBytes = reader.ReadBytes(maxSignatureLength);
+
+            var isValid = signatures.Any(signature =>
+                headerBytes.Length >= signature.Length &&
+                headerBytes.Take(signature.Length).SequenceEqual(signature));
+            return Task.FromResult(isValid);
+        }
+
+
+        // Private helper：與前端 Validator 一致的密碼規則檢查
+        private static (bool IsValid, string Message, string[] MissingRules) ValidatePasswordRules(string password)
+        {
+            var missing = new List<string>();
+
+            if (string.IsNullOrEmpty(password) || password.Length < 6 || password.Length > 18) missing.Add("6~18位");
+            if (!password.Any(char.IsUpper)) missing.Add("大寫英文");
+            if (!password.Any(char.IsLower)) missing.Add("小寫英文");
+            if (!password.Any(char.IsDigit)) missing.Add("數字");
+
+            if (missing.Count == 0) return (true, "密碼格式符合規則", Array.Empty<string>());
+            return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
+        }
+
+
+        [HttpGet("GetMemberProfile")]
+        [Authorize]
+        public async Task<IActionResult> GetMemberProfile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId!);
+
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "找不到使用者" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                email = user.Email,
+                backupEmail = user.BackupEmail,
+                avatar = user.Avatar ?? "/img/default_avatar.png"
+            });
+        }
+
         // 上傳頭像 API
-        [HttpPost]
+        [HttpPost("UploadAvatar")]
         [Authorize]
         [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> UploadAvatar(IFormFile avatarFile)
@@ -851,104 +677,77 @@ namespace TripMatch.Controllers
             }
         }
 
-        private static Task<bool> IsValidImageAsync(IFormFile file)
-        {
-            // 定義各圖片格式的 Magic Bytes
-            var imageSignatures = new Dictionary<string, List<byte[]>>
+
+
+        [HttpGet("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail(string userId, string code)
     {
-        { ".jpg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { ".jpeg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { ".png", new List<byte[]> { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
-        { ".gif", new List<byte[]> { new byte[] { 0x47, 0x49, 0x46, 0x38 } } },
-        { ".webp", new List<byte[]> { new byte[] { 0x52, 0x49, 0x46, 0x46 } } } // RIFF
-    };
-
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!imageSignatures.TryGetValue(extension, out var signatures))
-            {
-                return Task.FromResult(false);
-            }
-
-            using var reader = new BinaryReader(file.OpenReadStream());
-            var maxSignatureLength = signatures.Max(s => s.Length);
-            var headerBytes = reader.ReadBytes(maxSignatureLength);
-
-            var isValid = signatures.Any(signature =>
-                headerBytes.Length >= signature.Length &&
-                headerBytes.Take(signature.Length).SequenceEqual(signature));
-            return Task.FromResult(isValid);
-        }
-
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
         {
-            if (model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
-            if (string.IsNullOrWhiteSpace(model.OldPassword) ||
-                string.IsNullOrWhiteSpace(model.NewPassword) ||
-                string.IsNullOrWhiteSpace(model.ConfirmPassword))
-            {
-                return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
-            }
-            if (model.NewPassword != model.ConfirmPassword)
-            {
-                return BadRequest(new { success = false, message = "新密碼與確認密碼不符。" });
-            }
-            //格式驗證同前端
-            var pwdCheck = ValidatePasswordRules(model.NewPassword);
-            if (!pwdCheck.IsValid)
-            {
-                return BadRequest(new { success = false, message = "密碼格式不符：" + pwdCheck.Message, missingRules = pwdCheck.MissingRules });
-            }
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { success = false, message = "找不到使用者。" });
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound(new { success = false, message = "找不到使用者。" });
-
-            //第三方登入回傳提示
-            if (!await _userManager.HasPasswordAsync(user))
-            {
-                return Conflict(new { action = "external", message = "請前往 google 重設密碼流程。" });
-            }
-            var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
-            if (!changeResult.Succeeded)
-            {
-                var errors = changeResult.Errors.Select(e => e.Description).ToArray();
-                return BadRequest(new { success = false, message = errors.FirstOrDefault() ?? "密碼修改失敗。", errors });
-            }
-
-            //安全性
-            await _signInManager.RefreshSignInAsync(user);
-            var newToken = _authService.GenerateJwtToken(user);
-            _authService.SetAuthCookie(HttpContext, newToken);
-
-            HttpContext.Session.Remove("PasswordResetUserId");
-            HttpContext.Session.Remove("PasswordResetCode");
-            HttpContext.Session.Remove("PasswordResetTime");
-            Response.Cookies.Delete("PendingEmail");
-
-            return Ok(new { success = true, message = "密碼已更新。" });
-
+            return BadRequest(new { success = false, message = "無效的驗證連結。" });
         }
 
-        // Private helper：與前端 Validator 一致的密碼規則檢查
-        private static (bool IsValid, string Message, string[] MissingRules) ValidatePasswordRules(string password)
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
         {
-            var missing = new List<string>();
-
-            if (string.IsNullOrEmpty(password) || password.Length < 6 || password.Length > 18) missing.Add("6~18位");
-            if (!password.Any(char.IsUpper)) missing.Add("大寫英文");
-            if (!password.Any(char.IsLower)) missing.Add("小寫英文");
-            if (!password.Any(char.IsDigit)) missing.Add("數字");
-
-            if (missing.Count == 0) return (true, "密碼格式符合規則", Array.Empty<string>());
-            return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
+            return BadRequest(new { success = false, message = "用戶不存在。" });
         }
 
-        #endregion
+        // 解碼 code（配合 AuthService 的 Base64UrlEncode）
+        var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+        var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
+
+        if (result.Succeeded)
+        {
+            // 成功：返回 JSON（供 AJAX 使用）
+            return Ok(new { success = true, message = "Email 驗證成功！" });
+        }
+        else
+        {
+            // 失敗：返回錯誤 JSON
+            return BadRequest(new { success = false, message = "Email 驗證失敗：" + string.Join(", ", result.Errors.Select(e => e.Description)) });
+        }
+    }
+
+
+
+        // 測試用產生假會員 API
+        [HttpPost("TestGenerateUser")]
+        public async Task<IActionResult> TestGenerateUser()
+        {
+            var randomId = Guid.NewGuid().ToString().Substring(0, 5);
+            var fakeUser = new ApplicationUser
+            {
+                UserName = $"Tester_{randomId}",
+                Email = $"test_{randomId}@example.com",
+                EmailConfirmed = true
+            };
+
+            // 使用 UserManager 建立使用者 
+            var createResult = await _userManager.CreateAsync(fakeUser, "Test1234!");
+
+            if (!createResult.Succeeded)
+            {
+                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errorMsg });
+            }
+
+            // 4. 為了產生 Token，需要 User 物件
+            var user = await _userManager.FindByIdAsync(fakeUser.Id.ToString());
+            if (user == null) return NotFound();
+
+            // 5. 產生 JWT 並寫入 Cookie
+            var token = _authService.GenerateJwtToken(user);
+            _authService.SetAuthCookie(HttpContext, token);
+
+            // 6. 回傳給前端
+            return Ok(new
+            {
+                message = "成功新增假會員並自動登入",
+                userId = user.Id,
+                userName = user.UserName
+            });
+        }
+
     }
 }
