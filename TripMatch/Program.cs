@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TripMatch.Extensions;
 using TripMatch.Models;
 using TripMatch.Services;
+using TripMatch.Services.ExternalClients;
 
 
 namespace TripMatch
@@ -30,6 +31,9 @@ namespace TripMatch
             builder.Services.AddScoped<TripServices>();
             builder.Services.AddScoped<SpotServices>();
             builder.Services.AddScoped<BillingServices>();
+
+            // 註冊 Typed HttpClient (會自動處理 HttpClient 的生命週期)
+            builder.Services.AddHttpClient<GooglePlacesClient>();
 
 
             // 取得UserId服務註冊（必須在 Build 之前）
