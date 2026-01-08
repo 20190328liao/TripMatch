@@ -4,6 +4,7 @@ namespace TripMatch.Models.DTOs
 {
     public class TripSimpleDto
     {
+        public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
     }
 

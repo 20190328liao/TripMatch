@@ -30,6 +30,7 @@ namespace TripMatch.Services
             {
                 TripSimpleDto tripDto = new()
                 {
+                    Id = trip.Id,   
                     Title = trip.Title,
                 };
                 tripDtos.Add(tripDto);
