@@ -21,7 +21,7 @@ namespace TripMatch.Controllers.Api
         [HttpGet]
         public async Task<IActionResult> GetTrips()
         {
-            List<Models.DTOs.TripDto> trips = await _tripServices.GetTrips();
+            List<Models.DTOs.TripSimpleDto> trips = await _tripServices.GetTrips();
             return Ok(trips);
         }
 
