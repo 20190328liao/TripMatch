@@ -70,8 +70,8 @@
                                     </li>
                                     <li><hr class="dropdown-divider" /></li>
                                     <li>
-                                        <form class="form-inline" asp-controller="Auth" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item">登出</button>
+                                        <form class="form-inline" asp-controller="AuthApi" asp-action="Logout" method="post">
+                                            <button id="btnLogout" type="submit" class="dropdown-item">登出</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -114,6 +114,7 @@
     @* 在 layout 中也保持單一載入點，使用版本化避免舊路徑快取 *@
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 
     @* 其餘頁面腳本由各 view 的 @section Scripts 提供 *@
     @RenderSection("Scripts", required: false)

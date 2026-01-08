@@ -115,18 +115,19 @@ namespace TripMatch
             app.UseStaticFiles();
 
             app.UseRouting();
+
             app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseTagUserId();  // 假設你有 extension 方法註冊 Middleware
 
-
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.Run();
+
         }
     }
 }

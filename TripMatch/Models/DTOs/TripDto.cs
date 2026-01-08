@@ -5,13 +5,13 @@ namespace TripMatch.Models.DTOs
     public class TripSimpleDto
     {
         public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; }
     }
 
     public class TripCreateDto
     {
-        public string Title { get; set; } = string.Empty;
-        public string[] PlaceIds { get; set; } = [];
+        public string Title { get; set; } 
+        public string[] PlaceIds { get; set; }
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
     }
@@ -42,7 +42,7 @@ namespace TripMatch.Models.DTOs
     public class GooglePlaceDetailDto
     {
         [JsonPropertyName("result")]
-        public PlaceResult Result { get; set; }
+        public PlaceResult Result { get; set; } = new PlaceResult();
 
         [JsonPropertyName("status")]
         public string Status { get; set; }
@@ -57,7 +57,7 @@ namespace TripMatch.Models.DTOs
 
         // 用來解析出 CountryCode (如 JP, TW)
         [JsonPropertyName("address_components")]
-        public List<AddressComponent> AddressComponents { get; set; }
+        public List<AddressComponent> AddressComponents { get; set; } = new List<AddressComponent>();
 
         // 用來判斷 Level (是國家 country 還是城市 locality)
         [JsonPropertyName("types")]

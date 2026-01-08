@@ -23,17 +23,30 @@ namespace TripMatch.Controllers.Api
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
+        private readonly TravelDbContext _dbContext;
+
+
+        private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
+        {
+            [".jpg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            [".jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            [".png"] = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } },
+            [".gif"] = new[] { new byte[] { (byte)'G', (byte)'I', (byte)'F', (byte)'8' } }
+        };
+
 
         public AuthApiController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             AuthService authService,
-            IEmailSender<ApplicationUser> emailSender)
+            IEmailSender<ApplicationUser> emailSender,
+           TravelDbContext dbContext)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _authService = authService;
             _emailSender = emailSender;
+            _dbContext = dbContext;
         }
 
         [HttpPost("Signin")]
@@ -514,29 +527,45 @@ namespace TripMatch.Controllers.Api
 
         private static Task<bool> IsValidImageAsync(IFormFile file)
         {
-            // 定義各圖片格式的 Magic Bytes
-            var imageSignatures = new Dictionary<string, List<byte[]>>
-    {
-        { ".jpg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { ".jpeg", new List<byte[]> { new byte[] { 0xFF, 0xD8, 0xFF } } },
-        { ".png", new List<byte[]> { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
-        { ".gif", new List<byte[]> { "GIF8"u8.ToArray() } }
-    };
+            if (file == null || string.IsNullOrEmpty(file.FileName))
+                return Task.FromResult(false);
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!imageSignatures.TryGetValue(extension, out var signatures))
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(extension) || !_imageSignatures.TryGetValue(extension, out var signatures))
+                return Task.FromResult(false);
+
+            // 讀取最長 signature 所需的位元組
+            var maxSig = signatures.Max(s => s.Length);
+
+            // 如果小於等於 128，使用 stackalloc 減少 heap 分配          
+            Span<byte> header = maxSig <= 128 ? stackalloc byte[128].Slice(0, maxSig) : new byte[maxSig];
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                // MemoryStream/Stream 支援 Read(Span<byte>) 的情況下會避免額外的陣列分配
+                var totalRead = 0;
+                while (totalRead < maxSig)
+                {
+                    var read = stream.Read(header.Slice(totalRead));
+                    if (read == 0) break;
+                    totalRead += read;
+                }
+
+                if (totalRead == 0) return Task.FromResult(false);
+
+                foreach (var sig in signatures)
+                {
+                    if (totalRead >= sig.Length && header.Slice(0, sig.Length).SequenceEqual(sig))
+                        return Task.FromResult(true);
+                }
+
+                return Task.FromResult(false);
+            }
+            catch
             {
                 return Task.FromResult(false);
             }
-
-            using var reader = new BinaryReader(file.OpenReadStream());
-            var maxSignatureLength = signatures.Max(s => s.Length);
-            var headerBytes = reader.ReadBytes(maxSignatureLength);
-
-            var isValid = signatures.Any(signature =>
-                headerBytes.Length >= signature.Length &&
-                headerBytes.Take(signature.Length).SequenceEqual(signature));
-            return Task.FromResult(isValid);
         }
 
 
@@ -560,7 +589,21 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> GetMemberProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId!);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+            {
+                return NotFound(new { success = false, message = "找不到使用者" });
+            }
+
+            var user = await _dbContext.AspNetUsers
+                .AsNoTracking()
+                .Where(u => u.UserId == intUserId)
+                .Select(u => new
+                {
+                    u.Email,
+                    u.BackupEmail,
+                    Avatar = u.Avatar ?? "/img/default_avatar.png"
+                })
+                .FirstOrDefaultAsync();
 
             if (user == null)
             {
@@ -572,7 +615,7 @@ namespace TripMatch.Controllers.Api
                 success = true,
                 email = user.Email,
                 backupEmail = user.BackupEmail,
-                avatar = user.Avatar ?? "/img/default_avatar.png"
+                avatar = user.Avatar
             });
         }
 
