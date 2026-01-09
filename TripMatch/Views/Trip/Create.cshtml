@@ -58,7 +58,7 @@
     <script src="~/js/trip/createTrip.js" asp-append-version="true"></script>
 
 
-    <!-- 使用官方 loader，透過 Razor 注入 Key；移除 v=beta -->
+    <!-- 使用官方 loader，透過 Razor 注入 Key-->
     <script src="https://maps.googleapis.com/maps/api/js?key=@Configuration["GoogleMaps:ApiKey"]&libraries=places&callback=initMap" async defer></script>
 
 }

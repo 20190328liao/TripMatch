@@ -15,15 +15,13 @@ public partial class Expense
 
     public decimal Amount { get; set; }
 
-    public int PaidBy { get; set; }
-
-    public DateTimeOffset? CreatedAt { get; set; }
+    public int Day { get; set; }
 
     public virtual Category? Category { get; set; }
 
     public virtual ICollection<ExpenseParticipant> ExpenseParticipants { get; set; } = new List<ExpenseParticipant>();
 
-    public virtual TripMember PaidByNavigation { get; set; } = null!;
+    public virtual ICollection<ExpensePayer> ExpensePayers { get; set; } = new List<ExpensePayer>();
 
     public virtual Trip Trip { get; set; } = null!;
 }
