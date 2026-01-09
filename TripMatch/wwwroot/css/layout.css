@@ -3,10 +3,6 @@
 
 header {
 	width: 100%;
-	background: var(--color_nav);
-	padding: 1rem 0;
-	margin-bottom: 2rem;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 .topNav {

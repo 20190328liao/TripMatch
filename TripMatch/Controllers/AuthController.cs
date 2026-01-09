@@ -11,6 +11,7 @@ using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
+using TripMatch.Data;
 
 namespace TripMatch.Controllers
 {
@@ -21,13 +22,17 @@ namespace TripMatch.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
+        private readonly TravelDbContext _dbContext;
 
         public AuthController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             AuthService authService,
-            IEmailSender<ApplicationUser> emailSender)
-            => (_signInManager, _userManager, _authService, _emailSender) = (signInManager, userManager, authService, emailSender);
+            IEmailSender<ApplicationUser> emailSender,
+            TravelDbContext dbContext
+            )
+            => (_signInManager, _userManager, _authService, _emailSender, _dbContext) = (signInManager, userManager, authService, emailSender, dbContext);
+
 
         #region Views (頁面)
 
@@ -46,7 +51,6 @@ namespace TripMatch.Controllers
         {
             return View();
         }
-
 
         [HttpGet]
         public IActionResult CheckEmail()

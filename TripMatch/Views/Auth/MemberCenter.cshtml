@@ -1,4 +1,5 @@
-﻿@{
+﻿
+@{
     ViewData["Title"] = "會員中心";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 
@@ -77,7 +78,14 @@
          區塊二：個人行事曆
          ============================================= -->
     <section class="member_section" id="calendar_section">
-        <h2 class="titleWrap titleH2">媒合行事曆</h2>
+        <h2 class="titleWrap titleH2">個人行事曆</h2>
+
+        <div class="calendar_legend mb-3">
+            <span class="legend-item"><span class="dot today"></span>藍色圈：今天</span>
+            <span class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</span>
+            <span class="legend-item"><span class="dot range"></span>淡藍綠色圈（開始：粉藍；結束：橘）：範圍選擇</span>
+            <span class="legend-item" id="CalendarHint">會員如果需要單日，則日期點兩下</span>
+        </div>
 
         <div class="container two-column">
             <div class="months-panel">
@@ -114,10 +122,9 @@
                 </div>
             </div>
         </div>
-        <button class="single-select">連續單選</button>
-        <button class="multi-select">範圍選擇</button>
+        <button class="multi-select d-none">範圍選擇</button>
         <button class="confirm">確定</button>
-        <button class="edit">編輯</button>
+        <button class="edit">修改刪除</button>
     </section>
 
     <!-- =============================================
@@ -159,17 +166,15 @@
 </a>
 
 @section Styles {
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
 }
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 
     <!-- 先載入 helper.js（提供 Validator / setFieldHint / AppUrls） -->
-    <script src="~/js/AuthApi/helper.js"></script>
-    <script src="~/js/AuthApi/Calendar.js"></script>
+    <script src="~/lib/date-fns.min.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/Calendar.js" asp-append-version="true"></script>
     <!-- 載入並執行 memberCenter.js（包含 month-picker + calendar 整合） -->
-    <script src="~/js/AuthApi/memberCenter.js"></script>
-    <script src="~/js/AuthApi/logout.js"></script>
+    <script src="~/js/AuthApi/memberCenter.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 }
 

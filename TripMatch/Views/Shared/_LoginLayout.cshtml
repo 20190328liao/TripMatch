@@ -21,6 +21,7 @@
         ForgotPassword = apiBase + "/SendPasswordReset",
         MemberCenter = apiBase + "/GetMemberProfile",
         ChangePassword = apiBase + "/ChangePassword"
+
     };
 }
 
@@ -29,7 +30,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - TripMatch</title>
-
+    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
+    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     @* 使用 ~/ 符號，Razor 會自動解析正確的根目錄路徑 *@
     <link rel="stylesheet" href="~/css/reset.css">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -53,8 +55,7 @@
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
 
-    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
-    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
+ 
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
 
     @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@

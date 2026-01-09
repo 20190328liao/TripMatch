@@ -7,11 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
+using TripMatch.Data;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
-
+using System.Globalization;
 
 namespace TripMatch.Controllers.Api
 {
@@ -28,10 +29,10 @@ namespace TripMatch.Controllers.Api
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
         {
-            [".jpg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
-            [".jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
-            [".png"] = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } },
-            [".gif"] = new[] { new byte[] { (byte)'G', (byte)'I', (byte)'F', (byte)'8' } }
+            [".jpg"] = [[0xFF, 0xD8, 0xFF]],
+            [".jpeg"] = [[0xFF, 0xD8, 0xFF]],
+            [".png"] = [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
+            [".gif"] = [[(byte)'G', (byte)'I', (byte)'F', (byte)'8']]
         };
 
 
@@ -48,6 +49,61 @@ namespace TripMatch.Controllers.Api
             _emailSender = emailSender;
             _dbContext = dbContext;
         }
+
+        [HttpGet("GetLockedRanges")]
+        [Authorize]
+        public async Task<IActionResult> GetLockedRanges(int? userId)
+        {
+            // 1. 取得使用者 ID (優先從 Token 拿)
+            if (!userId.HasValue)
+            {
+                var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
+                userId = parsed;
+            }
+
+            // 2. 撈取該使用者的行程區間
+            // 使用 AsNoTracking 提高讀取效能
+            var ranges = await _dbContext.TripMembers
+                .AsNoTracking()
+                .Where(tm => tm.UserId == userId.Value)
+                .Select(tm => new { tm.Trip.StartDate, tm.Trip.EndDate })
+                .Where(t => t.StartDate != default && t.EndDate != default)
+                .Distinct()
+                .ToListAsync();
+
+            // 3. 格式化回傳
+            var result = ranges.Select(r => new
+            {
+                start = r.StartDate.ToString("yyyy-MM-dd"),
+                end = r.EndDate.ToString("yyyy-MM-dd")
+            }).ToList();
+
+            // 4. 自動加上「今天以前」的鎖定區間 (如果你希望後端統一處理)
+            return Ok(new { ranges = result });
+        }
+
+        [HttpGet("GetLeaves")]
+        [Authorize]
+        public async Task<IActionResult> GetLeaves(int? userId)
+        {
+            if (!userId.HasValue)
+            {
+                var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
+                userId = parsed;
+            }
+
+            // 資料表為 LeaveDate 且欄位為DateOnly
+            var leaves = await _dbContext.Set<LeaveDate>()
+                .Where(l => l.UserId == userId.Value && l.LeaveDate1.HasValue)
+                .Select(l => l.LeaveDate1!.Value.ToString("yyyy-MM-dd"))
+                .ToListAsync();
+            //return Ok();
+            return Ok(new { dates = leaves });
+        }
+
+
 
         [HttpPost("Signin")]
         public async Task<IActionResult> Signin([FromBody] LoginModel data)
@@ -96,8 +152,8 @@ namespace TripMatch.Controllers.Api
             await _signInManager.SignOutAsync();
             Response.Cookies.Delete("AuthToken");
 
-           var redirectUrl = Url.Action("Index", "Home");
-            return Ok(new { redirectUrl});
+            var redirectUrl = Url.Action("Index", "Home");
+            return Ok(new { redirectUrl });
         }
 
         [HttpPost("ClearPendingSession")]
@@ -344,7 +400,7 @@ namespace TripMatch.Controllers.Api
         }
 
         // 驗證重設密碼連結
-    
+
 
         // 驗證重設密碼連結有效性
         [HttpPost("ValidatePasswordResetLink")]
@@ -723,34 +779,34 @@ namespace TripMatch.Controllers.Api
 
 
         [HttpGet("ConfirmEmail")]
-    public async Task<IActionResult> ConfirmEmail(string userId, string code)
-    {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
-            return BadRequest(new { success = false, message = "無效的驗證連結。" });
-        }
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+            {
+                return BadRequest(new { success = false, message = "無效的驗證連結。" });
+            }
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            return BadRequest(new { success = false, message = "用戶不存在。" });
-        }
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return BadRequest(new { success = false, message = "用戶不存在。" });
+            }
 
-        // 解碼 code（配合 AuthService 的 Base64UrlEncode）
-        var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-        var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
+            // 解碼 code（配合 AuthService 的 Base64UrlEncode）
+            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
 
-        if (result.Succeeded)
-        {
-            // 成功：返回 JSON（供 AJAX 使用）
-            return Ok(new { success = true, message = "Email 驗證成功！" });
+            if (result.Succeeded)
+            {
+                // 成功：返回 JSON（供 AJAX 使用）
+                return Ok(new { success = true, message = "Email 驗證成功！" });
+            }
+            else
+            {
+                // 失敗：返回錯誤 JSON
+                return BadRequest(new { success = false, message = "Email 驗證失敗：" + string.Join(", ", result.Errors.Select(e => e.Description)) });
+            }
         }
-        else
-        {
-            // 失敗：返回錯誤 JSON
-            return BadRequest(new { success = false, message = "Email 驗證失敗：" + string.Join(", ", result.Errors.Select(e => e.Description)) });
-        }
-    }
 
 
 
@@ -792,5 +848,74 @@ namespace TripMatch.Controllers.Api
             });
         }
 
+        public class SaveLeavesModel
+        {
+            public string[]? Added { get; set; } = Array.Empty<string>();
+            public string[]? Removed { get; set; } = Array.Empty<string>();
+        }
+
+        // 示範：增量同步（刪除 Removed，插入 Added 中尚不存在的）
+        [HttpPost("SaveLeaves")]
+        [Authorize]
+        public async Task<IActionResult> SaveLeaves([FromBody] SaveLeavesModel? model)
+        {
+            if (model == null) return BadRequest(new { success = false, message = "無效請求" });
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+            try
+            {
+                // 1. 解析日期並過濾掉「今天以前」的日期 (後端防護)
+                var today = DateOnly.FromDateTime(DateTime.Today);
+                // 處理 Added：解析 -> 過濾今天以前 -> 轉為 HashSet
+                var added = (model.Added ?? Array.Empty<string>())
+                    .Select(s => DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                    .Where(d => d >= today)
+                    .ToHashSet();
+
+                // 處理 Removed：解析 -> 轉為 HashSet
+                var removed = (model.Removed ?? Array.Empty<string>())
+                    .Select(s => DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                    .ToHashSet();
+
+                await using var tx = await _dbContext.Database.BeginTransactionAsync();
+
+                // 2. 執行刪除 (差集邏輯：使用者點選 X 的已儲存日期)
+                if (removed.Any())
+                {
+                    await _dbContext.LeaveDates
+                        .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && removed.Contains(l.LeaveDate1.Value))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 3. 執行新增 (聯集邏輯：排除已存在的日期避免重複 Insert)
+                var existingDates = await _dbContext.LeaveDates
+                    .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && added.Contains(l.LeaveDate1.Value))
+                    .Select(l => l.LeaveDate1!.Value)
+                    .ToListAsync();
+
+                var toInsert = added.Except(existingDates).Select(d => new LeaveDate
+                {
+                    UserId = userId,
+                    LeaveDate1 = d,
+                    LeaveDateAt = DateTime.Now // 紀錄儲存時間
+                }).ToList();
+
+                if (toInsert.Any())
+                {
+                    await _dbContext.LeaveDates.AddRangeAsync(toInsert);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+                return Ok(new { success = true, addedCount = toInsert.Count, removedCount = removed.Count });
+            }
+            catch (Exception)
+            {
+                // 應記錄例外到 Logger
+                return StatusCode(500, new { success = false, message = "系統儲存發生錯誤" });
+            }
+        }
     }
-}
+    }
