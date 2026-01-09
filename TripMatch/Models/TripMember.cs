@@ -33,9 +33,14 @@ public partial class TripMember
     /// </summary>
     public int Id { get; set; }
 
+    /// <summary>
+    /// 該成員在行程中的預算上限
+    /// </summary>
+    public decimal? Budget { get; set; }
+
     public virtual ICollection<ExpenseParticipant> ExpenseParticipants { get; set; } = new List<ExpenseParticipant>();
 
-    public virtual ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+    public virtual ICollection<ExpensePayer> ExpensePayers { get; set; } = new List<ExpensePayer>();
 
     public virtual ICollection<Settlement> SettlementFromUsers { get; set; } = new List<Settlement>();
 
