@@ -20,7 +20,7 @@ namespace TripMatch
             builder.Services.AddControllersWithViews();
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
-
+            builder.Services.AddScoped<TimeWindowService>();
 
             // 註冊各個模組的services
             builder.Services.AddScoped<TripServices>();
@@ -54,6 +54,10 @@ namespace TripMatch
             builder.Services.AddDataProtection()
                 .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "Keys")))
                 .SetApplicationName("TripMatch");
+
+            // 註冊旅遊資訊服務(目前是假資料)
+            // todo:串外部api要回來改實作類別
+            builder.Services.AddScoped<ITravelInfoService, MockTravelInfoService>();
 
             // --- 建立應用程式 ---
             var app = builder.Build();

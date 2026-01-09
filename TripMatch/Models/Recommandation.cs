@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace TripMatch.Models;
 
@@ -28,6 +29,7 @@ public partial class Recommandation
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
-
+    
+    [JsonIgnore]
     public virtual TravelGroup Group { get; set; } = null!;
 }
