@@ -41,7 +41,7 @@ body {
 }
 
 .left-panel {
-    width: 45vw; 
+    width: 45vw;
     min-width: 200px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
@@ -70,3 +70,31 @@ body {
     height: 100%;
     background-color: #f0f0f0; /* 地圖載入前的底色 */
 }
+
+
+/* 確保外層容器圓角一致 */
+.search-box {
+    border-radius: 8px;
+    overflow: hidden; /* 確保圓角不會被子元素切掉 */
+}
+
+/* 當輸入框被點擊時，讓左邊的圖示區塊邊框也跟著變色 */
+.search-box:focus-within .input-group-text,
+.search-box:focus-within #place-search-input {
+    border-color: #86b7fe; /* Bootstrap 預設藍 */
+    outline: 0;
+}
+
+/* 3. 移除輸入框點擊時的預設陰影，改用外層 .shadow 處理 */
+#place-search-input:focus {
+    box-shadow: none;
+}
+
+.input-group-text{
+    cursor: pointer;
+}
+
+.input-group-text:hover {
+  
+}
+
