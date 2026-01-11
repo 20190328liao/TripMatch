@@ -4,7 +4,11 @@
     const apiBase = '/api/Wishlist';
 
     function createCard(item) {
-        const img = item.imageUrl || '/img/Logo/Part12.png';
+        // 如果 imageUrl 為 null 或為外部 placeholder，fallback 到本地假圖片
+        const imageUrlRaw = item.imageUrl || '';
+        const isPlaceholder = imageUrlRaw.toLowerCase().includes('placeholder.com');
+        const img = (!imageUrlRaw || isPlaceholder) ? '/img/placeholder.png' : imageUrlRaw;
+
         // 如果後端回傳 tripId，導向 Trip/Edit/{tripId}；否則導向建立行程並帶 spotId
         const viewMoreUrl = item.tripId ? `/Trip/Edit/${item.tripId}` : `/Trip/Create?spotId=${item.spotId}`;
 
