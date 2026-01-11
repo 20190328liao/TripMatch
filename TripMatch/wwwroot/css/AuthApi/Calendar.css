@@ -1,6 +1,4 @@
-﻿
-
-.container {
+﻿.container {
     display: inline-block;
     background-color: var(--white);
     border-radius: 18px;
@@ -51,13 +49,15 @@
         color: var(--accent);
     }
 
-.days,
-.week {
-    display: grid;
+.days {
+    display: grid !important;
     grid-template-columns: repeat(7, 1fr);
-    margin: auto;
-    padding: 0 10px;
-    justify-content: space-between;
+    grid-auto-rows: 56px; /* 每格高度，必要時調整 */
+    gap: 0.5rem;
+    justify-items: center;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
     .week div,
@@ -128,77 +128,22 @@
     margin-bottom: 12px;
 }
 
-.locked {
+/* 統一使用 .day-cell.locked（避免全域 .locked 影響其他元素） */
+.day-cell.locked {
     opacity: 0.5;
     pointer-events: none;
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
 }
 
-.saved {
-    background-color: yellow;
-}
-
-.selected-range {
-    background-color: lightblue;
-}
-
-.start-circle {
-    border: 2px solid green;
-    border-radius: 50%;
-}
-
-.end-circle {
-    border: 2px solid red;
-    border-radius: 50%;
-}
-
-.current-date {
-    font-weight: bold;
-}
-
-/* 日曆格樣式 */
-.day-cell {
-    box-sizing: border-box;
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin: 4px;
-    border-radius: 50%;
-    position: relative;
-    cursor: pointer;
-}
-.day-cell .day-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    font-size: 0.95rem;
-    user-select: none;
-}
-
-/* 今天 (藍色圈) */
-.day-cell.today .day-label {
-    background: linear-gradient(180deg,#3b82f6,#2563eb);
+/* saved/submitted 統一為 .day-cell.submitted */
+.day-cell.submitted {
+    background-color: #2DA78B;
     color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
 }
 
-/* 鎖定 (灰色圈，不可選) */
-.day-cell.locked .day-label {
-    background: linear-gradient(180deg,#9ca3af,#6b7280);
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    opacity: 0.85;
-}
-
-/* 連續單選 (藍綠色圈) */
+/* selected-single：將樣式套到 .day-label，避免與 cell 背景規則衝突 */
 .day-cell.selected-single .day-label {
     background: linear-gradient(180deg,#36c5a9,#1fa08a);
     color: white;
@@ -231,6 +176,64 @@
     border-radius: 50%;
 }
 
+/* 今天 (藍色圈) */
+.day-cell.today .day-label {
+    background: linear-gradient(180deg,#3b82f6,#2563eb);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+/* 鎖定 (灰色圈，不可選) */
+.day-cell.locked .day-label {
+    background: linear-gradient(180deg,#9ca3af,#6b7280);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    opacity: 0.85;
+}
+
+/* 日曆格樣式 */
+.day-cell {
+    width: 100%;
+    max-width: 56px;
+    height: 100%;
+    max-height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+}
+.cell-delete {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 14px;
+    line-height: 18px;
+    cursor: pointer;
+}
+.day-cell .day-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    user-select: none;
+}
+
 /* 編輯模式右上 X */
 .cell-close {
     position: absolute;
@@ -261,11 +264,12 @@
 .calendar_legend .dot.range { background: linear-gradient(90deg,#dff7ea,#eaf9d6); }  /* 淡綠：範圍整區 */
 .calendar_legend .dot.range-start { background:#bfe8ff; }  /* 粉藍：範圍開始 */
 .calendar_legend .dot.range-end { background:#ffb86b; }    /* 橘色：範圍結束 */
-
-.day-cell.selected-single { background-color: #ffc107; color: black; } /* 待新增：橘黃色 */
-.day-cell.to-remove { background-color: #6c757d; text-decoration: line-through; opacity: 0.6; } /* 待刪除：灰色+刪除線 */
-.day-cell.saved { background-color: #28a745; color: white; } /* 已儲存：綠色 */
-.day-cell.locked { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; } /* 鎖定：淺灰色 */
+    .calendar_legend .dot.ok {
+        background: linear-gradient(0deg, #3EB392, #94EBB8);
+    }
+    .calendar_legend .dot.ok2 {
+        background: linear-gradient(180deg, #2D92A7, #1C3B87);
+    }
 
 /* 新增：強烈標示「待刪除」日期（加入於現有 Calendar.css） */
 .day-cell.to-unregister {
@@ -295,4 +299,216 @@
 .day-cell.to-unregister .day-label {
     text-decoration: line-through;
     opacity: 0.95;
+}
+
+body.calendar-editing .day-cell {
+    cursor: pointer;
+}
+
+body:not(.calendar-editing) .day-cell {
+    cursor: default;
+}
+
+/* calendarRange 清單樣式 */
+#calendarRange {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    border-left: 1px solid rgba(0,0,0,0.06);
+    color: var(--color_DarkGray);
+    font-size: 0.95rem;
+}
+.calendar-range-item {
+    padding: 6px 8px;
+    background: linear-gradient(90deg, rgba(245,255,250,0.6), rgba(255,255,255,0.6));
+    border-radius: 8px;
+}
+
+/* Bootstrap grid 已處理欄位，補強 list 與面板樣式 */
+.months-panel,
+.month-panel,
+.list-panel {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 0.75rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+/* 右側清單樣式 */
+.calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 56vh;
+    overflow: auto;
+    padding: 0.4rem;
+}
+
+/* 單項條目 */
+.calendar-list .calendar-range-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #f6fffb, #fff);
+    color: var(--color_DarkGray);
+    font-size: 0.95rem;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02) inset;
+}
+
+/* 已提交標示 */
+.calendar-list .submitted {
+    background: linear-gradient(180deg,#2DA78B,#1F8B6F);
+    color: #fff;
+}
+
+/* 修正：範圍終點橘色（原本 typo #ffb86l -> 改為 #ffb86b） */
+.day-cell.range-end .day-label {
+    background: linear-gradient(180deg,#ffb86b,#ff974d);
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+
+/* 新舊提交樣式（如果尚未加入） */
+.day-cell.submitted-old {
+    background: linear-gradient(0deg, #3EB392, #94EBB8);
+    color: #fff;
+}
+.day-cell.submitted-new {
+    background: linear-gradient(180deg, #2D92A7, #1C3B87);
+    color: #fff;
+}
+.calendar-list .submitted-old,
+#calendarRange .submitted-old {
+    background: linear-gradient(0deg, #3EB392, #94EBB8);
+    color: #fff;
+}
+.calendar-list .submitted-new,
+#calendarRange .submitted-new {
+    background: linear-gradient(180deg, #2D92A7, #1C3B87);
+    color: #fff;
+}
+
+/* 在小螢幕收窄高度 */
+@media (max-width: 576px) {
+    .calendar-list { max-height: 36vh; }
+}
+
+/* 輕微微調：使 days 區塊置中並自適應 */
+.month-panel .days {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* 確保 header 按鈕不顯得太大 */
+.year-header .btn,
+.month-header .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 確保 days 為 7 列 grid，保持格數穩定 */
+.days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 56px; /* 每格高度，必要時調整 */
+    gap: 0.5rem;
+    justify-items: center;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 保持每格外觀一致（已有規則也會作用），適當限制大小 */
+.day-cell {
+    width: 100%;
+    max-width: 56px;
+    height: 100%;
+    max-height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+/* 空白占位格：保留格位但不可見/不可互動 */
+.day-cell.empty {
+    visibility: hidden;
+    pointer-events: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* 被 focus/flash 的標示（可選） */
+.flash-highlight {
+    box-shadow: 0 0 0 6px rgba(0,45,167,139,0.12);
+    transition: box-shadow 0.25s ease;
+}
+
+/* 限定於會員頁面內還原 container 行為（避免覆寫 Bootstrap 全域 .container） */
+.member_center_wrap > .container {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* 强制會員頁面日曆區塊在桌面三欄同排 */
+.member_center_wrap #calendar_section > .container > .row {
+    /* 以 flex 排列，桌面不換行 */
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+/* 桌面：左側月份、主日曆、右側清單 */
+@media (min-width: 992px) {
+    .member_center_wrap #calendar_section .months-panel {
+        flex: 0 0 280px;   /* 左側固定寬 */
+        max-width: 280px;
+        width: 280px;
+        box-sizing: border-box;
+    }
+    .member_center_wrap #calendar_section .month-panel {
+        flex: 1 1 auto;    /* 中間撐滿 */
+        min-width: 0;      /* 防止內容撐破 */
+    }
+    .member_center_wrap #calendar_section .list-panel {
+        flex: 0 0 280px;   /* 右側固定寬 */
+        max-width: 280px;
+        width: 280px;
+        box-sizing: border-box;
+        align-self: flex-start; /* 確保和中間頂端對齊 */
+    }
+
+    /* 若有 Bootstrap col-* 干擾，覆寫為不使用寬度百分比 */
+    .member_center_wrap #calendar_section .months-panel[class*="col-"],
+    .member_center_wrap #calendar_section .month-panel[class*="col-"],
+    .member_center_wrap #calendar_section .list-panel[class*="col-"] {
+        width: auto !important;
+    }
+
+    /* 右側清單外框內文垂直頂端對齊 */
+    .member_center_wrap #calendar_section .calendar-list {
+        max-height: 56vh;
+        overflow: auto;
+    }
+}
+
+/* 平板與手機維持原本 Bootstrap 行為（自動換行） */
+@media (max-width: 991.98px) {
+    .member_center_wrap #calendar_section > .container > .row {
+        display: block;
+    }
+    .member_center_wrap #calendar_section .months-panel,
+    .member_center_wrap #calendar_section .month-panel,
+    .member_center_wrap #calendar_section .list-panel {
+        width: 100% !important;
+        max-width: none !important;
+        box-sizing: border-box;
+    }
 }

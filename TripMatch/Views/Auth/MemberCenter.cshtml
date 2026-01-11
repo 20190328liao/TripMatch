@@ -1,5 +1,4 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "會員中心";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 
@@ -23,51 +22,52 @@
             <i class="bi bi-bell"></i>
         </div>
 
-        <div class="profile_container">
-            <!-- 左側：頭像區 -->
-            <div class="profile_avatar_section ">
+        <div class="profile_container row g-4">
+            @* g-4 增加左右間距 *@
+
+            <div class="profile_avatar_section col-12 col-md-6 d-flex flex-column align-items-center justify-content-center">
                 <div class="avatar_frame">
-                    @* ★ 使用從 Claims 取得的頭像 URL *@
                     <img src="@avatarUrl" alt="會員頭像" id="memberAvatar" class="memberAvatar">
                 </div>
-                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
-                <button type="button" class="btn btn_light  btn-sm mt-2" id="btnEditAvatar">編輯頭像</button>
-                <button type="button" class="btn btn_Gray btn-sm mt-2" id="btnLogout">登 出</button>
+                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp"
+                       style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" />
+
+                <div class="avatar_btns mt-3">
+                    <button type="button" class="btn btn_light btn-sm" id="btnEditAvatar">編輯頭像</button>
+                </div>
+                    <button type="button" class="btn btn_Gray btn-sm" id="btnLogout">登 出</button>
             </div>
 
-            <!-- 右側：資料區 -->
-            <div class="profile_info_section">
+            <div class="profile_info_section col-12 col-md-6">
                 <div class="info_row">
-                    <div class="info_item">
+                    <div class="info_item mb-4">
                         <label class="info_label"><i class="bi bi-square-fill text-success me-2"></i>帳號｜電子郵件</label>
-                        <div class="info_value">
+                        <div class="info_value d-flex align-items-center gap-2">
                             <span id="displayEmail">example@gmail.com</span>
-
-
-                            @*編輯電子郵件*@
-                            <input id="inputEmail" type="email" name="name" value="" class="form-control d-none" />
-                            <button id="btnEditEmail" class="btn btn_link edit_link">編輯</button>
+                            <input id="inputEmail" type="email" class="form-control d-none" />
+                            <button id="btnEditEmail" class="btn btn_link edit_link p-0">編輯</button>
                             <button id="btnSaveEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
                             <button id="btnCancelEmail" class="btn btn_light btn-sm d-none">取消</button>
                         </div>
                     </div>
                 </div>
-                <div class="info_row">
-                    <div class="info_item">
-                        <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>備援信箱</label>
-                        <div class="info_value">
-                            <span id="displayBackupEmail">example2@gmail.com</span>
 
-                            @*編輯電子郵件*@
-                            <input id="inputBackupEmail" type="email" name="name" value="" class="form-control d-none" />
-                            <button id="btnEditBackupEmail" class="btn btn_link edit_link">編輯</button>
+                <div class="info_row">
+                    <div class="info_item mb-4">
+                        <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>備援信箱</label>
+                        <div class="info_value d-flex align-items-center gap-2">
+                            <span id="displayBackupEmail">example2@gmail.com</span>
+                            <input id="inputBackupEmail" type="email" class="form-control d-none" />
+                            <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
                             <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
                             <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
                         </div>
                     </div>
                     <div class="info_item">
                         <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>重設密碼</label>
-                        <a href="@Url.Action("ChangePassword", "Auth")" class="edit_link">前往重設</a>
+                        <div>
+                            <a href="@Url.Action("ChangePassword", "Auth")" class="edit_link">前往重設</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -84,47 +84,71 @@
             <span class="legend-item"><span class="dot today"></span>藍色圈：今天</span>
             <span class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</span>
             <span class="legend-item"><span class="dot range"></span>淡藍綠色圈（開始：粉藍；結束：橘）：範圍選擇</span>
+            <span class="legend-item"><span class="dot ok"></span>藍綠色：舊提交</span>
+            <span class="legend-item"><span class="dot ok2"></span>深藍色：新提交</span>
             <span class="legend-item" id="CalendarHint">會員如果需要單日，則日期點兩下</span>
         </div>
 
-        <div class="container two-column">
-            <div class="months-panel">
-                <header class="year-header">
-                    <button class="year-left">◀</button>
-                    <div class="year-display">2026</div>
-                    <button class="year-right">▶</button>
-                </header>
+        <div class="container">
+            <div class="row g-3 align-items-start">
+                <!-- 左：月份選擇器 -->
+                <div class="col-sm-12 col-md-3 months-panel">
+                    <header class="year-header d-flex justify-content-between align-items-center">
+                        <button class="year-left btn btn-sm btn-link">◀</button>
+                        <div class="year-display">2026</div>
+                        <button class="year-right btn btn-sm btn-link">▶</button>
+                    </header>
 
-                <div class="months-grid"></div>
-            </div>
-
-            <div class="month-panel">
-                <header class="month-header">
-                    <button class="month-left">◀</button>
-                    <div class="month-display">January 2026</div>
-                    <button class="month-right">▶</button>
-                </header>
-
-                <div class="week">
-                    <div>週一</div>
-                    <div>週二</div>
-                    <div>週三</div>
-                    <div>週四</div>
-                    <div>週五</div>
-                    <div>週六</div>
-                    <div>週日</div>
+                    <div class="months-grid mt-2"></div>
                 </div>
 
-                <div class="days"></div>
+                <!-- 中：日曆 -->
+                <div class="col-sm-12 col-md-6 month-panel">
+                    <header class="month-header d-flex justify-content-between align-items-center">
+                        <button class="month-left btn btn-sm btn-link">◀</button>
+                        <div class="month-display">January 2026</div>
+                        <button class="month-right btn btn-sm btn-link">▶</button>
+                    </header>
 
-                <div class="display-selected">
-                    <p class="selected"></p>
+                    <div class="week mt-2 d-flex justify-content-between small text-muted">
+                        <div>週一</div>
+                        <div>週二</div>
+                        <div>週三</div>
+                        <div>週四</div>
+                        <div>週五</div>
+                        <div>週六</div>
+                        <div>週日</div>
+                    </div>
+
+                    <div class="days mt-2"></div>
+
+                    <div class="display-selected mt-3">
+                        <p class="selected"></p>
+                    </div>
+                </div>
+
+                <!-- 右：清單（草稿 + 已提交） -->
+                <aside class="col-sm-12 col-md-3 list-panel">
+                    <div class="list-header mb-2">
+                        <h5 class="mb-0">目前選擇</h5>
+                        <small class="text-muted">提示</small>
+                    </div>
+
+                    <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
+                        @* 由 Calendar.js 填入，每列格式如 "2026年1月1日" *@
+                    </div>
+                </aside>
+            </div>
+
+            @* 共用按鈕放在底部一列，手機會縮滿寬度 *@
+            <div class="row mt-3">
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button class="confirm btn btn-primary">提交</button>
+                    <button class="edit btn btn-secondary">開始編輯</button>
+                    <button class="btn-delete btn btn-outline-danger">刪除</button>
                 </div>
             </div>
         </div>
-        <button class="multi-select d-none">範圍選擇</button>
-        <button class="confirm">確定</button>
-        <button class="edit">修改刪除</button>
     </section>
 
     <!-- =============================================
@@ -136,28 +160,12 @@
             <a href="#" class="edit_cards_link"><i class="bi bi-pencil-square me-1"></i>點擊卡片編輯 ▼</a>
         </div>
 
-        <!-- 願望清單卡片 -->
-        <div class="wishlist_cards_container" id="wishlistCardsContainer">
-            <div class="wish_card">
-                <div class="card_image">
-                    <img src="~/img/Logo/Part12.png" alt="台灣九份之旅">
-                    <button type="button" class="wish_heart active"><i class="bi bi-heart-fill"></i></button>
-                </div>
-                <div class="card_content">
-                    <h4 class="card_title"></h4>
-                    <p class="card_date"></p>
-                    <div class="card_footer">
-                        <span class="travelers"></span>
-                        <span class="price highlight"></span>
-                    </div>
-                </div>
-            </div>
-
+        <!-- 願望清單卡片容器：由 wishlist.js 動態塞入 -->
+        <div class="wishlist_cards_container" id="wishlistCardsContainer"
+             aria-live="polite" role="region" aria-label="使用者願望清單">
         </div>
 
-        <div class="view_more_wrap">
-            <a href="#" class="view_more_link">View more...</a>
-        </div>
+        @* 全域的 View more 連結移除（每張卡片會由前端產生其 own View more） *@
     </section>
 
 </div>
@@ -169,11 +177,9 @@
 }
 
 @section Scripts {
-
-    <!-- 先載入 helper.js（提供 Validator / setFieldHint / AppUrls） -->
-    <script src="~/lib/date-fns.min.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/Datehelper.js"></script>
     <script src="~/js/AuthApi/Calendar.js" asp-append-version="true"></script>
-    <!-- 載入並執行 memberCenter.js（包含 month-picker + calendar 整合） -->
+    <script src="~/js/AuthApi/wishlist.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/memberCenter.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 }

@@ -29,10 +29,10 @@ namespace TripMatch.Controllers.Api
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
         {
-            [".jpg"] = [[0xFF, 0xD8, 0xFF]],
-            [".jpeg"] = [[0xFF, 0xD8, 0xFF]],
-            [".png"] = [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
-            [".gif"] = [[(byte)'G', (byte)'I', (byte)'F', (byte)'8']]
+            { ".jpg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+            { ".jpeg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+            { ".png", new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
+            { ".gif", new[] { new byte[] { (byte)'G', (byte)'I', (byte)'F', (byte)'8' } } }
         };
 
 
@@ -657,7 +657,7 @@ namespace TripMatch.Controllers.Api
                 {
                     u.Email,
                     u.BackupEmail,
-                    Avatar = u.Avatar ?? "/img/default_avatar.png"
+                    Avatar = u.Avatar
                 })
                 .FirstOrDefaultAsync();
 
@@ -681,6 +681,8 @@ namespace TripMatch.Controllers.Api
         [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> UploadAvatar(IFormFile avatarFile)
         {
+
+
             if (avatarFile == null || avatarFile.Length == 0)
             {
                 return BadRequest(new { success = false, message = "請選擇圖片檔案" });
@@ -882,7 +884,7 @@ namespace TripMatch.Controllers.Api
                 await using var tx = await _dbContext.Database.BeginTransactionAsync();
 
                 // 2. 執行刪除 (差集邏輯：使用者點選 X 的已儲存日期)
-                if (removed.Any())
+                if (removed.Count > 0)
                 {
                     await _dbContext.LeaveDates
                         .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && removed.Contains(l.LeaveDate1.Value))
@@ -902,7 +904,7 @@ namespace TripMatch.Controllers.Api
                     LeaveDateAt = DateTime.Now // 紀錄儲存時間
                 }).ToList();
 
-                if (toInsert.Any())
+                if (toInsert.Count > 0)
                 {
                     await _dbContext.LeaveDates.AddRangeAsync(toInsert);
                     await _dbContext.SaveChangesAsync();
@@ -916,6 +918,150 @@ namespace TripMatch.Controllers.Api
                 // 應記錄例外到 Logger
                 return StatusCode(500, new { success = false, message = "系統儲存發生錯誤" });
             }
+        }
+
+        [HttpPost("DeleteLeaves")]
+        [Authorize]
+        public async Task<IActionResult> DeleteLeaves([FromBody] string[]? dates)
+        {
+            if (dates == null || dates.Length == 0) return BadRequest(new { success = false, message = "沒有提供日期" });
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+            var parsed = dates
+                .Select(s => DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .ToHashSet();
+
+            await _dbContext.LeaveDates
+                .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && parsed.Contains(l.LeaveDate1.Value))
+                .ExecuteDeleteAsync();
+
+            return Ok(new { success = true });
+        }
+        
+
+        [HttpGet("Wishlist")]
+        [Authorize]
+        public async Task<IActionResult> GetWishlist()
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized();
+
+            var wishItems = await _dbContext.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .Include(w => w.Spot)
+                .OrderByDescending(w => w.CreatedAt)
+                .Select(w => new
+                {
+                    w.WishlistItemId,
+                    w.SpotId,
+                    SpotNameZh = w.Spot.NameZh,
+                    SpotNameEn = w.Spot.NameEn,
+                    PhotosSnapshot = w.Spot.PhotosSnapshot,
+                    w.Note,
+                    w.CreatedAt
+                })
+                .ToListAsync();
+
+            var result = wishItems.Select(w =>
+            {
+                string? imageUrl = null;
+                if (!string.IsNullOrEmpty(w.PhotosSnapshot))
+                {
+                    imageUrl = ParseFirstPhotoFromSnapshot(w.PhotosSnapshot);
+                }
+
+                return new
+                {
+                    w.WishlistItemId,
+                    w.SpotId,
+                    SpotTitle = !string.IsNullOrEmpty(w.SpotNameZh) ? w.SpotNameZh :
+                                !string.IsNullOrEmpty(w.SpotNameEn) ? w.SpotNameEn : "未命名景點",
+                    ImageUrl = imageUrl ?? "/img/Logo/Part12.png",
+                    w.Note,
+                    w.CreatedAt
+                };
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        [HttpPost("Wishlist/Toggle")]
+        [Authorize]
+        public async Task<IActionResult> ToggleWishlist([FromBody] ToggleWishlistModel model)
+        {
+            if (model == null || model.SpotId <= 0) return BadRequest(new { message = "參數錯誤" });
+
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized();
+
+            var existing = await _dbContext.Wishlists.FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == model.SpotId);
+            if (existing != null)
+            {
+                _dbContext.Wishlists.Remove(existing);
+                await _dbContext.SaveChangesAsync();
+                return Ok(new { removed = true, wishlistItemId = existing.WishlistItemId });
+            }
+
+            var newItem = new Wishlist
+            {
+                UserId = userId,
+                SpotId = model.SpotId,
+                Note = model.Note,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            _dbContext.Wishlists.Add(newItem);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new { added = true, wishlistItemId = newItem.WishlistItemId });
+        }
+
+        public class ToggleWishlistModel
+        {
+            public int SpotId { get; set; }
+            public string? Note { get; set; }
+        }
+
+        private static string? ParseFirstPhotoFromSnapshot(string photosSnapshot)
+        {
+            // 嘗試解析常見的 JSON 陣列格式或直接是 URL 的情況，回傳第一張可用的 URL（否則回傳 null）
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(photosSnapshot);
+                var root = doc.RootElement;
+                if (root.ValueKind == System.Text.Json.JsonValueKind.Array && root.GetArrayLength() > 0)
+                {
+                    var first = root[0];
+                    if (first.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        var s = first.GetString();
+                        if (!string.IsNullOrEmpty(s)) return s;
+                    }
+                    else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            return urlProp.GetString();
+                        // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
+                    }
+                }
+                else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    var s = root.GetString();
+                    if (!string.IsNullOrEmpty(s)) return s;
+                }
+            }
+            catch
+            {
+                // 忽略解析錯誤
+            }
+
+            return null;
         }
     }
     }

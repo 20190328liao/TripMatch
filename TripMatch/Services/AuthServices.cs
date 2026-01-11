@@ -1,22 +1,23 @@
-﻿using TripMatch.Models.Settings;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 using System.Text;
 using TripMatch.Data;
 using TripMatch.Models;
-using Microsoft.AspNetCore.WebUtilities; 
+using TripMatch.Models.Settings;
 using static TripMatch.Services.AuthServicesExtensions.AuthService;
-using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 
 namespace TripMatch.Services
 {
@@ -56,7 +57,13 @@ namespace TripMatch.Services
                 {
                     OnMessageReceived = context =>
                     {
-                        context.Token = context.Request.Cookies["AuthToken"];
+
+                        if (context.Request.Cookies != null
+          && context.Request.Cookies.TryGetValue("AuthToken", out var token)
+          && !string.IsNullOrWhiteSpace(token))
+                        {
+                            context.Token = token;
+                        }
                         return Task.CompletedTask;
                     }
                 };
@@ -258,6 +265,7 @@ namespace TripMatch.Services
                     HttpOnly = true,
                     Secure = false, // 正式環境請改 true
                     SameSite = SameSiteMode.Lax,
+                    Path = "/",                // ← 加上這行：確保 cookie 在整個站點可用
                     Expires = DateTime.UtcNow.AddMinutes(30)
                 });
             }
@@ -267,10 +275,12 @@ namespace TripMatch.Services
                 context.Response.Cookies.Append("AuthToken", token, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = false,
+                    Secure = false, // 正式環境請改 true
                     SameSite = SameSiteMode.Lax,
+                    Path = "/",                // ← 加上這行
                     Expires = DateTime.UtcNow.AddDays(30)
-                });
+                }
+                );
             }
 
             // 2. 改用 Base64UrlEncode 並指向正確的 Controller Action

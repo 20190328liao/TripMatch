@@ -1,15 +1,12 @@
-﻿/**
- * 會員中心模組
- */
-const MemberProfile = {
-    // 初始化
+﻿const MemberProfile = {
     init() {
+        console.log("MemberProfile 初始化開始");
         this.cacheDOM();
         this.bindEvents();
         this.loadProfile();
     },
 
-    // 快取 jQuery 物件，避免重複查找 DOM
+
     cacheDOM() {
         this.$avatarImg = $('#memberAvatar');
         this.$navAvatar = $('#navAvatar');
@@ -18,76 +15,102 @@ const MemberProfile = {
         this.$backupEmailText = $('#displayBackupEmail');
     },
 
-    // 事件綁定
     bindEvents() {
-        // 點擊按鈕觸發隱藏的 input:file
-        $('#btnEditAvatar').on('click', () => this.$avatarInput.click());
+        const self = this;
 
-        // 檔案選擇變更
-        this.$avatarInput.on('change', (e) => this.handleFileSelect(e));
+        // 使用 .off().on() 確保不會因為多次 init 導致事件重複觸發
+        $(document).off('click', '#btnEditAvatar').on('click', '#btnEditAvatar', function (e) {
+            e.preventDefault();
+            console.log("觸發編輯按鈕");
 
-        // 登出按鈕
-        $('#btnLogout').on('click', () => this.handleLogout());
+            // 優先找 HTML 裡的 input，找不到才動態建立
+            let $input = $('#avatarInput');
+            if ($input.length === 0) {
+                $input = self.getAvatarInput();
+            }
+            $input.trigger('click');
+        });
+
+        $(document).off('change', '#avatarInput').on('change', '#avatarInput', function (e) {
+            console.log("偵測到檔案變更");
+            self.handleFileSelect(e);
+            $(this).val(''); // 重要：清空值，讓同一張圖可以連續觸發 change
+        });
+
+        Calendar.init({
+            lockedRanges: [
+                { start: '2026-01-10', end: '2026-01-12' }
+            ]
+        });
+
+        // 注意：登出事件已統一放到 logout.js，避免重複或衝突綁定
     },
 
-    // 取得會員資料
+    getAvatarInput() {
+        let $input = $('#avatarInput');
+        if ($input.length === 0) {
+            $input = $('<input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp">')
+                .css({ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' })
+                .appendTo('body');
+        }
+        return $input;
+    },
+
     async loadProfile() {
         try {
+            // 使用與後端產生的 authApis 一致的名稱：MemberCenter
             const response = await $.ajax({
-                url: window.Routes.AuthApi.GetMemberProfile,
+                url: window.Routes.AuthApi.MemberCenter,
                 method: 'GET',
-                xhrFields: {
-                    withCredentials: true  // ★ 確保攜帶 Cookie
-                }
+                xhrFields: { withCredentials: true }
             });
             if (response.success) {
                 this.updateUI(response);
             }
         } catch (error) {
             console.error('載入會員資料失敗:', error);
-            // 如果是 401，可能需要重新登入
-            if (error.status === 401) {
-                window.location.href = window.Routes.Auth.Login;
-            }
+            if (error.status === 401) window.location.href = window.Routes.Auth.Login;
         }
     },
 
-    // 更新介面
     updateUI(data) {
-        this.$avatarImg.attr('src', data.avatar || '/img/default_avatar.png');
-        this.$navAvatar.attr('src', data.avatar || '/img/default_avatar.png');
+        const defaultImg = '/img/default_avatar.png';
+        const imgUrl = data.avatar || defaultImg;
+        // 會員中心內的預覽元素由此更新（全站 navbar 的 avatar 由 avatar.js 處理，避免重複 API 呼叫）
+        this.$avatarImg.attr('src', imgUrl);
         this.$emailText.text(data.email || '未設定');
         this.$backupEmailText.text(data.backupEmail || '未設定');
     },
 
-    // 處理檔案選擇
     async handleFileSelect(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // 前端初步驗證
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif',];
+        // 檔案格式與大小檢查
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            alert('僅支援 JPG、PNG、GIF');
+            alert('僅支援 JPG、PNG、GIF、WebP');
             return;
         }
-
-        // 限制 2MB (對應後端的限制)
         if (file.size > 2 * 1024 * 1024) {
             alert('檔案大小不能超過 2MB');
             return;
         }
 
-        // 1. 立即預覽 (現代做法：Object URL)
+        // 預覽與上傳
         const objectUrl = URL.createObjectURL(file);
         this.$avatarImg.attr('src', objectUrl);
-
-        // 2. 執行上傳
         await this.uploadAvatar(file, objectUrl);
     },
 
-    // 上傳頭像 API
     async uploadAvatar(file, objectUrl) {
+        if (!window.Routes?.AuthApi?.UploadAvatar) {
+            alert('伺服器未提供頭像上傳接口，請聯絡管理員。');
+            URL.revokeObjectURL(objectUrl);
+            this.loadProfile();
+            return;
+        }
+
         const formData = new FormData();
         formData.append('avatarFile', file);
 
@@ -98,34 +121,31 @@ const MemberProfile = {
                 data: formData,
                 processData: false,
                 contentType: false,
-                xhrFields: {
-                    withCredentials: true  // ★ 確保攜帶 Cookie
-                }
+                xhrFields: { withCredentials: true }
             });
 
             if (response.success) {
-                this.$avatarImg.attr('src', response.avatarUrl);
-                this.$navAvatar.attr('src', response.avatarUrl);
-                alert('頭像上傳成功！');
+                const newUrl = response.avatarUrl + '?v=' + Date.now();
+                // 上傳成功需即時更新會員中心預覽
+                $('#memberAvatar').attr('src', newUrl);
+                // navbar 也立刻更新（上傳動作是使用者觸發，應即時反映）
+                $('#navAvatar').attr('src', newUrl);
             }
         } catch (xhr) {
-            const errorMsg = xhr.responseJSON?.message || '上傳失敗';
-            alert(errorMsg);
+            alert(xhr.responseJSON?.message || '上傳失敗');
             this.loadProfile();
         } finally {
             URL.revokeObjectURL(objectUrl);
         }
     },
 
-    // 登出處理
     async handleLogout() {
+        if (!confirm("確定要登出嗎？")) return;
         try {
             await $.ajax({
                 url: window.Routes.AuthApi.Logout,
                 method: 'POST',
-                xhrFields: {
-                    withCredentials: true  // ★ 確保攜帶 Cookie
-                }
+                xhrFields: { withCredentials: true }
             });
             window.location.href = '/';
         } catch (error) {
@@ -134,26 +154,22 @@ const MemberProfile = {
     }
 };
 
-// 密碼變更
+// DOMReady：只初始化一次
 $(function () {
-    $("#btnChangePwd").on("click", function () {
+    MemberProfile.init();
+
+    // 密碼變更事件（修正為使用 AuthApi 的 ChangePassword）
+    $("#btnChangePwd").off('click').on("click", function () {
         const oldPwd = $("#cp_old").val();
         const newPwd = $("#cp_new").val();
-        const confirm = $("#cp_confirm").val();
+        const confirmPwd = $("#cp_confirm").val();
 
-        if (!oldPwd || !newPwd || !confirm) {
-            showPopup({ title: "提示", message: "請完整填寫欄位", type: "error" });
+        if (!oldPwd || !newPwd || !confirmPwd) {
+            alert("請完整填寫欄位");
             return;
         }
-        if (newPwd !== confirm) {
-            showPopup({ title: "提示", message: "新密碼與確認不符", type: "error" });
-            return;
-        }
-
-        // 可額外用 Validator.validatePassword(newPwd) 先在前端檢查格式
-        const pwdResult = Validator.validatePassword(newPwd);
-        if (!pwdResult.valid) {
-            setFieldHint("password", pwdResult.message, "error");
+        if (newPwd !== confirmPwd) {
+            alert("新密碼與確認不符");
             return;
         }
 
@@ -162,24 +178,19 @@ $(function () {
 
         $.ajax({
             type: "POST",
-            url: window.Routes.Auth.ChangePassword,
+            url: window.Routes.Auth.ChangePassword || window.Routes.AuthApi.ChangePassword,
             contentType: "application/json",
-            data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirm }),
+            data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirmPwd }),
             success: function (res) {
-                showPopup({ title: "成功", message: res.message || "密碼已變更", type: "success" }).then(() => {
-                    // 可選：清空欄位
-                    $("#cp_old, #cp_new, #cp_confirm").val("");
-                    $btn.prop("disabled", false).text("變更密碼");
-                });
+                alert(res.message || "密碼已變更");
+                $("#cp_old, #cp_new, #cp_confirm").val("");
             },
             error: function (err) {
+                alert(err.responseJSON?.message || "變更失敗");
+            },
+            complete: function () {
                 $btn.prop("disabled", false).text("變更密碼");
-                const msg = err.responseJSON?.message || "變更失敗";
-                showPopup({ title: "錯誤", message: msg, type: "error" });
             }
         });
     });
 });
-
-// DOM Ready
-$(() => MemberProfile.init());

@@ -123,6 +123,9 @@ namespace TripMatch.Controllers
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                    return BadRequest(new { success = false, message = "無效的驗證連結。" });
+
                 ViewData["Status"] = "Error";
                 ViewData["Message"] = "無效的驗證連結。";
                 return View("CheckEmail");
@@ -131,6 +134,9 @@ namespace TripMatch.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                    return BadRequest(new { success = false, message = "用戶不存在。" });
+
                 ViewData["Status"] = "Error";
                 ViewData["Message"] = "用戶不存在。";
                 return View("CheckEmail");
@@ -141,16 +147,27 @@ namespace TripMatch.Controllers
 
             if (result.Succeeded)
             {
-                ViewData["Status"] = "Success";
-                ViewData["Message"] = "Email 驗證成功！";
+                // 寫入站域 cookie，以便前端檢查 (注意 SameSite 與 Secure 設定需與 AuthService.SetPendingCookie 一致)
+                _authService.SetPendingCookie(HttpContext, user.Email);
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                {
+                    return Ok(new { success = true, message = "Email 驗證成功！" });
+                }
+
+                // 瀏覽器直接點連結 -> 導回 Signup（正常跳轉）
+                return RedirectToAction("Signup");
             }
             else
             {
-                ViewData["Status"] = "Error";
-                ViewData["Message"] = "Email 驗證失敗：" + string.Join(", ", result.Errors.Select(e => e.Description));
-            }
+                var err = string.Join(", ", result.Errors.Select(e => e.Description));
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                    return BadRequest(new { success = false, message = "Email 驗證失敗：" + err });
 
-            return View("CheckEmail");
+                ViewData["Status"] = "Error";
+                ViewData["Message"] = "Email 驗證失敗：" + err;
+                return View("CheckEmail");
+            }
         }
         [HttpGet]
         public async Task<IActionResult> VerifyPasswordResetLink(string userId, string code)

@@ -20,8 +20,12 @@
         CheckEmail = apiBase + "/CheckEmailStatus",
         ForgotPassword = apiBase + "/SendPasswordReset",
         MemberCenter = apiBase + "/GetMemberProfile",
-        ChangePassword = apiBase + "/ChangePassword"
-
+        ChangePassword = apiBase + "/ChangePassword",
+        Logout = apiBase + "/Logout",
+        SaveLeaves = apiBase + "/SaveLeaves",
+        GetLeaves = apiBase + "/GetLeaves",
+        GetLockedRanges = apiBase + "/GetLockedRanges",
+        DeleteLeaves = apiBase + "/DeleteLeaves" // <- 新增
     };
 }
 
@@ -45,18 +49,22 @@
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
+    <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
     @* 這裡可以預留給各別頁面加入額外的 CSS *@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body>
     @* 在這裡放共用的 Header/Nav *@
-
+    <div id="route-data"
+         data-pages='@Json.Serialize(authPages)'
+         data-apis='@Json.Serialize(authApis)'
+         style="display:none;"></div>
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
-
  
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+
 
     @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
     @RenderSection("Scripts", required: false)
