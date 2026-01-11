@@ -38,6 +38,11 @@ namespace TripMatch.Services
             return tripDtos;
         }
 
+        public async Task<bool> isPlaceInWishlist(string placeId)
+        {
+            return true;
+        }
+
         public async Task<int> AddTrip(TripCreateDto tripDto)
         {
             Trip trip = new Trip()
@@ -130,6 +135,7 @@ namespace TripMatch.Services
 
             await _context.SaveChangesAsync();
         }
+
 
 
 
