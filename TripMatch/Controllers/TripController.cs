@@ -9,15 +9,15 @@ namespace TripMatch.Controllers
             return View();
         }
 
-        public IActionResult CreateTrip()
+        public IActionResult Create()
         {
             return View();
         }
 
-        [HttpGet]
-        public IActionResult EditTrip(int id) 
-        {
-            return View();
+        // 這裡的 id 會對應到網址 /Trip/Edit/5 中的 5
+        public IActionResult Edit(int id)
+        {            
+            return View(id);
         }
     }
 }

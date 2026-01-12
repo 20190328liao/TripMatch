@@ -1,21 +1,28 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using TripMatch.Models;
+using TripMatch.Services;
+using TripMatch.Extensions;
 
 namespace TripMatch.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ITagUserId _tagUserId; // 加上欄位宣告並配合 int? 類型
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, ITagUserId tagUserId)
         {
             _logger = logger;
+            _tagUserId = tagUserId;
         }
 
-        //等注入
+        // 等注入：在 View 使用 ViewBag.TaggedUserId 檢查是否有值
+
         public IActionResult Index()
         {
+            var userId = _tagUserId.UserId;
+            ViewBag.TaggedUserId = userId;
             return View();
         }
 
@@ -23,8 +30,6 @@ namespace TripMatch.Controllers
         {
             return View();
         }      
-
-       
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

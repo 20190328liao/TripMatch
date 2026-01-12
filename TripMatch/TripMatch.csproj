@@ -8,9 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bin\**" />
     <Compile Remove="wwwroot\wwwroot\**" />
+    <Content Remove="bin\**" />
     <Content Remove="wwwroot\wwwroot\**" />
+    <EmbeddedResource Remove="bin\**" />
     <EmbeddedResource Remove="wwwroot\wwwroot\**" />
+    <None Remove="bin\**" />
     <None Remove="wwwroot\wwwroot\**" />
   </ItemGroup>
 
@@ -42,7 +46,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.22" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

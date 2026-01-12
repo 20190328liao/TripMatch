@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 using System.Text;
 using TripMatch.Data;
@@ -140,9 +141,13 @@ namespace TripMatch.Services
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            services.AddIdentityApiEndpoints<ApplicationUser>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();  // ★ 確保加入這行
+            // 將 services.AddIdentityApiEndpoints<ApplicationUser>() 改回傳統的 AddIdentity
+            // 指定只用 ApplicationUser，讓 Role 保持預設
+            services.AddIdentity<ApplicationUser, IdentityRole<int>>(options => {
+                // 這裡可以放你的密碼設定
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
             //設定 Token 有效期限
             services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -198,11 +203,18 @@ namespace TripMatch.Services
         {
             private readonly UserManager<ApplicationUser> _userManager;
             private readonly IOptions<JwtSettings> _jwtSettings;
+            private readonly SymmetricSecurityKey _signingKey;
+            private readonly SigningCredentials _signingCredentials;
 
             public AuthService(UserManager<ApplicationUser> userManager, IOptions<JwtSettings> jwtSettings)
+                => (_userManager, _jwtSettings, _signingKey, _signingCredentials) = Initialize(userManager, jwtSettings);
+
+            private static (UserManager<ApplicationUser>, IOptions<JwtSettings>, SymmetricSecurityKey, SigningCredentials) Initialize(UserManager<ApplicationUser> userManager, IOptions<JwtSettings> jwtSettings)
             {
-                _userManager = userManager;
-                _jwtSettings = jwtSettings;
+                var settings = jwtSettings?.Value ?? throw new InvalidOperationException("JwtSettings 尚未設定 (IOptions<JwtSettings>.Value 為 null)。");
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key));
+                var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                return (userManager, jwtSettings, key, creds);
             }
 
             public string GenerateJwtToken(ApplicationUser user)
@@ -214,25 +226,26 @@ namespace TripMatch.Services
 
                 var claims = new List<Claim>
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
                     new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
                     new Claim("Avatar", user.Avatar ?? "") //不用常常查資料庫，直接放在 JWT 裡
                 };
 
-                var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key));
-                var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+                // Use cached signing credentials to avoid per-request allocations
+                var descriptor = new SecurityTokenDescriptor
+                {
+                    Issuer = settings.Issuer,
+                    Audience = settings.Audience,
+                    Subject = new ClaimsIdentity(claims),
+                    NotBefore = DateTime.UtcNow,
+                    Expires = DateTime.UtcNow.AddDays(30),
+                    SigningCredentials = _signingCredentials
+                };
 
-                var token = new JwtSecurityToken(
-                    issuer: settings.Issuer,
-                    audience: settings.Audience,
-                    claims: claims,
-                    notBefore: DateTime.UtcNow,
-                    expires: DateTime.UtcNow.AddDays(30),
-                    signingCredentials: creds);
-
-                return new JwtSecurityTokenHandler().WriteToken(token);
+                var handler = new JsonWebTokenHandler();
+                return handler.CreateToken(descriptor);
             }
 
             //使用者點擊連結，瀏覽器記住 Email，跳轉回註冊頁時自動帶入顯示已驗證。
@@ -268,8 +281,8 @@ namespace TripMatch.Services
                 // 配合 AuthApiController 的 Base64UrlDecode，這裡需使用 Base64UrlEncode
                 var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                // 指向 AuthApiController 的 ConfirmEmail Action (/AuthApi/ConfirmEmail)
-                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/AuthApi/ConfirmEmail?userId={userId}&code={encodedCode}";
+                // 指向 AuthApiController 的 ConfirmEmail Action (/Auth/ConfirmEmail)
+                return $"{ctx.Request.Scheme}://{ctx.Request.Host}/Auth/ConfirmEmail?userId={userId}&code={encodedCode}";
             }
 
             public sealed class EmailSender : IEmailSender<ApplicationUser>
@@ -277,9 +290,7 @@ namespace TripMatch.Services
                 private readonly SendGridSettings _settings;
 
                 public EmailSender(IOptions<SendGridSettings> settings)
-                {
-                    _settings = settings.Value;
-                }
+                    => _settings = settings.Value;
 
                 public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
                 {

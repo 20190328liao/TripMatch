@@ -50,7 +50,7 @@
 
         $.ajax({
             type: 'post',
-            url: window.AppUrls.Auth.Login,
+            url: window.Routes.AuthApi.Signin,
             contentType: 'application/json; charset=utf-8',
             data: JSON.stringify(loginData),
             headers: {
@@ -67,7 +67,7 @@
                 }).then(() => {
                     const params = new URLSearchParams(window.location.search);
                     const returnUrl = params.get('returnUrl');
-                    window.location.href = response.redirectUrl || returnUrl || window.AppUrls.Home.Index;
+                    window.location.href = response.redirectUrl || returnUrl || window.Routes.Home.Index;
                 });
             },
             error: function (err) {

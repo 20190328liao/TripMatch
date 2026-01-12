@@ -1,0 +1,87 @@
+﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var tokens = Antiforgery.GetAndStoreTokens(Context);
+    ViewData["Title"] = "註冊";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="signWrap">
+    <div class="container-fluid p-0">
+        <div class="row g-0 min-vh-100">
+            <div class="signContent s1 col-12 col-md-6">
+                廣告區
+            </div>
+            <div class="signContent s2 col-12 col-md-6 ">
+                <div class="mb-4">
+                    @* 使用 Url.Action 跳轉到登入頁 *@
+                    <a href="@Url.Action("Login", "Auth")" class="titleWrap titleH1 inputNone">登入</a>
+                    <a href="@Url.Action("Signup", "Auth")" class="titleWrap titleH1 inputLine">註冊</a>
+                </div>
+
+                <div class="formWrap">
+                    <label class="titleWrap titleH3 d-block">帳號 (電子郵件)</label>
+
+                    <div class="input_row email_row">
+                        <input id="email" class="email2" type="email" placeholder="example@gmail.com">
+                        <button class="btn btn_light eLabel" id="checkEmail">寄驗證信</button>
+                    </div>
+
+                    <div class="goodHint">
+                        <div id="emailHint" class="inputHint"></div>
+                    </div>
+
+                    <label class="titleWrap titleH3 d-block mt-3">密碼 *</label>
+                    <div class="input_group_custom">
+                        <input type="password" id="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
+                        <span class="btn-toggle-pwd" data-target="#password">
+                            <img src="~/img/eye-closed.svg" alt="顯示密碼">
+                        </span>
+                    </div>
+                    <div class="goodHint">
+                        <div id="pwdHint" class="inputHint"></div>
+                    </div>
+
+                    <label class="titleWrap titleH3 d-block mt-3">確認密碼 *</label>
+                    <div class="input_group_custom">
+                        <input type="password" id="confirmPassword" class="input1 psw" placeholder="請再次輸入密碼">
+                        <span class="btn-toggle-pwd" data-target="#confirmPassword">
+                            <img src="~/img/eye-closed.svg" alt="顯示密碼">
+                        </span>
+                    </div>
+                    <div class="goodHint">
+                        <div id="confirmHint" class="inputHint"></div>
+                    </div>
+
+                    <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnRegister" disabled>建立帳戶</button>
+                    <div class="mt-4">
+                        <div class="backIndex mt-4 text-center">
+                            <a href="@Url.Action("Index", "Home")" class="back-home-link">
+                                回到首頁
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="newAccount">
+                        <a href="javascript:void(0)" id="btnClearAndNew">註冊新帳號</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+    window.csrfToken = "@tokens.RequestToken";
+
+    $(function () {
+    if (typeof bindPasswordToggle === 'function') {
+    bindPasswordToggle();
+    }
+    });
+</script>
+
+    <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/signup.js" asp-append-version="true"></script>
+
+}
+

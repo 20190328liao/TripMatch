@@ -37,6 +37,8 @@ public partial class TravelDbContext : DbContext
 
     public virtual DbSet<ExpenseParticipant> ExpenseParticipants { get; set; }
 
+    public virtual DbSet<ExpensePayer> ExpensePayers { get; set; }
+
     public virtual DbSet<Flight> Flights { get; set; }
 
     public virtual DbSet<GlobalRegion> GlobalRegions { get; set; }
@@ -69,15 +71,15 @@ public partial class TravelDbContext : DbContext
 
     public virtual DbSet<Wishlist> Wishlists { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Server=.;Database=travelDb;Trusted_Connection=True;TrustServerCertificate=True");
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=.\\sqlexpress01;Database=travelDb;Integrated Security=True;Encrypt=False;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Accommodation>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Accommod__3214EC079DED41CB");
+            entity.HasKey(e => e.Id).HasName("PK__Accommod__3214EC07F1DEE441");
 
             entity.ToTable(tb => tb.HasComment("住宿資訊表：記錄行程中的飯店安排"));
 
@@ -187,7 +189,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<BlindBoxSubmission>(entity =>
         {
-            entity.HasKey(e => new { e.ItineraryItemId, e.UserId }).HasName("PK__BlindBox__CA80D4BA74050DFA");
+            entity.HasKey(e => new { e.ItineraryItemId, e.UserId }).HasName("PK__BlindBox__CA80D4BA4B7AA204");
 
             entity.ToTable(tb => tb.HasComment("盲盒候選清單：儲存參與者投遞的景點方案"));
 
@@ -216,29 +218,24 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0BCFAE8C84");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0B4BFDD967");
 
             entity.Property(e => e.Name).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Expense>(entity =>
         {
-            entity.HasKey(e => e.ExpenseId).HasName("PK__Expenses__1445CFD396B7C778");
+            entity.HasKey(e => e.ExpenseId).HasName("PK__Expenses__1445CFD3A6F7C40B");
 
             entity.HasIndex(e => e.TripId, "IX_Expenses_TripId");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetimeoffset())");
+            entity.Property(e => e.Day).HasDefaultValue(1);
             entity.Property(e => e.Title).HasMaxLength(200);
 
             entity.HasOne(d => d.Category).WithMany(p => p.Expenses)
                 .HasForeignKey(d => d.CategoryId)
                 .HasConstraintName("Expenses_Categories_FK");
-
-            entity.HasOne(d => d.PaidByNavigation).WithMany(p => p.Expenses)
-                .HasForeignKey(d => d.PaidBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("Expenses_TripMembers_FK");
 
             entity.HasOne(d => d.Trip).WithMany(p => p.Expenses)
                 .HasForeignKey(d => d.TripId)
@@ -247,7 +244,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<ExpenseParticipant>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ExpenseP__3214EC070D49BE6D");
+            entity.HasKey(e => e.Id).HasName("PK__ExpenseP__3214EC0784E3035D");
 
             entity.Property(e => e.ShareAmount).HasColumnType("decimal(18, 2)");
 
@@ -261,9 +258,26 @@ public partial class TravelDbContext : DbContext
                 .HasConstraintName("ExpenseParticipants_TripMembers_FK");
         });
 
+        modelBuilder.Entity<ExpensePayer>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ExpenseP__3214EC07B2D01FD5");
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.Expense).WithMany(p => p.ExpensePayers)
+                .HasForeignKey(d => d.ExpenseId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__ExpensePa__Expen__634EBE90");
+
+            entity.HasOne(d => d.Member).WithMany(p => p.ExpensePayers)
+                .HasForeignKey(d => d.MemberId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__ExpensePa__Membe__6442E2C9");
+        });
+
         modelBuilder.Entity<Flight>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Flights__3214EC07D8017DF3");
+            entity.HasKey(e => e.Id).HasName("PK__Flights__3214EC0726236368");
 
             entity.ToTable(tb => tb.HasComment("航班資訊表：儲存行程交通中的飛行排程與費用紀錄"));
 
@@ -307,7 +321,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<GlobalRegion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__GlobalRe__3214EC07B6F1B7CC");
+            entity.HasKey(e => e.Id).HasName("PK__GlobalRe__3214EC073148EDAD");
 
             entity.ToTable(tb => tb.HasComment("全球區域主檔：存放國家與城市的層級資料，支援中英文雙語"));
 
@@ -315,7 +329,7 @@ public partial class TravelDbContext : DbContext
 
             entity.HasIndex(e => e.PlaceId, "IX_GlobalRegions_PlaceId");
 
-            entity.HasIndex(e => e.PlaceId, "UQ__GlobalRe__D5222B6F016C25D3").IsUnique();
+            entity.HasIndex(e => e.PlaceId, "UQ__GlobalRe__D5222B6F3E17F471").IsUnique();
 
             entity.Property(e => e.Id).HasComment("區域自動編號主鍵");
             entity.Property(e => e.CountryCode)
@@ -379,7 +393,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<ItineraryItem>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Itinerar__3214EC07A660425F");
+            entity.HasKey(e => e.Id).HasName("PK__Itinerar__3214EC07CAC08595");
 
             entity.ToTable(tb => tb.HasComment("行程細項排程表：儲存每日具體的景點或活動排程"));
 
@@ -423,7 +437,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<LeaveDate>(entity =>
         {
-            entity.HasKey(e => e.LeaveId).HasName("PK__LeaveDat__796DB95999CB32BE");
+            entity.HasKey(e => e.LeaveId).HasName("PK__LeaveDat__796DB959E996324F");
 
             entity.Property(e => e.LeaveDate1).HasColumnName("LeaveDate");
             entity.Property(e => e.LeaveDateAt)
@@ -438,7 +452,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<LocationCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Location__3214EC07AC9803DF");
+            entity.HasKey(e => e.Id).HasName("PK__Location__3214EC07082279A9");
 
             entity.ToTable(tb => tb.HasComment("地點分類字典表：定義景點、美食、飯店等類別"));
 
@@ -474,7 +488,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<MemberTimeSlot>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__MemberTi__3214EC07B553A1B3");
+            entity.HasKey(e => e.Id).HasName("PK__MemberTi__3214EC07A6980F05");
 
             entity.HasIndex(e => new { e.GroupId, e.StartAt, e.EndAt }, "IX_MemberTimeSlots_GroupId_StartAt");
 
@@ -499,13 +513,13 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<PlacesSnapshot>(entity =>
         {
-            entity.HasKey(e => e.SpotId).HasName("PK__Places_S__61645FE753F9688E");
+            entity.HasKey(e => e.SpotId).HasName("PK__PlacesSn__61645FE75E0DC177");
 
             entity.ToTable("PlacesSnapshot", tb => tb.HasComment("景點與地點快照庫：快取來自 Google Places 的資訊以節省 API 成本"));
 
             entity.HasIndex(e => e.LocationCategoryId, "IX_Places_LocationCategory");
 
-            entity.HasIndex(e => e.ExternalPlaceId, "UQ__Places_S__577A2CE8282173DA").IsUnique();
+            entity.HasIndex(e => e.ExternalPlaceId, "UQ__PlacesSn__577A2CE86A2B2F24").IsUnique();
 
             entity.Property(e => e.SpotId)
                 .HasComment("內部唯一編號 (主鍵)")
@@ -576,7 +590,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<Recommandation>(entity =>
         {
-            entity.HasKey(e => e.Index).HasName("PK__Recomman__9A5B622810AB7292");
+            entity.HasKey(e => e.Index).HasName("PK__Recomman__9A5B62289A2CC478");
 
             entity.HasIndex(e => e.GroupId, "IX_Recommandations_GroupId");
 
@@ -602,7 +616,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<Settlement>(entity =>
         {
-            entity.HasKey(e => e.SettlementId).HasName("PK__Settleme__7712545A2E31B583");
+            entity.HasKey(e => e.SettlementId).HasName("PK__Settleme__7712545AB6AAF6E5");
 
             entity.HasIndex(e => new { e.TripId, e.IsPaid }, "IX_Settlements_Trip_PayStatus");
 
@@ -631,7 +645,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<TravelGroup>(entity =>
         {
-            entity.HasKey(e => e.GroupId).HasName("PK__TravelGr__149AF36ABC2D3D1A");
+            entity.HasKey(e => e.GroupId).HasName("PK__TravelGr__149AF36A449E69C1");
 
             entity.HasIndex(e => e.InviteCode, "IX_TravelGroups_InviteCode").IsUnique();
 
@@ -660,7 +674,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<Trip>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Trips__3214EC07F209E5B2");
+            entity.HasKey(e => e.Id).HasName("PK__Trips__3214EC07B8F93AA9");
 
             entity.ToTable(tb => tb.HasComment("行程主表：儲存旅遊行程的核心資訊"));
 
@@ -699,6 +713,9 @@ public partial class TravelDbContext : DbContext
             entity.HasIndex(e => new { e.TripId, e.UserId }, "UQ_TripMembers_TripUser").IsUnique();
 
             entity.Property(e => e.Id).HasComment("自動編號主鍵");
+            entity.Property(e => e.Budget)
+                .HasComment("該成員在行程中的預算上限")
+                .HasColumnType("decimal(18, 2)");
             entity.Property(e => e.JoinedAt)
                 .HasDefaultValueSql("(sysdatetimeoffset())")
                 .HasComment("成員加入行程的時間 (包含時區資訊)");
@@ -715,7 +732,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<TripRegion>(entity =>
         {
-            entity.HasKey(e => new { e.TripId, e.RegionId }).HasName("PK__TripRegi__7B11F5743E5F3B33");
+            entity.HasKey(e => new { e.TripId, e.RegionId }).HasName("PK__TripRegi__7B11F5740BFD51FE");
 
             entity.ToTable(tb => tb.HasComment("行程區域關聯表：紀錄該行程感興趣或計畫前往的行政區域（城市）"));
 
@@ -738,7 +755,7 @@ public partial class TravelDbContext : DbContext
 
         modelBuilder.Entity<Wishlist>(entity =>
         {
-            entity.HasKey(e => e.WishlistItemId).HasName("PK__Wishlist__171E21A180761268");
+            entity.HasKey(e => e.WishlistItemId).HasName("PK__Wishlist__171E21A11C3DCCCC");
 
             entity.ToTable("Wishlist", tb => tb.HasComment("願望清單表：儲存使用者感興趣的地點快照，支援私人備註與防重複收藏機制。"));
 

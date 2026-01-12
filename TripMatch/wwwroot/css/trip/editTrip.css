@@ -1,2 +1,100 @@
+/* =========================================
+           1. 暴力清除 Layout 預設間距
+   ========================================= */
 
-    
+/* 針對導覽列 (Navbar) */
+header, nav, .navbar {
+    margin-bottom: 0 !important; /* 移除下方間距 */
+    z-index: 1030; /* 確保陰影蓋在內容之上 */
+    position: relative;
+}
+
+/* 針對主要內容容器 (Main) */
+body, main, .container, .container-fluid, .body-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+}
+
+/* 隱藏頁尾，避免佔用高度 */
+footer {
+    display: none !important;
+}
+
+/* =========================================
+           2. 您的自定義佈局
+   ========================================= */
+
+/* 隱藏外層捲軸 */
+body {
+    overflow: hidden;
+}
+
+.itinerary-wrapper {
+    /* 調整高度：100螢幕高度 - 導覽列高度(約56~60px) */
+    /* 如果您發現還有卷軸，可以微調這個 px 值 */
+    height: calc(100vh - 56px);
+    display: flex;
+    width: 100vw;
+    position: relative;
+    margin-top: -1px; /* 稍微上提 1px 消除可能的細微白線 */
+}
+
+.left-panel {
+    width: 45vw;
+    min-width: 200px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.right-panel {
+    flex-grow: 1;
+    background-color: lightcoral;
+    position: relative;
+}
+
+.search-container {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 5; /* 確保在 Google Map 圖層之上 */
+    width: 320px;
+}
+
+/* 4. 地圖容器 */
+#map {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0; /* 地圖載入前的底色 */
+}
+
+
+/* 確保外層容器圓角一致 */
+.search-box {
+    border-radius: 8px;
+    overflow: hidden; /* 確保圓角不會被子元素切掉 */
+}
+
+/* 當輸入框被點擊時，讓左邊的圖示區塊邊框也跟著變色 */
+.search-box:focus-within .input-group-text,
+.search-box:focus-within #place-search-input {
+    border-color: #86b7fe; /* Bootstrap 預設藍 */
+    outline: 0;
+}
+
+/* 3. 移除輸入框點擊時的預設陰影，改用外層 .shadow 處理 */
+#place-search-input:focus {
+    box-shadow: none;
+}
+
+.input-group-text{
+    cursor: pointer;
+}
+
+.input-group-text:hover {
+  
+}
+

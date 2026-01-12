@@ -1,5 +1,5 @@
 ﻿$(function () {
-        // 檢查 URL 是否包含驗證參數
+    // 檢查 URL 是否包含驗證參數
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
     const code = urlParams.get('code');
@@ -18,7 +18,7 @@
     function startCooldown(seconds) {
         cooldownTime = seconds;
         const $btn = $("#checkEmail");
-        
+
         $btn.prop("disabled", true).addClass("btn_Gray");
 
         if (cooldownTimer) clearInterval(cooldownTimer);
@@ -37,7 +37,7 @@
 
     async function checkStatusFromBackend() {
         try {
-            const res = await fetch(window.AppUrls.Auth.CheckDbStatus, { credentials: 'include' });
+            const res = await fetch(window.Routes.AuthApi.CheckDbStatus, { credentials: 'include' });
             const data = await res.json();
             if (data.verified && data.email) {
                 isEmailVerified = true;
@@ -116,7 +116,7 @@
         lastSentEmail = email;
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.SendConfirmation,
+            url: window.Routes.AuthApi.SendConfirmation,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function (res) {
@@ -129,7 +129,7 @@
                 lastSentEmail = "";//重置
                 const data = err.responseJSON;
                 if (data && data.action === "redirect_login") {
-                    window.location.href = window.AppUrls.Auth.Login;
+                    window.location.href = window.Routes.Auth.Login;
                 }
             }
         });
@@ -165,12 +165,12 @@
 
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.SendConfirmation,
+            url: window.Routes.AuthApi.SendConfirmation,
             contentType: 'application/json',
             data: JSON.stringify(email),
             success: function (res) {
                 isSending = false;
-                
+
                 if (res.verified) {
                     // 已經驗證過了 (後端回傳 verified: true)
                     isEmailVerified = true;
@@ -188,11 +188,11 @@
             error: function (err) {
                 isSending = false;
                 $btn.prop('disabled', false).text('寄驗證信'); // 失敗則恢復按鈕
-                
+
                 const data = err.responseJSON;
                 if (data && data.action === "redirect_login") {
                     showPopup({ title: "提示", message: data.message, type: "warning" }).then(() => {
-                        window.location.href = window.AppUrls.Auth.Login;
+                        window.location.href = window.Routes.Auth.Login;
                     });
                 } else {
                     showPopup({ title: "發送失敗", message: data?.message || "請稍後再試", type: "error" });
@@ -221,11 +221,12 @@
         $("#btnRegister").prop("disabled", true).text("處理中...");
         $.ajax({
             type: 'post',
-            url: window.AppUrls.Auth.Register,
+            url: window.Routes.AuthApi.Register,
             contentType: 'application/json',
             data: JSON.stringify(userData),
             success: function (res) {
-                window.location.href = res.redirectUrl || window.AppUrls.Auth.Login;
+                try { localStorage.setItem('showRegSuccess', 'true'); } catch (e) { }
+                window.location.href = res.redirectUrl || window.Routes.Auth.Login;
             },
             error: async function (err) {
                 $("#btnRegister").prop("disabled", false).text("建立帳戶");
@@ -242,7 +243,7 @@
     $("#btnClearAndNew").on("click", function () {
         $.ajax({
             type: 'POST',
-            url: window.AppUrls.Auth.ClearPendingSession,
+            url: window.Routes.AuthApi.ClearPendingSession,
             success: function () {
                 // 清除表單
                 $("#email").val("").prop("readonly", false);
@@ -272,5 +273,51 @@
                 location.reload();
             }
         });
+
+
     });
+
+    //function confirmEmailViaAjax(userId, code) {
+    //    $.ajax({
+    //        url: window.Routes.AuthApi.ConfirmEmail,
+    //        type: 'GET',
+    //        data: { userId: userId, code: code },
+    //        success: function (response) {
+    //            if (response.success) {
+    //                // 成功：顯示 popup 並重定向到登入頁面
+    //                showPopup({
+    //                    title: "成功",
+    //                    message: "Email 驗證成功，請重新整理頁面以完成註冊流程。",
+    //                    type: "success"
+    //                }).then(() => {
+    //                    window.location.href = window.Routes.Auth.Register;
+    //                });
+    //            } else {
+    //                // 失敗：顯示錯誤訊息
+    //                showPopup({ title: "失敗", message: response.message || "Email 驗證失敗，請重新寄送驗證信。", type: "error" });
+    //            }
+    //        },
+    //        error: function (xhr) {
+    //            // 網路錯誤處理
+    //            showPopup({ title: "錯誤", message: "Email 驗證失敗，請重新寄送驗證信。", type: "error" });
+    //        }
+    //    });
+    //}
+    //// 如果 URL 驗證參數
+    ////const urlParams = new URLSearchParams(window.location.search);
+    ////const userId = urlParams.get('userId');
+    ////const code = urlParams.get('code');
+    ////if (userId && code) {
+    ////    confirmEmailViaAjax(userId, code);
+    ////}
+
+    ////綁定特定連結點擊事件
+    ////$('#confirmEmailLink').on("click", function (e) {
+    ////    e.preventDefault();
+    ////    const userId = $(this).data("userid");
+    ////    const code = $(this).data("code");
+    ////    confirmEmailViaAjax(userId, code);
+    //});
+
+    //});
 });

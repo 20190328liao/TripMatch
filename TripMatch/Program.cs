@@ -1,7 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using TripMatch.Models;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using TripMatch.Extensions;
+using TripMatch.Models;
 using TripMatch.Services;
+using TripMatch.Services.ExternalClients;
 
 
 namespace TripMatch
@@ -22,15 +24,27 @@ namespace TripMatch
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
             builder.Services.AddScoped<TimeWindowService>();
 
+            // 註冊身分驗證基礎設施
+            builder.Services.AddIdentityInfrastructure(builder.Configuration);
+
             // 註冊各個模組的services
+            builder.Services.AddScoped<MatchServices>();
             builder.Services.AddScoped<TripServices>();
+            builder.Services.AddScoped<SpotServices>();
+            builder.Services.AddScoped<BillingServices>();
+
+            // 註冊 Typed HttpClient (會自動處理 HttpClient 的生命週期)
+            builder.Services.AddHttpClient<GooglePlacesClient>();
+
+
+            // 取得UserId服務註冊（必須在 Build 之前）
+            builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
 
 
             // 註冊身分驗證基礎設施
 
-            builder.Services.AddIdentityInfrastructure(builder.Configuration);
-            
-          
+
+
             // Swagger 與 授權
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
@@ -46,8 +60,30 @@ namespace TripMatch
            
             builder.Services.ConfigureApplicationCookie(options =>
             {
-                options.LoginPath = "/AuthApi/Login";
-                options.AccessDeniedPath = "/AuthApi/Login";
+                options.LoginPath = "/Auth/Login";
+                options.AccessDeniedPath = "/Auth/Login";
+
+                options.Events.OnRedirectToLogin = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnRedirectToAccessDenied = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
             });
 
             // 持久化 Data Protection Key（防止重啟後 Token 失效）
@@ -67,7 +103,7 @@ namespace TripMatch
             Console.WriteLine($"==== 目前使用的資料庫連線是：{connString} ====");
             // --- 測試代碼結束 ---
 
-
+        
             // --- 3. 中間件配置 ---
             if (app.Environment.IsDevelopment())
             {
@@ -84,15 +120,19 @@ namespace TripMatch
             app.UseStaticFiles();
 
             app.UseRouting();
+
             app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseTagUserId();  // 假設你有 extension 方法註冊 Middleware
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.Run();
+
         }
     }
 }

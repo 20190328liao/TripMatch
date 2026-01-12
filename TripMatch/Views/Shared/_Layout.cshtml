@@ -2,7 +2,7 @@
 @using TripMatch.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
-
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -59,19 +59,19 @@
                             }
 
                             <li class="nav-item dropdown">
-                                <a class="nav-link d-flex align-items-center" asp-controller="AuthApi" asp-action="MemberCenter">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Auth" asp-action="MemberCenter">
                                     <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2" style="cursor: pointer;">
                                 </a>
                                 <a class="nav-link dropdown-toggle p-0" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                     <li>
-                                        <a class="dropdown-item" asp-controller="AuthApi" asp-action="MemberCenter">個人資料</a>
+                                        <a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter">個人資料</a>
                                     </li>
                                     <li><hr class="dropdown-divider" /></li>
                                     <li>
                                         <form class="form-inline" asp-controller="AuthApi" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item">登出</button>
+                                            <button id="btnLogout" type="submit" class="dropdown-item">登出</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -80,10 +80,10 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="AuthApi" asp-action="Signup">註冊</a>
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="AuthApi" asp-action="Login">登入</a>
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">登入</a>
                             </li>
                         }
                     </ul>
@@ -102,10 +102,20 @@
             &copy; 2025 - TripMatch - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-  
+
+    <script>
+        // 讓 helper.js 可以把 CSRF token 放進 AJAX header
+        window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
+    </script>
+
+    @* 在 layout 中也保持單一載入點，使用版本化避免舊路徑快取 *@
+    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
+
+    @* 其餘頁面腳本由各 view 的 @section Scripts 提供 *@
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

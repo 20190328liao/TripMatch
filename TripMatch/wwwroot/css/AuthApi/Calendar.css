@@ -1,13 +1,4 @@
-﻿body {
-}
-/*variables*/
-:root {
-    --white: #fff;
-    --main: #eaedf0;
-    --accent: #0041ff;
-    --accent-2: #ebedf0;
-}
-
+﻿
 
 .container {
     display: inline-block;
@@ -36,16 +27,16 @@
 /* header styles adjusted for two panels */
 .year-header,
 .month-header {
+    background-color: var(--color_Calendar);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 6px 10px;
     margin-bottom: 8px;
 }
-
     .year-header .year-display,
     .month-header .month-display {
-        color: var(--accent);
+        color: var(--color_DarkGray);
         font-size: 1.2rem;
         font-weight: 600;
     }
@@ -137,12 +128,171 @@
     margin-bottom: 12px;
 }
 
-@media (max-width: 800px) {
-    .two-column {
-        flex-direction: column;
-    }
+.locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
 
-    .months-panel, .month-panel {
-        width: 100%;
-    }
+.saved {
+    background-color: yellow;
+}
+
+.selected-range {
+    background-color: lightblue;
+}
+
+.start-circle {
+    border: 2px solid green;
+    border-radius: 50%;
+}
+
+.end-circle {
+    border: 2px solid red;
+    border-radius: 50%;
+}
+
+.current-date {
+    font-weight: bold;
+}
+
+/* 日曆格樣式 */
+.day-cell {
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+}
+.day-cell .day-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    user-select: none;
+}
+
+/* 今天 (藍色圈) */
+.day-cell.today .day-label {
+    background: linear-gradient(180deg,#3b82f6,#2563eb);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+/* 鎖定 (灰色圈，不可選) */
+.day-cell.locked .day-label {
+    background: linear-gradient(180deg,#9ca3af,#6b7280);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    opacity: 0.85;
+}
+
+/* 連續單選 (藍綠色圈) */
+.day-cell.selected-single .day-label {
+    background: linear-gradient(180deg,#36c5a9,#1fa08a);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+/* 範圍內 (淡綠色背景) */
+.day-cell.selected-range {
+    background: linear-gradient(90deg, rgba(210,249,231,0.5), rgba(237,252,229,0.5));
+    border-radius: 8px;
+}
+
+/* 範圍起點 (粉藍) */
+.day-cell.range-start .day-label {
+    background: linear-gradient(180deg,#bfe8ff,#a7ddff);
+    color: #04253a;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+
+/* 範圍終點 (橘色) */
+.day-cell.range-end .day-label {
+    background: linear-gradient(180deg,#ffb86b,#ff974d);
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+
+/* 編輯模式右上 X */
+.cell-close {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Legend 樣式（加入至 Calendar.css）*/
+.calendar_legend { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; font-size:0.95rem; color:#333; }
+.calendar_legend .legend-item { display:inline-flex; gap:0.5rem; align-items:center; }
+.calendar_legend .dot { width:14px; height:14px; border-radius:50%; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+
+/* 顏色對照（與 Calendar.js class 對應） */
+.calendar_legend .dot.today { background:#0d6efd; }        /* 藍色：今天 */
+.calendar_legend .dot.locked { background:#6c757d; }       /* 灰色：已有行程 */
+.calendar_legend .dot.single { background: linear-gradient(180deg,#36c5a9,#1fa08a); } /* 藍綠色：單日 */
+.calendar_legend .dot.range { background: linear-gradient(90deg,#dff7ea,#eaf9d6); }  /* 淡綠：範圍整區 */
+.calendar_legend .dot.range-start { background:#bfe8ff; }  /* 粉藍：範圍開始 */
+.calendar_legend .dot.range-end { background:#ffb86b; }    /* 橘色：範圍結束 */
+
+.day-cell.selected-single { background-color: #ffc107; color: black; } /* 待新增：橘黃色 */
+.day-cell.to-remove { background-color: #6c757d; text-decoration: line-through; opacity: 0.6; } /* 待刪除：灰色+刪除線 */
+.day-cell.saved { background-color: #28a745; color: white; } /* 已儲存：綠色 */
+.day-cell.locked { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; } /* 鎖定：淺灰色 */
+
+/* 新增：強烈標示「待刪除」日期（加入於現有 Calendar.css） */
+.day-cell.to-unregister {
+    background: linear-gradient(90deg, rgba(255,235,238,0.95), rgba(255,243,244,0.6));
+    border: 1px solid rgba(244,67,54,0.22);
+    color: #b71c1c;
+    position: relative;
+    box-shadow: inset 0 -3px 0 rgba(183,28,28,0.06);
+}
+
+/* 小標籤顯示「刪除」文字 */
+.day-cell .to-unregister-mark {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #b71c1c;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    line-height: 1;
+    opacity: 0.95;
+    pointer-events: none;
+}
+
+/* 可選：在待刪除上增加刪除圖示或刪除線（條件式） */
+.day-cell.to-unregister .day-label {
+    text-decoration: line-through;
+    opacity: 0.95;
 }
