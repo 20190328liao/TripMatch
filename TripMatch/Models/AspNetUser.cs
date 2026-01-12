@@ -61,6 +61,8 @@ public partial class AspNetUser
 
     public virtual ICollection<TravelGroup> TravelGroups { get; set; } = new List<TravelGroup>();
 
+    public virtual ICollection<TripMember> TripMembers { get; set; } = new List<TripMember>();
+
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 
     public virtual ICollection<AspNetRole> Roles { get; set; } = new List<AspNetRole>();
