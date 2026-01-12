@@ -43,8 +43,17 @@ function setupAutocomplete(inputElement) {
     const options = {
         // 限制搜尋類型
         types: ['establishment', 'geocode'],
-        // 限制回傳欄位 (這對省錢非常重要！)
-        fields: ['place_id', 'geometry', 'name', 'formatted_address', 'photos']
+        // 擴充回傳欄位，確保包含後端所需的所有資料
+        fields: [
+            'place_id',
+            'geometry',
+            'name',
+            'types',
+            'formatted_address',
+            'photos',
+            'rating',               // 加入評分
+            'user_ratings_total'    // 加入評分總人數
+        ]
     };
 
     autocomplete = new google.maps.places.Autocomplete(inputElement, options);
@@ -53,10 +62,15 @@ function setupAutocomplete(inputElement) {
     autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
 
+        console.log("選擇的地點資料：", place); // 除錯用
+
         if (!place.geometry || !place.geometry.location) {
             window.alert("找不到地點資訊：" + place.name);
             return;
         }
+
+        //將資料儲存到景點快照
+        savePlaceToDatabase(place);
 
         // 強制改為只顯示名稱
         if (place.name) {
@@ -158,10 +172,45 @@ function setupAutocomplete(inputElement) {
         alert("已將景點加入行程！");
     }
 
+
+
     //將搜尋到的景點儲存到景點快照資料庫
     function savePlaceToDatabase(place) {
-        // 這裡可以放儲存地點到資料庫的邏輯
-        alert("已將景點加入資料庫！");
+
+        let significantType = '';
+        if (place.types != null)
+            significantType = place.types.find(t => t !== 'establishment' && t !== 'point_of_interest') || place.types[0];
+
+        
+        let dto = {
+            externalPlaceId: place.place_id,
+            nameZh: place.name,
+            nameEn: place.name,
+            locationCategory: significantType,      
+            address: place.formatted_address,
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            rating: place.rating || 0,
+            userRatingsTotal: place.user_ratings_total || 0,
+            photosSnapshot: place.photos ? place.photos.map(p => p.getUrl({ maxWidth: 400 })) : []
+        }
+
+        $.ajax({
+            url: '/api/TripApi/AddSnapshot',
+            type: 'post',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function () {
+                console.log("景點快照增加成功");
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON ? xhr.responseJSON.message : "景點快照增加失敗";
+                console.log(msg);
+            }
+        })
+
+
+
     }
 
     function isPlaceInWishlist(placeId) {

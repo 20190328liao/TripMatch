@@ -6,8 +6,6 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-@model int;
-
 
 @* 1. 頁面專屬 CSS 區塊 *@
 @section Styles {
@@ -17,13 +15,20 @@
 
 <div class="itinerary-wrapper">
     <div class="left-panel">
-        @* 行程導覽列 *@
-        <div class="p-3 bg-white border-bottom">
-            <h5 class="m-0">景點列表</h5>
+        <div class="itinerary-nav p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="m-0 fw-bold">我的行程</h5>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn_light active">行程</button>
+                <button class="btn btn_light" onclick="toggleOverview()">總覽</button>
+            </div>
         </div>
 
-        @* 行程細節 *@
-        <div class="p-3 overflow-auto" id="place-list">
+        <div class="itinerary-content p-0 overflow-auto" id="place-list">
+            @* JS 會將渲染後的 HTML 填入此處 *@
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">讀取行程中...</p>
+            </div>
         </div>
     </div>
 

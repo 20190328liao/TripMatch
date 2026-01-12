@@ -5,17 +5,30 @@ namespace TripMatch.Models.DTOs
     public class TripSimpleDto
     {
         public int Id { get; set; }
-        public string Title { get; set; }
+        public string Title { get; set; }= String.Empty;
     }
 
     public class TripCreateDto
     {
-        public string Title { get; set; } 
-        public string[] PlaceIds { get; set; }
+        public string Title { get; set; } = String.Empty;
+        public string[] PlaceIds { get; set; }= [];
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
     }
 
+    public class PlaceSnapshotDto
+    {
+        public string ExternalPlaceId { get; set; } = String.Empty;
+        public string NameZh { get; set; } = String.Empty;
+        public string NameEn { get; set; } = String.Empty;
+        public string LocationCategory { get; set; } = String.Empty;    
+        public string Address { get; set; } = String.Empty;
+        public decimal Lat { get; set; }
+        public decimal Lng { get; set; }
+        public decimal Rating { get; set; }
+        public int UserRatingsTotal { get; set; }
+        public List<string> PhotosSnapshot { get; set; } = [];
+    }
 
 
 

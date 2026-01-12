@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using TripMatch.Extensions;
 using TripMatch.Models;
 using TripMatch.Services;
+using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
+
 
 
 namespace TripMatch
@@ -23,6 +25,9 @@ namespace TripMatch
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
             builder.Services.AddScoped<TimeWindowService>();
+
+            // 註冊基礎服務
+            builder.Services.AddScoped<SharedService>();
 
             // 註冊身分驗證基礎設施
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
