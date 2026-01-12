@@ -1,0 +1,594 @@
+﻿/* --- CSS 變數定義 --- */
+:root {
+    --primary-mint: #62DEB1;
+    --dark-mint: #36b38c;
+    --bg-light: #DAF3F3;
+    --text-main: #333;
+    --white: #ffffff;
+    /* 介面輔助色 */
+    --border-color: #e2e8f0;
+    --text-dark: #1e293b;
+    --up-green: #10b981; /* 較深的翠綠，適合文字顯示 */
+    --down-red: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: "Microsoft JhengHei", sans-serif;
+}
+
+body {
+    background-color: var(--primary-mint);
+    color: var(--text-main);
+}
+
+/* --- 導覽列 Navbar 核心樣式 --- */
+.navbar {
+    background: var(--bg-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2%;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: 70px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 45px;
+    width: auto;
+    margin-right: 15px;
+    cursor: pointer;
+}
+
+.nav-center {
+    display: flex;
+    gap: clamp(10px, 2vw, 40px);
+    flex: 1;
+    justify-content: center;
+}
+
+    .nav-center a {
+        text-decoration: none;
+        color: #444;
+        font-size: clamp(10px, 1.5vw, 20px);
+        font-weight: 600;
+        letter-spacing: 3px;
+        transition: 0.3s;
+        white-space: nowrap;
+        margin: 0 20px;
+    }
+
+        .nav-center a:hover {
+            color: var(--dark-mint);
+        }
+
+.nav-right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* 手機版漢堡選單圖標 */
+.menu-toggle {
+    display: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #00796B;
+}
+
+/* --- 登入/註冊按鈕樣式 --- */
+.btn-text {
+    text-decoration: none;
+    color: #444;
+    font-size: 15px;
+}
+
+.btn-login-nav {
+    background-color: var(--primary-mint);
+    padding: 15px 22px;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+    .btn-login-nav:hover {
+        background-color: var(--dark-mint);
+    }
+
+/* --- 登入後的大頭貼與下拉選單 --- */
+#userAvatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    object-fit: cover;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    background: white;
+    min-width: 200px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    display: none;
+    flex-direction: column;
+    padding: 8px 0;
+    z-index: 1100;
+}
+
+    .dropdown-menu a {
+        padding: 10px 20px;
+        text-decoration: none;
+        color: #444;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+        .dropdown-menu a:hover {
+            background: #f0fdf9;
+            color: var(--dark-mint);
+        }
+
+.menu-divider {
+    height: 1px;
+    background: #eee;
+    margin: 8px 0;
+}
+
+.menu-group-title {
+    font-size: 11px;
+    color: #aaa;
+    padding: 4px 20px;
+    text-transform: uppercase;
+}
+
+/* --- 記帳主容器 --- */
+.accounting-container {
+    display: grid;
+    grid-template-columns: 200px 1fr 380px;
+    height: calc(100vh - 70px);
+    overflow: hidden;
+    /* --- 新增這三行來突破 Layout 的限制 --- */
+    width: 100vw; /* 強制寬度跟視窗一樣寬 */
+    margin-left: calc(50% - 50vw); /* 強制往左拉到最邊邊 */
+    margin-right: calc(50% - 50vw); /* 強制往右拉到最邊邊 */
+}
+
+/* 左側導覽 */
+.sidebar {
+    background: white;
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.trip-group h3 {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.nav-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 5px 0;
+    border: none;
+    background: none;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    color: #64748b;
+}
+
+    .nav-btn.active {
+        background: var(--primary-mint);
+        color: white;
+        font-weight: bold;
+    }
+
+    .nav-btn:hover:not(.active) {
+        background: #f0fdf9;
+        color: var(--dark-mint);
+    }
+
+/* 中間主區域 */
+.main-content {
+    padding: 30px;
+    overflow-y: auto;
+    background: #f8fafc;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+#current-title {
+    border-left: 5px solid var(--primary-mint);
+    padding-left: 15px;
+}
+
+.top-actions .action-btn {
+    padding: 10px 18px;
+    margin-left: 10px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+    .top-actions .action-btn:hover {
+        border-color: var(--primary-mint);
+        background-color: #f0fdf9;
+    }
+
+    .top-actions .action-btn.active-panel {
+        background-color: var(--primary-mint) !important;
+        color: white !important;
+        border-color: var(--primary-mint);
+        box-shadow: 0 4px 6px -1px rgba(98, 222, 177, 0.4);
+    }
+
+/* 卡片與統計 */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #f1f5f9;
+}
+
+    .card h4 {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+.value {
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.highlight {
+    color: var(--dark-mint);
+}
+
+/* 預算區塊 */
+.budget-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.budget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.budget-item {
+    padding: 12px;
+    border-radius: 8px;
+    background: #f0fdf9;
+    border: 1px solid #e0f2f1;
+}
+
+.over-budget {
+    color: var(--down-red) !important;
+    font-weight: bold;
+}
+
+/* 清單 */
+.list-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #f1f5f9;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.btn-edit {
+    color: var(--dark-mint);
+    border: 1px solid var(--primary-mint) !important;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+    .btn-edit:hover {
+        background: #f0fdf9;
+    }
+
+.btn-delete {
+    color: var(--down-red);
+    border: 1px solid var(--down-red) !important;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+    .btn-delete:hover {
+        background: #fef2f2;
+    }
+
+/* 右側面板 */
+.right-panel {
+    background: white;
+    border-left: 1px solid var(--border-color);
+    padding: 25px;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        font-size: 14px;
+        color: #475569;
+    }
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+    input:focus {
+        outline: none;
+        border-color: var(--primary-mint);
+        box-shadow: 0 0 0 3px rgba(98, 222, 177, 0.2);
+    }
+
+.checkbox-row {
+    display: grid;
+    grid-template-columns: 30px 80px 1fr;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.mode-switch {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.mode-btn {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+    font-size: 13px;
+    font-weight: bold;
+    color: #64748b;
+}
+
+    .mode-btn.active {
+        background: white;
+        color: var(--dark-mint);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+.total-info {
+    background: #f0fdf4;
+    padding: 15px;
+    border-radius: 8px;
+    color: #065f46;
+    font-size: 14px;
+    margin-bottom: 15px;
+    border: 1px solid #d1fae5;
+    font-weight: bold;
+}
+
+    .total-info.blue {
+        background: #ecfdf5;
+        color: var(--btn-dark-mint);
+        border: 1px solid #a7f3d0;
+    }
+
+.confirm-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-mint);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+    .confirm-btn:hover {
+        background: var(--dark-mint);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(54, 179, 140, 0.3);
+    }
+
+.receivable {
+    color: var(--up-green);
+    font-weight: bold;
+}
+
+.owed {
+    color: var(--down-red);
+    font-weight: bold;
+}
+
+
+/* --- 響應式處理 (手機版) --- */
+@media (max-width: 992px) {
+    .menu-toggle {
+        display: block;
+    }
+
+    .nav-center {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background: var(--bg-light);
+        padding: 20px 0;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+        .nav-center.show {
+            display: flex;
+        }
+
+        .nav-center a {
+            padding: 15px;
+            text-align: center;
+            width: 100%;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            margin: 0;
+        }
+}
+
+/* --- 中間內容響應式處理 --- */
+@media (max-width: 992px) {
+    .accounting-container {
+        /* 取消三欄佈局，改為單欄 */
+        grid-template-columns: 1fr;
+        /* 取消固定高度，讓手機版可以往下捲動整個頁面 */
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .sidebar {
+        /* 左側導覽在手機版改為橫向排列或簡單堆疊 */
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        height: auto;
+        display: flex;
+        overflow-x: auto; /* 若旅程太多可以橫向滑動 */
+        gap: 10px;
+        padding: 15px;
+    }
+
+        .sidebar h2, .sidebar h3 {
+            display: none;
+        }
+    /* 手機版隱藏側欄標題節省空間 */
+    .nav-btn {
+        white-space: nowrap;
+        width: auto;
+    }
+
+    .main-content {
+        padding: 15px;
+        height: auto;
+        overflow: visible;
+    }
+
+    .right-panel {
+        /* 右側面板（新增支出表單）移到最下方 */
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        height: auto;
+    }
+}
+
+/* --- 更小螢幕的細節微調 (手機) --- */
+@media (max-width: 600px) {
+    /* 統計卡片改為一欄或兩欄 */
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    /* 頂部按鈕改為自動換行 */
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .top-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 按鈕變兩排 */
+        width: 100%;
+        gap: 8px;
+    }
+
+        .top-actions .action-btn {
+            margin-left: 0;
+            width: 100%;
+            font-size: 13px;
+            padding: 8px;
+        }
+
+    /* 預算追蹤清單在手機上改為兩欄 */
+    .budget-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* 偵錯切換按鈕 (僅供測試) */
+.debug-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 2000;
+}
