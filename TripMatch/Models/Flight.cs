@@ -21,7 +21,7 @@ public partial class Flight
     /// <summary>
     /// 航空公司名稱 (例如：長榮航空、JAL)
     /// </summary>
-    public string Carrier { get; set; } = null!;
+    public string? Carrier { get; set; }
 
     /// <summary>
     /// 航班號碼 (例如：BR225、CI100)
@@ -31,12 +31,12 @@ public partial class Flight
     /// <summary>
     /// 出發機場 IATA 3碼 (例如：TPE)
     /// </summary>
-    public string FromAirport { get; set; } = null!;
+    public string? FromAirport { get; set; }
 
     /// <summary>
     /// 抵達機場 IATA 3碼 (例如：NRT)
     /// </summary>
-    public string ToAirport { get; set; } = null!;
+    public string? ToAirport { get; set; }
 
     /// <summary>
     /// 預計起飛時間 (包含當地時區位移偏移量)
@@ -62,6 +62,10 @@ public partial class Flight
     /// 樂觀並行控制欄位 (RowVersion)：處理多人編輯衝突的核心機制
     /// </summary>
     public byte[] RowVersion { get; set; } = null!;
+
+    public string? FromLocation { get; set; }
+
+    public string? ToLocation { get; set; }
 
     public virtual Trip Trip { get; set; } = null!;
 }

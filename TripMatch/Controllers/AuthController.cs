@@ -35,6 +35,11 @@ namespace TripMatch.Controllers
 
 
         #region Views (頁面)
+        [HttpGet]
+        public IActionResult ReplacePasswords()
+        {
+            return View();
+        }
 
         [HttpGet]
         public IActionResult Login()
@@ -216,6 +221,73 @@ namespace TripMatch.Controllers
         #endregion
 
         #region API (邏輯)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+        {
+            if (model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
+            if (string.IsNullOrWhiteSpace(model.OldPassword) ||
+                string.IsNullOrWhiteSpace(model.NewPassword) ||
+                string.IsNullOrWhiteSpace(model.ConfirmPassword))
+            {
+                return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
+            }
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                return BadRequest(new { success = false, message = "新密碼與確認密碼不符。" });
+            }
+
+            // 格式驗證同前端
+            var pwdCheck = ValidatePasswordRules(model.NewPassword);
+            if (!pwdCheck.IsValid)
+            {
+                return BadRequest(new { success = false, message = "密碼格式不符：" + pwdCheck.Message, missingRules = pwdCheck.MissingRules });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { success = false, message = "找不到使用者。" });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(new { success = false, message = "找不到使用者。" });
+
+            // 第三方登入回傳提示
+            if (!await _userManager.HasPasswordAsync(user))
+            {
+                return Conflict(new { action = "external", message = "請前往 google 重設密碼流程。" });
+            }
+
+            var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
+            if (!changeResult.Succeeded)
+            {
+                var errors = changeResult.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(new { success = false, message = errors.FirstOrDefault() ?? "密碼修改失敗。", errors });
+            }
+
+            // 安全性：更新登入狀態與 Cookie
+            await _signInManager.RefreshSignInAsync(user);
+            var newToken = _authService.GenerateJwtToken(user);
+            _authService.SetAuthCookie(HttpContext, newToken);
+
+            HttpContext.Session.Remove("PasswordResetUserId");
+            HttpContext.Session.Remove("PasswordResetCode");
+            HttpContext.Session.Remove("PasswordResetTime");
+            Response.Cookies.Delete("PendingEmail");
+
+            // 根據請求判斷回應：AJAX 要 JSON；直接表單提交則導向會員中心
+            var acceptsJson = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                              Request.Headers["Accept"].ToString().Contains("application/json");
+            if (acceptsJson)
+            {
+                return Ok(new { success = true, message = "密碼已更新。" });
+            }
+
+            // 非 AJAX：導回會員中心（可用 TempData 顯示通知）
+            TempData["Message"] = "密碼已更新。";
+            return RedirectToAction("MemberCenter");
+        }
 
         // Google 登入跳轉
         [HttpGet]
@@ -294,7 +366,18 @@ namespace TripMatch.Controllers
 
                 return RedirectToAction("Index", "Home");
             }
+        private static (bool IsValid, string Message, string[] MissingRules) ValidatePasswordRules(string password)
+        {
+            var missing = new List<string>();
 
+            if (string.IsNullOrEmpty(password) || password.Length < 6 || password.Length > 18) missing.Add("6~18位");
+            if (!password.Any(char.IsUpper)) missing.Add("大寫英文");
+            if (!password.Any(char.IsLower)) missing.Add("小寫英文");
+            if (!password.Any(char.IsDigit)) missing.Add("數字");
+
+            if (missing.Count == 0) return (true, "密碼格式符合規則", Array.Empty<string>());
+            return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
+        }
         #endregion
     }
 }

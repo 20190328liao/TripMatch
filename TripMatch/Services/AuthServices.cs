@@ -332,7 +332,32 @@ namespace TripMatch.Services
                     await client.SendEmailAsync(msg);
                 }
 
+                public async Task SendEmailAsync(string email, string subject, string message)
+                {
+                    var client = new SendGridClient(_settings.SendGridKey);
+                    var from = new EmailAddress(_settings.FromEmail, "想想TripMatch");
+                    var to = new EmailAddress(email);
+                    var htmlContent = $"<p>{message}</p>";
+
+                    var msg = MailHelper.CreateSingleEmail(from, to, subject, "", htmlContent);
+                    await client.SendEmailAsync(msg);
+                }
+
                 public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode) => Task.CompletedTask;
+            }
+
+        }
+
+        // 擴展方法：為 IEmailSender<ApplicationUser> 添加 SendEmailAsync
+        public static async Task SendEmailAsync(this IEmailSender<ApplicationUser> emailSender, string email, string subject, string message)
+        {
+            if (emailSender is AuthServicesExtensions.AuthService.EmailSender sender)
+            {
+                await sender.SendEmailAsync(email, subject, message);
+            }
+            else
+            {
+                throw new NotSupportedException("The email sender does not support sending custom emails.");
             }
         }
     }

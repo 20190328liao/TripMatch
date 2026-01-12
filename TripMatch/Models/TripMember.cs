@@ -47,4 +47,6 @@ public partial class TripMember
     public virtual ICollection<Settlement> SettlementToUsers { get; set; } = new List<Settlement>();
 
     public virtual Trip Trip { get; set; } = null!;
+
+    public virtual AspNetUser User { get; set; } = null!;
 }

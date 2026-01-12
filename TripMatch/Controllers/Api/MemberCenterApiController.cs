@@ -1,18 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Security.Claims;
 using System.Text.Json;
-using TripMatch.Data;
 using TripMatch.Models;
-using TripMatch.Models.Settings;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using TripMatch.Services;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
 
 namespace TripMatch.Controllers.Api
 {
@@ -23,22 +18,33 @@ namespace TripMatch.Controllers.Api
         private readonly TravelDbContext _dbContext;
         private readonly IConfiguration _configuration;
         private readonly ILogger<MemberCenterApiController> _logger;
-        private readonly PlacesImageService _placesImageService; // 新增欄位
+        private readonly PlacesImageService _placesImageService; 
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IEmailSender _emailSender;
+        private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly UrlEncoder _urlEncoder;
-        private readonly IDataProtector _backupEmailProtector; // 新增欄位
+        private readonly IDataProtector _backupEmailProtector;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
-        public MemberCenterApiController(TravelDbContext dbContext, IConfiguration configuration, ILogger<MemberCenterApiController> logger, PlacesImageService placesImageService,UserManager<ApplicationUser> userManager,IEmailSender emailSender, UrlEncoder urlEncoder, IDataProtectionProvider dataProtectionProvider)
+        public MemberCenterApiController(
+    TravelDbContext dbContext,
+    IConfiguration configuration,
+    ILogger<MemberCenterApiController> logger,
+    PlacesImageService placesImageService,
+    UserManager<ApplicationUser> userManager,
+    IEmailSender<ApplicationUser> emailSender, // 這裡加上 <ApplicationUser>
+    UrlEncoder urlEncoder,
+    IDataProtectionProvider dataProtectionProvider,
+    SignInManager<ApplicationUser> signInManager)
         {
             _dbContext = dbContext;
             _configuration = configuration;
             _logger = logger;
             _placesImageService = placesImageService;
             _userManager = userManager;
-            _emailSender = emailSender;
+            _emailSender = emailSender; // 這裡不用改
             _urlEncoder = urlEncoder;
             _backupEmailProtector = dataProtectionProvider.CreateProtector("BackupEmailChange:v1");
+            _signInManager = signInManager;
         }
         public class RequestChangeEmailModel { public string NewEmail { get; set; } public string Type { get; set; } }
 
@@ -160,6 +166,52 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        [HttpPost("DeleteAccount")]
+        [Authorize]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if(user == null) return Unauthorized(new { message = "找不到使用者"});
+
+            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+            try {
+                var userId = user.Id;
+                // 使用 ExecuteDeleteAsync 可直接在 DB 層執行 DELETE，提高效能
+                await _dbContext.LeaveDates
+                    .Where(l => l.UserId == userId)
+                    .ExecuteDeleteAsync();
+
+                await _dbContext.Wishlists
+                    .Where(w => w.UserId == userId)
+                    .ExecuteDeleteAsync();
+
+                await _dbContext.TripMembers
+                    .Where(tm => tm.UserId == userId)
+                    .ExecuteDeleteAsync();
+
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                { 
+                    var err = result.Errors.FirstOrDefault()?.Description ?? "刪除失敗";
+                    await tx.RollbackAsync();
+                    _logger.LogWarning("DeleteAccount: Identity DeleteAsync 失敗, UserId={UserId}, Error={Error}", user.Id, err);
+
+                    return StatusCode(500, new { message = err });
+                }
+                await tx.CommitAsync();
+
+                await _signInManager.SignOutAsync();
+                HttpContext.Session.Clear();
+                Response.Cookies.Delete("AuthCookie");
+                Response.Cookies.Delete("PendingEmail");
+
+                var redirect = Url.Action("Signup","Auth");
+                return Ok(new{ message="帳號已刪除",redirect});
+            } catch (Exception ex) {
+                _logger.LogError(ex, "DeleteAccount 失敗，UserId={UserId}", user.Id);
+                return StatusCode(500, new { message = "刪除帳號時發生錯誤。" });
+            }
+        }
 
         [HttpPost("Toggle")]
         [Authorize]

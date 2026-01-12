@@ -9,20 +9,27 @@
 
   <ItemGroup>
     <Compile Remove="bin\**" />
+    <Compile Remove="NewFolder1\**" />
     <Compile Remove="wwwroot\wwwroot\**" />
     <Content Remove="bin\**" />
+    <Content Remove="NewFolder1\**" />
     <Content Remove="wwwroot\wwwroot\**" />
     <EmbeddedResource Remove="bin\**" />
+    <EmbeddedResource Remove="NewFolder1\**" />
     <EmbeddedResource Remove="wwwroot\wwwroot\**" />
     <None Remove="bin\**" />
+    <None Remove="NewFolder1\**" />
     <None Remove="wwwroot\wwwroot\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Controllers\test0112cs.cs" />
     <Compile Remove="Models\DTOs\TimeWindow\OptionCardDto.cs" />
+    <Compile Remove="Views\test0112.cshtml.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Views\test0112.cshtml" />
     <Content Remove="Views\Trip\index - 複製.cshtml" />
   </ItemGroup>
 
@@ -58,6 +65,8 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="NewFolder2\" />
+    <Folder Include="NewFolder\" />
     <Folder Include="wwwroot\css\AttractionExplorer\" />
     <Folder Include="wwwroot\img\Avatars\" />
     <Folder Include="wwwroot\js\AttractionExplorer\" />

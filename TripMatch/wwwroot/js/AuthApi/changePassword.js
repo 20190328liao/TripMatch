@@ -68,9 +68,74 @@
             $btn.prop('disabled', !(oldVal && pwdRes.valid && confRes.valid));
         }
 
+
+        function bindPasswordToggle(selector = '.btn-toggle-pwd') {
+            $(document).off('click', selector).on('click', selector, function (e) {
+                e.preventDefault();
+                const target = $(this).data('target');
+                const $input = $(target);
+                const $img = $(this).find('img');
+                if (!$input.length) return;
+                const isPwd = $input.attr('type') === 'password';
+                $input.attr('type', isPwd ? 'text' : 'password');
+                if ($img.length) {
+                    $img.attr('src', isPwd ? '/img/eye.svg' : '/img/eye-closed.svg');
+                }
+            });
+        }
+
+        // 綁定切換按鈕
+        bindPasswordToggle();
+
         $old.on('input', updateHints);
         $new.on('input', updateHints);
         $confirm.on('input', updateHints);
+
+        // 初始化提示訊息
+        setOldPwdHint('請輸入舊密碼', 'error');
+        $('#new_password_hint').text('密碼長度至少 6 碼，並包含字母、數字和特殊字符').removeClass('d-none');
+        $('#confirm_new_password_hint').text('請再次輸入新密碼以確認').removeClass('d-none');
+
+        // 綁定送出：呼叫後端正確的 POST API（/api/auth/ChangePassword）
+        $btn.on('click', function () {
+            if ($btn.prop('disabled')) return;
+
+            const oldPwd = ($old.val() || '').toString();
+            const newPwd = ($new.val() || '').toString();
+            const confPwd = ($confirm.val() || '').toString();
+
+            // 簡單前端檢查
+            if (!oldPwd || !newPwd || !confPwd) {
+                alert('請完整填寫欄位');
+                return;
+            }
+
+            // 建立隱藏表單並 submit（會走傳統 form POST，不觸發 preflight）
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Auth/ChangePassword';
+            form.style.display = 'none';
+
+            function addHidden(name, value) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            addHidden('OldPassword', oldPwd);
+            addHidden('NewPassword', newPwd);
+            addHidden('ConfirmPassword', confPwd);
+
+            // 加入 Antiforgery token（Layout 已輸出 window.csrfToken）
+            if (window.csrfToken) {
+                addHidden('__RequestVerificationToken', window.csrfToken);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        });
 
         // 初始狀態：執行一次
         updateHints();

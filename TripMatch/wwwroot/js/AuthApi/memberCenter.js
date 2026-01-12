@@ -12,6 +12,7 @@
         this.$avatarInput = $('#avatarInput');
         this.$emailText = $('#displayEmail');
         this.$backupEmailText = $('#displayBackupEmail');
+        this.primaryEmail = ''; // 快取主信箱
     },
 
     bindEvents() {
@@ -34,6 +35,58 @@
             console.log("偵測到檔案變更");
             self.handleFileSelect(e);
             $(this).val(''); // 重要：清空值，讓同一張圖可以連續觸發 change
+        });
+
+        // 新增：刪除帳號（重設帳號）按鈕行為
+        $(document).off('click', '#btnResetEmail').on('click', '#btnResetEmail', async function (e) {
+            e.preventDefault();
+            // Step1：基本確認
+            if (!confirm("你即將刪除目前帳號並導向註冊頁面。刪除後所有個人資料將被移除。是否繼續？")) return;
+
+            // Step2：是否先匯出日曆
+            if (confirm("是否要先匯出日曆資料（JSON）？按「確定」會先下載日曆資料，再執行刪除；按「取消」直接刪除。")) {
+                try {
+                    const leavesRes = await fetch('/api/auth/GetLeaves', { method: 'GET', credentials: 'include' });
+                    if (leavesRes.ok) {
+                        const json = await leavesRes.json();
+                        const filename = `calendar_export_${(self.primaryEmail||'me').replace(/[^a-z0-9@._-]/ig,'')}_${new Date().toISOString().slice(0,10)}.json`;
+                        const blob = new Blob([JSON.stringify(json)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        a.remove();
+                    } else {
+                        console.warn('匯出日曆失敗', leavesRes.status);
+                        alert('匯出日曆失敗，將直接進行刪除。');
+                    }
+                } catch (ex) {
+                    console.error('匯出日曆發生錯誤', ex);
+                    alert('匯出過程發生錯誤，將直接進行刪除。');
+                }
+            }
+
+            // Step3：呼叫刪除 API
+            try {
+                const res = await fetch('/api/MemberCenterApi/DeleteAccount', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    alert(data.message || '帳號已刪除，即將導向註冊頁');
+                    window.location.href = data.redirect || '/Auth/Signup';
+                } else {
+                    alert(data.message || '刪除帳號失敗，請聯絡管理員');
+                }
+            } catch (ex) {
+                console.error('刪除帳號失敗', ex);
+                alert('刪除帳號失敗，請稍後再試');
+            }
         });
 
         // 安全呼叫 Calendar：如果 library 尚未載入，避免拋錯
@@ -88,6 +141,9 @@
         this.$avatarImg.attr('src', imgUrl);
         this.$emailText.text(data.email || '未設定');
         this.$backupEmailText.text(data.backupEmail || '未設定');
+        this.primaryEmail = data.email || '';
+        // 禁止在 UI 上編輯主信箱：隱藏/移除相關編輯按鈕與輸入框，避免誤用
+        $('#btnEditEmail, #btnSaveEmail, #btnCancelEmail, #inputEmail').addClass('d-none');
     },
 
     async handleFileSelect(e) {
@@ -194,19 +250,7 @@ $(function () {
         $('#calendar_section').length > 0 ||
         $('#wishlist_section').length > 0;
 
-    //主信箱編輯按鈕事件
-    function toggleEmailEdit(show) {
-        $("#displayEmail").toggleClass("d-none", show);
-        $("#inputEmail").toggleClass("d-none", !show);
-        $("#btnEditEmail").toggleClass("d-none", show);
-        $("#btnSaveEmail, #btnCancelEmail").toggleClass("d-none", !show);
-        if (show) {
-            $("#inputEmail").val($("#displayEmail").text().trim());
-            $("#inputEmail").trigger("focus");
-        }
-    }
-
-    // 備援信箱編輯按鈕事件
+    // 備援信箱編輯按鈕事件（保留原行為）
     function toggleBackupEmailEdit(show) {
         $("#displayBackupEmail").toggleClass("d-none", show);
         $("#inputBackupEmail").toggleClass("d-none", !show);
@@ -214,7 +258,7 @@ $(function () {
         $("#btnSaveBackupEmail, #btnCancelBackupEmail").toggleClass("d-none", !show);
         if (show) {
             $("#inputBackupEmail").val($("#displayBackupEmail").text().trim());
-            $("#inputEmail").trigger("focus");
+            $("#inputBackupEmail").trigger("focus");
         }
     }
 
@@ -226,15 +270,6 @@ $(function () {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    $(document).on('click', '#btnEditEmail', function (e) {
-        e.preventDefault();
-        toggleEmailEdit(true);
-    });
-    $(document).on('click', '#btnCancelEmail', function (e) {
-        e.preventDefault();
-        toggleEmailEdit(false);
-    });
-
     $(document).on('click', '#btnEditBackupEmail', function (e) {
         e.preventDefault();
         toggleBackupEmailEdit(true);
@@ -242,52 +277,6 @@ $(function () {
     $(document).on('click', '#btnCancelBackupEmail', function (e) {
         e.preventDefault();
         toggleBackupEmailEdit(false);
-    });
-
-    // 主信箱儲存事件（type = 'primary'）
-    $(document).on('click', '#btnSaveEmail', async function (e) {
-        e.preventDefault();
-        const newEmail = $("#inputEmail").val().trim();
-        if (!isValidEmail(newEmail)) {
-            if (typeof window.showPopup === 'function') {
-                window.showPopup({ title: '格式錯誤', message: '請輸入有效的電子郵件地址', type: 'error' });
-            } else {
-                alert("請輸入有效的電子郵件地址");
-            }
-            return;
-        }
-
-        const $btn = $(this).prop("disabled", true).text("處理中...");
-        try {
-            // 修正後的 POST 呼叫：確保路徑正確、帶上 cookie 並在成功後導回會員中心
-            const res = await fetch('/api/MemberCenterApi/RequestChangeEmail', {
-                method: 'POST',
-                credentials: 'include', // 若使用 cookie-based auth，需帶上
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newEmail, type: "primary" })
-            });
-
-            // 如果回應非 2xx，嘗試解析 JSON 錯誤訊息，否則拋出
-            if (!res.ok) {
-                let errText = await res.text();
-                try {
-                    const errJson = JSON.parse(errText);
-                    throw new Error(errJson.message ?? JSON.stringify(errJson));
-                } catch {
-                    throw new Error(errText || `HTTP ${res.status}`);
-                }
-            }
-
-            // 成功：顯示訊息並導回會員中心（類似註冊驗證信 UI）
-            const data = await res.json();
-            alert(data.message ?? '驗證信已寄出，請前往信箱確認。');
-            window.location.href = '/Auth/MemberCenter?msg=email_sent';
-        } catch (ex) {
-            console.error('變更主信箱失敗', ex);
-            alert('變更主信箱失敗：' + (ex.message ?? ex));
-        } finally {
-            $btn.prop("disabled", false).text("寄驗證信");
-        }
     });
 
     // 備援信箱儲存事件（type = 'backup'）
@@ -299,6 +288,17 @@ $(function () {
                 window.showPopup({ title: '格式錯誤', message: '請輸入有效的電子郵件地址', type: 'error' });
             } else {
                 alert("請輸入有效的電子郵件地址");
+            }
+            return;
+        }
+
+        // 前端禁止把主信箱當備援（減少不必要的 server 呼叫）
+        const primary = $("#displayEmail").text().trim();
+        if (primary && primary.toLowerCase() === newEmail.toLowerCase()) {
+            if (typeof window.showPopup === 'function') {
+                window.showPopup({ title: '錯誤', message: '備援信箱不得與主信箱相同', type: 'error' });
+            } else {
+                alert('備援信箱不得與主信箱相同');
             }
             return;
         }
@@ -340,95 +340,8 @@ $(function () {
         }
     });
 
-    // 密碼變更事件（修正為使用 AuthApi 的 ChangePassword）
-    $("#btnChangePwd").off('click').on("click", function () {
-        const oldPwd = $("#cp_old").val();
-        const newPwd = $("#cp_new").val();
-        const confirmPwd = $("#cp_confirm").val();
-
-        if (!oldPwd || !newPwd || !confirmPwd) {
-            if (typeof window.showPopup === 'function') {
-                window.showPopup({ title: '提示', message: '請完整填寫欄位', type: 'error' });
-            } else {
-                alert("請完整填寫欄位");
-            }
-            return;
-        }
-        if (newPwd !== confirmPwd) {
-            if (typeof window.showPopup === 'function') {
-                window.showPopup({ title: '提示', message: '新密碼與確認不符', type: 'error' });
-            } else {
-                alert("新密碼與確認不符");
-            }
-            return;
-        }
-
-        const $btn = $(this);
-        $btn.prop("disabled", true).text("處理中...");
-
-        $.ajax({
-            type: "POST",
-            url: window.Routes.Auth.ChangePassword || window.Routes.AuthApi.ChangePassword,
-            contentType: "application/json",
-            data: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd, confirmPassword: confirmPwd }),
-            success: function (res) {
-                if (typeof window.showPopup === 'function') {
-                    window.showPopup({ title: '成功', message: res.message || "密碼已變更", type: 'success' });
-                } else {
-                    alert(res.message || "密碼已變更");
-                }
-                $("#cp_old, #cp_new, #cp_confirm").val("");
-            },
-            error: function (err) {
-                const msg = err.responseJSON?.message || "變更失敗";
-                if (typeof window.showPopup === 'function') {
-                    window.showPopup({ title: '錯誤', message: msg, type: 'error' });
-                } else {
-                    alert(msg);
-                }
-            },
-            complete: function () {
-                $btn.prop("disabled", false).text("變更密碼");
-            }
-        });
-    });
-});
-
-async function loadMemberProfile() {
-    try {
-        const url = window.Routes?.AuthApi?.GetMemberProfile ?? window.Routes?.AuthApi?.MemberCenter ?? '/api/auth/GetMemberProfile';
-        const res = await fetch(url, {
-            method: 'GET',
-            credentials: 'include', // 若使用 cookie-based auth，帶上 credentials
-            headers: { 'Accept': 'application/json' }
-        });
-
-        if (res.status === 401) {
-            // 尚未登入：在首頁不應該讓請求中斷整個腳本，顯示匿名頭像或引導登入
-            showAnonymousAvatar();
-            return;
-        }
-
-        if (!res.ok) {
-            console.error('取得會員資料失敗', res.status);
-            showAnonymousAvatar();
-            return;
-        }
-
-        const profile = await res.json();
-        renderAvatar(profile);
-    } catch (err) {
-        console.error('載入會員資料發生錯誤', err);
-        showAnonymousAvatar();
+    // 初始化 MemberProfile（如有 DOM）
+    if (hasMemberCenterDom && typeof MemberProfile !== 'undefined' && MemberProfile && typeof MemberProfile.init === 'function') {
+        MemberProfile.init();
     }
-}
-
-function showAnonymousAvatar() {
-    const img = document.querySelector('#memberAvatar');
-    if (img) img.src = '/images/default-avatar.png';
-}
-
-function renderAvatar(profile) {
-    const img = document.querySelector('#memberAvatar');
-    if (img && profile?.avatarUrl) img.src = profile.avatarUrl;
-}
+});
