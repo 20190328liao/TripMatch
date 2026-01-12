@@ -1,6 +1,7 @@
 ﻿// 1. 匯入edit module各項功能
 import { expandContainerToFullWidth } from './editModule/edit-layout-helper.js';
 import { initGoogleMap } from './editModule/edit-map-manager.js';
+import { initGoogleMap } from './editModule/edit-trip-manager.js';
 
 // 2. 統一在內容載入後執行
 document.addEventListener("DOMContentLoaded", function () {

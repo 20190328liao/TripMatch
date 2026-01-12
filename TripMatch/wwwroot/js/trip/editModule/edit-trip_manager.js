@@ -1,7 +1,7 @@
 ﻿let map, placesService, autocomplete;
 const tripId = document.querySelector('input[name="__Model"]').value; // 獲取 Razor 傳入的 Model (tripId)
 
-async function initPage() {
+export async function initPage() {
     initMap();
     await loadItinerary(); // 初始化加載行程
 }
