@@ -16,4 +16,4 @@ function loadTripData(tripId) {
         console.log(data);
 
     });
-
+}

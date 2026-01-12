@@ -45,11 +45,11 @@ namespace TripMatch.Services
             return tripDtos;
         }
 
-        public async Task<TripDetailDto> GetTripDetail(int tripId)
-        {
-         
-            return tripDto;
-        }
+        //public async Task<TripDetailDto> GetTripDetail(int tripId)
+        //{
+            
+        //    return tripDto;
+        //}
 
         #endregion
 
