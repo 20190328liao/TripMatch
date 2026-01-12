@@ -1,28 +1,67 @@
-﻿//測試願望清單跑圖
-// DTO for Google Places API response
-public class GooglePlaceDetailDto
-{
-    public GooglePlaceResult? Result { get; set; }
-    public string Status { get; set; } = string.Empty;
-}
+﻿using System.Text.Json.Serialization;
 
-public class GooglePlaceResult
+namespace GooglePlaceDetailDTO
 {
-    public string Name { get; set; } = string.Empty;
-    public List<GoogleAddressComponent> AddressComponents { get; set; } = new();
-    public List<string> Types { get; set; } = new();
-    public List<GooglePhoto> Photos { get; set; } = new(); // 新增 photos
-}
+    public class TripSimpleDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+    }
 
-public class GooglePhoto
-{
-    public string PhotoReference { get; set; } = string.Empty;
-    // 可加其他欄位如 Width, Height
-}
+    public class TripCreateDto
+    {
+        public string Title { get; set; }
+        public string[] PlaceIds { get; set; }
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
+    }
 
-public class GoogleAddressComponent
-{
-    public List<string> Types { get; set; } = new();
-    public string LongName { get; set; } = string.Empty;
-    public string ShortName { get; set; } = string.Empty;
+    // 最外層：接收 Google API 的完整回應
+    public class GooglePlaceDetailDto
+    {
+        [JsonPropertyName("result")]
+        public PlaceResult Result { get; set; } = new PlaceResult();
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; }
+    }
+
+    // 核心資料：對應 Place API 的 result 物件
+    public class PlaceResult
+    {
+        // 對應資料庫的 Name
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        // 用來解析出 CountryCode (如 JP, TW)
+        [JsonPropertyName("address_components")]
+        public List<AddressComponent> AddressComponents { get; set; } = new List<AddressComponent>();
+
+        // 用來判斷 Level (是國家 country 還是城市 locality)
+        [JsonPropertyName("types")]
+        public List<string> Types { get; set; } = new List<string>();
+
+        // 新增：photos 陣列（包含 photo_reference）
+        [JsonPropertyName("photos")]
+        public List<Photo>? Photos { get; set; }
+    }
+
+    public class Photo
+    {
+        [JsonPropertyName("photo_reference")]
+        public string PhotoReference { get; set; }
+    }
+
+    // 地址組件：Google 會把地址拆成很多小塊
+    public class AddressComponent
+    {
+        [JsonPropertyName("long_name")]
+        public string LongName { get; set; }
+
+        [JsonPropertyName("short_name")]
+        public string ShortName { get; set; } // 這是我們要的 CountryCode 來源
+
+        [JsonPropertyName("types")]
+        public List<string> Types { get; set; }
+    }
 }

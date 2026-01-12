@@ -40,6 +40,7 @@ namespace TripMatch.Services
 
         public async Task<bool> isPlaceInWishlist(string placeId)
         {
+            await Task.Yield(); // 這行確保方法為真正的 async
             return true;
         }
 

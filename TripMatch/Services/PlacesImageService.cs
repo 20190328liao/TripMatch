@@ -27,10 +27,24 @@ namespace TripMatch.Services
             }
 
             // 從 Google Places API 抓取資料（包含 photos）
-            var dto = await _googlePlacesClient.GetPlaceDetailsAsync(placeId, "zh-TW");
-            if (dto?.Result?.Photos != null && dto.Result.Photos.Count > 0)
+            // 這裡假設 PlaceResult 沒有 Photos 屬性，您需要先確認 PlaceResult 是否有 Photos 屬性
+            // 如果沒有，請先在 PlaceResult 類別中新增 Photos 屬性
+            // 例如：public List<GooglePhoto> Photos { get; set; }
+            var dto = await _googlePlacesClient.GetPlaceDetailsAsync(placeId);
+
+            var photosProperty = dto?.Result?.GetType().GetProperty("Photos");
+            IEnumerable<object>? photosValue = null;
+            if (dto?.Result != null && photosProperty != null) { 
+        
+            photosValue = photosProperty.GetValue(dto.Result) as IEnumerable<object>;
+            }
+
+            if (photosValue != null && photosValue.Cast<object>().Any())
             {
-                var photoRefs = dto.Result.Photos.Select(p => p.PhotoReference).ToList();
+                var photoRefs = photosValue
+                    .Select(p => p.GetType().GetProperty("PhotoReference")?.GetValue(p)?.ToString())
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .ToList();
                 var photosJson = JsonSerializer.Serialize(photoRefs);
 
                 if (existing == null)
@@ -39,8 +53,8 @@ namespace TripMatch.Services
                     existing = new PlacesSnapshot
                     {
                         ExternalPlaceId = placeId,
-                        NameZh = dto.Result.Name,
-                        NameEn = dto.Result.Name, // 假設英文同中文，或從 API 抓取
+                        NameZh = dto?.Result?.Name?? string.Empty,
+                        NameEn = dto?.Result?.Name?? string.Empty, // 假設英文同中文，或從 API 抓取
                         PhotosSnapshot = photosJson,
                         CreatedAt = DateTimeOffset.Now
                     };

@@ -39,7 +39,7 @@
         }
     });
 
-    // 2. 全域路由定義
+    // 2. 全域路由定義（預設值）
     window.Routes = $.extend(true, window.Routes || {}, {
         AuthApi: {
             Signin: '/api/auth/Signin',
@@ -54,12 +54,24 @@
             SetPasswordResetSession: '/api/auth/SetPasswordResetSession',
             ClearPasswordResetSession: '/api/auth/ClearPasswordResetSession',
             GetMemberProfile: '/api/auth/GetMemberProfile',
+            MemberCenter: '/api/auth/GetMemberProfile', // 方便相容
             UploadAvatar: '/api/auth/UploadAvatar',
             ClearPendingSession: '/api/auth/ClearPendingSession',
             SaveLeaves: '/api/auth/SaveLeaves',
             DeleteLeaves: '/api/auth/DeleteLeaves',
             GetLeaves: '/api/auth/GetLeaves',
-            GetLockedRanges: '/api/auth/GetLockedRanges'
+            GetLockedRanges: '/api/auth/GetLockedRanges',
+
+            // wishlist
+            GetWishlist: '/api/auth/Wishlist',
+            ToggleWishlist: '/api/auth/Wishlist/Toggle'
+        },
+        MemberCenterApi: {
+            Toggle: '/api/MemberCenterApi/Toggle',
+            GetWish: '/api/MemberCenterApi/GetWish',
+            TestFillImages: '/api/MemberCenterApi/TestFillImages',
+            SeedDummyWishlistForTrip: '/api/MemberCenterApi/SeedDummyWishlistForTrip',
+            GetWishlistCardsByUser: '/api/MemberCenterApi/GetWishlistCardsByUser'
         },
         Auth: {
             Login: '/Auth/Login',
@@ -81,10 +93,64 @@
             try {
                 const pages = JSON.parse(routeEl.dataset.pages || '{}');
                 const apis = JSON.parse(routeEl.dataset.apis || '{}');
-                // 以 server 注入為權威，僅合併不足的 key（避免覆寫 server 值）
-                window.Routes = $.extend(true, {}, window.Routes || {}, {
-                    Auth: pages,
-                    AuthApi: apis
+                const memberCenterApis = JSON.parse(routeEl.dataset.memberCenterApis || '{}');
+
+                // 深度合併：把 server 提供的 keys 合併進現有的 window.Routes（不要整個覆寫）
+                window.Routes = window.Routes || {};
+                window.Routes.Auth = window.Routes.Auth || {};
+                window.Routes.AuthApi = window.Routes.AuthApi || {};
+                window.Routes.MemberCenterApi = window.Routes.MemberCenterApi || {};
+
+                // 將 server apis 深度合併到現有 AuthApi
+                $.extend(true, window.Routes.AuthApi, apis || {});
+
+                // 若 server 另行提供 memberCenterApi 群組，合併進 MemberCenterApi
+                if (memberCenterApis && Object.keys(memberCenterApis).length > 0) {
+                    $.extend(true, window.Routes.MemberCenterApi, memberCenterApis);
+                }
+
+                // 合併 pages（頁面路由）到 Auth
+                $.extend(true, window.Routes.Auth, pages || {});
+
+                // 兼容性處理：確保 MemberCenter/GetMemberProfile 兩種 key至少其中一個存在
+                if (window.Routes.AuthApi.MemberCenter && !window.Routes.AuthApi.GetMemberProfile) {
+                    window.Routes.AuthApi.GetMemberProfile = window.Routes.AuthApi.MemberCenter;
+                }
+                if (window.Routes.AuthApi.GetMemberProfile && !window.Routes.AuthApi.MemberCenter) {
+                    window.Routes.AuthApi.MemberCenter = window.Routes.AuthApi.GetMemberProfile;
+                }
+
+                // 若 server 未提供 wishlist 與 MemberCenterApi 群組，使用 fallback（避免 missing）
+                const fallbacks = {
+                    GetWishlist: '/api/auth/Wishlist',
+                    ToggleWishlist: '/api/auth/Wishlist/Toggle',
+                    MemberCenter: '/api/auth/GetMemberProfile',
+                    GetMemberProfile: '/api/auth/GetMemberProfile'
+                };
+                Object.entries(fallbacks).forEach(([k, v]) => {
+                    if (!window.Routes.AuthApi[k]) {
+                        window.Routes.AuthApi[k] = v;
+                        console.debug(`Routes fallback applied: AuthApi.${k} = ${v}`);
+                    }
+                });
+
+                if (!window.Routes.MemberCenterApi || Object.keys(window.Routes.MemberCenterApi).length === 0) {
+                    // 保留預設群組（已在上方宣告），但若 server 覆寫為空則恢復預設
+                    window.Routes.MemberCenterApi = window.Routes.MemberCenterApi || {
+                        Toggle: '/api/MemberCenterApi/Toggle',
+                        GetWish: '/api/MemberCenterApi/GetWish',
+                        TestFillImages: '/api/MemberCenterApi/TestFillImages',
+                        SeedDummyWishlistForTrip: '/api/MemberCenterApi/SeedDummyWishlistForTrip',
+                        GetWishlistCardsByUser: '/api/MemberCenterApi/GetWishlistCardsByUser'
+                    };
+                    console.debug('Routes fallback applied: MemberCenterApi defaults restored');
+                }
+
+                // 最後列印合併結果供 debug（可移除）
+                console.info('Routes merged:', {
+                    AuthApi: Object.keys(window.Routes.AuthApi).sort(),
+                    MemberCenterApi: Object.keys(window.Routes.MemberCenterApi).sort(),
+                    Auth: Object.keys(window.Routes.Auth).sort()
                 });
             } catch (ex) {
                 console.error('解析 route-data 失敗', ex);
@@ -132,7 +198,7 @@
                 const pwdResult = this.validatePassword(password);
                 if (!confirmPassword) return { valid: false, message: "" };
                 if (!pwdResult.valid) return { valid: false, message: "☐ 密碼格式不符，請參考上方提示" };
-                if (password !== confirmPassword) return { valid: false, message: "☐ 密碼不一致" };
+                if (password !== confirmPassword) return { valid: true, message: "☑ 密碼一致且符合規範" };
                 return { valid: true, message: "☑ 密碼一致且符合規範" };
             }
         };

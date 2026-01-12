@@ -1042,13 +1042,13 @@ namespace TripMatch.Controllers.Api
                     {
                         var s = first.GetString();
                         if (!string.IsNullOrEmpty(s)) return s;
-                    }
-                    else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
-                    {
-                        if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                            return urlProp.GetString();
-                        // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
-                    }
+                      }
+                      else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
+                      {
+                          if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                              return urlProp.GetString();
+                          // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
+                      }
                 }
                 else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
@@ -1062,6 +1062,92 @@ namespace TripMatch.Controllers.Api
             }
 
             return null;
+        }
+
+        [HttpPost("SendBackupLookup")]
+        public async Task<IActionResult> SendBackupLookup([FromBody] string backupEmail)
+        {
+            if (string.IsNullOrWhiteSpace(backupEmail))
+                return BadRequest(new { message = "請提供備援信箱" });
+
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.BackupEmail == backupEmail);
+            if (user == null)
+                return BadRequest(new { message = "找不到該備援信箱" });
+
+            if (string.Equals(user.Email, backupEmail, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "備援信箱不得與主信箱相同" });
+
+            // 產生驗證 token（Base64Url 編碼），寄到使用者的備援信箱
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            var callbackUrl = Url.Action("ConfirmBackupLookup", "AuthApi", new { userId = user.Id, code }, Request.Scheme);
+            try
+            {
+                await _emailSender.SendConfirmationLinkAsync(user, backupEmail, callbackUrl!);
+                return Ok(new { message = "已寄出驗證信，請至備援信箱點擊連結以驗證。" });
+            }
+            catch
+            {
+                return StatusCode(500, new { message = "寄信失敗，請稍後再試。" });
+            }
+        }
+
+        [HttpGet("ConfirmBackupLookup")]
+        public async Task<IActionResult> ConfirmBackupLookup(string userId, string code)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
+                return BadRequest("無效的驗證連結");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return BadRequest("使用者不存在");
+
+            try
+            {
+                var decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+                // 驗證 token（不變更任何 EmailConfirmed 狀態）
+                var isValid = await _userManager.VerifyUserTokenAsync(user,
+                    _userManager.Options.Tokens.EmailConfirmationTokenProvider,
+                    "EmailConfirmation",
+                    decoded);
+
+                if (!isValid) return BadRequest("驗證失敗或已過期");
+
+                // 產生 password reset token 並把它存入 Session（與 ForgotPassword 的流程相容）
+                var pwdToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var pwdTokenEncoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(pwdToken));
+
+                HttpContext.Session.SetString("PasswordResetUserId", user.Id.ToString());
+                HttpContext.Session.SetString("PasswordResetCode", pwdTokenEncoded);
+                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
+
+                // 設定一個臨時 flag 以供前端取得主帳號（顯示帳號名稱）
+                HttpContext.Session.SetString("BackupLookupUserId", user.Id.ToString());
+                HttpContext.Session.SetString("BackupLookupTime", DateTime.UtcNow.ToString("O"));
+
+                // 轉回前端 ForgotEmail 頁面（前端會辨識 query string 並取結果）
+                return Redirect($"{Url.Action("ForgotEmail", "Auth")}?backupVerified=1");
+            }
+            catch
+            {
+                return BadRequest("驗證處理失敗");
+            }
+        }
+
+        [HttpGet("GetBackupLookupResult")]
+        public async Task<IActionResult> GetBackupLookupResult()
+        {
+            var userId = HttpContext.Session.GetString("BackupLookupUserId");
+            if (string.IsNullOrEmpty(userId)) return BadRequest(new { message = "沒有驗證紀錄" });
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return BadRequest(new { message = "使用者不存在" });
+
+            return Ok(new
+            {
+                userId = user.Id,
+                email = user.Email
+            });
         }
     }
     }

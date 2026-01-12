@@ -7,7 +7,7 @@ using TripMatch.Models;
 using TripMatch.Models.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TripMatch.Services; // 新增 using
+using TripMatch.Services; 
 
 namespace TripMatch.Controllers.Api
 {
@@ -184,7 +184,7 @@ namespace TripMatch.Controllers.Api
         [Authorize]
         public async Task<IActionResult> SeedDummyWishlistForTrip([FromBody] SeedTripWishlistModel model)
         {
-            if (model == null || model.UserId <= 0 || model.TripId <= 0) 
+            if (model == null || model.UserId <= 0 || model.TripId <= 0)
                 return BadRequest(new { success = false, message = "請提供 userId 與 tripId" });
 
             // 驗證使用者是否為該行程成員（避免亂種資料）
@@ -203,60 +203,107 @@ namespace TripMatch.Controllers.Api
             };
 
             var created = new List<object>();
-            foreach (var name in samplePlaces)
+
+            await using var tx = await _dbContext.Database.BeginTransactionAsync();
+            try
             {
-                // 先檢查是否已存在（以 NameZh 為基準）
-                var exists = await _dbContext.PlacesSnapshots
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.NameZh == name);
-                PlacesSnapshot snapshot;
-                if (exists == null)
+                foreach (var name in samplePlaces)
                 {
-                    // 使用 placeholder 圖片 URL 當作 photosnapshot 的第一筆（開發測試用）
-                    var photoUrl = $"https://via.placeholder.com/400x300?text={Uri.EscapeDataString(name)}";
-                    var photosJson = System.Text.Json.JsonSerializer.Serialize(new List<string> { photoUrl });
+                    // 1) 先嘗試以 NameZh 找到現有 snapshot
+                    var snapshot = await _dbContext.PlacesSnapshots
+                        .FirstOrDefaultAsync(p => p.NameZh == name);
 
-                    snapshot = new PlacesSnapshot
+                    if (snapshot != null)
                     {
-                        ExternalPlaceId = $"FAKE_{Guid.NewGuid():N}",
-                        NameZh = name,
-                        NameEn = name, // 若需可拆分
-                        PhotosSnapshot = photosJson,
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    _dbContext.PlacesSnapshots.Add(snapshot);
-                    await _dbContext.SaveChangesAsync();
-                }
-                else
-                {
-                    snapshot = exists;
-                }
-
-                // 新增到 Wishlist（如果尚未有）
-                var alreadyWish = await _dbContext.Wishlists
-                    .AnyAsync(w => w.UserId == model.UserId && w.SpotId == snapshot.SpotId);
-                if (!alreadyWish)
-                {
-                    var wish = new Wishlist
+                        // 若已有 ExternalPlaceId 且尚未填照片，呼叫服務填充（安全檢查）
+                        if (!string.IsNullOrEmpty(snapshot.ExternalPlaceId) && string.IsNullOrEmpty(snapshot.PhotosSnapshot))
+                        {
+                            await _placesImageService.FillPlacesSnapshotImagesAsync(snapshot.ExternalPlaceId);
+                            // 重新讀取 snapshot 的 photos
+                            _dbContext.Entry(snapshot).Reload();
+                        }
+                    }
+                    else
                     {
-                        UserId = model.UserId,
-                        SpotId = snapshot.SpotId,
-                        Note = model.Note ?? "自動填充假資料",
-                        CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    _dbContext.Wishlists.Add(wish);
-                    await _dbContext.SaveChangesAsync();
+                        // 2) 若 DB 沒有，嘗試用 Google 找 place_id（以中文名稱搜尋）
+                        string? foundPlaceId = null;
+                        try
+                        {
+                            var googleClient = HttpContext.RequestServices
+                                .GetService(typeof(TripMatch.Services.ExternalClients.GooglePlacesClient))
+                                as TripMatch.Services.ExternalClients.GooglePlacesClient;
+                            if (googleClient != null)
+                            {
+                                foundPlaceId = await googleClient.FindPlaceIdByTextAsync(name);
+                            }
+                        }
+                        catch
+                        {
+                            foundPlaceId = null;
+                        }
+
+                        if (!string.IsNullOrEmpty(foundPlaceId))
+                        {
+                            // 交給 service 去抓照片並建立 snapshot（或更新）
+                            await _placesImageService.FillPlacesSnapshotImagesAsync(foundPlaceId);
+                            snapshot = await _dbContext.PlacesSnapshots.FirstOrDefaultAsync(p => p.ExternalPlaceId == foundPlaceId);
+                        }
+                        else
+                        {
+                            // 無法找到 placeId，就用 placeholder 建一筆 snapshot（避免後面 Wishlists 關聯失敗）
+                            var photoUrl = $"https://via.placeholder.com/400x300?text={Uri.EscapeDataString(name)}";
+                            var photosJson = System.Text.Json.JsonSerializer.Serialize(new List<string> { photoUrl });
+
+                            snapshot = new PlacesSnapshot
+                            {
+                                ExternalPlaceId = $"FAKE_{Guid.NewGuid():N}",
+                                NameZh = name,
+                                NameEn = name,
+                                PhotosSnapshot = photosJson,
+                                CreatedAt = DateTimeOffset.UtcNow,
+                                Lat = 0m,
+                                Lng = 0m
+                            };
+                            _dbContext.PlacesSnapshots.Add(snapshot);
+                            await _dbContext.SaveChangesAsync();
+                        }
+                    }
+                    if (snapshot != null) {
+                        // 新增到 Wishlist（如果尚未有）
+                        var alreadyWish = await _dbContext.Wishlists
+                            .AnyAsync(w => w.UserId == model.UserId && w.SpotId == snapshot.SpotId);
+                        if (!alreadyWish)
+                        {
+                            var wish = new Wishlist
+                            {
+                                UserId = model.UserId,
+                                SpotId = snapshot.SpotId,
+                                Note = model.Note ?? "自動填充假資料",
+                                CreatedAt = DateTimeOffset.UtcNow
+                            };
+
+                            _dbContext.Wishlists.Add(wish);
+                            await _dbContext.SaveChangesAsync();
+                        }
+
+                        var firstPhoto = System.Text.Json.JsonSerializer.Deserialize<List<string>>(snapshot.PhotosSnapshot ?? "[]")
+                                         ?.FirstOrDefault() ?? "/img/placeholder.jpg";
+                        created.Add(new { snapshot.SpotId, name = snapshot.NameZh, image = firstPhoto });
+                    }
+                   
                 }
 
-                // 組成回傳用的簡短卡片資料
-                var firstPhoto = System.Text.Json.JsonSerializer.Deserialize<List<string>>(snapshot.PhotosSnapshot ?? "[]")
-                                 ?.FirstOrDefault() ?? "/img/placeholder.jpg";
-                created.Add(new { snapshot.SpotId, name = snapshot.NameZh, image = firstPhoto });
-                created.Add(new { snapshot.SpotId, name = name, image = firstPhoto });
+                await tx.CommitAsync();
+                return Ok(new { success = true, created });
             }
-
-            return Ok(new { success = true, created });
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "SeedDummyWishlistForTrip 失敗：UserId={UserId}, TripId={TripId}", model.UserId, model.TripId);
+                return StatusCode(500, new { success = false, message = "建立假資料時發生錯誤，請查看伺服器日誌。" });
+            }
         }
+
 
         // 取得某 user 的 wishlist 卡片（前端用於會員中心顯示卡片）
         [HttpGet("GetWishlistCardsByUser")]

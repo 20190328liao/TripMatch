@@ -6,7 +6,6 @@
         this.loadProfile();
     },
 
-
     cacheDOM() {
         this.$avatarImg = $('#memberAvatar');
         this.$navAvatar = $('#navAvatar');
@@ -58,9 +57,9 @@
 
     async loadProfile() {
         try {
-            // 使用與後端產生的 authApis 一致的名稱：MemberCenter
+            const url = window.Routes?.AuthApi?.GetMemberProfile ?? window.Routes?.AuthApi?.MemberCenter ?? '/api/auth/GetMemberProfile';
             const response = await $.ajax({
-                url: window.Routes.AuthApi.MemberCenter,
+                url: url,
                 method: 'GET',
                 xhrFields: { withCredentials: true }
             });
@@ -69,7 +68,7 @@
             }
         } catch (error) {
             console.error('載入會員資料失敗:', error);
-            if (error.status === 401) window.location.href = window.Routes.Auth.Login;
+            if (error.status === 401) window.location.href = window.Routes?.Auth?.Login ?? '/Auth/Login';
         }
     },
 
@@ -194,3 +193,42 @@ $(function () {
         });
     });
 });
+
+async function loadMemberProfile() {
+    try {
+        const url = window.Routes?.AuthApi?.GetMemberProfile ?? window.Routes?.AuthApi?.MemberCenter ?? '/api/auth/GetMemberProfile';
+        const res = await fetch(url, {
+            method: 'GET',
+            credentials: 'include', // 若使用 cookie-based auth，帶上 credentials
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.status === 401) {
+            // 尚未登入：在首頁不應該讓請求中斷整個腳本，顯示匿名頭像或引導登入
+            showAnonymousAvatar();
+            return;
+        }
+
+        if (!res.ok) {
+            console.error('取得會員資料失敗', res.status);
+            showAnonymousAvatar();
+            return;
+        }
+
+        const profile = await res.json();
+        renderAvatar(profile);
+    } catch (err) {
+        console.error('載入會員資料發生錯誤', err);
+        showAnonymousAvatar();
+    }
+}
+
+function showAnonymousAvatar() {
+    const img = document.querySelector('#memberAvatar');
+    if (img) img.src = '/images/default-avatar.png';
+}
+
+function renderAvatar(profile) {
+    const img = document.querySelector('#memberAvatar');
+    if (img && profile?.avatarUrl) img.src = profile.avatarUrl;
+}

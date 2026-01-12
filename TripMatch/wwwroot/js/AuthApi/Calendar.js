@@ -132,10 +132,31 @@
         return Array.from(set);
     }
 
-    /* 檢查是否與已存在（草稿或已提交）衝突 */
+    /* 檢查是否與已存在（草稿或已提交）或鎖定期間衝突 */
     function hasIntersectionWithExisting(candidateDates) {
         const existing = new Set(getAllDraftDates().concat(submittedDates));
-        return candidateDates.some(d => existing.has(d));
+        // 若 candidate 與已存在或鎖定日期有任一交集，回傳 true
+        return candidateDates.some(d => {
+            if (existing.has(d)) return true;
+            // isLocked 會檢查是否早於今天或是否落在 lockedRanges 中
+            try {
+                return isLocked(d);
+            } catch {
+                return false;
+            }
+        });
+    }
+
+    // 使用 popup 或 alert 提示使用者選擇包含鎖定日期
+    function notifyLockedSelection(message) {
+
+        if (typeof window.showPopup === 'function') {
+            try {
+                window.showPopup({ title: '日期衝突', message: message || '選擇的日期包含已鎖定的期間，請重新選擇。', type: 'error', autoClose: true, seconds: 3 });
+                return;
+            } catch { /* fallback to alert */ }
+        }
+        alert(message || '選擇的日期包含已鎖定的期間，請重新選擇。');
     }
 
     /* 更新 #calendarRange 顯示（已提交日清單） */
@@ -520,6 +541,8 @@
                 const candidate = [iso];
                 if (!hasIntersectionWithExisting(candidate)) {
                     if (!selectedSingles.includes(iso)) selectedSingles.push(iso);
+                } else {
+                    notifyLockedSelection();
                 }
                 rangeDraftStart = null;
             }
@@ -532,10 +555,11 @@
                         end: iso
                     });
                     selectedSingles = selectedSingles.filter(s => !candidateDates.includes(s));
-                    rangeDraftStart = null;
                 } else {
-                    rangeDraftStart = null;
+                    // 明確提示使用者：包含已鎖定的日期或與已存在日期衝突
+                    notifyLockedSelection('選擇的範圍包含已鎖定或已存在的日期，請選擇其他日期。');
                 }
+                rangeDraftStart = null;
             }
 
             renderMonth();
@@ -730,6 +754,8 @@
                 selectedSingles = selectedSingles.filter(s => !candidate.includes(s));
                 renderMonth();
                 saveDraftToSession();
+            } else {
+                notifyLockedSelection('欲新增的範圍包含已鎖定或已存在的日期，無法加入。');
             }
         },
         clearAll() {

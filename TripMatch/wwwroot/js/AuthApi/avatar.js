@@ -86,21 +86,38 @@
         } catch { /* ignore */ }
     }
 
-    async function fetchWithTimeout(url, opts = {}, timeout = FETCH_TIMEOUT_MS) {
+    // fetch wrapper：預設帶上 credentials，並支援 timeout
+    async function fetchWithTimeout(url, options = {}, timeout = 5000) {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
+
+        // 確保會攜帶 cookie（包含 cross-origin 或不同 port 的情況）
+        options = {
+            credentials: 'include',
+            signal: controller.signal,
+            ...options
+        };
+
         try {
-            const res = await fetch(url, Object.assign({}, opts, { signal: controller.signal }));
-            return res;
+            const resp = await fetch(url, options);
+            return resp;
         } finally {
             clearTimeout(id);
         }
     }
 
+    // 直接向 API 請求會員資料（若頁面上沒有 avatar 元素則不呼叫）
     async function fetchProfile() {
+        // 如果頁面沒有任何 avatar img 元素，跳過呼叫以避免不必要的 401
+        if (!document.getElementById('navAvatar') && !document.getElementById('memberAvatar')) {
+            return null;
+        }
+
         try {
-            const res = await fetchWithTimeout('/api/auth/GetMemberProfile', { credentials: 'same-origin' }, FETCH_TIMEOUT_MS);
-            if (!res || !res.ok) return null;
+            const res = await fetchWithTimeout('/api/auth/GetMemberProfile', {}, FETCH_TIMEOUT_MS);
+            if (!res) return null;
+            if (res.status === 401) return null; // 未授權：靜默處理
+            if (!res.ok) return null;
             const data = await res.json();
             return data?.avatar ?? null;
         } catch {
@@ -109,44 +126,32 @@
     }
 
     async function init() {
-        // 0. 立刻顯示：優先從 JWT 的 avatar claim（最即時），否則從 localStorage 快取（最快）
+        // 0. 立刻顯示：優先從 JWT 的 avatar claim（若可讀），否則從 localStorage 快取（最快）
         const token = getCookie('AuthToken') ?? getCookie('authToken') ?? getCookie('Auth');
         if (token) {
             const payload = parseJwt(token);
             if (payload && payload.avatar) {
                 setAvatars(payload.avatar);
                 writeCache(payload.avatar);
-                // 仍在背景去 API 驗證更新，但不要等待
-                fetchProfile().then(apiAvatar => {
-                    if (apiAvatar && apiAvatar !== payload.avatar) {
-                        setAvatars(apiAvatar);
-                        writeCache(apiAvatar);
-                    }
-                });
-                return;
             }
         }
 
         const cached = readCache();
         if (cached) {
             setAvatars(cached);
-            // 背景更新
-            fetchProfile().then(apiAvatar => {
-                if (apiAvatar && apiAvatar !== cached) {
+        }
+
+        // 背景嘗試呼叫 API 以取得最新 avatar（重要：不要以是否能讀 cookie 作為是否呼叫 API 的條件，
+        // 因為 AuthToken cookie 在伺服器端通常為 HttpOnly，client 讀不到但 fetch 仍可帶 cookie）
+        fetchProfile().then(apiAvatar => {
+            if (apiAvatar && apiAvatar.length > 0) {
+                // 若尚未顯示或與現有不同，更新並快取
+                if (apiAvatar !== cached) {
                     setAvatars(apiAvatar);
                     writeCache(apiAvatar);
                 }
-            });
-            return;
-        }
-
-        // 只有在沒有任何快取或 claim 時，顯示預設並嘗試 fetch（fetch 有 timeout）
-        // 預設由伺服器或 img 標籤已設定；背景取得後更新
-        const apiAvatar = await fetchProfile();
-        if (apiAvatar) {
-            setAvatars(apiAvatar);
-            writeCache(apiAvatar);
-        }
+            }
+        }).catch(() => { /* 忽略背景錯誤 */ });
     }
 
     if (document.readyState === 'loading') {
