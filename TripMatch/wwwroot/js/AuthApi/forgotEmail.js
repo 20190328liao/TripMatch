@@ -31,3 +31,18 @@
         getBackupResult
     };
 })();
+
+// 把按鈕導向加入現有 forgotEmail.js，按鈕 id 為 #btn_next_step1 與 #btn_next_step2
+document.addEventListener('DOMContentLoaded', function () {
+    const btn1 = document.getElementById('btn_next_step1');
+    if (btn1) btn1.addEventListener('click', function () {
+        // 跳到登入頁
+        window.location.href = window.Routes?.Auth?.Login || '/Auth/Login';
+    });
+
+    const btn2 = document.getElementById('btn_next_step2');
+    if (btn2) btn2.addEventListener('click', function () {
+        // 跳到 ForgotPassword 頁面（該頁會檢查 session 並進入 Step2）
+        window.location.href = window.Routes?.Auth?.ForgotPassword || '/Auth/ForgotPassword';
+    });
+});

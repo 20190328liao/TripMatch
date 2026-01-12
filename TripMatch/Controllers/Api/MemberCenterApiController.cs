@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Security.Claims;
 using System.Text.Json;
 using TripMatch.Data;
@@ -7,7 +8,11 @@ using TripMatch.Models;
 using TripMatch.Models.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TripMatch.Services; 
+using TripMatch.Services;
+using Microsoft.AspNetCore.Identity;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 
 namespace TripMatch.Controllers.Api
 {
@@ -19,14 +24,142 @@ namespace TripMatch.Controllers.Api
         private readonly IConfiguration _configuration;
         private readonly ILogger<MemberCenterApiController> _logger;
         private readonly PlacesImageService _placesImageService; // 新增欄位
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IEmailSender _emailSender;
+        private readonly UrlEncoder _urlEncoder;
+        private readonly IDataProtector _backupEmailProtector; // 新增欄位
 
-        public MemberCenterApiController(TravelDbContext dbContext, IConfiguration configuration, ILogger<MemberCenterApiController> logger, PlacesImageService placesImageService)
+        public MemberCenterApiController(TravelDbContext dbContext, IConfiguration configuration, ILogger<MemberCenterApiController> logger, PlacesImageService placesImageService,UserManager<ApplicationUser> userManager,IEmailSender emailSender, UrlEncoder urlEncoder, IDataProtectionProvider dataProtectionProvider)
         {
             _dbContext = dbContext;
             _configuration = configuration;
             _logger = logger;
-            _placesImageService = placesImageService; // 新增注入
+            _placesImageService = placesImageService;
+            _userManager = userManager;
+            _emailSender = emailSender;
+            _urlEncoder = urlEncoder;
+            _backupEmailProtector = dataProtectionProvider.CreateProtector("BackupEmailChange:v1");
         }
+        public class RequestChangeEmailModel { public string NewEmail { get; set; } public string Type { get; set; } }
+
+        [HttpPost]
+        public async Task<IActionResult> ResultChangeEmail([FromBody] RequestChangeEmailModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model?.NewEmail)) return BadRequest(new { message = "Email 不能為空" });
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            // 禁止把備援直接當主信箱或反向交換（基礎檢查，生產還需更嚴格）
+            if (model.Type == "primary" && string.Equals(user.BackupEmail, model.NewEmail, System.StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "此信箱已為備援信箱，若要更換請先移除備援。" });
+
+            if (model.Type == "backup" && string.Equals(user.Email, model.NewEmail, System.StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "此信箱已為主信箱，請使用不同的備援信箱。" });
+
+            if (model.Type == "primary")
+            {
+                // 使用 Identity 的 ChangeEmail token 流程
+                var token = await _userManager.GenerateChangeEmailTokenAsync(user, model.NewEmail);
+                var callbackUrl = Url.ActionLink("ConfirmChangeEmail", "MemberCenterApi", new { userId = user.Id, token = _urlEncoder.Encode(token), type = "primary", newEmail = model.NewEmail });
+                await _emailSender.SendEmailAsync(model.NewEmail, "請確認您的新電子郵件", $"請點擊確認：{callbackUrl}");
+                return Ok(new { message = "驗證信已寄出" });
+            }
+            else // backup
+            {
+                // 不在 DB 暫存，改用 IDataProtector 封裝 (userId|newEmail|expiry)
+                var payload = $"{user.Id}|{model.NewEmail}|{DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds()}";
+                var protectedToken = _backupEmailProtector.Protect(payload);
+                var callbackUrl = Url.ActionLink("ConfirmChangeEmail", "MemberCenterApi", new { userId = user.Id, token = _urlEncoder.Encode(protectedToken), type = "backup", newEmail = model.NewEmail });
+                await _emailSender.SendEmailAsync(model.NewEmail, "請確認您的備援電子郵件", $"請點擊確認：{callbackUrl}");
+                return Ok(new { message = "驗證信已寄出" });
+            }
+        }
+
+        [HttpPost("RequestChangeEmail")]
+        [Authorize]
+        public async Task<IActionResult> RequestChangeEmail([FromBody] RequestChangeEmailModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model?.NewEmail)) return BadRequest(new { message = "Email 不能為空" });
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            if (model.Type == "primary" && string.Equals(user.BackupEmail, model.NewEmail, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "此信箱已為備援信箱，若要更換請先移除備援。" });
+
+            if (model.Type == "backup" && string.Equals(user.Email, model.NewEmail, System.StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "此信箱已為主信箱，請使用不同的備援信箱。" });
+
+            if (model.Type == "primary")
+            {
+                var token = await _userManager.GenerateChangeEmailTokenAsync(user, model.NewEmail);
+                var callbackUrl = Url.ActionLink("ConfirmChangeEmail", "MemberCenterApi", new { userId = user.Id, token = _urlEncoder.Encode(token), type = "primary", newEmail = model.NewEmail });
+                await _emailSender.SendEmailAsync(model.NewEmail, "請確認您的新電子郵件", $"請點擊確認：{callbackUrl}");
+                return Ok(new { message = "驗證信已寄出" });
+            }
+            else // backup，使用 DataProtection 產生 token（包含 userId, newEmail, expiry）
+            {
+                var payload = $"{user.Id}|{model.NewEmail}|{DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds()}";
+                var protectedToken = _backupEmailProtector.Protect(payload);
+                var callbackUrl = Url.ActionLink("ConfirmChangeEmail", "MemberCenterApi", new { userId = user.Id, token = _urlEncoder.Encode(protectedToken), type = "backup", newEmail = model.NewEmail });
+                await _emailSender.SendEmailAsync(model.NewEmail, "請確認您的備援電子郵件", $"請點擊確認：{callbackUrl}");
+                return Ok(new { message = "驗證信已寄出" });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> ConfirmChangeEmail(string userId, string token, string type, string newEmail = null)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token)) return BadRequest("參數不足");
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            token = System.Net.WebUtility.UrlDecode(token);
+
+            if (type == "primary")
+            {
+                // 確認主信箱 change email token
+                var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
+                if (!result.Succeeded) return BadRequest("驗證失敗或已過期");
+                // 若需要同步 UserName
+                // await _userManager.SetUserNameAsync(user, newEmail);
+
+                return Redirect("/Auth/MemberCenter?msg=email_changed");
+            }
+            else // backup
+            {
+                try
+                {
+                    var unprotected = _backupEmailProtector.Unprotect(token);
+                    // payload 格式 userId|newEmail|expiryUnix
+                    var parts = unprotected.Split('|', 3);
+                    if (parts.Length != 3) return BadRequest("驗證失敗");
+                    if (!int.TryParse(parts[0], out var tokenUserId) || tokenUserId.ToString() != userId) return BadRequest("驗證資訊不符");
+                    var tokenNewEmail = parts[1];
+                    var expiryUnix = long.Parse(parts[2]);
+                    if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiryUnix) return BadRequest("驗證已過期");
+
+                    // 最後再確認 newEmail 與 token 內的一致（避免 query 被動手改）
+                    if (!string.Equals(tokenNewEmail, newEmail, StringComparison.OrdinalIgnoreCase)) return BadRequest("驗證的信箱不一致");
+
+                    user.BackupEmail = tokenNewEmail;
+                    user.BackupEmailConfirmed = true;
+                    await _userManager.UpdateAsync(user);
+
+                    // 建議：在這裡建立短期 password-reset session（若你要讓 ForgotPassword 使用此驗證）
+                    HttpContext.Session.SetInt32("PasswordResetUserId", user.Id);
+                    HttpContext.Session.SetString("PasswordResetFrom", "BackupEmailConfirmed");
+                    // 設定過期、或由 CheckPasswordResetSession 端控制有效時間
+
+                    return Redirect("/Auth/MemberCenter?msg=backup_changed");
+                }
+                catch
+                {
+                    return BadRequest("驗證失敗或已過期");
+                }
+            }
+        }
+
 
         [HttpPost("Toggle")]
         [Authorize]

@@ -368,9 +368,22 @@
         $(document)
             .off('.calendar')
 
+            /*年切換*/
+            .on('click.calendar', '.year-left', () => {
+                currentYear--;
+                buildMonthPanel();
+                renderMonth();
+            })
+            .on('click.calendar', '.year-right', () => {
+                currentYear++;
+                buildMonthPanel();
+                renderMonth();
+            })
+
             /* 月切換 */
             .on('click.calendar', '.month-left', () => changeMonth(-1))
             .on('click.calendar', '.month-right', () => changeMonth(1))
+
 
             /* 左側月份 */
             .on('click.calendar', '.month-btn', function () {

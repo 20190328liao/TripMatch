@@ -195,10 +195,10 @@
                 password = (password === null || password === undefined) ? '' : String(password);
                 confirmPassword = (confirmPassword === null || confirmPassword === undefined) ? '' : String(confirmPassword);
 
-                const pwdResult = this.validatePassword(password);
+                const pwdResult = Validator.validatePassword(password);
                 if (!confirmPassword) return { valid: false, message: "" };
                 if (!pwdResult.valid) return { valid: false, message: "☐ 密碼格式不符，請參考上方提示" };
-                if (password !== confirmPassword) return { valid: true, message: "☑ 密碼一致且符合規範" };
+                if (password !== confirmPassword) return { valid: false, message: "☐ 密碼不一致" };
                 return { valid: true, message: "☑ 密碼一致且符合規範" };
             }
         };
