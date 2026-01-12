@@ -8,6 +8,20 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; }= String.Empty;
     }
 
+    public class TripDetailDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }= String.Empty;
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
+    }
+
+    public class ItineraryItemDto
+    {
+        public int Day { get; set; }
+
+    }   
+
     public class TripCreateDto
     {
         public string Title { get; set; } = String.Empty;

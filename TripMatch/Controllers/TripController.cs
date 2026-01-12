@@ -8,7 +8,7 @@ namespace TripMatch.Controllers
     public class TripController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly ITagUserId _tagUserId; 
+        private readonly ITagUserId _tagUserId;
         public TripController(ILogger<HomeController> logger, ITagUserId tagUserId)
         {
             _logger = logger;
@@ -26,9 +26,9 @@ namespace TripMatch.Controllers
             return View();
         }
 
-         public IActionResult Edit()
-        {            
-            return View();
+        public IActionResult Edit(int id)
+        {
+            return View(id);
         }
     }
 }

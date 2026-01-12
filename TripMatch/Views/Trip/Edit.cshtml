@@ -6,6 +6,8 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@model int
+
 
 @* 1. 頁面專屬 CSS 區塊 *@
 @section Styles {
@@ -15,12 +17,16 @@
 
 <div class="itinerary-wrapper">
     <div class="left-panel">
+        <input type="hidden" id="current-trip-id" value="@Model" />
+
         <div class="itinerary-nav p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="m-0 fw-bold">我的行程</h5>
+            <h5 class="m-0 fw-bold">行程Id:@Model</h5>
+
             <div class="btn-group btn-group-sm">
-                <button class="btn btn_light active">行程</button>
-                <button class="btn btn_light" onclick="toggleOverview()">總覽</button>
+                <button class="btn btn_light">行程</button>
+                <button class="btn btn_light">總覽</button>
             </div>
+
         </div>
 
         <div class="itinerary-content p-0 overflow-auto" id="place-list">
