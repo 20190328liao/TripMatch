@@ -1,0 +1,6 @@
+# Enforce UTF-8 working tree encoding for common text assets
+*.cs text=auto working-tree-encoding=UTF-8
+*.cshtml text=auto working-tree-encoding=UTF-8
+*.js text=auto working-tree-encoding=UTF-8
+*.css text=auto working-tree-encoding=UTF-8
+*.json text=auto working-tree-encoding=UTF-8

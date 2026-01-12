@@ -13,15 +13,47 @@
         MemberCenter = Url.Action("MemberCenter", "Auth"),
         ChangePassword = Url.Action("ChangePassword", "Auth")
     };
+
+    // 與 helper.js 中 window.Routes.AuthApi 名稱一致的完整 API 路由清單
     var authApis = new
     {
-        Login = apiBase + "/Login",
-        Signup = apiBase + "/Register",
-        CheckEmail = apiBase + "/CheckEmailStatus",
-        ForgotPassword = apiBase + "/SendPasswordReset",
-        MemberCenter = apiBase + "/GetMemberProfile",
-        ChangePassword = apiBase + "/ChangePassword"
+        Signin = apiBase + "/Signin",
+        Logout = apiBase + "/Logout",
+        Register = apiBase + "/Register",
+        SendConfirmation = apiBase + "/SendConfirmation",
+        CheckDbStatus = apiBase + "/CheckDbStatus",
+        SendPasswordReset = apiBase + "/SendPasswordReset",
+        ValidatePasswordResetLink = apiBase + "/ValidatePasswordResetLink",
+        PerformPasswordReset = apiBase + "/PerformPasswordReset",
+        CheckPasswordResetSession = apiBase + "/CheckPasswordResetSession",
+        SetPasswordResetSession = apiBase + "/SetPasswordResetSession",
+        ClearPasswordResetSession = apiBase + "/ClearPasswordResetSession",
+        GetMemberProfile = apiBase + "/GetMemberProfile",
+        UploadAvatar = apiBase + "/UploadAvatar",
+        ClearPendingSession = apiBase + "/ClearPendingSession",
+        SaveLeaves = apiBase + "/SaveLeaves",
+        DeleteLeaves = apiBase + "/DeleteLeaves",
+        GetLeaves = apiBase + "/GetLeaves",
+        GetLockedRanges = apiBase + "/GetLockedRanges",
 
+        // wishlist endpoints（與 AuthApiController 中定義一致）
+        GetWishlist = apiBase + "/Wishlist",
+        ToggleWishlist = apiBase + "/Wishlist/Toggle",
+
+        // for ForgotEmail flow
+        SendBackupLookup = apiBase + "/SendBackupLookup",
+        ConfirmBackupLookup = apiBase + "/ConfirmBackupLookup",
+        GetBackupLookupResult = apiBase + "/GetBackupLookupResult"
+    };
+
+    // MemberCenterApi 的獨立 API 群組（可選：helper.js 也支援此群組）
+    var memberCenterApis = new
+    {
+        Toggle = Url.Content("~/api/MemberCenterApi/Toggle"),
+        GetWish = Url.Content("~/api/MemberCenterApi/GetWish"),
+        TestFillImages = Url.Content("~/api/MemberCenterApi/TestFillImages"),
+        SeedDummyWishlistForTrip = Url.Content("~/api/MemberCenterApi/SeedDummyWishlistForTrip"),
+        GetWishlistCardsByUser = Url.Content("~/api/MemberCenterApi/GetWishlistCardsByUser")
     };
 }
 
@@ -45,18 +77,23 @@
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
+    <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
     @* 這裡可以預留給各別頁面加入額外的 CSS *@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body>
     @* 在這裡放共用的 Header/Nav *@
-
+    <div id="route-data"
+         data-pages='@Json.Serialize(authPages)'
+         data-apis='@Json.Serialize(authApis)'
+         data-member-center-apis='@Json.Serialize(memberCenterApis)'
+         style="display:none;"></div>
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
-
  
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+
 
     @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
     @RenderSection("Scripts", required: false)

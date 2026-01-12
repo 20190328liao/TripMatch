@@ -1,5 +1,4 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "忘記帳號";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
@@ -70,13 +69,6 @@
 }
 
 @section Scripts {
-
-    <script>
-        $(function () {
-            if (typeof bindPasswordToggle === 'function') {
-                bindPasswordToggle();
-            }
-        });
-    </script>
+    <script src="~/js/AuthApi/forgotEmail.js" asp-append-version="true"></script>
 }
 

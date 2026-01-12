@@ -1,4 +1,5 @@
 ﻿using TripMatch.Models.DTOs;
+using System.Text.Json;
 
 namespace TripMatch.Services.ExternalClients
 {
@@ -9,7 +10,7 @@ namespace TripMatch.Services.ExternalClients
 
         public GooglePlacesClient(HttpClient httpClient, IConfiguration config)
         {
-            _httpClient = new HttpClient();
+            _httpClient =httpClient?? new HttpClient();
 
             // 使用冒號 (:) 來讀取 JSON 的階層：GoogleMaps -> ApiKey
             _apiKey = config["GoogleMaps:ApiKey"];
@@ -23,10 +24,30 @@ namespace TripMatch.Services.ExternalClients
 
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
-            var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={placeId}" +
-                $"&fields=name,address_components,types&key={_apiKey}&language={lang}";
+            var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}" +
+                $"&fields=name,address_components,types,photos&key={_apiKey}&language={lang}";
             var response = await _httpClient.GetAsync(url);
-            return await response.Content.ReadFromJsonAsync<GooglePlaceDetailDto>(); // 建議建立專用 DTO 解析 JSON
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<GooglePlaceDetailDto>();
+        }
+
+        // 新增：從文字查找 place_id（使用 findplacefromtext）
+        public async Task<string?> FindPlaceIdByTextAsync(string input, string lang = "zh-TW")
+        {
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            var url = $"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={Uri.EscapeDataString(input)}&inputtype=textquery&fields=place_id&key={_apiKey}&language={lang}";
+            var resp = await _httpClient.GetAsync(url);
+            if (!resp.IsSuccessStatusCode) return null;
+            using var stream = await resp.Content.ReadAsStreamAsync();
+            using var doc = await JsonDocument.ParseAsync(stream);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
+            {
+                var first = cands[0];
+                if (first.TryGetProperty("place_id", out var pid) && pid.ValueKind == JsonValueKind.String)
+                    return pid.GetString();
+            }
+            return null;
         }
     }
 

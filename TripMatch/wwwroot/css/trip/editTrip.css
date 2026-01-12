@@ -94,7 +94,74 @@ body {
     cursor: pointer;
 }
 
-.input-group-text:hover {
-  
+
+
+/* --- 1. InfoWindow 佈局樣式 --- */
+.info-window-content {
+    overflow: hidden; /* 防止內容溢出 */
 }
 
+.info-window-img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    display: block;
+    vertical-align: bottom; /* 消除圖片底部細微縫隙 */
+}
+
+.info-window-address {
+    word-break: break-all;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+/* --- 2. 加入行程按鈕效果 --- */
+#add-to-itinerary-btn {
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    #add-to-itinerary-btn:hover {
+        filter: brightness(0.95); /* 變暗增加層次 */
+        transform: translateY(-1px); /* 輕微上浮 */
+    }
+
+    #add-to-itinerary-btn:active {
+        transform: scale(0.95); /* 按壓縮小效果 */
+        box-shadow: inset 0 3px 5px rgba(0,0,0,0.1) !important; /* 內部陰影 */
+    }
+
+/* --- 3. 愛心收藏按鈕效果 (包含解決消失問題) --- */
+.wishlist-heart {
+    /* 佈局設定 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 大小與空間設定 */
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    /* 關鍵：防止愛心被左邊按鈕擠壓消失 */
+    flex-shrink: 0;
+    /* 動畫過渡 */
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+    border-radius: 50%; /* 如果滑鼠移上去要有圓形背景 */
+}
+
+    .wishlist-heart:hover {
+        background-color: rgba(220, 53, 69, 0.1); /* 淡淡的紅色背景 */
+        transform: scale(1.1); /* 放大 */
+    }
+
+    .wishlist-heart:active {
+        transform: scale(0.8); /* Q彈縮小 */
+    }
+
+    /* 預留：當愛心被選中時的樣式 (之後 JS 切換 class 用) */
+    .wishlist-heart.active i {
+        font-weight: 900 !important; /* 變為實心 (Bootstrap Icon 邏輯) */
+        transform: scale(1.1);
+    }

@@ -4,7 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -113,6 +113,7 @@
     @* 在 layout 中也保持單一載入點，使用版本化避免舊路徑快取 *@
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 
     @* 其餘頁面腳本由各 view 的 @section Scripts 提供 *@
