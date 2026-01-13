@@ -123,20 +123,19 @@ namespace TripMatch.Controllers.Api
                 return BadRequest(new { success = false, message = "輸入資料格式錯誤" });
             }
 
-            // Optimize: avoid an extra user lookup on the successful login path.
-            // Call PasswordSignInAsync using the email first (SignInManager will lookup internally).
             var result = await _signInManager.PasswordSignInAsync(data.Email!, data.Password!, isPersistent: false, lockoutOnFailure: true);
 
-            ApplicationUser? user = null; // 修正：宣告 user 變數
+            ApplicationUser? user = null;
 
             if (result.Succeeded)
             {
-                // Only fetch the user after a successful sign-in to reduce DB calls on the hot path.
                 user = await _userManager.FindByEmailAsync(data.Email!);
                 if (user != null)
                 {
-                    // 先刪除既有 AuthToken，確保不會混用別人的舊 token
-                    try { Response.Cookies.Delete("AuthToken"); } catch { /* 忽略 */ }
+                    // 保險：清除舊 Cookie/Session，避免殘留資料在前端短暫顯示
+                    try { HttpContext.Session?.Clear(); } catch { }
+                    try { Response.Cookies.Delete("PendingEmail"); } catch { }
+                    try { Response.Cookies.Delete("AuthToken"); } catch { }
 
                     var token = _authService.GenerateJwtToken(user);
                     _authService.SetAuthCookie(HttpContext, token);
@@ -151,7 +150,6 @@ namespace TripMatch.Controllers.Api
                 });
             }
 
-            // 修正：在這裡取得 user 物件，避免 user 未宣告
             if (user == null)
             {
                 user = await _userManager.FindByEmailAsync(data.Email!);
@@ -803,43 +801,6 @@ namespace TripMatch.Controllers.Api
 
 
 
-        // 測試用產生假會員 API
-        [HttpPost("TestGenerateUser")]
-        public async Task<IActionResult> TestGenerateUser()
-        {
-            var randomId = Guid.NewGuid().ToString().Substring(0, 5);
-            var fakeUser = new ApplicationUser
-            {
-                UserName = $"Tester_{randomId}",
-                Email = $"test_{randomId}@example.com",
-                EmailConfirmed = true
-            };
-
-            // 使用 UserManager 建立使用者 
-            var createResult = await _userManager.CreateAsync(fakeUser, "Test1234!");
-
-            if (!createResult.Succeeded)
-            {
-                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errorMsg });
-            }
-
-            // 4. 為了產生 Token，需要 User 物件
-            var user = await _userManager.FindByIdAsync(fakeUser.Id.ToString());
-            if (user == null) return NotFound();
-
-            // 5. 產生 JWT 並寫入 Cookie
-            var token = _authService.GenerateJwtToken(user);
-            _authService.SetAuthCookie(HttpContext, token);
-
-            // 6. 回傳給前端
-            return Ok(new
-            {
-                message = "成功新增假會員並自動登入",
-                userId = user.Id,
-                userName = user.UserName
-            });
-        }
 
         public class SaveLeavesModel
         {
@@ -1130,5 +1091,136 @@ namespace TripMatch.Controllers.Api
                 return fullName;
             }
         }
+
+        [HttpPost("ImportCalendarJson")]
+        [Authorize]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> ImportCalendarJson([FromForm] IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { success = false, message = "請上傳 JSON 檔案" });
+
+            string content;
+            try
+            {
+                using var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8);
+                content = await reader.ReadToEndAsync();
+            }
+            catch
+            {
+                return StatusCode(500, new { success = false, message = "讀取檔案失敗" });
+            }
+
+            var parsed = new List<DateOnly>();
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == System.Text.Json.JsonValueKind.Object && root.TryGetProperty("dates", out var datesProp) && datesProp.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var el in datesProp.EnumerateArray())
+                    {
+                        if (el.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            DateOnly.TryParseExact(el.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        {
+                            parsed.Add(d);
+                        }
+                    }
+                }
+                else if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var el in root.EnumerateArray())
+                    {
+                        if (el.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            DateOnly.TryParseExact(el.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        {
+                            parsed.Add(d);
+                        }
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "JSON 格式不支援，請使用 dates 陣列或字串陣列。" });
+                }
+            }
+            catch
+            {
+                return BadRequest(new { success = false, message = "無效的 JSON 檔案" });
+            }
+
+            if (!parsed.Any())
+                return BadRequest(new { success = false, message = "未解析到可用日期 (格式 yyyy-MM-dd)" });
+
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized(new { success = false, message = "未登入或無效使用者" });
+
+            // 取得使用者的已鎖定行程區間
+            var lockedRanges = await _dbContext.TripMembers
+                .AsNoTracking()
+                .Where(tm => tm.UserId == userId)
+                .Select(tm => new { Start = tm.Trip.StartDate, End = tm.Trip.EndDate })
+                .Where(r => r.Start != default && r.End != default)
+                .ToListAsync();
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            // 過濾：排除鎖定區間並只保留今天或之後
+            var accepted = parsed
+                .Where(d => d >= today && !lockedRanges.Any(r => d >= r.Start && d <= r.End))
+                .Distinct()
+                .OrderBy(d => d)
+                .ToList();
+
+            var rejected = parsed.Except(accepted).Distinct().OrderBy(d => d).ToList();
+
+            // 寫入資料庫：避免重複、使用 transaction
+            try
+            {
+                await using var tx = await _dbContext.Database.BeginTransactionAsync();
+
+                var existingDates = await _dbContext.LeaveDates
+                    .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && accepted.Contains(l.LeaveDate1.Value))
+                    .Select(l => l.LeaveDate1!.Value)
+                    .ToListAsync();
+
+                var toInsert = accepted.Except(existingDates).Select(d => new LeaveDate
+                {
+                    UserId = userId,
+                    LeaveDate1 = d,
+                    LeaveDateAt = DateTime.Now
+                }).ToList();
+
+                if (toInsert.Count > 0)
+                {
+                    await _dbContext.LeaveDates.AddRangeAsync(toInsert);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { success = false, message = "儲存至資料庫失敗" });
+            }
+
+            // 保留原本把 accepted 存到 Session 的行為（供前端流程使用）
+            try
+            {
+                var acceptStrs = accepted.Select(d => d.ToString("yyyy-MM-dd")).ToArray();
+                HttpContext.Session.SetString("ImportedCalendarDates", System.Text.Json.JsonSerializer.Serialize(acceptStrs));
+            }
+            catch { /* non-fatal */ }
+
+            return Ok(new
+            {
+                success = true,
+                message = "已匯入日曆（已過濾衝突與過去日期）",
+                acceptedDates = accepted.Select(d => d.ToString("yyyy-MM-dd")).ToArray(),
+                rejectedDates = rejected.Select(d => d.ToString("yyyy-MM-dd")).ToArray()
+            });
+        }
+   
     }
 }

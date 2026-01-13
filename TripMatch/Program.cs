@@ -131,6 +131,34 @@ namespace TripMatch
             app.MapRazorPages();
             app.UseRouting();
 
+            // 在建立管線時，於 app.UseRouting() 與 app.UseAuthentication() 之間加入一個中介層
+            // 以移除已過期或明顯無效的 AuthToken，避免驗證中間件在請求內使用殘留 cookie
+            // Insert this BEFORE app.UseAuthentication();
+
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Cookies != null && context.Request.Cookies.TryGetValue("AuthToken", out var token) && !string.IsNullOrWhiteSpace(token))
+                {
+                    try
+                    {
+                        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                        var jwt = handler.ReadJwtToken(token);
+                        // 如果 token 已過期或 exp 無法解析，刪除 cookie 防止短暫顯示其他使用者資料
+                        if (jwt.ValidTo <= DateTime.UtcNow)
+                        {
+                            try { context.Response.Cookies.Delete("AuthToken"); } catch { /* ignore */ }
+                        }
+                    }
+                    catch
+                    {
+                        // 非法 token -> 刪除 cookie
+                        try { context.Response.Cookies.Delete("AuthToken"); } catch { /* ignore */ }
+                    }
+                }
+
+                await next();
+            });
+
             app.UseSession(); // 此行必須在 UseRouting() 之後
 
             app.UseAuthentication();

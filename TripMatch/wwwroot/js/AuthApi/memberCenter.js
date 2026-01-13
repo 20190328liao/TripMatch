@@ -515,8 +515,116 @@ $(function () {
         });
     });
 
-    // 初始化 MemberProfile（如有 DOM）
-    if (hasMemberCenterDom && typeof MemberProfile !== 'undefined' && MemberProfile && typeof MemberProfile.init === 'function') {
+    // 匯入 JSON 日曆上傳處理 - 顯示結果在頁面取代 alert
+    (function () {
+        const btn = document.getElementById('btnImportCalendar');
+        const input = document.getElementById('importCalendarInput');
+        const message = document.getElementById('importCalendarMessage');
+
+        if (!btn || !input || !message) return;
+
+        function showMessage(text, type = 'info') {
+            message.classList.remove('d-none','alert-success','alert-danger','alert-info');
+            if (type === 'success') message.classList.add('alert-success');
+            else if (type === 'error') message.classList.add('alert-danger');
+            else message.classList.add('alert-info');
+            message.textContent = text;
+        }
+
+        btn.addEventListener('click', () => input.click());
+
+        input.addEventListener('change', async (ev) => {
+            const file = ev.target.files && ev.target.files[0];
+            if (!file) return showMessage('未選擇檔案', 'error');
+
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                return showMessage('請選擇 .json 檔案', 'error');
+            }
+
+            const fd = new FormData();
+            fd.append('file', file);
+
+            btn.disabled = true;
+            showMessage('上傳中，請稍候...', 'info');
+
+            try {
+                const resp = await fetch('/api/auth/ImportCalendarJson', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'include' // 確保 cookie/jwt 一併送出
+                });
+
+                let json;
+                try { json = await resp.json(); } catch { json = null; }
+
+                if (!resp.ok) {
+                    const msg = json?.message ?? `上傳失敗 (狀態 ${resp.status})`;
+                    showMessage(msg, 'error');
+                } else {
+                    const msg = json?.message ?? '已匯入日曆';
+                    showMessage(msg, 'success');
+                }
+
+                // 在上傳回應處理位置加入：將 acceptedDates 標示為新提交（submitted-new），並顯示被拒日期
+                async function handleImportResponse(json) {
+                    const accepted = json?.acceptedDates || [];
+                    const rejected = json?.rejectedDates || [];
+
+                    // 標示日曆上新提交（若 Calendar 有對應 API，優先使用）
+                    if (window.Calendar && typeof window.Calendar.markSubmittedNew === 'function') {
+                        try { window.Calendar.markSubmittedNew(accepted); } catch (e) { console.warn(e); }
+                    } else {
+                        // 以 DOM 加 class 的 fallback（假設日曆每個格都有 data-date="yyyy-MM-dd"）
+                        accepted.forEach(date => {
+                            const el = document.querySelector(`.day-cell[data-date="${date}"]`);
+                            if (el) el.classList.add('submitted-new');
+                        });
+                        // 把 accepted 加到右側清單
+                        const list = document.getElementById('calendarList');
+                        if (list) {
+                            accepted.forEach(d => {
+                                const item = document.createElement('div');
+                                item.className = 'calendar-range-item submitted-new';
+                                item.textContent = d;
+                                list.prepend(item); // 置頂
+                            });
+                        }
+
+                        // 顯示被拒絕的日期（可選）
+                        if (rejected && rejected.length) {
+                            const rejList = document.getElementById('importCalendarRejected');
+                            if (rejList) {
+                                rejList.innerHTML = '';
+                                rejected.forEach(d => {
+                                    const it = document.createElement('div');
+                                    it.className = 'calendar-range-item rejected';
+                                    it.textContent = d;
+                                    rejList.appendChild(it);
+                                });
+                            }
+                        }
+                    }
+                } // end handleImportResponse
+
+                try {
+                    await handleImportResponse(json);
+                } catch (e) {
+                    console.warn('handleImportResponse failed', e);
+                }
+            } catch (ex) {
+                console.error('上傳處理發生例外', ex);
+                showMessage('上傳失敗，請稍後再試', 'error');
+            } finally {
+                btn.disabled = false;
+                try { input.value = ''; } catch { /* ignore */ }
+            }
+        }); // end input.change
+
+        // End 匯入 JSON 日曆上傳處理 IIFE
+    })();
+
+    // 如果頁面含 MemberCenter DOM，初始化 MemberProfile
+    if (hasMemberCenterDom) {
         MemberProfile.init();
     }
-});
+}); // end DOMReady
