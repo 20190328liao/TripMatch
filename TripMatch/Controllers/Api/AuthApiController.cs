@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
-
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
 using System.Globalization;
+using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Threading.Tasks;
 
 namespace TripMatch.Controllers.Api
 {
@@ -24,6 +26,7 @@ namespace TripMatch.Controllers.Api
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly TravelDbContext _dbContext;
         private readonly ITagUserId _tagUserId;
+        //private readonly IMemoryCache _cache;
 
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)

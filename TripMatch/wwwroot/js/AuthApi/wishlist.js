@@ -27,6 +27,40 @@
         }
     }
 
+    function safeParsePhotos(snapshot) {
+        if (!snapshot) return null;
+        try {
+            const parsed = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+            return null;
+        } catch (e) {
+            // 解析失敗，回傳 null 讓呼叫端使用 placeholder
+            return null;
+        }
+    }
+
+    function attachImageFallbacks(container) {
+        const imgs = (container || wishlistContainer).querySelectorAll('img.card-img-top');
+        imgs.forEach(img => {
+            // 若已設定過 handler，跳過
+            if (img.__wishlist_onerror_attached) return;
+            img.__wishlist_onerror_attached = true;
+
+            img.addEventListener('error', () => {
+                try {
+                    // 若原始 src 有問題，改為預設圖片（png）
+                    if (!img.src || img.src.endsWith('/img/placeholder.png')) return;
+                    img.src = '/img/placeholder.png';
+                } catch (e) {
+                    // 保險：避免 error handler 自身拋例外
+                    console.warn('image fallback error', e);
+                }
+            });
+
+            // optional: lazy load / retry could be added here
+        });
+    }
+
     function render(items) {
         if (!items || items.length === 0) {
             renderEmpty();
@@ -35,9 +69,12 @@
         // 修正後的 render 內部片段
         wishlistContainer.innerHTML = items.map(item => {
             // 自動相容 SpotId 或 spotId
-            const currentSpotId = item.spotId || item.SpotId;
-            const currentSpotTitle = item.spotTitle || item.Name_ZH || item.name_ZH || '未知地點';
-            const currentImageUrl = item.imageUrl || (item.PhotosSnapshot ? JSON.parse(item.PhotosSnapshot)[0] : '/img/placeholder.jpg');
+            const currentSpotId = item.spotId ?? item.SpotId ?? '';
+            const currentSpotTitle = item.spotTitle ?? item.Name_ZH ?? item.name_ZH ?? '未知地點';
+
+            // 優先使用 imageUrl，否則嘗試從 PhotosSnapshot 解析；都沒有則使用預設 png
+            const parsedPhoto = safeParsePhotos(item.PhotosSnapshot);
+            const currentImageUrl = escapeHtml(item.imageUrl ?? parsedPhoto ?? '/img/placeholder.png');
 
             return `
         <div class="col" data-spot-col="${currentSpotId}">
@@ -45,14 +82,16 @@
                 <button type="button"
                         class="btn_remove_wish active"
                         data-spotid="${currentSpotId}"
-                        title="從清單移除">
-                    <i class="bi bi-trash-fill"></i>
+                        title="從清單移除"
+                        style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:36px; height:36px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-trash-fill" aria-hidden="true"></i>
                 </button>
-                <a href="/Spot/Detail?id=${currentSpotId}">
-                    <img src="${escapeHtml(currentImageUrl)}" class="card-img-top" style="height: 180px; object-fit: cover;">
+                <a href="/Spot/Detail?id=${currentSpotId}" class="d-block" aria-label="${escapeHtml(currentSpotTitle)}">
+                    <img src="${currentImageUrl}" class="card-img-top" alt="${escapeHtml(currentSpotTitle)}"
+                         style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
                 </a>
                 <div class="card-body">
-                    <h6 class="card-title text-truncate fw-bold">${escapeHtml(currentSpotTitle)}</h6>
+                    <h6 class="card-title text-truncate fw-bold mb-1">${escapeHtml(currentSpotTitle)}</h6>
                 </div>
                 <div class="card-footer bg-transparent border-0 pb-3">
                     <button class="btn btn-primary w-100 btn-view-more" data-id="${currentSpotId}">
@@ -62,6 +101,9 @@
             </div>
         </div>`;
         }).join('');
+
+        // 在 innerHTML 寫回後，附加 image error fallback handler
+        attachImageFallbacks();
     }
 
     function renderEmpty() {
@@ -172,7 +214,7 @@
             } finally {
                 if (undoTimers[spotIdNum]) delete undoTimers[spotIdNum];
             }
-        }, 5000);
+        }, 1000);
 
         // 存下 timer 與元素參考，供 undo 使用
         undoTimers[spotIdNum] = { timerId, toastEl, removeBtn, cardCol };
@@ -226,7 +268,7 @@
         toast.style.right = '20px';
         toast.style.zIndex = '2000';
         toast.style.padding = '8px 12px';
-        toast.style.background = 'rgba(0,0,0,0.85)';
+        toast.style.background = '#27354A';
         toast.style.color = '#fff';
         toast.style.borderRadius = '6px';
         toast.style.display = 'flex';
@@ -234,7 +276,7 @@
         toast.style.gap = '8px';
         toast.innerHTML = `
             <span>已排程移除</span>
-            <button class="btn btn-sm btn-warning" id="undo_btn_${spotId}" type="button">還原</button>
+            <button class="btn btn-sm btn-light" id="undo_btn_${spotId}" type="button">還原</button>
         `;
         document.body.appendChild(toast);
 
@@ -249,7 +291,7 @@
         setTimeout(() => {
             const t = document.getElementById('undo_toast_' + spotId);
             if (t) t.remove();
-        }, 5000 + 200); // 與刪除定時器略為同步
+        }, 2000 + 200); // 與刪除定時器略為同步
 
         return toast;
     }
