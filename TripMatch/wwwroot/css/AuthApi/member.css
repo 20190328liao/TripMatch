@@ -750,3 +750,41 @@ input:is(:-webkit-autofill, :autofill) {
     color: var(--color_DarkGray);
 }
 
+/* 新增：讓現有 .pwdChange 也套用 input1 的樣式 */
+.input_group_custom .pwdChange,
+.input_group_custom input.pwdChange {
+    flex: 1;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    appearance: none;
+    background: transparent;
+    height: 100%;
+    font-size: var(--fontBody);
+    box-sizing: border-box;
+    padding-right: 48px; /* 增加空間，避免圖示遮蓋文字 */
+    z-index: 1; /* 讓輸入框在圖示下層（圖示使用較高 z-index） */
+}
+
+/* 確保切換按鈕不會遮住文字、且可點擊 */
+.btn-toggle-pwd {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2; /* 圖示置頂但不遮蓋文字（文字有 padding）*/
+}
+
+/* 若需要強制覆蓋 Bootstrap 的 padding，增加更高權重 */
+.input_group_custom .pwdChange.form-control {
+    padding-right: 48px !important;
+}
+

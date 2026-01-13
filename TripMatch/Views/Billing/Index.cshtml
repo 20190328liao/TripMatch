@@ -1,5 +1,107 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@using TripMatch.Models
+@model IEnumerable<Trip>
 @{
+    ViewData["Title"] = "記帳分帳";
+}
+<link rel="stylesheet" href="~/css/Billing/accounting.css" />
+<div class="accounting-container">
+    @* <aside class="sidebar">
+        <h2 style="color: var(--dark-mint); margin-bottom: 25px; font-size: 22px;">旅程帳本</h2>
+        <div class="trip-group">
+            <h3><i class="fa-solid fa-map-location-dot"></i> 旅程一</h3>
+            <button class="nav-btn active" onclick="switchDay('trip1', 'day1', this)">第一天</button>
+            <button class="nav-btn" onclick="switchDay('trip1', 'day2', this)">第二天</button>
+        </div>
+        <div class="trip-group">
+            <h3><i class="fa-solid fa-map-location-dot"></i> 旅程二</h3>
+            <button class="nav-btn" onclick="switchDay('trip2', 'day1', this)">第一天</button>
+            <button class="nav-btn" onclick="switchDay('trip2', 'day2', this)">第二天</button>
+        </div>
+    </aside> *@
+    <aside class="sidebar">
+        <h2 style="color: var(--dark-mint); margin-bottom: 25px; font-size: 22px;">旅程帳本</h2>
+
+        @foreach (var trip in Model)
+        {
+            <div class="trip-group">
+                <h3><i class="fa-solid fa-map-location-dot"></i> @trip.Title</h3>
+
+                @{
+                    // 計算行程總天數
+                    var totalDays = (trip.EndDate.ToDateTime(TimeOnly.MinValue) -
+                    trip.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
+                }
+
+                @for (int i = 1; i <= totalDays; i++)
+                {
+                    <button class="nav-btn"
+                            onclick="switchDay(@trip.Id, 'day' + @i, this)">
+                        第 @i 天
+
+                    </button>
+                }
+            </div>
+        }
+    </aside>
+
+    <main class="main-content">
+        <header class="main-header">
+            @* <h2 id="current-title">旅程一 | 第一天</h2> *@
+            @{
+                // 取得清單中的第一個行程作為預設顯示
+                var defaultTrip = Model.FirstOrDefault();
+                var displayTitle = defaultTrip != null ? $"{defaultTrip.Title} | 第 1 天" : "尚無旅程";
+            }
+            <h2 id="current-title">@displayTitle</h2>
+
+            <div class="top-actions">
+                <button id="btn-members" class="action-btn" onclick="showPanel('members')">👥 成員</button>
+                <button id="btn-addExpense" class="action-btn" onclick="showPanel('addExpense')">＋ 新增支出</button>
+                <button id="btn-summary" class="action-btn" onclick="showPanel('summary')">📄 統整欠額</button>
+            </div>
+        </header>
+
+        <section class="budget-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 style="margin:0; color: var(--text-dark);">個人預算追蹤 (全旅程)</h4>
+                <small style="color:#64748b;">點擊成員可自訂預算</small>
+            </div>
+            <div id="budget-list" class="budget-grid"></div>
+        </section>
+
+
+        <section class="stats-cards">
+            <div class="card">
+                <h4>今日支出總額</h4>
+                <p class="value highlight">NT$ <span id="total-amount">0</span></p>
+            </div>
+            <div class="card">
+                <h4>支出筆數</h4>
+                <p class="value"><span id="expense-count">0</span> 筆</p>
+            </div>
+            <div class="card">
+                <h4>成員人數</h4>
+                <p class="value">
+                    <span id="member-count">@(defaultTrip?.TripMembers?.Count ?? 0)</span> 人
+                </p>
+            </div>
+        </section>
+
+        <section class="list-card">
+            <h4 style="margin-bottom:15px; color: var(--text-dark);">支出清單 (單日)</h4>
+            <div id="expense-list"></div>
+        </section>
+
+        <section class="list-card">
+            <h4 style="margin-bottom:15px; color: var(--text-dark);">成員收支狀態 (單日結算)</h4>
+            <div id="debt-list"></div>
+        </section>
+    </main>
+
+    <aside class="right-panel">
+        <div id="panel-content"></div>
+    </aside>
+</div>
+@section Scripts {
+    <script src="~/js/Billing/accounting.js" asp-append-version="true"></script>
 }

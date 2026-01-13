@@ -1,0 +1,142 @@
+﻿@page "/Dev/ReplacePasswords"
+@using TripMatch.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject TripMatch.Data.TravelDbContext DbContext
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    Layout = null;
+    string resultMessage = "";
+    string shortHash = "";
+    bool applied = false;
+
+    async Task HandlePostAsync()
+    {
+        // 僅限開發測試：密碼
+        var plainPassword = "P@ssword123";
+
+        try
+        {
+            // 產生新的 PasswordHash 與新的 SecurityStamp
+            var hasher = new PasswordHasher<ApplicationUser>();
+            var newHash = hasher.HashPassword(new ApplicationUser { UserName = "dev" }, plainPassword);
+            var newStamp = Guid.NewGuid().ToString("N");
+
+            // 使用交易，先更新來源 user(1)，再依需求複製到 5-14
+            await using var tx = await DbContext.Database.BeginTransactionAsync();
+            try
+            {
+                // 更新 UserId = 1 的雜湊與 security stamp
+                var sqlUpdateSource = "UPDATE [dbo].[AspNetUsers] SET [PasswordHash] = {0}, [SecurityStamp] = {1} WHERE [UserId] = {2}";
+                await DbContext.Database.ExecuteSqlRawAsync(sqlUpdateSource, newHash, newStamp, 1);
+
+                // 再把來源的雜湊複製到 5~14
+                var sqlCopy = @"
+UPDATE tgt
+SET tgt.[PasswordHash] = src.[PasswordHash],
+    tgt.[SecurityStamp] = src.[SecurityStamp]
+FROM [dbo].[AspNetUsers] AS tgt
+CROSS JOIN (SELECT [PasswordHash],[SecurityStamp] FROM [dbo].[AspNetUsers] WHERE [UserId] = {0}) AS src
+WHERE tgt.[UserId] BETWEEN {1} AND {2};
+";
+                await DbContext.Database.ExecuteSqlRawAsync(sqlCopy, 1, 5, 14);
+
+                await tx.CommitAsync();
+
+                // 僅顯示雜湊的前 16 個字元以利檢查
+                shortHash = newHash?.Length > 16 ? newHash.Substring(0, 16) + "..." : newHash;
+                resultMessage = "已成功產生雜湊並套用到 UserId 5-14（開發測試）。";
+                applied = true;
+            }
+            catch (Exception exInner)
+            {
+                await tx.RollbackAsync();
+                resultMessage = "執行 SQL 時失敗：" + exInner.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            resultMessage = "產生雜湊失敗：" + ex.Message;
+        }
+    }
+
+    if (HttpContext.Request.Method == "POST")
+    {
+        await HandlePostAsync();
+    }
+}
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>開發：產生測試密碼並套用</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 24px;
+        }
+
+        .box {
+            border: 1px solid #ddd;
+            padding: 16px;
+            max-width: 720px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            background: #2b7cff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .warn {
+            color: #a00;
+            font-weight: bold;
+        }
+
+        .ok {
+            color: #0a0;
+        }
+
+        pre {
+            background: #f6f6f6;
+            padding: 8px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>開發工具：產生測試密碼並套用</h2>
+        <p class="warn">警告：此頁面會直接修改資料庫的 Identity 密碼雜湊與 security stamp。僅限本機或測試環境使用，部署到公開環境前請移除。</p>
+
+        <form method="post">
+            <p>要產生的測試密碼（固定）： <strong>P@ssword123</strong></p>
+            <p>
+                <button type="submit" class="btn">產生並套用到 UserId=1，然後複製到 UserId 5 至 14</button>
+            </p>
+        </form>
+
+        @if (!string.IsNullOrEmpty(resultMessage))
+        {
+            <div>
+                <p class="@(applied ? "ok" : "warn")">@resultMessage</p>
+                @if (applied)
+                {
+                    <p>產生的 PasswordHash（開頭）:</p>
+                    <pre>@shortHash</pre>
+                    <p>測試登入提示：請用 Email 對應的帳號（UserId 5~14）嘗試密碼 <strong>P@ssword123</strong></p>
+                }
+                else
+                {
+                    <p>錯誤詳情：<pre>@resultMessage</pre></p>
+                }
+            </div>
+        }
+    </div>
+</body>
+</html>

@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using TripMatch.Extensions;
 using TripMatch.Models;
 using TripMatch.Services;
+using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
+
 
 
 namespace TripMatch
@@ -16,13 +18,20 @@ namespace TripMatch
 
 
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Services.AddAntiforgery(options =>
+            {
+                // 這行非常重要，必須與你 JS 裡的 headers 名稱完全一致
+                options.HeaderName = "RequestVerificationToken";
+            });
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
             builder.Services.AddScoped<TimeWindowService>();
+
+            // 註冊基礎服務
+            builder.Services.AddScoped<SharedService>();
 
             // 註冊身分驗證基礎設施
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
@@ -39,7 +48,7 @@ namespace TripMatch
 
             // 取得UserId服務註冊（必須在 Build 之前）
             builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
-
+            builder.Services.AddRazorPages();
 
             // 註冊身分驗證基礎設施
 
@@ -118,7 +127,7 @@ namespace TripMatch
             app.UseDefaultFiles(); // 支援 wwwroot/signup.html 等靜態檔案
 
             app.UseStaticFiles();
-
+            app.MapRazorPages();
             app.UseRouting();
 
             app.UseSession(); // 此行必須在 UseRouting() 之後

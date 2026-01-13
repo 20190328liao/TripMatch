@@ -11,7 +11,8 @@ public class ApplicationUser : IdentityUser<int>
     public string? BackupEmail { get; set; }
     public string? Avatar { get; set; }
     public bool BackupEmailConfirmed { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; }
+
 }
 
 public class AppUserClaims : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<int>>

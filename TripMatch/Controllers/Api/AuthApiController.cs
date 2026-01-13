@@ -49,7 +49,7 @@ namespace TripMatch.Controllers.Api
             _emailSender = emailSender;
             _dbContext = dbContext;
         }
-
+       
         [HttpGet("GetLockedRanges")]
         [Authorize]
         public async Task<IActionResult> GetLockedRanges(int? userId)
@@ -524,61 +524,6 @@ namespace TripMatch.Controllers.Api
         }
 
 
-        [HttpPost("ChangePassword")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
-        {
-            if (model == null) return BadRequest(new { success = false, message = "無效的請求資料。" });
-            if (string.IsNullOrWhiteSpace(model.OldPassword) ||
-                string.IsNullOrWhiteSpace(model.NewPassword) ||
-                string.IsNullOrWhiteSpace(model.ConfirmPassword))
-            {
-                return BadRequest(new { success = false, message = "所有欄位都是必填的。" });
-            }
-            if (model.NewPassword != model.ConfirmPassword)
-            {
-                return BadRequest(new { success = false, message = "新密碼與確認密碼不符。" });
-            }
-            //格式驗證同前端
-            var pwdCheck = ValidatePasswordRules(model.NewPassword);
-            if (!pwdCheck.IsValid)
-            {
-                return BadRequest(new { success = false, message = "密碼格式不符：" + pwdCheck.Message, missingRules = pwdCheck.MissingRules });
-            }
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { success = false, message = "找不到使用者。" });
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound(new { success = false, message = "找不到使用者。" });
-
-            //第三方登入回傳提示
-            if (!await _userManager.HasPasswordAsync(user))
-            {
-                return Conflict(new { action = "external", message = "請前往 google 重設密碼流程。" });
-            }
-            var changeResult = await _userManager.ChangePasswordAsync(user, model.OldPassword!, model.NewPassword!);
-            if (!changeResult.Succeeded)
-            {
-                var errors = changeResult.Errors.Select(e => e.Description).ToArray();
-                return BadRequest(new { success = false, message = errors.FirstOrDefault() ?? "密碼修改失敗。", errors });
-            }
-
-            //安全性
-            await _signInManager.RefreshSignInAsync(user);
-            var newToken = _authService.GenerateJwtToken(user);
-            _authService.SetAuthCookie(HttpContext, newToken);
-
-            HttpContext.Session.Remove("PasswordResetUserId");
-            HttpContext.Session.Remove("PasswordResetCode");
-            HttpContext.Session.Remove("PasswordResetTime");
-            Response.Cookies.Delete("PendingEmail");
-
-            return Ok(new { success = true, message = "密碼已更新。" });
-
-        }
 
 
         private static Task<bool> IsValidImageAsync(IFormFile file)
