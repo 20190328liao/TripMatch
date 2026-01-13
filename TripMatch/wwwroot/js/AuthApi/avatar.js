@@ -1,8 +1,8 @@
-// ¥[§Ö avatar Åã¥Ü¡GÀu¥ı±q JWT cookie / localStorage §Ö¨ú¨ú¥X¥ß§YÅã¥Ü¡A­I´º«D¦P¨B¦A¦V API ÅçÃÒ§ó·s
+ï»¿// åŠ å¿« avatar é¡¯ç¤ºï¼šå„ªå…ˆå¾ JWT cookie / localStorage å¿«å–å–å‡ºç«‹å³é¡¯ç¤ºï¼ŒèƒŒæ™¯éåŒæ­¥å†å‘ API é©—è­‰æ›´æ–°
 (function () {
     const CACHE_KEY = 'tm_avatar';
-    const CACHE_TTL_MS = 60 * 60 * 1000; // §Ö¨ú 1 ¤p®É
-    const FETCH_TIMEOUT_MS = 2000; // API µ¥«İ¤W­­ 2s
+    const CACHE_TTL_MS = 60 * 60 * 1000; // å¿«å– 1 å°æ™‚
+    const FETCH_TIMEOUT_MS = 2000; // API ç­‰å¾…ä¸Šé™ 2s
 
     function getCookie(name) {
         const match = document.cookie.match(new RegExp('(^|;\\s*)' + name.replace(/([.*+?^=!:${}()|[\]\\/\\])/g, '\\$1') + '=([^;]*)'));
@@ -51,7 +51,7 @@
             setImgSrcSafe(document.getElementById('navAvatar'), url);
             setImgSrcSafe(document.getElementById('memberAvatar'), url);
         }).catch(() => {
-            // ­Y preload ¥¢±Ñ¡A¤£°µ¥ô¦ó¨Æ¡]«O¯d¹w³]¡^
+            // è‹¥ preload å¤±æ•—ï¼Œä¸åšä»»ä½•äº‹ï¼ˆä¿ç•™é è¨­ï¼‰
         });
     }
 
@@ -86,12 +86,12 @@
         } catch { /* ignore */ }
     }
 
-    // fetch wrapper¡G¹w³]±a¤W credentials¡A¨Ã¤ä´© timeout
+    // fetch wrapperï¼šé è¨­å¸¶ä¸Š credentialsï¼Œä¸¦æ”¯æ´ timeout
     async function fetchWithTimeout(url, options = {}, timeout = 5000) {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
 
-        // ½T«O·|Äâ±a cookie¡]¥]§t cross-origin ©Î¤£¦P port ªº±¡ªp¡^
+        // ç¢ºä¿æœƒæ”œå¸¶ cookieï¼ˆåŒ…å« cross-origin æˆ–ä¸åŒ port çš„æƒ…æ³ï¼‰
         options = {
             credentials: 'include',
             signal: controller.signal,
@@ -106,9 +106,9 @@
         }
     }
 
-    // ª½±µ¦V API ½Ğ¨D·|­û¸ê®Æ¡]­Y­¶­±¤W¨S¦³ avatar ¤¸¯À«h¤£©I¥s¡^
+    // ç›´æ¥å‘ API è«‹æ±‚æœƒå“¡è³‡æ–™ï¼ˆè‹¥é é¢ä¸Šæ²’æœ‰ avatar å…ƒç´ å‰‡ä¸å‘¼å«ï¼‰
     async function fetchProfile() {
-        // ¦pªG­¶­±¨S¦³¥ô¦ó avatar img ¤¸¯À¡A¸õ¹L©I¥s¥HÁ×§K¤£¥²­nªº 401
+        // å¦‚æœé é¢æ²’æœ‰ä»»ä½• avatar img å…ƒç´ ï¼Œè·³éå‘¼å«ä»¥é¿å…ä¸å¿…è¦çš„ 401
         if (!document.getElementById('navAvatar') && !document.getElementById('memberAvatar')) {
             return null;
         }
@@ -116,7 +116,7 @@
         try {
             const res = await fetchWithTimeout('/api/auth/GetMemberProfile', {}, FETCH_TIMEOUT_MS);
             if (!res) return null;
-            if (res.status === 401) return null; // ¥¼±ÂÅv¡GÀRÀq³B²z
+            if (res.status === 401) return null; // æœªæˆæ¬Šï¼šéœé»˜è™•ç†
             if (!res.ok) return null;
             const data = await res.json();
             return data?.avatar ?? null;
@@ -126,7 +126,7 @@
     }
 
     async function init() {
-        // 0. ¥ß¨èÅã¥Ü¡GÀu¥ı±q JWT ªº avatar claim¡]­Y¥iÅª¡^¡A§_«h±q localStorage §Ö¨ú¡]³Ì§Ö¡^
+        // 0. ç«‹åˆ»é¡¯ç¤ºï¼šå„ªå…ˆå¾ JWT çš„ avatar claimï¼ˆè‹¥å¯è®€ï¼‰ï¼Œå¦å‰‡å¾ localStorage å¿«å–ï¼ˆæœ€å¿«ï¼‰
         const token = getCookie('AuthToken') ?? getCookie('authToken') ?? getCookie('Auth');
         if (token) {
             const payload = parseJwt(token);
@@ -141,17 +141,17 @@
             setAvatars(cached);
         }
 
-        // ­I´º¹Á¸Õ©I¥s API ¥H¨ú±o³Ì·s avatar¡]­«­n¡G¤£­n¥H¬O§_¯àÅª cookie §@¬°¬O§_©I¥s API ªº±ø¥ó¡A
-        // ¦]¬° AuthToken cookie ¦b¦øªA¾¹ºİ³q±`¬° HttpOnly¡Aclient Åª¤£¨ì¦ı fetch ¤´¥i±a cookie¡^
+        // èƒŒæ™¯å˜—è©¦å‘¼å« API ä»¥å–å¾—æœ€æ–° avatarï¼ˆé‡è¦ï¼šä¸è¦ä»¥æ˜¯å¦èƒ½è®€ cookie ä½œç‚ºæ˜¯å¦å‘¼å« API çš„æ¢ä»¶ï¼Œ
+        // å› ç‚º AuthToken cookie åœ¨ä¼ºæœå™¨ç«¯é€šå¸¸ç‚º HttpOnlyï¼Œclient è®€ä¸åˆ°ä½† fetch ä»å¯å¸¶ cookieï¼‰
         fetchProfile().then(apiAvatar => {
             if (apiAvatar && apiAvatar.length > 0) {
-                // ­Y©|¥¼Åã¥Ü©Î»P²{¦³¤£¦P¡A§ó·s¨Ã§Ö¨ú
+                // è‹¥å°šæœªé¡¯ç¤ºæˆ–èˆ‡ç¾æœ‰ä¸åŒï¼Œæ›´æ–°ä¸¦å¿«å–
                 if (apiAvatar !== cached) {
                     setAvatars(apiAvatar);
                     writeCache(apiAvatar);
                 }
             }
-        }).catch(() => { /* ©¿²¤­I´º¿ù»~ */ });
+        }).catch(() => { /* å¿½ç•¥èƒŒæ™¯éŒ¯èª¤ */ });
     }
 
     if (document.readyState === 'loading') {

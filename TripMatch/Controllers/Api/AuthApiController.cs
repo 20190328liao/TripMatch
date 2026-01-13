@@ -26,7 +26,8 @@ namespace TripMatch.Controllers.Api
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly TravelDbContext _dbContext;
         private readonly ITagUserId _tagUserId;
-        //private readonly IMemoryCache _cache;
+
+        private readonly ILogger<AuthApiController> _logger;
 
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
@@ -39,13 +40,14 @@ namespace TripMatch.Controllers.Api
 
 
         public AuthApiController(
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager,
-            AuthService authService,
-            IEmailSender<ApplicationUser> emailSender,
-           TravelDbContext dbContext,
-           ITagUserId tagUserId
-           )
+     SignInManager<ApplicationUser> signInManager,
+     UserManager<ApplicationUser> userManager,
+     AuthService authService,
+     IEmailSender<ApplicationUser> emailSender,
+     TravelDbContext dbContext,
+     ITagUserId tagUserId,
+     ILogger<AuthApiController> logger
+     )
         {
             _signInManager = signInManager;
             _userManager = userManager;
@@ -53,8 +55,9 @@ namespace TripMatch.Controllers.Api
             _emailSender = emailSender;
             _dbContext = dbContext;
             _tagUserId = tagUserId;
+            _logger = logger;
         }
-       
+
 
 
         [HttpGet("GetLockedRanges")]
@@ -1027,11 +1030,14 @@ namespace TripMatch.Controllers.Api
                 HttpContext.Session.SetString("BackupLookupUserId", user.Id.ToString());
                 HttpContext.Session.SetString("BackupLookupTime", DateTime.UtcNow.ToString("O"));
 
+                _logger?.LogInformation("ConfirmBackupLookup: set BackupLookupUserId={UserId}", user.Id);
+
                 // 轉回前端 ForgotEmail 頁面（前端會辨識 query string 並取結果）
                 return Redirect($"{Url.Action("ForgotEmail", "Auth")}?backupVerified=1");
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "ConfirmBackupLookup failed for userId={UserId}", userId);
                 return BadRequest("驗證處理失敗");
             }
         }
@@ -1040,143 +1046,89 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> GetBackupLookupResult()
         {
             var userId = HttpContext.Session.GetString("BackupLookupUserId");
-            if (string.IsNullOrEmpty(userId)) return BadRequest(new { message = "沒有驗證紀錄" });
+            _logger?.LogInformation("GetBackupLookupResult: session BackupLookupUserId={UserId}", userId);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                // 改為不回 400，而是回 200 + verified=false，讓前端可以用統一流程處理（不當作錯誤）
+                _logger?.LogInformation("GetBackupLookupResult: no BackupLookupUserId in session");
+                return Ok(new { verified = false, message = "沒有驗證紀錄" });
+            }
 
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return BadRequest(new { message = "使用者不存在" });
+            if (user == null)
+            {
+                _logger?.LogWarning("GetBackupLookupResult: user not found for BackupLookupUserId={UserId}", userId);
+                return Ok(new { verified = false, message = "使用者不存在" });
+            }
+
+            _logger?.LogInformation("GetBackupLookupResult: returning userId={UserId}, email={Email}", user.Id, user.Email);
 
             return Ok(new
             {
+                verified = true,
                 userId = user.Id,
                 email = user.Email
             });
         }
 
-        [HttpPost("UpdateFullName")]
-        [Authorize]
-        public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel model)
+        [HttpPost("ClearBackupLookupSession")]
+        public IActionResult ClearBackupLookupSession()
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.FullName))
-                return BadRequest(new { message = "名稱不能為空" });
-
-            var name = model.FullName.Trim();
-
-            if (name.Length > 25)
-                return BadRequest(new { message = "名稱長度不能超過25字" });
-
-            if (!IsValidNameCharacters(name))
-                return BadRequest(new { message = "名稱只能包含中文或英文及空格" });
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
-                return Unauthorized();
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-                return NotFound(new { message = "使用者不存在" });
-
-            user.FullName = EncodeFullNameIfNeeded(name);
-            var result = await _userManager.UpdateAsync(user);
-
-            if (result.Succeeded)
-                return Ok(new { success = true, message = "名稱更新成功", fullName = name });
-
-            return BadRequest(new { message = "更新失敗", errors = result.Errors });
-        }
-
-        // Helper：若包含非 ASCII（如中文），以 Base64(UTF8) 存入並加上標記 "B64:"
-        private static string EncodeFullNameIfNeeded(string name)
-        {
-            if (string.IsNullOrEmpty(name)) return string.Empty;
-            foreach (var c in name)
+            try
             {
-                if (c > 127)
-                {
-                    var bytes = Encoding.UTF8.GetBytes(name);
-                    return "B64:" + Convert.ToBase64String(bytes);
-                }
+                HttpContext.Session.Remove("BackupLookupUserId");
+                HttpContext.Session.Remove("BackupLookupTime");
+
+                // 同時清除與重設密碼流程有關的 Session（避免遺留）
+                HttpContext.Session.Remove("PasswordResetUserId");
+                HttpContext.Session.Remove("PasswordResetCode");
+                HttpContext.Session.Remove("PasswordResetTime");
+
+                _logger?.LogInformation("ClearBackupLookupSession: cleared backup & password reset session keys");
+                return Ok(new { message = "驗證狀態已清除" });
             }
-            return name;
-        }
-
-        // Helper：解碼若為 Base64 標記，否則原樣回傳
-        private static string DecodeFullNameIfNeeded(string stored)
-        {
-            if (string.IsNullOrEmpty(stored)) return string.Empty;
-            if (stored.StartsWith("B64:", StringComparison.Ordinal))
+            catch (Exception ex)
             {
-                try
-                {
-                    var b = Convert.FromBase64String(stored.Substring(4));
-                    return Encoding.UTF8.GetString(b);
-                }
-                catch
-                {
-                    return stored;
-                }
+                _logger?.LogError(ex, "ClearBackupLookupSession failed");
+                return StatusCode(500, new { message = "清除驗證狀態失敗" });
             }
-            return stored;
         }
 
-        // Helper：驗證名稱字元，允許英文字母、空白與常用漢字
-        private static bool IsValidNameCharacters(string s)
+        private static string DecodeFullNameIfNeeded(string? fullName)
         {
-            if (string.IsNullOrEmpty(s)) return false;
-            foreach (var ch in s)
+            // 假設 FullName 可能是 URL 編碼（如 %E4%B8%AD%E6%96%87），否則直接回傳原值
+            if (string.IsNullOrEmpty(fullName))
+                return string.Empty;
+
+            try
             {
-                if (char.IsWhiteSpace(ch)) continue;
-                if (ch >= 'A' && ch <= 'Z') continue;
-                if (ch >= 'a' && ch <= 'z') continue;
-                if (ch >= 0x4E00 && ch <= 0x9FFF) continue; // 常用漢字區
-                return false;
+                // 嘗試解碼（如 System.Net.WebUtility.UrlDecode）
+                return System.Net.WebUtility.UrlDecode(fullName);
             }
-            return true;
-        }
-
-        public class UpdateFullNameModel
-        {
-            public string? FullName { get; set; }
-        }
-
-        [HttpGet("Wishlist")]
-        [Authorize]
-        public async Task<IActionResult> Wishlist()
-        {
-            int userId;
-            if (_tagUserId?.UserId is int tid && tid != 0) userId = tid;
-            else
+            catch
             {
-                var userClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userClaim) || !int.TryParse(userClaim, out userId))
-                    return Unauthorized();
+                // 解碼失敗則回傳原值
+                return fullName;
             }
+        }
 
-            var rawData = await (from w in _dbContext.Wishlists.AsNoTracking()
-                         join p in _dbContext.PlacesSnapshots.AsNoTracking()
-                             on w.SpotId equals p.SpotId into gj
-                         from p in gj.DefaultIfEmpty()
-                         where w.UserId == userId
-                         orderby w.CreatedAt descending
-                         select new
-                         {
-                             w.WishlistItemId,
-                             w.SpotId,
-                             w.CreatedAt,
-                             p.NameZh,
-                             p.NameEn,
-                             p.PhotosSnapshot
-                         }).ToListAsync();
+        private static string EncodeFullNameIfNeeded(string fullName)
+        {
+            // 假設 FullName 可能包含非 ASCII 字元，進行 URL 編碼
+            if (string.IsNullOrEmpty(fullName))
+                return string.Empty;
 
-            var items = rawData.Select(obj => new
+            try
             {
-                spotId = obj.SpotId,
-                wishlistItemId = obj.WishlistItemId,
-                createdAt = obj.CreatedAt,
-                spotTitle = string.IsNullOrEmpty(obj.NameZh) ? obj.NameEn : obj.NameZh,
-                imageUrl = ParseFirstPhotoFromSnapshot(obj.PhotosSnapshot) ?? "/img/placeholder.png"
-            }).ToList();
-
-            return Ok(new { items });
+                // 使用 System.Net.WebUtility.UrlEncode 進行編碼
+                return System.Net.WebUtility.UrlEncode(fullName);
+            }
+            catch
+            {
+                // 編碼失敗則回傳原值
+                return fullName;
+            }
         }
     }
 }
