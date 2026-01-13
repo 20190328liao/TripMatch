@@ -5,8 +5,7 @@ using TripMatch.Models;
 using TripMatch.Services;
 using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
-
-
+using System.Security.Claims;
 
 namespace TripMatch
 {
@@ -139,6 +138,18 @@ namespace TripMatch
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            // --- 在 request pipeline 加一個簡單 middleware，將 Claim 的 UserId 寫入 accessor
+            app.Use(async (context, next) =>
+            {
+                var accessor = context.RequestServices.GetRequiredService<ITagUserId>();
+                var idClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(idClaim, out var id))
+                {
+                    accessor.Set(id);
+                }
+                await next();
+            });
 
             app.Run();
 

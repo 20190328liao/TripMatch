@@ -8,6 +8,7 @@ using TripMatch.Services;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.DataProtection;
+using TripMatch.Data; // 新增：注入 ApplicationDbContext
 
 namespace TripMatch.Controllers.Api
 {
@@ -24,6 +25,8 @@ namespace TripMatch.Controllers.Api
         private readonly UrlEncoder _urlEncoder;
         private readonly IDataProtector _backupEmailProtector;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        // 新增私有欄位：ApplicationDbContext
+        private readonly ApplicationDbContext _appDbContext;
 
         public MemberCenterApiController(
     TravelDbContext dbContext,
@@ -34,7 +37,8 @@ namespace TripMatch.Controllers.Api
     IEmailSender<ApplicationUser> emailSender, // 這裡加上 <ApplicationUser>
     UrlEncoder urlEncoder,
     IDataProtectionProvider dataProtectionProvider,
-    SignInManager<ApplicationUser> signInManager)
+    SignInManager<ApplicationUser> signInManager,
+    ApplicationDbContext appDbContext) // 新增注入
         {
             _dbContext = dbContext;
             _configuration = configuration;
@@ -45,8 +49,13 @@ namespace TripMatch.Controllers.Api
             _urlEncoder = urlEncoder;
             _backupEmailProtector = dataProtectionProvider.CreateProtector("BackupEmailChange:v1");
             _signInManager = signInManager;
+            _appDbContext = appDbContext; // 設定
         }
-        public class RequestChangeEmailModel { public string NewEmail { get; set; } public string Type { get; set; } }
+        public class RequestChangeEmailModel
+        {
+            public string NewEmail { get; set; } = string.Empty;
+            public string Type { get; set; } = string.Empty;
+        }
 
         [HttpPost]
         public async Task<IActionResult> ResultChangeEmail([FromBody] RequestChangeEmailModel model)
@@ -114,7 +123,7 @@ namespace TripMatch.Controllers.Api
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> ConfirmChangeEmail(string userId, string token, string type, string newEmail = null)
+        public async Task<IActionResult> ConfirmChangeEmail(string? userId, string? token, string? type, string? newEmail = null)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token)) return BadRequest("參數不足");
             var user = await _userManager.FindByIdAsync(userId);
@@ -124,6 +133,10 @@ namespace TripMatch.Controllers.Api
 
             if (type == "primary")
             {
+                if (string.IsNullOrEmpty(newEmail))
+                {
+                    return BadRequest("缺少新信箱參數");
+                }
                 // 確認主信箱 change email token
                 var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
                 if (!result.Succeeded) return BadRequest("驗證失敗或已過期");
@@ -171,43 +184,48 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> DeleteAccount()
         {
             var user = await _userManager.GetUserAsync(User);
-            if(user == null) return Unauthorized(new { message = "找不到使用者"});
+            if (user == null) return Unauthorized(new { message = "找不到使用者" });
 
-            await using var tx = await _dbContext.Database.BeginTransactionAsync();
-            try {
+            try
+            {
                 var userId = user.Id;
-                // 使用 ExecuteDeleteAsync 可直接在 DB 層執行 DELETE，提高效能
-                await _dbContext.LeaveDates
-                    .Where(l => l.UserId == userId)
-                    .ExecuteDeleteAsync();
 
-                await _dbContext.Wishlists
-                    .Where(w => w.UserId == userId)
-                    .ExecuteDeleteAsync();
+                // 增加少量 timeout 容錯（長成本操作）
+                _dbContext.Database.SetCommandTimeout(60);
+                _appDbContext.Database.SetCommandTimeout(60);
 
-                await _dbContext.TripMembers
-                    .Where(tm => tm.UserId == userId)
-                    .ExecuteDeleteAsync();
+                // 先刪應用資料（使用 TravelDbContext）
+                await _dbContext.LeaveDates.Where(l => l.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Wishlists.Where(w => w.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.TripMembers.Where(tm => tm.UserId == userId).ExecuteDeleteAsync();
 
-                var result = await _userManager.DeleteAsync(user);
-                if (!result.Succeeded)
-                { 
-                    var err = result.Errors.FirstOrDefault()?.Description ?? "刪除失敗";
-                    await tx.RollbackAsync();
-                    _logger.LogWarning("DeleteAccount: Identity DeleteAsync 失敗, UserId={UserId}, Error={Error}", user.Id, err);
+                // 再用 ApplicationDbContext（同一個 Identity DbContext）在單一 transaction 中刪除 Identity 子表與使用者
+                await using (var tx = await _appDbContext.Database.BeginTransactionAsync())
+                {
+                    // 逐一刪除 Identity 關聯表，避免 EF 在刪除時產生複雜的 cascade/lock
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserTokens WHERE UserId = {userId};");
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserLogins WHERE UserId = {userId};");
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserClaims WHERE UserId = {userId};");
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserRoles WHERE UserId = {userId};");
 
-                    return StatusCode(500, new { message = err });
+                    // 最後刪除 AspNetUsers（單筆）
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUsers WHERE UserId = {userId};");
+
+                    await tx.CommitAsync();
                 }
-                await tx.CommitAsync();
 
+                // 清理 session / cookie
                 await _signInManager.SignOutAsync();
                 HttpContext.Session.Clear();
+                Response.Cookies.Delete("AuthToken");
                 Response.Cookies.Delete("AuthCookie");
                 Response.Cookies.Delete("PendingEmail");
 
-                var redirect = Url.Action("Signup","Auth");
-                return Ok(new{ message="帳號已刪除",redirect});
-            } catch (Exception ex) {
+                var redirect = Url.Action("Signup", "Auth");
+                return Ok(new { message = "帳號已刪除", redirect });
+            }
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "DeleteAccount 失敗，UserId={UserId}", user.Id);
                 return StatusCode(500, new { message = "刪除帳號時發生錯誤。" });
             }

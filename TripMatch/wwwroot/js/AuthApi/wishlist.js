@@ -1,113 +1,89 @@
 // 讀取使用者願望清單並在 member center 產生卡片
-(function () {
-    const containerSelector = '#wishlistCardsContainer';
-    const apiGet = window.Routes?.AuthApi?.GetWishlist ?? '/api/auth/Wishlist';
+document.addEventListener('DOMContentLoaded', () => {
+    const wishlistContainer = document.getElementById('wishlist_cards');
+
     const apiToggle = window.Routes?.AuthApi?.ToggleWishlist ?? '/api/auth/Wishlist/Toggle';
+    let undoTimers = {};
 
-    function createCard(item) {
-        // 如果 imageUrl 為 null 或為外部 placeholder，fallback 到本地假圖片
-        const imageUrlRaw = item.imageUrl || '';
-        const isPlaceholder = imageUrlRaw.toLowerCase().includes('placeholder');
-        const img = (!imageUrlRaw || isPlaceholder) ? '/img/placeholder.png' : imageUrlRaw;
-
-        // 如果後端回傳 tripId，導向 Trip/Edit/{tripId}；否則導向建立行程並帶 spotId
-        const viewMoreUrl = item.tripId ? `/Trip/Edit/${item.tripId}` : `/Trip/Create?spotId=${item.spotId}`;
-
-        return `
-        <div class="col">
-            <div class="wish_card" data-spotid="${item.spotId}" data-wishlistid="${item.wishlistItemId || ''}">
-                <div class="card_image">
-                    <img src="${img}" alt="${escapeHtml(item.spotTitle)}" class="img-fluid">
-                    <button type="button" class="wish_heart ${item.wishlistItemId ? 'active' : ''}" data-spotid="${item.spotId}">
-                        <i class="bi ${item.wishlistItemId ? 'bi-heart-fill' : 'bi-heart'}"></i>
-                    </button>
-                </div>
-                <div class="card_content">
-                    <h4 class="card_title">${escapeHtml(item.spotTitle)}</h4>
-                    <p class="card_date">${formatDate(item.createdAt)}</p>
-                    <div class="card_footer">
-                        <a class="view_more_link" href="${viewMoreUrl}">View more...</a>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-    }
-
-    function escapeHtml(s) {
-        if (!s) return '';
-        return String(s).replace(/[&<>"']/g, function (m) {
-            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-        });
-    }
-
-    function formatDate(dt) {
-        if (!dt) return '';
-        try {
-            const d = new Date(dt);
-            return d.toLocaleDateString();
-        } catch { return ''; }
-    }
-
-    async function load() {
-        try {
-            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
-            if (!res.ok) {
-                console.warn('GetWishlist 回傳非成功狀態', res.status);
-                return;
-            }
-            const data = await res.json();
-            // 如果 API 回傳物件包在 { items: [...] } 的話，取 items；否則直接使用回傳陣列
-            const items = data && data.items ? data.items : data;
-            render(items);
-        } catch (ex) {
-            console.error('載入願望清單失敗', ex);
-        }
-    }
-
-    function render(items) {
-        const $c = document.querySelector(containerSelector);
-        if (!$c) return;
-        if (!items || items.length === 0) {
-            $c.innerHTML = '<p class="text-muted">none WishList</p>';
-            return;
-        }
-        $c.innerHTML = items.map(createCard).join('');
-        bindEvents();
-    }
-
-    function bindEvents() {
-        document.querySelectorAll('.wish_heart').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const spotId = parseInt(btn.getAttribute('data-spotid'), 10);
-                if (!spotId) return;
-                try {
-                    const res = await fetch(apiToggle, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ SpotId: spotId })
-                    });
-                    if (!res.ok) {
-                        console.warn('ToggleWishlist 非成功回應', res.status);
-                    }
-                    // 重新載入列表簡單可靠
-                    load();
-                } catch (ex) {
-                    console.error('切換願望清單失敗', ex);
+    if (wishlistContainer) {
+        // 事件委派監聽點擊
+        wishlistContainer.addEventListener('click', async (e) => {
+            //View More 點擊
+            const viewMoreBtn = e.target.closest('.btn-view-more');
+            if(viewMoreBtn) {
+                const spotId = viewMoreBtn.getAttribute('data-id');
+                if (spotId) {
+                    window.location.href = `/Spot/Detail?id=${spotId}`;
                 }
-            });
+                return
+            }
+
+            //愛心取消收藏點擊
+            const heartBtn = e.target.closest('.wish_heart') || e.target.closest('.btn_remove_wish');
+            if(heartBtn) {
+                e.preventDefault();
+                const spotId = heartBtn.getAttribute('data-spotid');
+                if (!spotId) return;
+
+                // 1. 先執行視覺上的「假刪除」
+                cardCol.style.transition = 'all 0.4s ease';
+                cardCol.style.opacity = '0';
+                cardCol.style.pointerEvents = 'none'; // 防止重複點擊
+
+                // 2. 顯示 Undo 提示 (這裡使用簡單的自定義 UI 或 Alert)
+                showUndoToast(spotId, () => {
+                    // 如果點擊了復原 (Undo 回呼)
+                    cardCol.style.opacity = '1';
+                    cardCol.style.pointerEvents = 'auto';
+                    clearTimeout(undoTimers[spotId]); // 取消定時刪除
+                    delete undoTimers[spotId];
+                });
+
+                // 3. 設定 5 秒後真正執行 API
+                undoTimers[spotId] = setTimeout(async () => {
+                    try {
+                        const response = await fetch(apiToggle, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ spotId: parseInt(spotId) })
+                        });
+
+                        if (response.ok) {
+                            cardCol.remove(); // 真正移除 DOM
+                            checkEmpty();
+                        }
+                    } catch (error) {
+                        console.error('API Error:', error);
+                    }
+                    delete undoTimers[spotId];
+                }, 5000); // 5秒緩衝
+            }
         });
     }
 
-    // 初始化：在會員中心頁面載入時呼叫
-    document.addEventListener('DOMContentLoaded', () => {
-        // 只在有 container 的頁面執行
-        if (document.querySelector(containerSelector)) {
-            load();
+    //檢查清單
+    function checkEmpty() {
+        if (wishlistContainer.querySelectorAll('.col').length == 0) {
+            wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">清單已清空</p></div>';
         }
-    });
+    }
 
-    // 將 load 暴露給全域，方便其他按鈕（例如產生假資料後）重載願望清單
-    window.reloadWishlist = load;
-})();
+    //顯示 Undo 提示
+    function showUndoToast(spotId, onUndo) {
+        const toast = document.createElement('div');
+        toast.id = 'undo_toast_' + spotId;
+        toast.className = 'undo-toast';
+        toast.innerHTML = `
+        <span>已從清單移除</span>
+            <button class="btn btn-sm btn-warning ms-3" id="undo_btn_${spotId}">復原</button>
+        `;
+        document.body.appendChild(toast);
+        //綁定復原按鈕
+        document.getElementById(`undo_btn_${spotId}`).addEventListener('click', () => {
+            onUndo();
+            toast.remove();
+        });
+        //自動消失
+        setTimeout(() => { if (toast) toast.remove(); }, 5000);
+    }
+});

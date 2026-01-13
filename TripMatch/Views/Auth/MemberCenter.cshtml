@@ -44,12 +44,23 @@
             <div class="profile_info_section col-12 col-md-6">
                 <div class="info_row">
                     <div class="info_item mb-4">
-                        <label class="info_label"><i class="bi bi-square-fill text-success me-2"></i>帳號｜主要信箱</label>
+                        <label class="info_label"><i class="bi bi-square-fill text-success me-2"></i>帳號</label>
                         <div class="info_value d-flex align-items-center gap-2">
                             <span id="displayEmail">example@gmail.com</span>
                             <input id="inputEmail" type="email" class="form-control d-none" />
-                            <button id="btnResetEmail" class="btn btn_Gray p-0">換信箱重設帳戶</button>
+
                         </div>
+                      <div class="info_item mb-4">
+                        <label class="info_label name_label"><i class="bi bi-square-fill text-success me-2"></i>自訂名稱</label>
+                        <div class="info_value d-flex align-items-center gap-2">
+                            <span id="displayName">example</span>
+                            <input id="inputName" type="text" class="form-control d-none" />
+                            <button id="btnEditName" class="btn btn_link edit_link p-0">編輯</button>
+                            <button id="btnSaveName" class="btn btn_light btn-sm d-none">確認</button>
+                            <button id="btnCancelName" class="btn btn_light btn-sm d-none">取消</button>
+                        </div>
+                    </div>
+
                     </div>
                 </div>
 
@@ -64,10 +75,10 @@
                             <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
                         </div>
                     </div>
+                            <div id="emailHint" class="emailHint d-block "></div>
                     <div class="info_item">
-                        <label class="info_label"><i class="bi bi-square-fill text-warning me-2"></i>修改密碼</label>
                         <div>
-                            <a href="@Url.Action("ChangePassword", "Auth")" class="edit_link">前往修改</a>
+                            <a href="@Url.Action("ChangePassword", "Auth")" class="nfo_label edit_link">修改密碼</a>
                         </div>
                     </div>
                 </div>
@@ -155,28 +166,69 @@
     <!-- =============================================
          區塊三：願望清單
          ============================================= -->
-    <section class="member_section" id="wishlist_section">
-        <div class="section_header d-flex align-items-center justify-content-between">
-            <h2 class="titleWrap titleH2">願望清單</h2>
-            <div href="#" class="edit_cards_link"><i class="bi bi-pencil-square me-1"></i>點擊卡片編輯 ▼</div>
-        </div>
 
-        <div class="mb-3">
-            <button id="btnSeedWishlist" class="btn btn-sm btn-outline-primary"
-                    data-userid="@currentUserId" data-tripid="2">
-                生成假資料（User=@currentUserId, Trip=2）
-            </button>
-        </div>
 
         <!-- 願望清單卡片容器：由 wishlist.js 動態塞入 -->
-        <div class="wishlist_cards_container row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3"
-             id="wishlistCardsContainer"
-             aria-live="polite" role="region" aria-label="使用者願望清單">
-        </div>
+        @model IEnumerable<TripMatch.Models.Settings.WishlistCard>
+        @{
+            ViewData["Title"] = "會員中心";
+            // 確保 Model 即使為空也不會導致崩潰
+            var cards = Model ?? Enumerable.Empty<TripMatch.Models.Settings.WishlistCard>();
+        }
 
+        <section class="member_section" id="wishlist_section">
+            <div class="section_header d-flex align-items-center justify-content-between">
+                <h2 class="titleWrap titleH2">願望清單</h2>
+                <div class="edit_cards_link text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
+                </div>
+            </div>
+
+            <div class="wishlist_cards_container container mt-4" id="wishlistCardsContainer">
+                @* 修正 ID 命名，確保與 JS 一致 *@
+                <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                    @if (!cards.Any())
+                    {
+                        <div class="col-12 text-center py-5">
+                            <p class="text-muted">目前沒有願望清單，快去探索景點吧！</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var item in cards)
+                        {
+                            <div class="col">
+                                <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
+                                    @* 移除收藏按鈕 (愛心) *@
+                                    <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotID"
+                                            title="從清單移除"
+                                            style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:32px; height:32px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
+                                        <i class="bi bi-heart-fill"></i>
+                                    </button>
+
+                                    <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
+                                         style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+
+                                    <div class="card-body">
+                                        <h6 class="card-title text-truncate fw-bold mb-1">@item.Name_ZH</h6>
+                                        <p class="card-text small text-muted">景點編號: #@item.SpotID</p>
+                                    </div>
+
+                                    <div class="card-footer bg-transparent border-0 pb-3">
+                                        <button class="btn btn-primary w-100 btn-view-more" data-id="@item.SpotID">
+                                            View More
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </section>
         @* 全域的 View more 連結移除（每張卡片會由前端產生其 own View more） *@
-    </section>
 
+    <button id="btnResetEmail" class="btn btn_Gray p-0">重設帳戶</button>
 </div>
 <a href="@Url.Action("Index", "Home")" class="back-home-link">
     回到首頁
@@ -193,40 +245,6 @@
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 
     <script>
-        // 生成假資料按鈕行為：呼叫 API /api/MemberCenterApi/SeedDummyWishlistForTrip
-        document.addEventListener('DOMContentLoaded', function () {
-            const btn = document.getElementById('btnSeedWishlist');
-            if (!btn) return;
-            btn.addEventListener('click', async function () {
-                const userId = parseInt(btn.getAttribute('data-userid'), 10) || 0;
-                const tripId = parseInt(btn.getAttribute('data-tripid'), 10) || 0;
-                if (!userId || !tripId) { alert('缺少 userId 或 tripId'); return; }
-                if (!confirm(`確定為 user ${userId}、trip ${tripId} 產生假資料？`)) return;
-
-                try {
-                    const res = await fetch('/api/MemberCenterApi/SeedDummyWishlistForTrip', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: userId, tripId: tripId })
-                    });
-                    const json = await res.json();
-                    if (res.ok) {
-                        alert('已建立假資料，將重新載入願望清單');
-                        if (window.reloadWishlist) {
-                            window.reloadWishlist();
-                        } else {
-                            location.reload();
-                        }
-                    } else {
-                        alert('建立假資料失敗：' + (json?.message ?? JSON.stringify(json)));
-                    }
-                } catch (ex) {
-                    console.error('SeedDummyWishlistForTrip failed', ex);
-                    alert('建立假資料時發生例外，請查看 console');
-                }
-            });
-        });
     </script>
 }
 

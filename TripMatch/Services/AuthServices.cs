@@ -224,9 +224,9 @@ namespace TripMatch.Services
                 return (userManager, jwtSettings, key, creds);
             }
 
+            // 修改：在產生 JWT 時一併加入 NameIdentifier，並在 SetAuthCookie 前刪除既有的 Cookie
             public string GenerateJwtToken(ApplicationUser user)
             {
-
                 ArgumentNullException.ThrowIfNull(user);
 
                 var settings = _jwtSettings.Value ?? throw new InvalidOperationException("JwtSettings 尚未設定 (IOptions<JwtSettings>.Value 為 null)。");
@@ -234,13 +234,13 @@ namespace TripMatch.Services
                 var claims = new List<Claim>
                 {
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // ← 新增：明確加入 NameIdentifier
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
                     new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                    new Claim("Avatar", user.Avatar ?? "") //不用常常查資料庫，直接放在 JWT 裡
+                    new Claim("Avatar", user.Avatar ?? "") // 不用常常查資料庫，直接放在 JWT 裡
                 };
 
-                // Use cached signing credentials to avoid per-request allocations
                 var descriptor = new SecurityTokenDescriptor
                 {
                     Issuer = settings.Issuer,
@@ -255,7 +255,6 @@ namespace TripMatch.Services
                 return handler.CreateToken(descriptor);
             }
 
-            //使用者點擊連結，瀏覽器記住 Email，跳轉回註冊頁時自動帶入顯示已驗證。
             public void SetPendingCookie(HttpContext context, string? email)
             {
                 if (string.IsNullOrEmpty(email)) return;
@@ -272,12 +271,15 @@ namespace TripMatch.Services
 
             public void SetAuthCookie(HttpContext context, string token)
             {
+                // 先移除舊的 AuthToken（避免覆蓋失敗或殘留舊 token）
+                try { context.Response.Cookies.Delete("AuthToken"); } catch { /* 忽略 */ }
+
                 context.Response.Cookies.Append("AuthToken", token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = false, // 正式環境請改 true
                     SameSite = SameSiteMode.Lax,
-                    Path = "/",                // ← 加上這行
+                    Path = "/",                // ← 確保 cookie 在整個站點可用
                     Expires = DateTime.UtcNow.AddDays(30)
                 }
                 );

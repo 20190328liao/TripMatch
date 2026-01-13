@@ -2,12 +2,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
-using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
-using TripMatch.Data;
+
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
@@ -25,6 +23,7 @@ namespace TripMatch.Controllers.Api
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly TravelDbContext _dbContext;
+        private readonly ITagUserId _tagUserId;
 
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
@@ -41,15 +40,20 @@ namespace TripMatch.Controllers.Api
             UserManager<ApplicationUser> userManager,
             AuthService authService,
             IEmailSender<ApplicationUser> emailSender,
-           TravelDbContext dbContext)
+           TravelDbContext dbContext,
+           ITagUserId tagUserId
+           )
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _authService = authService;
             _emailSender = emailSender;
             _dbContext = dbContext;
+            _tagUserId = tagUserId;
         }
        
+
+
         [HttpGet("GetLockedRanges")]
         [Authorize]
         public async Task<IActionResult> GetLockedRanges(int? userId)
@@ -113,19 +117,25 @@ namespace TripMatch.Controllers.Api
                 return BadRequest(new { success = false, message = "輸入資料格式錯誤" });
             }
 
-            var user = await _userManager.FindByEmailAsync(data.Email!);
-            if (user == null)
-            {
-                return Unauthorized(new { success = false, message = "帳號或密碼錯誤" });
-            }
+            // Optimize: avoid an extra user lookup on the successful login path.
+            // Call PasswordSignInAsync using the email first (SignInManager will lookup internally).
+            var result = await _signInManager.PasswordSignInAsync(data.Email!, data.Password!, isPersistent: false, lockoutOnFailure: true);
 
-            var result = await _signInManager.PasswordSignInAsync(user, data.Password!, isPersistent: false, lockoutOnFailure: true);
+            ApplicationUser? user = null; // 修正：宣告 user 變數
 
             if (result.Succeeded)
             {
-                var token = _authService.GenerateJwtToken(user);
-                _authService.SetAuthCookie(HttpContext, token);
-                _authService.SetPendingCookie(HttpContext, user.Email);
+                // Only fetch the user after a successful sign-in to reduce DB calls on the hot path.
+                user = await _userManager.FindByEmailAsync(data.Email!);
+                if (user != null)
+                {
+                    // 先刪除既有 AuthToken，確保不會混用別人的舊 token
+                    try { Response.Cookies.Delete("AuthToken"); } catch { /* 忽略 */ }
+
+                    var token = _authService.GenerateJwtToken(user);
+                    _authService.SetAuthCookie(HttpContext, token);
+                    _authService.SetPendingCookie(HttpContext, user.Email);
+                }
 
                 return Ok(new
                 {
@@ -135,12 +145,18 @@ namespace TripMatch.Controllers.Api
                 });
             }
 
+            // 修正：在這裡取得 user 物件，避免 user 未宣告
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(data.Email!);
+            }
+
             if (result.IsLockedOut)
             {
                 return StatusCode(423, new { success = false, message = "帳號已被鎖定，請稍後再試。" });
             }
 
-            var accessFailedCount = await _userManager.GetAccessFailedCountAsync(user);
+            var accessFailedCount = user != null ? await _userManager.GetAccessFailedCountAsync(user) : 0;
             var remainingAttempts = 5 - accessFailedCount;
 
             return BadRequest(new { success = false, message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
@@ -591,32 +607,56 @@ namespace TripMatch.Controllers.Api
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
-            {
                 return NotFound(new { success = false, message = "找不到使用者" });
-            }
 
-            var user = await _dbContext.AspNetUsers
+            var userRecord = await _dbContext.AspNetUsers
                 .AsNoTracking()
                 .Where(u => u.UserId == intUserId)
                 .Select(u => new
                 {
                     u.Email,
                     u.BackupEmail,
-                    Avatar = u.Avatar
+                    Avatar = u.Avatar,
+                    FullName = u.FullName
                 })
                 .FirstOrDefaultAsync();
 
-            if (user == null)
-            {
+            if (userRecord == null)
                 return NotFound(new { success = false, message = "找不到使用者" });
+
+            string fullNameToReturn;
+            if (string.IsNullOrWhiteSpace(userRecord.FullName))
+            {
+                // DB 無值：用 Email @ 前段當預設，並嘗試寫回（寫回時處理中文編碼）
+                var defaultName = (userRecord.Email ?? "").Split('@').FirstOrDefault() ?? "未設定";
+                fullNameToReturn = defaultName;
+
+                try
+                {
+                    var userEntity = await _userManager.FindByIdAsync(userId);
+                    if (userEntity != null && string.IsNullOrWhiteSpace(userEntity.FullName))
+                    {
+                        userEntity.FullName = EncodeFullNameIfNeeded(defaultName);
+                        await _userManager.UpdateAsync(userEntity);
+                    }
+                }
+                catch
+                {
+                    // 寫回失敗不影響回傳
+                }
+            }
+            else
+            {
+                fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
             }
 
             return Ok(new
             {
                 success = true,
-                email = user.Email,
-                backupEmail = user.BackupEmail,
-                avatar = user.Avatar
+                email = userRecord.Email,
+                backupEmail = userRecord.BackupEmail,
+                avatar = userRecord.Avatar,
+                fullName = fullNameToReturn
             });
         }
 
@@ -884,94 +924,8 @@ namespace TripMatch.Controllers.Api
 
             return Ok(new { success = true });
         }
-        
 
-        [HttpGet("Wishlist")]
-        [Authorize]
-        public async Task<IActionResult> GetWishlist()
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
-                return Unauthorized();
 
-            var wishItems = await _dbContext.Wishlists
-                .AsNoTracking()
-                .Where(w => w.UserId == userId)
-                .Include(w => w.Spot)
-                .OrderByDescending(w => w.CreatedAt)
-                .Select(w => new
-                {
-                    w.WishlistItemId,
-                    w.SpotId,
-                    SpotNameZh = w.Spot.NameZh,
-                    SpotNameEn = w.Spot.NameEn,
-                    PhotosSnapshot = w.Spot.PhotosSnapshot,
-                    w.Note,
-                    w.CreatedAt
-                })
-                .ToListAsync();
-
-            var result = wishItems.Select(w =>
-            {
-                string? imageUrl = null;
-                if (!string.IsNullOrEmpty(w.PhotosSnapshot))
-                {
-                    imageUrl = ParseFirstPhotoFromSnapshot(w.PhotosSnapshot);
-                }
-
-                return new
-                {
-                    w.WishlistItemId,
-                    w.SpotId,
-                    SpotTitle = !string.IsNullOrEmpty(w.SpotNameZh) ? w.SpotNameZh :
-                                !string.IsNullOrEmpty(w.SpotNameEn) ? w.SpotNameEn : "未命名景點",
-                    ImageUrl = imageUrl ?? "/img/Logo/Part12.png",
-                    w.Note,
-                    w.CreatedAt
-                };
-            }).ToList();
-
-            return Ok(result);
-        }
-
-        [HttpPost("Wishlist/Toggle")]
-        [Authorize]
-        public async Task<IActionResult> ToggleWishlist([FromBody] ToggleWishlistModel model)
-        {
-            if (model == null || model.SpotId <= 0) return BadRequest(new { message = "參數錯誤" });
-
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
-                return Unauthorized();
-
-            var existing = await _dbContext.Wishlists.FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == model.SpotId);
-            if (existing != null)
-            {
-                _dbContext.Wishlists.Remove(existing);
-                await _dbContext.SaveChangesAsync();
-                return Ok(new { removed = true, wishlistItemId = existing.WishlistItemId });
-            }
-
-            var newItem = new Wishlist
-            {
-                UserId = userId,
-                SpotId = model.SpotId,
-                Note = model.Note,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-
-            _dbContext.Wishlists.Add(newItem);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new { added = true, wishlistItemId = newItem.WishlistItemId });
-        }
-
-        public class ToggleWishlistModel
-        {
-            public int SpotId { get; set; }
-            public string? Note { get; set; }
-        }
 
         private static string? ParseFirstPhotoFromSnapshot(string photosSnapshot)
         {
@@ -1094,5 +1048,132 @@ namespace TripMatch.Controllers.Api
                 email = user.Email
             });
         }
+
+        [HttpPost("UpdateFullName")]
+        [Authorize]
+        public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.FullName))
+                return BadRequest(new { message = "名稱不能為空" });
+
+            var name = model.FullName.Trim();
+
+            if (name.Length > 25)
+                return BadRequest(new { message = "名稱長度不能超過25字" });
+
+            if (!IsValidNameCharacters(name))
+                return BadRequest(new { message = "名稱只能包含中文或英文及空格" });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+                return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(new { message = "使用者不存在" });
+
+            user.FullName = EncodeFullNameIfNeeded(name);
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+                return Ok(new { success = true, message = "名稱更新成功", fullName = name });
+
+            return BadRequest(new { message = "更新失敗", errors = result.Errors });
+        }
+
+        // Helper：若包含非 ASCII（如中文），以 Base64(UTF8) 存入並加上標記 "B64:"
+        private static string EncodeFullNameIfNeeded(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return string.Empty;
+            foreach (var c in name)
+            {
+                if (c > 127)
+                {
+                    var bytes = Encoding.UTF8.GetBytes(name);
+                    return "B64:" + Convert.ToBase64String(bytes);
+                }
+            }
+            return name;
+        }
+
+        // Helper：解碼若為 Base64 標記，否則原樣回傳
+        private static string DecodeFullNameIfNeeded(string stored)
+        {
+            if (string.IsNullOrEmpty(stored)) return string.Empty;
+            if (stored.StartsWith("B64:", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var b = Convert.FromBase64String(stored.Substring(4));
+                    return Encoding.UTF8.GetString(b);
+                }
+                catch
+                {
+                    return stored;
+                }
+            }
+            return stored;
+        }
+
+        // Helper：驗證名稱字元，允許英文字母、空白與常用漢字
+        private static bool IsValidNameCharacters(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            foreach (var ch in s)
+            {
+                if (char.IsWhiteSpace(ch)) continue;
+                if (ch >= 'A' && ch <= 'Z') continue;
+                if (ch >= 'a' && ch <= 'z') continue;
+                if (ch >= 0x4E00 && ch <= 0x9FFF) continue; // 常用漢字區
+                return false;
+            }
+            return true;
+        }
+
+        public class UpdateFullNameModel
+        {
+            public string? FullName { get; set; }
+        }
+
+        [HttpGet("Wishlist")]
+        [Authorize]
+        public async Task<IActionResult> Wishlist()
+        {
+            int userId;
+            if (_tagUserId?.UserId is int tid && tid != 0) userId = tid;
+            else
+            {
+                var userClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userClaim) || !int.TryParse(userClaim, out userId))
+                    return Unauthorized();
+            }
+
+            var rawData = await (from w in _dbContext.Wishlists.AsNoTracking()
+                         join p in _dbContext.PlacesSnapshots.AsNoTracking()
+                             on w.SpotId equals p.SpotId into gj
+                         from p in gj.DefaultIfEmpty()
+                         where w.UserId == userId
+                         orderby w.CreatedAt descending
+                         select new
+                         {
+                             w.WishlistItemId,
+                             w.SpotId,
+                             w.CreatedAt,
+                             p.NameZh,
+                             p.NameEn,
+                             p.PhotosSnapshot
+                         }).ToListAsync();
+
+            var items = rawData.Select(obj => new
+            {
+                spotId = obj.SpotId,
+                wishlistItemId = obj.WishlistItemId,
+                createdAt = obj.CreatedAt,
+                spotTitle = string.IsNullOrEmpty(obj.NameZh) ? obj.NameEn : obj.NameZh,
+                imageUrl = ParseFirstPhotoFromSnapshot(obj.PhotosSnapshot) ?? "/img/placeholder.png"
+            }).ToList();
+
+            return Ok(new { items });
+        }
     }
-    }
+}
