@@ -45,10 +45,60 @@ namespace TripMatch.Services
             return tripDtos;
         }
 
+        public async Task<TripSimpleDto> GetTripSimple(int tripId)
+        {
+            TripSimpleDto tripSimpleDto = new();
+
+            var trip = await _context.Trips
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip != null)
+            {
+                tripSimpleDto.Id = trip.Id;
+                tripSimpleDto.Title = trip.Title;
+                tripSimpleDto.StartDate = trip.StartDate;
+                tripSimpleDto.EndDate = trip.EndDate;
+            }
+
+            return tripSimpleDto;
+        }
+
         public async Task<TripDetailDto> GetTripDetail(int tripId)
         {
             TripDetailDto tripDetailDto = new();
             //先取得行程基本資料 
+
+            // 只需一個 await，資料庫會執行一次 JOIN 查詢
+            var trip = await _context.Trips
+                .Include(t => t.ItineraryItems) // 一併抓出該行程的所有明細
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+                return tripDetailDto; // 回傳空的 DTO   
+
+            // 如果行程存在，我們直接從 trip 中提取並排序明細
+            // 這是在記憶體中進行的，非常快
+            var itineraryItems = trip.ItineraryItems
+                .OrderBy(item => item.DayNumber)
+                .ThenBy(item => item.SortOrder)
+                .ToList() ?? [];
+
+            // 填充行程景點資料
+            foreach (var item in itineraryItems)
+            {
+                if (item.SpotId == null)
+                    continue; // 跳過沒有景點快照的項目
+
+                ItineraryItemDto itemDto = new()
+                {
+                    SpotId = item.SpotId.Value,
+                    DayNumber = item.DayNumber,
+                    Start = item.StartTime ?? new TimeOnly(0, 0),
+                    End = item.EndTime ?? new TimeOnly(0, 0),
+                    SortOrder = item.SortOrder
+                };
+                tripDetailDto.ItineraryItems.Add(itemDto);
+            }
 
             return tripDetailDto;
 
@@ -77,7 +127,7 @@ namespace TripMatch.Services
             {
                 TripId = trip.Id,
                 UserId = userId is not null ? userId.Value : 0,
-                RoleType= 1, // Owner   
+                RoleType = 1, // Owner   
                 JoinedAt = DateTimeOffset.Now
             };
             _context.TripMembers.Add(tripMember);
@@ -167,38 +217,107 @@ namespace TripMatch.Services
 
         #region 景點快照與願望清單
 
-        public async Task<bool> TryAddPlaceSnapshot(PlaceSnapshotDto dto)
+        public async Task<int> TryAddPlaceSnapshot(PlaceSnapshotDto dto)
         {
-            bool isExist = await _context.PlacesSnapshots.AnyAsync(ps => ps.ExternalPlaceId == dto.ExternalPlaceId);
-            if (isExist == false)
+            // 1. 先嘗試找出該筆資料
+            var existingPlace = await _context.PlacesSnapshots
+                .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == dto.ExternalPlaceId);
+
+            // 2. 如果資料已存在，直接回傳 ID
+            if (existingPlace != null)
             {
-                PlacesSnapshot obj = new()
+                return existingPlace.SpotId;
+            }
+
+            PlacesSnapshot obj = new()
+            {
+                ExternalPlaceId = dto.ExternalPlaceId,
+                NameZh = dto.NameZh,
+                NameEn = dto.NameEn,
+                LocationCategoryId = _sharedService.GetLocationCategoryId(dto.LocationCategory),
+                AddressSnapshot = dto.Address,
+                Lat = dto.Lat,
+                Lng = dto.Lng,
+                Rating = dto.Rating,
+                UserRatingsTotal = dto.UserRatingsTotal,
+                PhotosSnapshot = JsonSerializer.Serialize(dto.PhotosSnapshot),
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now
+            };
+
+            try
+            {
+                _context.PlacesSnapshots.Add(obj);
+                await _context.SaveChangesAsync();
+                return obj.SpotId;
+            }
+            catch (DbUpdateException) // 3. 捕捉併發導致的唯一索引衝突
+            {
+                // 4. 當 SaveChanges 失敗，表示另一個請求剛好捷足先登寫入了
+                // 此時資料庫已經有這筆資料了，我們再次查詢並取回它的 ID
+                var reFetchedPlace = await _context.PlacesSnapshots
+                    .AsNoTracking() // 建議用 NoTracking，因為剛才 Add 失敗的物件可能還在追蹤中
+                    .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == dto.ExternalPlaceId);
+
+                return reFetchedPlace?.SpotId ?? -1;
+            }
+        }
+
+
+        public async Task<bool> IsInWishList(int? userId, int spotId)
+        {
+            if (userId == null)
+                return false;
+            var existing = await _context.Wishlists
+                .FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == spotId);
+            
+            if (existing != null)
+                return true;
+            else
+                return false;
+        }
+
+
+
+        public async Task<bool> UpdateWishList(int? userId, int spotId, bool AddToWishlist)
+        {
+            if (userId == null)
+                return false;
+
+            if (AddToWishlist)
+            {
+                // 檢查是否已存在
+                var existing = await _context.Wishlists
+                    .FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == spotId);
+                if (existing != null)
+                    return true;
+
+                Wishlist wishlist = new()
                 {
-                    ExternalPlaceId = dto.ExternalPlaceId,
-                    NameZh = dto.NameZh,
-                    NameEn = dto.NameEn,
-                    LocationCategoryId = _sharedService.GetLocationCategoryId(dto.LocationCategory),
-                    AddressSnapshot = dto.Address,
-                    Lat = dto.Lat,
-                    Lng = dto.Lng,
-                    Rating = dto.Rating,
-                    UserRatingsTotal = dto.UserRatingsTotal,
-                    PhotosSnapshot = JsonSerializer.Serialize(dto.PhotosSnapshot),
+                    UserId = (int)userId,
+                    SpotId = spotId,
+                    Note = "",
                     CreatedAt = DateTimeOffset.Now,
                     UpdatedAt = DateTimeOffset.Now
                 };
-
-                _context.PlacesSnapshots.Add(obj);
+                _context.Wishlists.Add(wishlist);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            return false;
+            else
+            {
+                var existing = await _context.Wishlists
+                    .FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == spotId);
+                if (existing != null)
+                {
+                    _context.Wishlists.Remove(existing);
+                    await _context.SaveChangesAsync();
+                }
+                return true;
+            }
         }
 
-        public async Task<bool> isPlaceInWishlist(int userID, string placeId)
-        {
-            return true;
-        }
+        
 
 
 

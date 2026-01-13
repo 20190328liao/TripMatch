@@ -6,44 +6,42 @@ namespace TripMatch.Models.DTOs
     public class TripSimpleDto
     {
         public int Id { get; set; }
-        public string Title { get; set; }= String.Empty;
+        public string Title { get; set; } = String.Empty;
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
+        public List<string> DateStrings
+        {
+            get
+            {
+                var dateList = new List<string>();
+                for (DateOnly date = StartDate; date <= EndDate; date = date.AddDays(1))
+                {
+                    dateList.Add(date.ToString("yyyy年MM月dd日"));
+                }
+                return dateList;
+            }
+        }
     }
 
     public class TripDetailDto
     {
-        public int Id { get; set; }
-        public string Title { get; set; }= String.Empty;
-        public DateOnly StartDate { get; set; }
-        public DateOnly EndDate { get; set; }
+        public TripSimpleDto TripInfo { get; set; } = new TripSimpleDto();
         public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
-
-        public List<string> GetDateString()
-        {
-            var dateList = new List<string>();
-
-            for (DateOnly date = StartDate; date <= EndDate; date = date.AddDays(1))
-            {
-                string formattedDate = date.ToString("yyyy年MM月dd日");
-                dateList.Add(formattedDate);
-            }
-
-            return dateList;
-        }
     }
 
     public class ItineraryItemDto
     {
-        public int SpotId { get; set; } 
+        public int SpotId { get; set; }
         public int DayNumber { get; set; }
-        public TimeOnly Start { get; set; } 
+        public TimeOnly Start { get; set; }
         public TimeOnly End { get; set; }
-        public int SortOrder { get; set; }  
-    }   
+        public int SortOrder { get; set; }
+    }
 
     public class TripCreateDto
     {
         public string Title { get; set; } = String.Empty;
-        public string[] PlaceIds { get; set; }= [];
+        public string[] PlaceIds { get; set; } = [];
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
     }
@@ -53,7 +51,7 @@ namespace TripMatch.Models.DTOs
         public string ExternalPlaceId { get; set; } = String.Empty;
         public string NameZh { get; set; } = String.Empty;
         public string NameEn { get; set; } = String.Empty;
-        public string LocationCategory { get; set; } = String.Empty;    
+        public string LocationCategory { get; set; } = String.Empty;
         public string Address { get; set; } = String.Empty;
         public decimal Lat { get; set; }
         public decimal Lng { get; set; }
@@ -61,6 +59,12 @@ namespace TripMatch.Models.DTOs
         public int UserRatingsTotal { get; set; }
         public List<string> PhotosSnapshot { get; set; } = [];
     }
+
+    public class WishlistDto    
+    {
+        public int SpotId { get; set; }
+        public bool AddToWishlist { get; set; }
+    }   
 
 
 

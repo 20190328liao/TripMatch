@@ -3,16 +3,31 @@ import { expandContainerToFullWidth } from './editModule/edit-layout-helper.js';
 import { initGoogleMap } from './editModule/edit-map-manager.js';
 import { initEditPage } from './editModule/edit-trip-manager.js';
 
+const tripId = document.getElementById('current-trip-id').value; // 取得行程編號
+
 // 2. 統一在內容載入後執行
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
 
     // 步驟 A: 調整版面
     expandContainerToFullWidth();
 
-    // 步驟 B: 初始化地圖 (傳入你的 HTML ID)
-    // 假設你的 View 裡的 ID 分別是 "map" 和 "place-search-input"
-    initGoogleMap('map', 'place-search-input');
+    try {
+        // 使用 await 等待 jQuery 的 $.get 完成
+        // 注意：這裡不需要寫 .then() 或 function(data)，直接賦值給變數即可
+        const tripData = await $.get(`/api/TripApi/simple/${tripId}`);
 
-    initEditPage('map'); // 初始化編輯頁面功能
+        // 取得日期陣列
+        const dates = tripData.dateStrings || [];
+
+        // 初始化地圖與編輯功能
+        initGoogleMap('map', 'place-search-input', dates);
+        initEditPage('map');
+
+    } catch (error) {
+        console.error("AJAX 載入行程詳情失敗:", error);
+        // 墊底處理：即使 API 失敗也讓地圖出來
+        initGoogleMap('map', 'place-search-input', []);
+        initEditPage('map');
+    }
 
 });
