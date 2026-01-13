@@ -99,6 +99,13 @@
                     // 小幅等待讓通知窗先呈現（避免瞬間閃動）
                     await new Promise(r => setTimeout(r, 200));
 
+                    // 清除前端 avatar 快取（避免舊帳號 avatar 殘留）
+                    try {
+                        localStorage.removeItem('tm_avatar');
+                    } catch (ex) {
+                        console.warn('清除 avatar 快取失敗', ex);
+                    }
+
                     // 以 replace 方式導向，避免產生 history entry 並快速切換頁面
                     window.location.replace(url);
                     return;
