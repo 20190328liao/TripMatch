@@ -1,89 +1,256 @@
-// Åª¨ú¨Ï¥ÎªÌÄ@±æ²M³æ¨Ã¦b member center ²£¥Í¥d¤ù
-document.addEventListener('DOMContentLoaded', () => {
+ï»¿document.addEventListener('DOMContentLoaded', () => {
     const wishlistContainer = document.getElementById('wishlist_cards');
+    const apiGet = window.Routes?.MemberCenterApi?.GetWish ?? '/api/MemberCenterApi/GetWish';
+    const apiToggle = window.Routes?.MemberCenterApi?.Toggle ?? '/api/MemberCenterApi/Toggle';
+    // undoTimers ä»¥ spotId (number) ç‚ºéµï¼Œå€¼ç‚º { timerId, toastEl, removeBtn }
+    const undoTimers = {};
 
-    const apiToggle = window.Routes?.AuthApi?.ToggleWishlist ?? '/api/auth/Wishlist/Toggle';
-    let undoTimers = {};
+    if (!wishlistContainer) return;
 
-    if (wishlistContainer) {
-        // ¨Æ¥ó©e¬£ºÊÅ¥ÂIÀ»
-        wishlistContainer.addEventListener('click', async (e) => {
-            //View More ÂIÀ»
-            const viewMoreBtn = e.target.closest('.btn-view-more');
-            if(viewMoreBtn) {
-                const spotId = viewMoreBtn.getAttribute('data-id');
-                if (spotId) {
-                    window.location.href = `/Spot/Detail?id=${spotId}`;
-                }
-                return
+    // åˆå§‹è¼‰å…¥
+    loadWishlist();
+
+    async function loadWishlist() {
+        try {
+            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) {
+                console.warn('GetWishlist è®€å–å¤±æ•—', res.status);
+                renderEmpty();
+                return;
             }
-
-            //·R¤ß¨ú®ø¦¬ÂÃÂIÀ»
-            const heartBtn = e.target.closest('.wish_heart') || e.target.closest('.btn_remove_wish');
-            if(heartBtn) {
-                e.preventDefault();
-                const spotId = heartBtn.getAttribute('data-spotid');
-                if (!spotId) return;
-
-                // 1. ¥ı°õ¦æµøÄ±¤Wªº¡u°²§R°£¡v
-                cardCol.style.transition = 'all 0.4s ease';
-                cardCol.style.opacity = '0';
-                cardCol.style.pointerEvents = 'none'; // ¨¾¤î­«½ÆÂIÀ»
-
-                // 2. Åã¥Ü Undo ´£¥Ü (³o¸Ì¨Ï¥ÎÂ²³æªº¦Û©w¸q UI ©Î Alert)
-                showUndoToast(spotId, () => {
-                    // ¦pªGÂIÀ»¤F´_­ì (Undo ¦^©I)
-                    cardCol.style.opacity = '1';
-                    cardCol.style.pointerEvents = 'auto';
-                    clearTimeout(undoTimers[spotId]); // ¨ú®ø©w®É§R°£
-                    delete undoTimers[spotId];
-                });
-
-                // 3. ³]©w 5 ¬í«á¯u¥¿°õ¦æ API
-                undoTimers[spotId] = setTimeout(async () => {
-                    try {
-                        const response = await fetch(apiToggle, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ spotId: parseInt(spotId) })
-                        });
-
-                        if (response.ok) {
-                            cardCol.remove(); // ¯u¥¿²¾°£ DOM
-                            checkEmpty();
-                        }
-                    } catch (error) {
-                        console.error('API Error:', error);
-                    }
-                    delete undoTimers[spotId];
-                }, 5000); // 5¬í½w½Ä
-            }
-        });
-    }
-
-    //ÀË¬d²M³æ
-    function checkEmpty() {
-        if (wishlistContainer.querySelectorAll('.col').length == 0) {
-            wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">²M³æ¤w²MªÅ</p></div>';
+            const data = await res.json();
+            const items = (data && data.items) ? data.items : data;
+            render(items);
+        } catch (ex) {
+            console.error('è¼‰å…¥é¡˜æœ›æ¸…å–®å¤±æ•—', ex);
+            renderEmpty();
         }
     }
 
-    //Åã¥Ü Undo ´£¥Ü
+    function render(items) {
+        if (!items || items.length === 0) {
+            renderEmpty();
+            return;
+        }
+        // ä¿®æ­£å¾Œçš„ render å…§éƒ¨ç‰‡æ®µ
+        wishlistContainer.innerHTML = items.map(item => {
+            // è‡ªå‹•ç›¸å®¹ SpotId æˆ– spotId
+            const currentSpotId = item.spotId || item.SpotId;
+            const currentSpotTitle = item.spotTitle || item.Name_ZH || item.name_ZH || 'æœªçŸ¥åœ°é»';
+            const currentImageUrl = item.imageUrl || (item.PhotosSnapshot ? JSON.parse(item.PhotosSnapshot)[0] : '/img/placeholder.jpg');
+
+            return `
+        <div class="col" data-spot-col="${currentSpotId}">
+            <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
+                <button type="button"
+                        class="btn_remove_wish active"
+                        data-spotid="${currentSpotId}"
+                        title="å¾æ¸…å–®ç§»é™¤">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+                <a href="/Spot/Detail?id=${currentSpotId}">
+                    <img src="${escapeHtml(currentImageUrl)}" class="card-img-top" style="height: 180px; object-fit: cover;">
+                </a>
+                <div class="card-body">
+                    <h6 class="card-title text-truncate fw-bold">${escapeHtml(currentSpotTitle)}</h6>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <button class="btn btn-primary w-100 btn-view-more" data-id="${currentSpotId}">
+                        View More
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        }).join('');
+    }
+
+    function renderEmpty() {
+        wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">ç›®å‰æ²’æœ‰é¡˜æœ›æ¸…å–®</p></div>';
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+        });
+    }
+
+    // äº‹ä»¶ä»£ç†ï¼ˆåŒ…å« View More èˆ‡ ç§»é™¤/å–æ¶ˆæ”¶è—ï¼‰
+    wishlistContainer.addEventListener('click', async (e) => {
+        const viewMoreBtn = e.target.closest('.btn-view-more');
+        if (viewMoreBtn) {
+            const spotId = viewMoreBtn.getAttribute('data-id');
+            if (spotId) {
+                window.location.href = `/Spot/Detail?id=${spotId}`;
+            }
+            return;
+        }
+
+        const removeBtn = e.target.closest('.btn_remove_wish');
+        if (!removeBtn) return;
+
+        e.preventDefault();
+        const spotIdRaw = removeBtn.getAttribute('data-spotid')
+            || removeBtn.dataset?.spotid
+            || removeBtn.dataset?.spotId
+            || removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col');
+
+        // æ–°å¢é™¤éŒ¯ï¼šå°å‡ºå„ä¾†æºï¼Œç¢ºèªç‚ºä½•æœƒå¾—åˆ° "undefined"
+        console.log('wishlist debug - spotIdRaw:', spotIdRaw, {
+            attr_data_spotid: removeBtn.getAttribute('data-spotid'),
+            dataset_spotid: removeBtn.dataset?.spotid,
+            dataset_spotId: removeBtn.dataset?.spotId,
+            closest_data_spot_col: removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col'),
+            outerHTML: removeBtn.outerHTML
+        });
+
+        // éæ¿¾æ‰å­—ä¸² 'undefined' èˆ‡ç©ºå€¼ï¼Œä¸¦è§£æç‚ºæ•¸å­—
+        if (!spotIdRaw || spotIdRaw === 'undefined') {
+            console.error('Invalid spotId:', spotIdRaw, removeBtn);
+            return;
+        }
+
+        const spotIdNum = Number(spotIdRaw);
+        if (!Number.isFinite(spotIdNum)) {
+            console.error('Invalid numeric spotId:', spotIdRaw);
+            return;
+        }
+
+        const cardCol = removeBtn.closest('.col');
+        if (!cardCol) return;
+
+        // æ¨£å¼ï¼šæ¨™è¨˜ç‚º pending
+        cardCol.classList.add('pending-remove');
+        cardCol.style.transition = 'all 0.35s ease';
+        cardCol.style.opacity = '0.5';
+        cardCol.style.pointerEvents = 'none';
+        removeBtn.setAttribute('disabled', 'true');
+
+        // å»ºç«‹ undo toast ä¸¦ç¶å®š undo è¡Œç‚º
+        const toastEl = showUndoToast(spotIdNum, () => {
+            // undo
+            if (undoTimers[spotIdNum]) {
+                clearTimeout(undoTimers[spotIdNum].timerId);
+                cleanupAfterUndo(spotIdNum, true);
+            }
+        });
+
+        // å»¶é²çœŸæ­£å‘¼å« APIï¼ˆå…è¨± undoï¼‰
+        const timerId = setTimeout(async () => {
+            try {
+                const response = await fetch(apiToggle, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ spotId: spotIdNum })
+                });
+
+                if (response.ok) {
+                    // æˆåŠŸï¼šç§»é™¤å¡ç‰‡èˆ‡ toast
+                    cardCol.remove();
+                    if (toastEl && toastEl.parentNode) toastEl.remove();
+                    delete undoTimers[spotIdNum];
+                    checkEmpty();
+                } else {
+                    // å¤±æ•—ï¼šé‚„åŸ UIï¼Œä¸¦å˜—è©¦é¡¯ç¤ºéŒ¯èª¤è¨Šæ¯
+                    let msg = `æ“ä½œå¤±æ•—ï¼š${response.status}`;
+                    try {
+                        const json = await response.json();
+                        if (json?.message) msg = json.message;
+                    } catch {
+                        try {
+                            const txt = await response.text();
+                            if (txt) msg = txt;
+                        } catch { }
+                    }
+                    console.error(msg);
+                    cleanupAfterUndo(spotIdNum, false);
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                cleanupAfterUndo(spotIdNum, false);
+            } finally {
+                if (undoTimers[spotIdNum]) delete undoTimers[spotIdNum];
+            }
+        }, 5000);
+
+        // å­˜ä¸‹ timer èˆ‡å…ƒç´ åƒè€ƒï¼Œä¾› undo ä½¿ç”¨
+        undoTimers[spotIdNum] = { timerId, toastEl, removeBtn, cardCol };
+    });
+
+    function cleanupAfterUndo(spotId, restored) {
+        const entry = undoTimers[spotId];
+        if (!entry) return;
+        // é‚„åŸå¡ç‰‡è¦–è¦ºèˆ‡æŒ‰éˆ•
+        try {
+            const { cardCol, removeBtn, toastEl } = entry;
+            if (cardCol) {
+                cardCol.classList.remove('pending-remove');
+                cardCol.style.opacity = '1';
+                cardCol.style.pointerEvents = 'auto';
+            }
+            if (removeBtn) {
+                removeBtn.removeAttribute('disabled');
+            }
+            if (toastEl && toastEl.parentNode) {
+                toastEl.remove();
+            }
+        } catch (e) {
+            console.warn('cleanupAfterUndo error', e);
+        } finally {
+            if (undoTimers[spotId]) {
+                clearTimeout(undoTimers[spotId].timerId);
+                delete undoTimers[spotId];
+            }
+            if (restored) checkEmpty(); // è‹¥é‚„åŸå¯èƒ½éœ€è¦æª¢æŸ¥ç©ºåˆ—è¡¨ï¼ˆä¿éšªï¼‰
+        }
+    }
+
+    function checkEmpty() {
+        if (!wishlistContainer) return;
+        if (wishlistContainer.querySelectorAll('.col').length === 0) {
+            wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">ç›®å‰æ²’æœ‰é¡˜æœ›æ¸…å–®</p></div>';
+        }
+    }
+
     function showUndoToast(spotId, onUndo) {
+        // ç§»é™¤èˆŠ toastï¼ˆä¿éšªï¼‰
+        const existing = document.getElementById('undo_toast_' + spotId);
+        if (existing) existing.remove();
+
         const toast = document.createElement('div');
         toast.id = 'undo_toast_' + spotId;
         toast.className = 'undo-toast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '2000';
+        toast.style.padding = '8px 12px';
+        toast.style.background = 'rgba(0,0,0,0.85)';
+        toast.style.color = '#fff';
+        toast.style.borderRadius = '6px';
+        toast.style.display = 'flex';
+        toast.style.alignItems = 'center';
+        toast.style.gap = '8px';
         toast.innerHTML = `
-        <span>¤w±q²M³æ²¾°£</span>
-            <button class="btn btn-sm btn-warning ms-3" id="undo_btn_${spotId}">´_­ì</button>
+            <span>å·²æ’ç¨‹ç§»é™¤</span>
+            <button class="btn btn-sm btn-warning" id="undo_btn_${spotId}" type="button">é‚„åŸ</button>
         `;
         document.body.appendChild(toast);
-        //¸j©w´_­ì«ö¶s
-        document.getElementById(`undo_btn_${spotId}`).addEventListener('click', () => {
-            onUndo();
-            toast.remove();
-        });
-        //¦Û°Ê®ø¥¢
-        setTimeout(() => { if (toast) toast.remove(); }, 5000);
+
+        const undoBtn = document.getElementById(`undo_btn_${spotId}`);
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => {
+                try { onUndo(); } catch (e) { console.error(e); }
+            });
+        }
+
+        // è‡ªå‹•é—œé–‰ toastï¼ˆä½†ä¸æœƒå–æ¶ˆå®šæ™‚å™¨ï¼›åªæ˜¯æ¸… UIï¼‰
+        setTimeout(() => {
+            const t = document.getElementById('undo_toast_' + spotId);
+            if (t) t.remove();
+        }, 5000 + 200); // èˆ‡åˆªé™¤å®šæ™‚å™¨ç•¥ç‚ºåŒæ­¥
+
+        return toast;
     }
 });

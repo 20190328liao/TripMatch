@@ -12,6 +12,7 @@
     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
 }
 
+
 <div class="member_center_wrap">
 
     <!-- =============================================
@@ -203,7 +204,9 @@
                                     <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotID"
                                             title="從清單移除"
                                             style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:32px; height:32px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
-                                        <i class="bi bi-heart-fill"></i>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
+                                        <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
+                                    </svg>
                                     </button>
 
                                     <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
@@ -233,6 +236,7 @@
 <a href="@Url.Action("Index", "Home")" class="back-home-link">
     回到首頁
 </a>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 @section Styles {
 }
