@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace TripMatch.Models.DTOs
 {
@@ -14,12 +15,29 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; }= String.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
+        public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
+
+        public List<string> GetDateString()
+        {
+            var dateList = new List<string>();
+
+            for (DateOnly date = StartDate; date <= EndDate; date = date.AddDays(1))
+            {
+                string formattedDate = date.ToString("yyyy年MM月dd日");
+                dateList.Add(formattedDate);
+            }
+
+            return dateList;
+        }
     }
 
     public class ItineraryItemDto
     {
-        public int Day { get; set; }
-
+        public int SpotId { get; set; } 
+        public int DayNumber { get; set; }
+        public TimeOnly Start { get; set; } 
+        public TimeOnly End { get; set; }
+        public int SortOrder { get; set; }  
     }   
 
     public class TripCreateDto

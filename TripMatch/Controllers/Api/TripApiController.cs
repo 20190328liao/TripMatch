@@ -31,16 +31,16 @@ namespace TripMatch.Controllers.Api
             return Ok(trips);
         }
 
-        //[HttpGet("{tripId}")]
-        //public async Task<IActionResult> GetTripDetail(int tripId)
-        //{
-        //    Models.DTOs.TripDetailDto? tripDetail = await _tripServices.GetTripDetail(tripId);
-        //    if (tripDetail == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(tripDetail);
-        //}   
+        [HttpGet("{tripId}")]
+        public async Task<IActionResult> GetTripDetail(int tripId)
+        {
+            TripDetailDto? tripDetail = await _tripServices.GetTripDetail(tripId);
+            if (tripDetail == null)
+            {
+                return NotFound();
+            }
+            return Ok(tripDetail);
+        }
 
 
         [HttpPost("Create")]
