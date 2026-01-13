@@ -1,5 +1,164 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "開始揪團";
+}
+
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h2>歡迎回來，準備好出發了嗎？</h2>
+        <p class="text-muted">請選擇建立一個新的旅程，或是加入朋友的計畫。</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 shadow-sm border-primary">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>我要開團 (Create)</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createForm">
+                        <div class="mb-3">
+                            <label class="form-label">預計揪團人數 (含自己)</label>
+                            <input type="number" class="form-control" id="targetNumber" value="4" min="2" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">旅遊日期範圍 (起)</label>
+                            <input type="date" class="form-control" id="dateStart" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">旅遊日期範圍 (迄)</label>
+                            <input type="date" class="form-control" id="dateEnd" required>
+                        </div>
+
+                        <input type="hidden" id="travelDays">
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-outline-primary btn-lg">建立群組</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-1 d-flex align-items-center justify-content-center">
+            <div class="vr h-50 d-none d-md-block"></div>
+            <hr class="w-100 d-md-none my-4">
+        </div>
+
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 shadow-sm border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h4>我要加入 (Join)</h4>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <p class="text-center text-muted">已經有邀請碼了嗎？直接輸入並加入夥伴！</p>
+
+                    <form id="joinForm">
+                        <div class="mb-3">
+                            <label class="form-label">請輸入邀請碼</label>
+                            <input type="text" class="form-control form-control-lg text-center text-uppercase"
+                                   id="inviteCode" placeholder="例如：AB1234" required>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-outline-success btn-lg">加入群組</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // === 1. 處理開團邏輯 ===
+        document.getElementById('createForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // 取得輸入值
+            const targetNumber = parseInt(document.getElementById('targetNumber').value);
+            const dateStart = document.getElementById('dateStart').value;
+            const dateEnd = document.getElementById('dateEnd').value;
+
+            // 簡單驗證
+            if (!dateStart || !dateEnd) {
+                alert("請選擇完整的日期範圍");
+                return;
+            }
+            if (new Date(dateStart) > new Date(dateEnd)) {
+                alert("結束日期不能早於開始日期");
+                return;
+            }
+
+            // 計算天數 (API 需要 travelDays)
+            const start = new Date(dateStart);
+            const end = new Date(dateEnd);
+            const diffTime = Math.abs(end - start);
+            const travelDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 因為頭尾都算
+
+            // 準備 Payload
+            const payload = {
+                targetNumber: targetNumber,
+                travelDays: travelDays,
+                dateStart: dateStart,
+                dateEnd: dateEnd
+            };
+
+            try {
+                // 呼叫後端 API
+                const response = await fetch('/api/timewindow/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`開團成功！您的邀請碼是：${data.inviteCode}`);
+
+                    // 跳轉到下一頁：偏好設定 (Preferences)
+                    // 注意：這裡假設你的 API 回傳包含 groupId，如果沒有，請記得去 API 加
+                    window.location.href = `/Match/Preferences/${data.groupId}`;
+                } else {
+                    const error = await response.json();
+                    alert("開團失敗：" + (error.message || "未知錯誤"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("系統發生錯誤，請稍後再試。");
+            }
+        });
+
+        // === 2. 處理加入邏輯 ===
+        document.getElementById('joinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const inviteCode = document.getElementById('inviteCode').value.trim();
+
+            try {
+                const response = await fetch('/api/timewindow/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inviteCode: inviteCode })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert("加入成功！");
+
+                    // 加入成功後，跳轉到「等待大廳」或是「偏好設定」
+                    // 假設回傳資料裡有 groupId
+                    window.location.href = `/Match/Preferences/${data.groupId}`;
+                } else {
+                    const error = await response.json();
+                    alert("加入失敗：" + (error.message || "邀請碼無效或您已在群組中"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("連線錯誤");
+            }
+        });
+    </script>
 }

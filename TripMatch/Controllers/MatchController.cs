@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TripMatch.Controllers
 {
+    [Authorize]
     public class MatchController : Controller
     {
         [HttpGet]
