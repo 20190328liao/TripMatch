@@ -5,7 +5,6 @@
     position: relative;
     display: flex;
     text-align: center;
-    display: flexbox;
     justify-content: center;
 }
 .lineStroke{
@@ -28,9 +27,7 @@
     padding: 0 50px;
 }
 
-.formWrap{
-    margin: 50px 0 0 80px;
-}
+/*登入註冊線條切換*/
 .signWrap{
     position:relative;
 }
@@ -41,13 +38,13 @@
     display: flexbox;
     justify-content: center;
 }
-/*線條切換*/
+
 .inputLine {
     border-bottom: 4.5px solid var(--color_Light);
     font-weight: bold;
     text-decoration: none;
     color: var(--color_Dark);
-    padding: 0 50px;
+    padding: 0 5rem;
 }
 
 .inputNone {
@@ -56,16 +53,12 @@
     text-decoration: none;
     color: inherit;
     color: var(--color_DarkGray);
-    padding: 0 50px;
-
+    padding: 0 5rem;
 }
 .loginH1 {
     align-items: center;
 }
-
-.formWrap {
-    max-width: 45rem;
-}
+/*登入註冊線條切換*/
 
 .input_group_custom {
     position: relative;
@@ -109,6 +102,12 @@
         box-shadow: none;
     }
 
+input:-webkit-autofill {
+    font-size: 18px !important;
+    -webkit-text-fill-color: #000 !important; /* 字體顏色 */
+    transition: background-color 5000s ease-in-out 0s; /* 避免黃色背景閃爍 */
+}
+
 /* -----------------------------
    標籤樣式 (修正重疊)
 ------------------------------ */
@@ -132,10 +131,7 @@
         object-fit: contain;
     }
 
-/* -----------------------------
-   修正「寄驗證信」按鈕重疊問題
-   (針對 Signup.cshtml 或 ForgotPassword.cshtml 中的結構)
------------------------------- */
+
 .input_row {
     display: flex;
     flex-wrap: wrap; /* 允許在小螢幕換行 */
@@ -145,12 +141,7 @@
     margin-bottom: 1rem; /* 確保整列與下方有距離 */
 }
 
-    /* 讓輸入框組在 input_row 內也能正常伸展 */
-    .input_row .input_group_custom {
-        flex: 1;
-        min-width: 200px; /* 防止縮太小 */
-        margin-bottom: 0; /* 在 row 裡面由 gap 控制間距 */
-    }
+ 
 
 /* 寄驗證信按鈕樣式微調 */
 .btn_send_verify{
@@ -172,7 +163,6 @@ input[type="password"]::-ms-clear {
     font-size: 14px;
     margin-top: 6px;
     line-height: 1.4;
-    /* ★ 新增：寬度與輸入框一致 */
     width: 100%;
     max-width: 28rem;
     box-sizing: border-box;
@@ -218,7 +208,7 @@ input[type="password"]::-ms-clear {
 }
 
     .email_row input.email2 {
-        flex: 1; /* 自動填滿剩餘空間 */
+        /*flex: 1;*/ /* 自動填滿剩餘空間 */
         min-height: 48px;
         padding: 0 12px;
         font-size: var(--fontBody);
@@ -268,7 +258,7 @@ input[type="password"]::-ms-clear {
 }
 
     .input_group_custom .input1 {
-        flex: 1;
+/*        flex: 1;*/
         border: none;
         outline: none;
         box-shadow: none;
@@ -435,9 +425,9 @@ input[type="password"]::-ms-clear {
     border-color: var(--color_Contrast);
 }
 
-.carousel-item {
-  height: 100vh; /* 或者你要的固定高度，例如 500px */
-}
+
+
+
 
 .carousel-item img {
   width: 100%;
@@ -476,7 +466,7 @@ input:is(:-webkit-autofill, :autofill) {
 }
 
 .googleBtn {
-    width: 350px;
+    width: 60%;
     cursor: pointer;
 }
 
@@ -586,7 +576,6 @@ input:is(:-webkit-autofill, :autofill) {
     position: relative;
     display: flex;
     align-items: center;
-    width: 100%;
 }
 
 .input_custom {
@@ -616,9 +605,8 @@ input:is(:-webkit-autofill, :autofill) {
 /* 輸入框列 */
 .input_row {
     display: flex;
-    gap: 0.75rem;
     align-items: stretch;
-    max-width: 450px;
+    width: 450px;
 }
 
     .input_row .input_group_custom {
@@ -869,6 +857,8 @@ input:is(:-webkit-autofill, :autofill) {
     animation: fadeInUp 0.3s ease;
 }
 
+
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -880,3 +870,113 @@ input:is(:-webkit-autofill, :autofill) {
         transform: translate(-50%, 0);
     }
 }
+/*電腦*/
+@media (min-width: 992px) {
+    .titleWrap.titleH1 {
+        font-size: 35px;
+    }
+    .carousel-item {
+        height: 100vh;
+    }
+    /*登入排版*/
+    .loginForm {
+        display: flex;
+        background-color: red;
+        width: auto;
+        height: auto;
+        justify-content: center;
+    }
+    .formWrap {
+        margin-top: 50px;
+        padding-left: 12rem;
+        padding-right: 12rem;
+    }
+
+}
+
+/*手機*/
+    @media (max-width: 993px) {
+
+        .titleWrap.titleH1 {
+            font-size: 2rem;
+        }
+
+        /*登入排版*/
+        .loginForm {
+            display: flex;
+            background-color: red;
+            width: auto;
+            height: auto;
+            justify-content: center;
+
+        }
+
+        .formWrap {
+            margin-top: 50px;
+            padding-left: 8rem;
+            padding-right: 8rem;
+        }
+        /*登入排版*/
+
+        /*輪播圖*/
+        .signContent.s1.col-12.col-md-6 {
+            height: 50vh;
+            overflow: hidden;
+        }
+
+
+
+        .carousel-item {
+            height: 50vh;
+        }
+
+        .signContent.s1.col-12.col-md-6 .carousel,
+        .signContent.s1.col-12.col-md-6 .carousel-inner,
+        .signContent.s1.col-12.col-md-6 .carousel-item {
+            height: 50vh;
+        }
+
+            .signContent.s1.col-12.col-md-6 .carousel-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: none;
+                object-position: center;
+                display: block;
+            }
+
+        .signContent.s2 {
+            height: auto;
+            min-height: auto;
+        }
+
+        .googleBtn {
+            width: 50%;
+            cursor: pointer;
+        }
+        /*輪播圖*/
+
+        .titleWrap.titleH1 {
+            font-size: 35px;
+        }
+
+        /*登入註冊線條切換*/
+
+
+
+        .inputLine {
+            padding: 0 4rem;
+        }
+
+        .inputNone {
+            padding: 0 4rem;
+        }
+
+        /* 讓輸入框組在 input_row 內也能正常伸展 */
+        .input_row .input_group_custom {
+            width: 200px; 
+            margin-bottom: 0;
+        }
+
+        /*登入註冊線條切換*/
+    }
+

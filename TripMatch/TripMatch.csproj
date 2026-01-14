@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Remove="Controllers\test0112cs.cs" />
     <Compile Remove="Models\DTOs\TimeWindow\OptionCardDto.cs" />
+    <Compile Remove="Views\Shared\Layout.cshtml.cs" />
     <Compile Remove="Views\test0112.cshtml.cs" />
   </ItemGroup>
 
