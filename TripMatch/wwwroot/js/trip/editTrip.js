@@ -1,7 +1,10 @@
 ﻿// 1. 匯入edit module各項功能
 import { expandContainerToFullWidth } from './editModule/edit-layout-helper.js';
 import { initGoogleMap } from './editModule/edit-map-manager.js';
-import { initEditPage } from './editModule/edit-trip-manager.js';
+import { initEditPage, refreshItineraryList } from './editModule/edit-trip-manager.js';
+
+// 將 refreshItineraryList 掛載到 window 物件，讓 initGoogleMap 裡面的 AJAX 成功後可以呼叫
+window.refreshItineraryList = refreshItineraryList;
 
 const tripId = document.getElementById('current-trip-id').value; // 取得行程編號
 
@@ -11,23 +14,26 @@ document.addEventListener("DOMContentLoaded", async function () {
     // 步驟 A: 調整版面
     expandContainerToFullWidth();
 
-    try {
-        // 使用 await 等待 jQuery 的 $.get 完成
-        // 注意：這裡不需要寫 .then() 或 function(data)，直接賦值給變數即可
-        const tripData = await $.get(`/api/TripApi/simple/${tripId}`);
+    // 【修改】定義變數來接收地圖實體
+    let mapInstance = null;
 
-        // 取得日期陣列
+    try {
+        const tripData = await $.get(`/api/TripApi/simple/${tripId}`);
         const dates = tripData.dateStrings || [];
 
-        // 初始化地圖與編輯功能
-        initGoogleMap('map', 'place-search-input', dates);
-        initEditPage('map');
+        // 【修改】接收 initGoogleMap 回傳的 map 物件
+        mapInstance = initGoogleMap('map', 'place-search-input', dates);
+
+        // 【修改】將 map 物件傳入編輯頁面，讓列表點擊可以控制地圖
+        initEditPage(mapInstance);
 
     } catch (error) {
         console.error("AJAX 載入行程詳情失敗:", error);
-        // 墊底處理：即使 API 失敗也讓地圖出來
-        initGoogleMap('map', 'place-search-input', []);
-        initEditPage('map');
-    }
 
+        // 墊底處理：即使 API 失敗也讓地圖出來
+        mapInstance = initGoogleMap('map', 'place-search-input', []);
+
+        // 【修改】錯誤時也要傳入 map
+        initEditPage(mapInstance);
+    }
 });

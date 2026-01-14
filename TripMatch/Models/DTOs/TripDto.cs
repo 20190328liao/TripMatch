@@ -3,6 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace TripMatch.Models.DTOs
 {
+    public class TripDetailDto
+    {
+        public TripSimpleDto TripInfo { get; set; } = new TripSimpleDto();
+        public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
+    }
+
     public class TripSimpleDto
     {
         public int Id { get; set; }
@@ -23,18 +29,13 @@ namespace TripMatch.Models.DTOs
         }
     }
 
-    public class TripDetailDto
-    {
-        public TripSimpleDto TripInfo { get; set; } = new TripSimpleDto();
-        public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
-    }
-
     public class ItineraryItemDto
     {
+        public int TripId { get; set; }
         public int SpotId { get; set; }
         public int DayNumber { get; set; }
-        public TimeOnly Start { get; set; }
-        public TimeOnly End { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
         public int SortOrder { get; set; }
     }
 
