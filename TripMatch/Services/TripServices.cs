@@ -63,7 +63,7 @@ namespace TripMatch.Services
             return tripSimpleDto;
         }
 
-      
+
 
         #endregion
 
@@ -217,13 +217,71 @@ namespace TripMatch.Services
                 if (item.SpotId == null)
                     continue; // 跳過沒有景點快照的項目
 
+
+                //取得景點資訊(名稱, 地址, 照片...)
+                var placesSnapshot = await _context.PlacesSnapshots.FirstOrDefaultAsync(sp => sp.SpotId == item.SpotId);
+                SpotProfileDto spotProfile;
+
+                if (placesSnapshot != null)
+                {
+                    // 1. 先宣告預設值為空字串
+                    string firstPhotoUrl = "";
+
+                    // 2. 嘗試反序列化 (包含防呆)
+                    if (!string.IsNullOrWhiteSpace(placesSnapshot.PhotosSnapshot))
+                    {
+                        try
+                        {
+                            // 假設 JSON 格式是 ["url1", "url2"...]
+                            var photos = System.Text.Json.JsonSerializer.Deserialize<List<string>>(placesSnapshot.PhotosSnapshot);
+
+                            // 取第一筆，如果 list 為 null 或空，則給空字串
+                            firstPhotoUrl = photos?.FirstOrDefault() ?? "";
+                        }
+                        catch
+                        {
+                            // 如果 JSON 格式錯誤 (例如 parse 失敗)，維持空字串，不讓程式崩潰
+                            firstPhotoUrl = "";
+                        }
+                    }
+
+                    spotProfile = new SpotProfileDto()
+                    {
+                        PlaceId = placesSnapshot.ExternalPlaceId ?? "",
+                        Name_ZH = placesSnapshot.NameEn ?? "",
+                        Address = placesSnapshot.AddressSnapshot ?? "",
+                        PhotoUrl = firstPhotoUrl,
+                        Lat = placesSnapshot.Lat,
+                        Lng = placesSnapshot.Lng,
+                        Rating = placesSnapshot.Rating ?? 0
+                    };
+                }else
+                {
+                    // 若找不到快照資料, 要給預設
+                    // 前端後續要想辦法把place id 傳過來，不然只有spot id也沒有用
+                    spotProfile = new SpotProfileDto()
+                    {
+                        PlaceId= "",   
+                        Name_ZH = "未知景點",
+                        Address = "未知地址",
+                        PhotoUrl = "",
+                        Lat=0,
+                        Lng=0,
+                        Rating = 0
+                    };
+                }
+
+
                 ItineraryItemDto itemDto = new()
                 {
-                    SpotId = item.SpotId.Value,
+                    TripId = item.TripId,
+                    SpotId = (int)item.SpotId,
                     DayNumber = item.DayNumber,
                     StartTime = item.StartTime ?? new TimeOnly(0, 0),
                     EndTime = item.EndTime ?? new TimeOnly(0, 0),
-                    SortOrder = item.SortOrder
+                    SortOrder = item.SortOrder,
+                    Profile = spotProfile
+
                 };
                 tripDetailDto.ItineraryItems.Add(itemDto);
             }
@@ -231,6 +289,8 @@ namespace TripMatch.Services
             return tripDetailDto;
 
         }
+
+
 
 
         // 嘗試新增景點到行程

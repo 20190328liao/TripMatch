@@ -3,7 +3,7 @@
 
 @{
     ViewData["Title"] = "編輯行程";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
 }
 
 @model int
@@ -30,11 +30,7 @@
         </div>
 
         <div class="itinerary-content p-0 overflow-auto" id="place-list">
-            @* JS 會將渲染後的 HTML 填入此處 *@
-            <div class="text-center p-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">讀取行程中...</p>
-            </div>
+            @* JS 會將渲染後的 HTML 填入此處 *@           
         </div>
     </div>
 
