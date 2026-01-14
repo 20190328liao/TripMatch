@@ -5,7 +5,11 @@
     var taggedUserId = ViewBag.TaggedUserId as int?;
 }
 
-<div class="text-center">
+@section Styles {
+    <link rel="stylesheet" href="~/css/Home.css" asp-append-version="true" />
+}
+
+@* <div class="text-center">
     <h1 class="display-4">Welcome</h1>
 </div>
 
@@ -17,4 +21,112 @@
 else
 {
     <p>No tagged UserId found. 確認已登入且 middleware 已啟用。</p>
+} *@
+
+
+
+<header class="hero-section">
+    <span class="status-indicator" id="loginStatus">未登入</span>
+    <h1 class="hero-title">輕鬆規劃您的旅遊行程</h1>
+
+    <div class="hero-btns">
+        <button id="btnPlan" class="btn-mode active" onclick="switchMode('plan')">已有出發日計畫</button>
+        <button id="btnMatch" class="btn-mode" onclick="switchMode('match')">和朋友媒合時間</button>
+    </div>
+
+    <div class="main-card">
+        <div id="contentPlan" class="mode-content active">
+            <div class="card-header" style="font-size: 24px;">建立行程</div>
+            <div class="plan-grid">
+                <div class="input-box">
+                    <label>旅遊名稱</label>
+                    <div class="input-field-wrap">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <input type="text" placeholder="例如：我的暑假旅行">
+                    </div>
+                </div>
+                <div class="input-box">
+                    <label>目的地</label>
+                    <div class="input-field-wrap">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <input type="text" placeholder="例如：日本">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-box">
+                        <label>出發日</label>
+                        <div class="input-field-wrap">
+                            <input type="date" value="2026-01-01">
+                        </div>
+                    </div>
+                    <div class="input-box">
+                        <label>回程日</label>
+                        <div class="input-field-wrap">
+                            <input type="date" value="2026-01-01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="contentMatch" class="mode-content">
+            <div class="card-header"><i class="fa-solid fa-link"></i> 已有邀請碼或邀請朋友</div>
+            <div class="input-group">
+                <input type="text" id="joinCodeInput" placeholder="請輸入12碼 邀請碼，例如：TRIP1234ABCD" oninput="checkJoinInput()">
+                <button class="btn-join" id="btnJoinTrip" onclick="joinTrip()">加入行程</button>
+            </div>
+            <div class="invite-box">
+                <div class="invite-info" style="flex:1;">
+                    <p style="font-weight:bold; margin-bottom:10px; color:var(--btn-dark); display:flex; align-items:center;">
+                        邀請朋友協作 <i class="fa-solid fa-arrows-rotate refresh-code" onclick="generateNewCode()" title="刷新邀請碼"></i>
+                    </p>
+                    <div class="copy-field">
+                        <span>邀請碼</span>
+                        <input type="text" value="TRIPJ3IIMNFA" readonly id="inviteCode">
+                        <button class="btn-copy" onclick="copyAndFill('inviteCode')">複製並填入</button>
+                    </div>
+                    <div class="copy-field">
+                        <span>邀請連結</span>
+                        <input type="text" value="https://trip.ai/join?code=TRIPJ3IIMNFA" readonly id="inviteLink">
+                        <button class="btn-copy" onclick="copyText('inviteLink')">複製連結</button>
+                    </div>
+                </div>
+                <div class="qr-code-area" style="text-align:center; margin-left:20px;">
+                    <div class="qr-placeholder"><i class="fa-solid fa-qrcode"></i></div>
+                    <p style="font-size:12px; color:#999; margin-top:5px;">掃碼加入行程</p>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-action-main" id="mainActionButton" onclick="handleMainAction()">請先登入</button>
+    </div>
+</header>
+
+<section class="how-it-works">
+    <img src="~/img/吉祥物.png" alt="吉祥物" class="mascot-img">
+    <h2 style="margin-bottom: 30px;">服務流程詳細說明</h2>
+    <div class="steps-container">
+        <div class="step-line"></div>
+        <div class="step-item">
+            <div class="step-image-wrap"><i class="fa-solid fa-plane-up"></i><span class="step-number">1</span></div>
+            <h3>輸入可出發日期</h3>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">系統自動比對最佳時間。</p>
+        </div>
+        <div class="step-item">
+            <div class="step-image-wrap"><i class="fa-solid fa-city"></i><span class="step-number">2</span></div>
+            <h3>選擇目的地</h3>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">我們推薦最划算的方案。</p>
+        </div>
+        <div class="step-item">
+            <div class="step-image-wrap"><i class="fa-solid fa-face-laugh-beam"></i><span class="step-number">3</span></div>
+            <h3>生成行程並出發</h3>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">準備好就出發！</p>
+        </div>
+    </div>
+</section>
+
+<div class="debug-toggle"><button onclick="toggleLogin()">切換【登入狀態】</button></div>
+
+@section Scripts {
+    <script src="~/js/Home.js" asp-append-version="true"></script>
 }
