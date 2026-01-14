@@ -1,4 +1,5 @@
-﻿// 模組內的變數，外部無法直接存取，保持全域乾淨
+﻿
+// 模組內的變數，外部無法直接存取，保持全域乾淨
 let map;
 let autocomplete;
 let currentSearchMarker = null;
@@ -35,6 +36,8 @@ export function initGoogleMap(mapElementId, searchInputId, dates = []) {
         setupAutocomplete(inputElement);
     }
 
+    // 回傳地圖實體，方便外部使用
+    return map;
 }
 
 // 內部私有函式：設定自動完成 (不需匯出)
@@ -278,9 +281,42 @@ function setupAutocomplete(inputElement) {
     }
 
     function handleAddPlaceToItinerary(spotId, place, day) {
-        // 這裡可以放加入行程的邏輯
-        console.log(place);
-        console.log(`加入行程成功：\n地點：${place.name}\n天數：${day}\nID：${spotId}`);
+        // 1. 取得當前的行程 ID (這通常放在頁面的隱藏欄位中)
+        const tripId = $('#current-trip-id').val();
+
+        // 2. 組裝對應後端 ItineraryItemDto 的物件
+        const dto = {
+            TripId: parseInt(tripId),    // 所屬行程 ID
+            SpotId: parseInt(spotId),    // 景點 ID (來自快照表)
+            DayNumber: parseInt(day),    // 使用者選擇的天數
+            StartTime: "08:00:00",          // 預設開始時間 (對應 TimeOnly)
+            EndTime: "09:00:00",            // 預設結束時間
+            SortOrder: 0                 // 排序 (後端 Service 會再重新計算)
+        };
+
+        console.log("加入行程的 DTO:", dto);
+
+        // 3. 發送 AJAX 請求
+        $.ajax({
+            url: '/api/TripApi/AddSpotToTrip',
+            type: 'post',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function (response) {
+                // 成功提示
+                alert(`景點已加入到第${day}天行程`);
+
+                // 呼叫全域函數重新整理列表
+                if (typeof window.refreshItineraryList === "function") {
+                    window.refreshItineraryList();
+                }
+            },
+            error: function (xhr) {
+                console.error("加入失敗:", xhr);
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : "伺服器錯誤";
+                alert(`加入失敗：${errorMsg}`);
+            }
+        });
     }
 
 

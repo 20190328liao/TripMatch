@@ -63,46 +63,7 @@ namespace TripMatch.Services
             return tripSimpleDto;
         }
 
-        public async Task<TripDetailDto> GetTripDetail(int tripId)
-        {
-            TripDetailDto tripDetailDto = new();
-            //先取得行程基本資料 
-
-            // 只需一個 await，資料庫會執行一次 JOIN 查詢
-            var trip = await _context.Trips
-                .Include(t => t.ItineraryItems) // 一併抓出該行程的所有明細
-                .FirstOrDefaultAsync(t => t.Id == tripId);
-
-            if (trip == null)
-                return tripDetailDto; // 回傳空的 DTO   
-
-            // 如果行程存在，我們直接從 trip 中提取並排序明細
-            // 這是在記憶體中進行的，非常快
-            var itineraryItems = trip.ItineraryItems
-                .OrderBy(item => item.DayNumber)
-                .ThenBy(item => item.SortOrder)
-                .ToList() ?? [];
-
-            // 填充行程景點資料
-            foreach (var item in itineraryItems)
-            {
-                if (item.SpotId == null)
-                    continue; // 跳過沒有景點快照的項目
-
-                ItineraryItemDto itemDto = new()
-                {
-                    SpotId = item.SpotId.Value,
-                    DayNumber = item.DayNumber,
-                    Start = item.StartTime ?? new TimeOnly(0, 0),
-                    End = item.EndTime ?? new TimeOnly(0, 0),
-                    SortOrder = item.SortOrder
-                };
-                tripDetailDto.ItineraryItems.Add(itemDto);
-            }
-
-            return tripDetailDto;
-
-        }
+      
 
         #endregion
 
@@ -215,8 +176,106 @@ namespace TripMatch.Services
 
         #endregion
 
+        #region 行程編輯相關
+
+        //取得所有行程資料
+        public async Task<TripDetailDto> GetTripDetail(int tripId)
+        {
+            TripDetailDto tripDetailDto = new();
+            //先取得行程基本資料 
+
+            // 只需一個 await，資料庫會執行一次 JOIN 查詢
+            var trip = await _context.Trips
+                .Include(t => t.ItineraryItems) // 一併抓出該行程的所有明細
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            // 回傳空的 DTO
+            if (trip == null)
+                return tripDetailDto;
+
+
+            // 填寫tripInfo
+            tripDetailDto.TripInfo = new TripSimpleDto
+            {
+                Id = trip.Id,
+                Title = trip.Title,
+                StartDate = trip.StartDate,
+                EndDate = trip.EndDate
+            };
+
+
+            // 如果行程存在，我們直接從 trip 中提取並排序明細
+            // 這是在記憶體中進行的，非常快
+            var itineraryItems = trip.ItineraryItems
+                .OrderBy(item => item.DayNumber)
+                .ThenBy(item => item.SortOrder)
+                .ToList() ?? [];
+
+            // 填充行程景點資料
+            foreach (var item in itineraryItems)
+            {
+                if (item.SpotId == null)
+                    continue; // 跳過沒有景點快照的項目
+
+                ItineraryItemDto itemDto = new()
+                {
+                    SpotId = item.SpotId.Value,
+                    DayNumber = item.DayNumber,
+                    StartTime = item.StartTime ?? new TimeOnly(0, 0),
+                    EndTime = item.EndTime ?? new TimeOnly(0, 0),
+                    SortOrder = item.SortOrder
+                };
+                tripDetailDto.ItineraryItems.Add(itemDto);
+            }
+
+            return tripDetailDto;
+
+        }
+
+
+        // 嘗試新增景點到行程
+        public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
+        {
+            // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)
+            int nextSortOrder = await _context.ItineraryItems
+                .Where(x => x.TripId == dto.TripId && x.DayNumber == dto.DayNumber)
+                .Select(x => (int?)x.SortOrder) // 使用 int? 預防當天還沒資料的情況
+                .MaxAsync() ?? 0;
+
+            ItineraryItem item = new()
+            {
+                UpdatedByUserId = userId,
+                TripId = dto.TripId,
+                SpotId = dto.SpotId,
+                DayNumber = dto.DayNumber,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                SortOrder = nextSortOrder + 1,
+                ItemType = 1,
+                IsOpened = true,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now
+            };
+
+            try
+            {
+                _context.ItineraryItems.Add(item);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // 這裡可以 Log 錯誤原因
+                return false;
+            }
+        }
+
+
+        #endregion
+
         #region 景點快照與願望清單
 
+        // 嘗試新增景點快照，若已存在則回傳既有的 SpotId
         public async Task<int> TryAddPlaceSnapshot(PlaceSnapshotDto dto)
         {
             // 1. 先嘗試找出該筆資料
@@ -263,14 +322,14 @@ namespace TripMatch.Services
             }
         }
 
-
+        // 檢查景點是否在使用者的願望清單中 
         public async Task<bool> IsInWishList(int? userId, int spotId)
         {
             if (userId == null)
                 return false;
             var existing = await _context.Wishlists
                 .FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == spotId);
-            
+
             if (existing != null)
                 return true;
             else
@@ -278,7 +337,7 @@ namespace TripMatch.Services
         }
 
 
-
+        // 更新使用者的願望清單 (加入或移除)
         public async Task<bool> UpdateWishList(int? userId, int spotId, bool AddToWishlist)
         {
             if (userId == null)
@@ -317,20 +376,6 @@ namespace TripMatch.Services
             }
         }
 
-        
-
-
-
-
         #endregion
-
-
-
-
-
-
-
-
-
     }
 }
