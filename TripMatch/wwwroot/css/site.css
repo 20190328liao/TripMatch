@@ -1,35 +1,35 @@
-/* === ¥þ°ì³]©w»P¦rÅé === */
+ï»¿/* === å…¨åŸŸè¨­å®šèˆ‡å­—é«” === */
 html {
-    font-size: 14px;
+    font-size: 18px;
 }
 
 @media (min-width: 768px) {
     html {
-        font-size: 16px;
+        font-size: 18px;
     }
 }
 
-/* === «ö¶s»P¿é¤J®ØµJÂI¼Ë¦¡ === */
+/* === æŒ‰éˆ•èˆ‡è¼¸å…¥æ¡†ç„¦é»žæ¨£å¼ === */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-/* === Sticky Footer (Flexbox §G§½) === */
-/* 1. ½T«O html ©M body ¦ûº¡°ª«×¡A¨Ã²¾°£¹w³]Ãä¶Z */
+/* === Sticky Footer (Flexbox ä½ˆå±€) === */
+/* 1. ç¢ºä¿ html å’Œ body ä½”æ»¿é«˜åº¦ï¼Œä¸¦ç§»é™¤é è¨­é‚Šè· */
 html, body {
     height: 100%;
     margin: 0;
 }
 
-/* 2. ±N body ³]¬°««ª½±Æ¦Cªº Flex ®e¾¹ */
+/* 2. å°‡ body è¨­ç‚ºåž‚ç›´æŽ’åˆ—çš„ Flex å®¹å™¨ */
 body {
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* ½T«O¦Ü¤Ö¦³µøµ¡°ª«× */
+    min-height: 100vh; /* ç¢ºä¿è‡³å°‘æœ‰è¦–çª—é«˜åº¦ */
 }
 
-    /* 3. «ü©w body ¤Uªº "¥D­n¤º®e®e¾¹" ¦Û°Ê¶ñº¡³Ñ¾lªÅ¶¡ */
-    /* ³o¸Ì¨Ï¥Î body > .container ¬O¬°¤Fºë·Ç¿ï¤¤¥]¦í @RenderBody ªº¨º­Ó div */
+    /* 3. æŒ‡å®š body ä¸‹çš„ "ä¸»è¦å…§å®¹å®¹å™¨" è‡ªå‹•å¡«æ»¿å‰©é¤˜ç©ºé–“ */
+    /* é€™è£¡ä½¿ç”¨ body > .container æ˜¯ç‚ºäº†ç²¾æº–é¸ä¸­åŒ…ä½ @RenderBody çš„é‚£å€‹ div */
     body > .container {
         flex: 1;
     }
