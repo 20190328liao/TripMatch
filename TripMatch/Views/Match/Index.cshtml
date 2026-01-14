@@ -1,141 +1,353 @@
 ﻿@{
-    ViewData["Title"] = "開始揪團";
+    ViewData["Title"] = "時間媒合";
+    // 移除預設的 Layout 邊距限制，讓背景色能滿版
+    // 如果你的 _Layout.cshtml 有 container，可能需要自行調整，或在此頁面使用自訂樣式覆蓋
 }
 
-<div class="container mt-5">
-    <div class="text-center mb-5">
-        <h2>歡迎回來，準備好出發了嗎？</h2>
-        <p class="text-muted">請選擇建立一個新的旅程，或是加入朋友的計畫。</p>
+<style>
+    :root {
+        --bg: #f3f6fb;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --shadow: 0 10px 25px rgba(17, 24, 39, .08);
+        --green: #16a34a;
+        --green-100: #eaf7ee;
+        --green-200: #bfe8cc;
+        --blue-100: #e6f0ff;
+        --blue-500: #2563eb;
+        --disabled: #d1d5db;
+    }
+
+    /* 確保背景色滿版 */
+    body {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    /* 覆寫 Bootstrap 的 input focus 顏色以符合你的設計 */
+    .form-control:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(147, 197, 253, .35);
+    }
+
+    /* 你的 Layout 結構 */
+    .page-wrap {
+        min-height: 80vh; /* 調整高度適應內容 */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .topbar {
+        padding: 18px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #374151;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+    }
+
+        .back-link:hover {
+            color: var(--blue-500);
+        }
+
+        .back-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+    .header-section {
+        padding: 18px 24px 20px;
+        text-align: center;
+    }
+
+        .header-section h1 {
+            margin: 0;
+            font-size: 36px; /* 稍微調小一點適應各裝置 */
+            letter-spacing: 2px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .header-section p {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+    .cards-grid {
+        width: min(1100px, 92vw);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 預設兩欄 */
+        gap: 32px;
+        padding-bottom: 28px;
+    }
+
+    /* 卡片設計：整合 Border-0 與你的 Shadow */
+    .custom-card {
+        background: var(--card);
+        border: 0; /* Bootstrap border-0 */
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 26px 26px 22px;
+        height: 100%; /* 讓兩邊等高 */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .icon-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+
+        .icon-circle.blue {
+            background: var(--blue-100);
+        }
+
+        .icon-circle.green {
+            background: #dcfce7;
+        }
+
+    .card-title-text {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text);
+    }
+
+    .desc {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* 按鈕樣式整合 */
+    .custom-btn {
+        width: 100%;
+        margin-top: auto; /* 將按鈕推到底部 */
+        border: none;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 15px;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+
+        .custom-btn:active {
+            transform: translateY(1px);
+        }
+
+    .btn-create {
+        background: var(--green);
+        color: #fff;
+    }
+
+        .btn-create:hover {
+            filter: brightness(0.95);
+            color: #fff;
+        }
+
+    .btn-join {
+        background: var(--blue-500);
+        color: #fff;
+    }
+
+        .btn-join:hover {
+            filter: brightness(0.95);
+            color: #fff;
+        }
+
+    .btn-disabled {
+        background: var(--disabled);
+        color: #f9fafb;
+        cursor: not-allowed;
+    }
+
+    /* 浮動標籤微調 */
+    .form-floating > .form-control {
+        border-radius: 8px;
+        border: 1px solid var(--line);
+    }
+
+    .form-floating > label {
+        font-size: 14px;
+        color: var(--muted);
+    }
+
+    @@media (max-width: 860px) {
+        .cards-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="page-wrap">
+
+    <div class="container">
+        <div class="topbar">
+            <a class="back-link" href="@Url.Action("Index", "Home")">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"></path>
+                </svg>
+                回首頁
+            </a>
+        </div>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-5 mb-4">
-            <div class="card h-100 shadow-sm border-primary">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4>我要開團 (Create)</h4>
-                </div>
-                <div class="card-body">
-                    <form id="createForm">
-                        <div class="mb-3">
-                            <label class="form-label">預計揪團人數 (含自己)</label>
-                            <input type="number" class="form-control" id="targetNumber" value="4" min="2" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">旅遊日期範圍 (起)</label>
-                            <input type="date" class="form-control" id="dateStart" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">旅遊日期範圍 (迄)</label>
-                            <input type="date" class="form-control" id="dateEnd" required>
-                        </div>
-
-                        <input type="hidden" id="travelDays">
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-outline-primary btn-lg">建立群組</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-1 d-flex align-items-center justify-content-center">
-            <div class="vr h-50 d-none d-md-block"></div>
-            <hr class="w-100 d-md-none my-4">
-        </div>
-
-        <div class="col-md-5 mb-4">
-            <div class="card h-100 shadow-sm border-success">
-                <div class="card-header bg-success text-white text-center">
-                    <h4>我要加入 (Join)</h4>
-                </div>
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <p class="text-center text-muted">已經有邀請碼了嗎？直接輸入並加入夥伴！</p>
-
-                    <form id="joinForm">
-                        <div class="mb-3">
-                            <label class="form-label">請輸入邀請碼</label>
-                            <input type="text" class="form-control form-control-lg text-center text-uppercase"
-                                   id="inviteCode" placeholder="例如：AB1234" required>
-                        </div>
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-outline-success btn-lg">加入群組</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+    <div class="header-section">
+        <h1>時間媒合</h1>
+        <p>建立專屬旅程，或是加入夥伴的冒險</p>
     </div>
+
+    <div class="cards-grid">
+
+        <div class="custom-card">
+            <div class="card-head">
+                <div class="icon-circle blue">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <h2 class="card-title-text">我有邀請碼</h2>
+            </div>
+
+            <p class="desc">已經有朋友建立團隊了嗎？輸入邀請碼加入他們。</p>
+
+            <form id="joinForm">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control text-uppercase" id="inviteCode" placeholder="例如：AB1234" maxlength="10" required>
+                    <label for="inviteCode">輸入邀請碼</label>
+                </div>
+
+                <button type="submit" class="btn custom-btn btn-disabled" id="btnJoin" disabled>
+                    加入團隊
+                </button>
+            </form>
+        </div>
+
+        <div class="custom-card">
+            <div class="card-head">
+                <div class="icon-circle green">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                </div>
+                <h2 class="card-title-text">我沒有邀請碼</h2>
+            </div>
+
+            <p class="desc">建立一個新的團隊，設定日期範圍並邀請朋友。</p>
+
+            <form id="createForm">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <div class="form-floating mb-3">
+                            <input type="number" class="form-control" id="targetNumber" value="4" min="2" placeholder="人數">
+                            <label for="targetNumber">預計人數 (含自己)</label>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="dateStart" placeholder="開始">
+                            <label for="dateStart">開始日期</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="dateEnd" placeholder="結束">
+                            <label for="dateEnd">結束日期</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn custom-btn btn-create" id="btnCreate">
+                    建立新團
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="text-center text-muted small pb-4">
+        團隊成員可以一起協調出發時間和地點
+    </div>
+
 </div>
 
 @section Scripts {
     <script>
-        // === 1. 處理開團邏輯 ===
-        document.getElementById('createForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // === 1. 初始化與日期邏輯 ===
+        document.addEventListener("DOMContentLoaded", function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateStartInput = document.getElementById('dateStart');
+            const dateEndInput = document.getElementById('dateEnd');
 
-            // 取得輸入值
-            const targetNumber = parseInt(document.getElementById('targetNumber').value);
-            const dateStart = document.getElementById('dateStart').value;
-            const dateEnd = document.getElementById('dateEnd').value;
+            // 設定最小日期
+            dateStartInput.setAttribute('min', today);
+            dateEndInput.setAttribute('min', today);
 
-            // 簡單驗證
-            if (!dateStart || !dateEnd) {
-                alert("請選擇完整的日期範圍");
-                return;
-            }
-            if (new Date(dateStart) > new Date(dateEnd)) {
-                alert("結束日期不能早於開始日期");
-                return;
-            }
-
-            // 計算天數 (API 需要 travelDays)
-            const start = new Date(dateStart);
-            const end = new Date(dateEnd);
-            const diffTime = Math.abs(end - start);
-            const travelDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 因為頭尾都算
-
-            // 準備 Payload
-            const payload = {
-                targetNumber: targetNumber,
-                travelDays: travelDays,
-                dateStart: dateStart,
-                dateEnd: dateEnd
-            };
-
-            try {
-                // 呼叫後端 API
-                const response = await fetch('/api/timewindow/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    alert(`開團成功！您的邀請碼是：${data.inviteCode}`);
-
-                    // 跳轉到下一頁：偏好設定 (Preferences)
-                    // 注意：這裡假設你的 API 回傳包含 groupId，如果沒有，請記得去 API 加
-                    window.location.href = `/Match/Preferences/${data.groupId}`;
-                } else {
-                    const error = await response.json();
-                    alert("開團失敗：" + (error.message || "未知錯誤"));
+            // 當開始日期改變，連動結束日期
+            dateStartInput.addEventListener('change', function() {
+                dateEndInput.setAttribute('min', this.value);
+                if(dateEndInput.value && dateEndInput.value < this.value) {
+                    dateEndInput.value = '';
                 }
-            } catch (err) {
-                console.error(err);
-                alert("系統發生錯誤，請稍後再試。");
+            });
+        });
+
+        // === 2. 邀請碼輸入監聽 (控制按鈕狀態) ===
+        const inviteInput = document.getElementById('inviteCode');
+        const btnJoin = document.getElementById('btnJoin');
+
+        inviteInput.addEventListener('input', () => {
+            const code = inviteInput.value.trim();
+            // 簡單驗證：有輸入即可，或設定長度限制
+            const isValid = code.length >= 2;
+
+            btnJoin.disabled = !isValid;
+            if (isValid) {
+                btnJoin.classList.remove('btn-disabled');
+                btnJoin.classList.add('btn-join');
+            } else {
+                btnJoin.classList.add('btn-disabled');
+                btnJoin.classList.remove('btn-join');
             }
         });
 
-        // === 2. 處理加入邏輯 ===
+        // === 3. 處理「加入」邏輯 ===
         document.getElementById('joinForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const inviteCode = inviteInput.value.trim();
+            const btn = document.getElementById('btnJoin');
 
-            const inviteCode = document.getElementById('inviteCode').value.trim();
+            // Loading 狀態
+            setLoading(btn, true, '加入中...');
 
             try {
                 const response = await fetch('/api/timewindow/join', {
@@ -146,19 +358,75 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    alert("加入成功！");
-
-                    // 加入成功後，跳轉到「等待大廳」或是「偏好設定」
-                    // 假設回傳資料裡有 groupId
+                    // 跳轉到偏好設定
                     window.location.href = `/Match/Preferences/${data.groupId}`;
                 } else {
                     const error = await response.json();
-                    alert("加入失敗：" + (error.message || "邀請碼無效或您已在群組中"));
+                    alert("加入失敗：" + (error.message || "邀請碼無效"));
+                    setLoading(btn, false, '加入團隊');
                 }
             } catch (err) {
                 console.error(err);
                 alert("連線錯誤");
+                setLoading(btn, false, '加入團隊');
             }
         });
+
+        // === 4. 處理「建立」邏輯 ===
+        document.getElementById('createForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const targetNumber = parseInt(document.getElementById('targetNumber').value);
+            const dateStart = document.getElementById('dateStart').value;
+            const dateEnd = document.getElementById('dateEnd').value;
+            const btn = document.getElementById('btnCreate');
+
+            // 驗證
+            if (!dateStart || !dateEnd) { alert("請選擇完整的日期範圍"); return; }
+            if (new Date(dateStart) > new Date(dateEnd)) { alert("結束日期不能早於開始日期"); return; }
+
+            // 計算天數
+            const start = new Date(dateStart);
+            const end = new Date(dateEnd);
+            const diffTime = Math.abs(end - start);
+            const travelDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            const payload = { targetNumber, travelDays, dateStart, dateEnd };
+
+            // Loading 狀態
+            setLoading(btn, true, '建立中...');
+
+            try {
+                const response = await fetch('/api/timewindow/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 跳轉
+                    window.location.href = `/Match/Preferences/${data.groupId}`;
+                } else {
+                    const error = await response.json();
+                    alert("開團失敗：" + (error.message || "未知錯誤"));
+                    setLoading(btn, false, '建立新團');
+                }
+            } catch (err) {
+                console.error(err);
+                alert("系統發生錯誤");
+                setLoading(btn, false, '建立新團');
+            }
+        });
+
+        // Helper: 按鈕 Loading 切換
+        function setLoading(btn, isLoading, text) {
+            btn.disabled = isLoading;
+            if (isLoading) {
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${text}`;
+            } else {
+                btn.innerHTML = text;
+            }
+        }
     </script>
 }

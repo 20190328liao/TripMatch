@@ -1,22 +1,35 @@
+/* === 全域設定與字體 === */
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
+/* === 按鈕與輸入框焦點樣式 === */
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* === Sticky Footer (Flexbox 佈局) === */
+/* 1. 確保 html 和 body 佔滿高度，並移除預設邊距 */
+html, body {
+    height: 100%;
+    margin: 0;
 }
 
+/* 2. 將 body 設為垂直排列的 Flex 容器 */
 body {
-  margin-bottom: 60px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* 確保至少有視窗高度 */
 }
+
+    /* 3. 指定 body 下的 "主要內容容器" 自動填滿剩餘空間 */
+    /* 這裡使用 body > .container 是為了精準選中包住 @RenderBody 的那個 div */
+    body > .container {
+        flex: 1;
+    }

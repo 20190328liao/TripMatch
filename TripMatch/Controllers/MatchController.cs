@@ -11,5 +11,12 @@ namespace TripMatch.Controllers
         {
             return View();
         }
+
+        [HttpGet("Preferences/{groupId}")]
+        public IActionResult Preferences(int groupId)
+        {
+            ViewBag.GroupId = groupId;
+            return View();
+        }
     }
 }
