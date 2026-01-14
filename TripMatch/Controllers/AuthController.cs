@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
@@ -23,18 +24,21 @@ namespace TripMatch.Controllers
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly TravelDbContext _dbContext;
+        private readonly ITagUserId _tagUserId;
 
         public AuthController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             AuthService authService,
             IEmailSender<ApplicationUser> emailSender,
-            TravelDbContext dbContext
+            TravelDbContext dbContext, ITagUserId tagUserId
             )
-            => (_signInManager, _userManager, _authService, _emailSender, _dbContext) = (signInManager, userManager, authService, emailSender, dbContext);
+            => (_signInManager, _userManager, _authService, _emailSender, _dbContext,_tagUserId) = (signInManager, userManager, authService, emailSender, dbContext,tagUserId);
 
 
         #region Views (頁面)
+
+
         [HttpGet]
         public IActionResult ReplacePasswords()
         {
@@ -76,10 +80,11 @@ namespace TripMatch.Controllers
         }
 
         [HttpGet]
-        [Authorize]  // ★ 自動驗證，未登入會導向預設登入頁
+        [Authorize]
         public IActionResult MemberCenter()
         {
-            return View();
+            // 傳入空集合避免 Razor 在 Model轉換失敗時拋出 NullReferenceException
+            return View(System.Linq.Enumerable.Empty<TripMatch.Models.Settings.WishlistCard>());
         }
 
         [HttpGet]
@@ -217,6 +222,7 @@ namespace TripMatch.Controllers
                 return RedirectToAction("ForgotPassword", new { error = "invalid_code" });
             }
         }
+
 
         #endregion
 

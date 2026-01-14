@@ -2,17 +2,17 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
-using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
-using TripMatch.Data;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
 using System.Globalization;
+using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Threading.Tasks;
 
 namespace TripMatch.Controllers.Api
 {
@@ -25,6 +25,9 @@ namespace TripMatch.Controllers.Api
         private readonly AuthService _authService;
         private readonly IEmailSender<ApplicationUser> _emailSender;
         private readonly TravelDbContext _dbContext;
+        private readonly ITagUserId _tagUserId;
+
+        private readonly ILogger<AuthApiController> _logger;
 
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
@@ -37,19 +40,26 @@ namespace TripMatch.Controllers.Api
 
 
         public AuthApiController(
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager,
-            AuthService authService,
-            IEmailSender<ApplicationUser> emailSender,
-           TravelDbContext dbContext)
+     SignInManager<ApplicationUser> signInManager,
+     UserManager<ApplicationUser> userManager,
+     AuthService authService,
+     IEmailSender<ApplicationUser> emailSender,
+     TravelDbContext dbContext,
+     ITagUserId tagUserId,
+     ILogger<AuthApiController> logger
+     )
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _authService = authService;
             _emailSender = emailSender;
             _dbContext = dbContext;
+            _tagUserId = tagUserId;
+            _logger = logger;
         }
-       
+
+
+
         [HttpGet("GetLockedRanges")]
         [Authorize]
         public async Task<IActionResult> GetLockedRanges(int? userId)
@@ -113,19 +123,24 @@ namespace TripMatch.Controllers.Api
                 return BadRequest(new { success = false, message = "輸入資料格式錯誤" });
             }
 
-            var user = await _userManager.FindByEmailAsync(data.Email!);
-            if (user == null)
-            {
-                return Unauthorized(new { success = false, message = "帳號或密碼錯誤" });
-            }
+            var result = await _signInManager.PasswordSignInAsync(data.Email!, data.Password!, isPersistent: false, lockoutOnFailure: true);
 
-            var result = await _signInManager.PasswordSignInAsync(user, data.Password!, isPersistent: false, lockoutOnFailure: true);
+            ApplicationUser? user = null;
 
             if (result.Succeeded)
             {
-                var token = _authService.GenerateJwtToken(user);
-                _authService.SetAuthCookie(HttpContext, token);
-                _authService.SetPendingCookie(HttpContext, user.Email);
+                user = await _userManager.FindByEmailAsync(data.Email!);
+                if (user != null)
+                {
+                    // 保險：清除舊 Cookie/Session，避免殘留資料在前端短暫顯示
+                    try { HttpContext.Session?.Clear(); } catch { }
+                    try { Response.Cookies.Delete("PendingEmail"); } catch { }
+                    try { Response.Cookies.Delete("AuthToken"); } catch { }
+
+                    var token = _authService.GenerateJwtToken(user);
+                    _authService.SetAuthCookie(HttpContext, token);
+                    _authService.SetPendingCookie(HttpContext, user.Email);
+                }
 
                 return Ok(new
                 {
@@ -135,12 +150,17 @@ namespace TripMatch.Controllers.Api
                 });
             }
 
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(data.Email!);
+            }
+
             if (result.IsLockedOut)
             {
                 return StatusCode(423, new { success = false, message = "帳號已被鎖定，請稍後再試。" });
             }
 
-            var accessFailedCount = await _userManager.GetAccessFailedCountAsync(user);
+            var accessFailedCount = user != null ? await _userManager.GetAccessFailedCountAsync(user) : 0;
             var remainingAttempts = 5 - accessFailedCount;
 
             return BadRequest(new { success = false, message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
@@ -591,32 +611,56 @@ namespace TripMatch.Controllers.Api
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
-            {
                 return NotFound(new { success = false, message = "找不到使用者" });
-            }
 
-            var user = await _dbContext.AspNetUsers
+            var userRecord = await _dbContext.AspNetUsers
                 .AsNoTracking()
                 .Where(u => u.UserId == intUserId)
                 .Select(u => new
                 {
                     u.Email,
                     u.BackupEmail,
-                    Avatar = u.Avatar
+                    Avatar = u.Avatar,
+                    FullName = u.FullName
                 })
                 .FirstOrDefaultAsync();
 
-            if (user == null)
-            {
+            if (userRecord == null)
                 return NotFound(new { success = false, message = "找不到使用者" });
+
+            string fullNameToReturn;
+            if (string.IsNullOrWhiteSpace(userRecord.FullName))
+            {
+                // DB 無值：用 Email @ 前段當預設，並嘗試寫回（寫回時處理中文編碼）
+                var defaultName = (userRecord.Email ?? "").Split('@').FirstOrDefault() ?? "未設定";
+                fullNameToReturn = defaultName;
+
+                try
+                {
+                    var userEntity = await _userManager.FindByIdAsync(userId);
+                    if (userEntity != null && string.IsNullOrWhiteSpace(userEntity.FullName))
+                    {
+                        userEntity.FullName = EncodeFullNameIfNeeded(defaultName);
+                        await _userManager.UpdateAsync(userEntity);
+                    }
+                }
+                catch
+                {
+                    // 寫回失敗不影響回傳
+                }
+            }
+            else
+            {
+                fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
             }
 
             return Ok(new
             {
                 success = true,
-                email = user.Email,
-                backupEmail = user.BackupEmail,
-                avatar = user.Avatar
+                email = userRecord.Email,
+                backupEmail = userRecord.BackupEmail,
+                avatar = userRecord.Avatar,
+                fullName = fullNameToReturn
             });
         }
 
@@ -757,43 +801,6 @@ namespace TripMatch.Controllers.Api
 
 
 
-        // 測試用產生假會員 API
-        [HttpPost("TestGenerateUser")]
-        public async Task<IActionResult> TestGenerateUser()
-        {
-            var randomId = Guid.NewGuid().ToString().Substring(0, 5);
-            var fakeUser = new ApplicationUser
-            {
-                UserName = $"Tester_{randomId}",
-                Email = $"test_{randomId}@example.com",
-                EmailConfirmed = true
-            };
-
-            // 使用 UserManager 建立使用者 
-            var createResult = await _userManager.CreateAsync(fakeUser, "Test1234!");
-
-            if (!createResult.Succeeded)
-            {
-                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errorMsg });
-            }
-
-            // 4. 為了產生 Token，需要 User 物件
-            var user = await _userManager.FindByIdAsync(fakeUser.Id.ToString());
-            if (user == null) return NotFound();
-
-            // 5. 產生 JWT 並寫入 Cookie
-            var token = _authService.GenerateJwtToken(user);
-            _authService.SetAuthCookie(HttpContext, token);
-
-            // 6. 回傳給前端
-            return Ok(new
-            {
-                message = "成功新增假會員並自動登入",
-                userId = user.Id,
-                userName = user.UserName
-            });
-        }
 
         public class SaveLeavesModel
         {
@@ -884,94 +891,8 @@ namespace TripMatch.Controllers.Api
 
             return Ok(new { success = true });
         }
-        
 
-        [HttpGet("Wishlist")]
-        [Authorize]
-        public async Task<IActionResult> GetWishlist()
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
-                return Unauthorized();
 
-            var wishItems = await _dbContext.Wishlists
-                .AsNoTracking()
-                .Where(w => w.UserId == userId)
-                .Include(w => w.Spot)
-                .OrderByDescending(w => w.CreatedAt)
-                .Select(w => new
-                {
-                    w.WishlistItemId,
-                    w.SpotId,
-                    SpotNameZh = w.Spot.NameZh,
-                    SpotNameEn = w.Spot.NameEn,
-                    PhotosSnapshot = w.Spot.PhotosSnapshot,
-                    w.Note,
-                    w.CreatedAt
-                })
-                .ToListAsync();
-
-            var result = wishItems.Select(w =>
-            {
-                string? imageUrl = null;
-                if (!string.IsNullOrEmpty(w.PhotosSnapshot))
-                {
-                    imageUrl = ParseFirstPhotoFromSnapshot(w.PhotosSnapshot);
-                }
-
-                return new
-                {
-                    w.WishlistItemId,
-                    w.SpotId,
-                    SpotTitle = !string.IsNullOrEmpty(w.SpotNameZh) ? w.SpotNameZh :
-                                !string.IsNullOrEmpty(w.SpotNameEn) ? w.SpotNameEn : "未命名景點",
-                    ImageUrl = imageUrl ?? "/img/Logo/Part12.png",
-                    w.Note,
-                    w.CreatedAt
-                };
-            }).ToList();
-
-            return Ok(result);
-        }
-
-        [HttpPost("Wishlist/Toggle")]
-        [Authorize]
-        public async Task<IActionResult> ToggleWishlist([FromBody] ToggleWishlistModel model)
-        {
-            if (model == null || model.SpotId <= 0) return BadRequest(new { message = "參數錯誤" });
-
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
-                return Unauthorized();
-
-            var existing = await _dbContext.Wishlists.FirstOrDefaultAsync(w => w.UserId == userId && w.SpotId == model.SpotId);
-            if (existing != null)
-            {
-                _dbContext.Wishlists.Remove(existing);
-                await _dbContext.SaveChangesAsync();
-                return Ok(new { removed = true, wishlistItemId = existing.WishlistItemId });
-            }
-
-            var newItem = new Wishlist
-            {
-                UserId = userId,
-                SpotId = model.SpotId,
-                Note = model.Note,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-
-            _dbContext.Wishlists.Add(newItem);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new { added = true, wishlistItemId = newItem.WishlistItemId });
-        }
-
-        public class ToggleWishlistModel
-        {
-            public int SpotId { get; set; }
-            public string? Note { get; set; }
-        }
 
         private static string? ParseFirstPhotoFromSnapshot(string photosSnapshot)
         {
@@ -1070,11 +991,14 @@ namespace TripMatch.Controllers.Api
                 HttpContext.Session.SetString("BackupLookupUserId", user.Id.ToString());
                 HttpContext.Session.SetString("BackupLookupTime", DateTime.UtcNow.ToString("O"));
 
+                _logger?.LogInformation("ConfirmBackupLookup: set BackupLookupUserId={UserId}", user.Id);
+
                 // 轉回前端 ForgotEmail 頁面（前端會辨識 query string 並取結果）
                 return Redirect($"{Url.Action("ForgotEmail", "Auth")}?backupVerified=1");
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "ConfirmBackupLookup failed for userId={UserId}", userId);
                 return BadRequest("驗證處理失敗");
             }
         }
@@ -1083,16 +1007,220 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> GetBackupLookupResult()
         {
             var userId = HttpContext.Session.GetString("BackupLookupUserId");
-            if (string.IsNullOrEmpty(userId)) return BadRequest(new { message = "沒有驗證紀錄" });
+            _logger?.LogInformation("GetBackupLookupResult: session BackupLookupUserId={UserId}", userId);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                // 改為不回 400，而是回 200 + verified=false，讓前端可以用統一流程處理（不當作錯誤）
+                _logger?.LogInformation("GetBackupLookupResult: no BackupLookupUserId in session");
+                return Ok(new { verified = false, message = "沒有驗證紀錄" });
+            }
 
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return BadRequest(new { message = "使用者不存在" });
+            if (user == null)
+            {
+                _logger?.LogWarning("GetBackupLookupResult: user not found for BackupLookupUserId={UserId}", userId);
+                return Ok(new { verified = false, message = "使用者不存在" });
+            }
+
+            _logger?.LogInformation("GetBackupLookupResult: returning userId={UserId}, email={Email}", user.Id, user.Email);
 
             return Ok(new
             {
+                verified = true,
                 userId = user.Id,
                 email = user.Email
             });
         }
+
+        [HttpPost("ClearBackupLookupSession")]
+        public IActionResult ClearBackupLookupSession()
+        {
+            try
+            {
+                HttpContext.Session.Remove("BackupLookupUserId");
+                HttpContext.Session.Remove("BackupLookupTime");
+
+                // 同時清除與重設密碼流程有關的 Session（避免遺留）
+                HttpContext.Session.Remove("PasswordResetUserId");
+                HttpContext.Session.Remove("PasswordResetCode");
+                HttpContext.Session.Remove("PasswordResetTime");
+
+                _logger?.LogInformation("ClearBackupLookupSession: cleared backup & password reset session keys");
+                return Ok(new { message = "驗證狀態已清除" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "ClearBackupLookupSession failed");
+                return StatusCode(500, new { message = "清除驗證狀態失敗" });
+            }
+        }
+
+        private static string DecodeFullNameIfNeeded(string? fullName)
+        {
+            // 假設 FullName 可能是 URL 編碼（如 %E4%B8%AD%E6%96%87），否則直接回傳原值
+            if (string.IsNullOrEmpty(fullName))
+                return string.Empty;
+
+            try
+            {
+                // 嘗試解碼（如 System.Net.WebUtility.UrlDecode）
+                return System.Net.WebUtility.UrlDecode(fullName);
+            }
+            catch
+            {
+                // 解碼失敗則回傳原值
+                return fullName;
+            }
+        }
+
+        private static string EncodeFullNameIfNeeded(string fullName)
+        {
+            // 假設 FullName 可能包含非 ASCII 字元，進行 URL 編碼
+            if (string.IsNullOrEmpty(fullName))
+                return string.Empty;
+
+            try
+            {
+                // 使用 System.Net.WebUtility.UrlEncode 進行編碼
+                return System.Net.WebUtility.UrlEncode(fullName);
+            }
+            catch
+            {
+                // 編碼失敗則回傳原值
+                return fullName;
+            }
+        }
+
+        [HttpPost("ImportCalendarJson")]
+        [Authorize]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> ImportCalendarJson([FromForm] IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { success = false, message = "請上傳 JSON 檔案" });
+
+            string content;
+            try
+            {
+                using var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8);
+                content = await reader.ReadToEndAsync();
+            }
+            catch
+            {
+                return StatusCode(500, new { success = false, message = "讀取檔案失敗" });
+            }
+
+            var parsed = new List<DateOnly>();
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == System.Text.Json.JsonValueKind.Object && root.TryGetProperty("dates", out var datesProp) && datesProp.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var el in datesProp.EnumerateArray())
+                    {
+                        if (el.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            DateOnly.TryParseExact(el.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        {
+                            parsed.Add(d);
+                        }
+                    }
+                }
+                else if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    foreach (var el in root.EnumerateArray())
+                    {
+                        if (el.ValueKind == System.Text.Json.JsonValueKind.String &&
+                            DateOnly.TryParseExact(el.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                        {
+                            parsed.Add(d);
+                        }
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "JSON 格式不支援，請使用 dates 陣列或字串陣列。" });
+                }
+            }
+            catch
+            {
+                return BadRequest(new { success = false, message = "無效的 JSON 檔案" });
+            }
+
+            if (!parsed.Any())
+                return BadRequest(new { success = false, message = "未解析到可用日期 (格式 yyyy-MM-dd)" });
+
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized(new { success = false, message = "未登入或無效使用者" });
+
+            // 取得使用者的已鎖定行程區間
+            var lockedRanges = await _dbContext.TripMembers
+                .AsNoTracking()
+                .Where(tm => tm.UserId == userId)
+                .Select(tm => new { Start = tm.Trip.StartDate, End = tm.Trip.EndDate })
+                .Where(r => r.Start != default && r.End != default)
+                .ToListAsync();
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            // 過濾：排除鎖定區間並只保留今天或之後
+            var accepted = parsed
+                .Where(d => d >= today && !lockedRanges.Any(r => d >= r.Start && d <= r.End))
+                .Distinct()
+                .OrderBy(d => d)
+                .ToList();
+
+            var rejected = parsed.Except(accepted).Distinct().OrderBy(d => d).ToList();
+
+            // 寫入資料庫：避免重複、使用 transaction
+            try
+            {
+                await using var tx = await _dbContext.Database.BeginTransactionAsync();
+
+                var existingDates = await _dbContext.LeaveDates
+                    .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && accepted.Contains(l.LeaveDate1.Value))
+                    .Select(l => l.LeaveDate1!.Value)
+                    .ToListAsync();
+
+                var toInsert = accepted.Except(existingDates).Select(d => new LeaveDate
+                {
+                    UserId = userId,
+                    LeaveDate1 = d,
+                    LeaveDateAt = DateTime.Now
+                }).ToList();
+
+                if (toInsert.Count > 0)
+                {
+                    await _dbContext.LeaveDates.AddRangeAsync(toInsert);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { success = false, message = "儲存至資料庫失敗" });
+            }
+
+            // 保留原本把 accepted 存到 Session 的行為（供前端流程使用）
+            try
+            {
+                var acceptStrs = accepted.Select(d => d.ToString("yyyy-MM-dd")).ToArray();
+                HttpContext.Session.SetString("ImportedCalendarDates", System.Text.Json.JsonSerializer.Serialize(acceptStrs));
+            }
+            catch { /* non-fatal */ }
+
+            return Ok(new
+            {
+                success = true,
+                message = "已匯入日曆（已過濾衝突與過去日期）",
+                acceptedDates = accepted.Select(d => d.ToString("yyyy-MM-dd")).ToArray(),
+                rejectedDates = rejected.Select(d => d.ToString("yyyy-MM-dd")).ToArray()
+            });
+        }
+   
     }
-    }
+}

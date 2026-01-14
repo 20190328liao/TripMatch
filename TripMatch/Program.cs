@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.DataProtection;
+ï»¿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using TripMatch.Extensions;
 using TripMatch.Models;
 using TripMatch.Services;
 using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
-
-
+using System.Security.Claims;
 
 namespace TripMatch
 {
@@ -14,13 +13,13 @@ namespace TripMatch
     {
         public static void Main(string[] args)
         {
-            //¤@­ÓªA°È¥u­t³d¤@ºØ³d¥ô
+            //ä¸€å€‹æœå‹™åªè² è²¬ä¸€ç¨®è²¬ä»»
 
 
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddAntiforgery(options =>
             {
-                // ³o¦æ«D±`­«­n¡A¥²¶·»P§A JS ¸Ìªº headers ¦WºÙ§¹¥ş¤@­P
+                // é€™è¡Œéå¸¸é‡è¦ï¼Œå¿…é ˆèˆ‡ä½  JS è£¡çš„ headers åç¨±å®Œå…¨ä¸€è‡´
                 options.HeaderName = "RequestVerificationToken";
             });
 
@@ -30,41 +29,43 @@ namespace TripMatch
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
             builder.Services.AddScoped<TimeWindowService>();
 
-            // µù¥U°òÂ¦ªA°È
+            // è¨»å†ŠåŸºç¤æœå‹™
             builder.Services.AddScoped<SharedService>();
 
-            // µù¥U¨­¤ÀÅçÃÒ°òÂ¦³]¬I
+            // è¨»å†Šèº«åˆ†é©—è­‰åŸºç¤è¨­æ–½
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
-            // µù¥U¦U­Ó¼Ò²Õªºservices
+            // è¨»å†Šå„å€‹æ¨¡çµ„çš„services
             builder.Services.AddScoped<MatchServices>();
             builder.Services.AddScoped<TripServices>();
             builder.Services.AddScoped<SpotServices>();
             builder.Services.AddScoped<BillingServices>();
 
-            // µù¥U Typed HttpClient (·|¦Û°Ê³B²z HttpClient ªº¥Í©R¶g´Á)
+            // è¨»å†Š Typed HttpClient (æœƒè‡ªå‹•è™•ç† HttpClient çš„ç”Ÿå‘½é€±æœŸ)
             builder.Services.AddHttpClient<GooglePlacesClient>();
             builder.Services.AddScoped<PlacesImageService>();
 
-            // ¨ú±oUserIdªA°Èµù¥U¡]¥²¶·¦b Build ¤§«e¡^
+            // å–å¾—UserIdæœå‹™è¨»å†Šï¼ˆå¿…é ˆåœ¨ Build ä¹‹å‰ï¼‰
             builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
             builder.Services.AddRazorPages();
 
-            // µù¥U¨­¤ÀÅçÃÒ°òÂ¦³]¬I
+            // è¨»å†Šèº«åˆ†é©—è­‰åŸºç¤è¨­æ–½
 
 
 
-            // Swagger »P ±ÂÅv
+            // Swagger èˆ‡ æˆæ¬Š
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
 
-            // °t¸m Session ªA°È
+            // é…ç½® Session æœå‹™
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromHours(24); // Session ¦³®Ä´Á¬° 24 ¤p®É
-                options.Cookie.HttpOnly = true; // ¨¾¤î JavaScript ¦s¨ú
-                options.Cookie.IsEssential = true; // §Y¨Ï¥¼¦P·N Cookie ¤]­n³]©w
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.IdleTimeout = TimeSpan.FromHours(24); // Session æœ‰æ•ˆæœŸç‚º 24 å°æ™‚
+                options.Cookie.HttpOnly = true; // é˜²æ­¢ JavaScript å­˜å–
+                options.Cookie.IsEssential = true; // å³ä½¿æœªåŒæ„ Cookie ä¹Ÿè¦è¨­å®š
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
             });
            
             builder.Services.ConfigureApplicationCookie(options =>
@@ -95,25 +96,25 @@ namespace TripMatch
                 };
             });
 
-            // «ù¤[¤Æ Data Protection Key¡]¨¾¤î­«±Ò«á Token ¥¢®Ä¡^
+            // æŒä¹…åŒ– Data Protection Keyï¼ˆé˜²æ­¢é‡å•Ÿå¾Œ Token å¤±æ•ˆï¼‰
             builder.Services.AddDataProtection()
                 .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "Keys")))
                 .SetApplicationName("TripMatch");
 
-            // µù¥U®È¹C¸ê°TªA°È(¥Ø«e¬O°²¸ê®Æ)
-            // todo:¦ê¥~³¡api­n¦^¨Ó§ï¹ê§@Ãş§O
+            // è¨»å†Šæ—…éŠè³‡è¨Šæœå‹™(ç›®å‰æ˜¯å‡è³‡æ–™)
+            // todo:ä¸²å¤–éƒ¨apiè¦å›ä¾†æ”¹å¯¦ä½œé¡åˆ¥
             builder.Services.AddScoped<ITravelInfoService, MockTravelInfoService>();
 
-            // --- «Ø¥ßÀ³¥Îµ{¦¡ ---
+            // --- å»ºç«‹æ‡‰ç”¨ç¨‹å¼ ---
             var app = builder.Build();
 
-            // --- ´ú¸Õ¥N½X¶}©l ---
+            // --- æ¸¬è©¦ä»£ç¢¼é–‹å§‹ ---
             var connString = app.Configuration.GetConnectionString("DefaultConnection");
-            Console.WriteLine($"==== ¥Ø«e¨Ï¥Îªº¸ê®Æ®w³s½u¬O¡G{connString} ====");
-            // --- ´ú¸Õ¥N½Xµ²§ô ---
+            Console.WriteLine($"==== ç›®å‰ä½¿ç”¨çš„è³‡æ–™åº«é€£ç·šæ˜¯ï¼š{connString} ====");
+            // --- æ¸¬è©¦ä»£ç¢¼çµæŸ ---
 
         
-            // --- 3. ¤¤¶¡¥ó°t¸m ---
+            // --- 3. ä¸­é–“ä»¶é…ç½® ---
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -124,21 +125,61 @@ namespace TripMatch
                 app.UseExceptionHandler("/Home/Error");
             }
             app.UseHttpsRedirection();
-            app.UseDefaultFiles(); // ¤ä´© wwwroot/signup.html µ¥ÀRºAÀÉ®×
+            app.UseDefaultFiles(); // æ”¯æ´ wwwroot/signup.html ç­‰éœæ…‹æª”æ¡ˆ
 
             app.UseStaticFiles();
             app.MapRazorPages();
             app.UseRouting();
 
-            app.UseSession(); // ¦¹¦æ¥²¶·¦b UseRouting() ¤§«á
+            // åœ¨å»ºç«‹ç®¡ç·šæ™‚ï¼Œæ–¼ app.UseRouting() èˆ‡ app.UseAuthentication() ä¹‹é–“åŠ å…¥ä¸€å€‹ä¸­ä»‹å±¤
+            // ä»¥ç§»é™¤å·²éæœŸæˆ–æ˜é¡¯ç„¡æ•ˆçš„ AuthTokenï¼Œé¿å…é©—è­‰ä¸­é–“ä»¶åœ¨è«‹æ±‚å…§ä½¿ç”¨æ®˜ç•™ cookie
+            // Insert this BEFORE app.UseAuthentication();
+
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Cookies != null && context.Request.Cookies.TryGetValue("AuthToken", out var token) && !string.IsNullOrWhiteSpace(token))
+                {
+                    try
+                    {
+                        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                        var jwt = handler.ReadJwtToken(token);
+                        // å¦‚æœ token å·²éæœŸæˆ– exp ç„¡æ³•è§£æï¼Œåˆªé™¤ cookie é˜²æ­¢çŸ­æš«é¡¯ç¤ºå…¶ä»–ä½¿ç”¨è€…è³‡æ–™
+                        if (jwt.ValidTo <= DateTime.UtcNow)
+                        {
+                            try { context.Response.Cookies.Delete("AuthToken"); } catch { /* ignore */ }
+                        }
+                    }
+                    catch
+                    {
+                        // éæ³• token -> åˆªé™¤ cookie
+                        try { context.Response.Cookies.Delete("AuthToken"); } catch { /* ignore */ }
+                    }
+                }
+
+                await next();
+            });
+
+            app.UseSession(); // æ­¤è¡Œå¿…é ˆåœ¨ UseRouting() ä¹‹å¾Œ
 
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseTagUserId();  // °²³]§A¦³ extension ¤èªkµù¥U Middleware
+            app.UseTagUserId();  // å‡è¨­ä½ æœ‰ extension æ–¹æ³•è¨»å†Š Middleware
 
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            // --- åœ¨ request pipeline åŠ ä¸€å€‹ç°¡å–® middlewareï¼Œå°‡ Claim çš„ UserId å¯«å…¥ accessor
+            app.Use(async (context, next) =>
+            {
+                var accessor = context.RequestServices.GetRequiredService<ITagUserId>();
+                var idClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(idClaim, out var id))
+                {
+                    accessor.Set(id);
+                }
+                await next();
+            });
 
             app.Run();
 

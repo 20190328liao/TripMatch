@@ -9,6 +9,14 @@
             xhrFields: { withCredentials: true },
             success: function (res) {
                 console.log("登出成功，伺服器回應：", res);
+
+                // 清除前端 avatar 快取，確保下一次登入或頁面載入會從 server 重新抓取
+                try {
+                    localStorage.removeItem('tm_avatar');
+                } catch (ex) {
+                    console.warn('清除 avatar 快取失敗', ex);
+                }
+
                 let dest = (res && res.redirectUrl) ? res.redirectUrl : (window.Routes?.Home?.Index || '/');
                 window.location.href = dest;
             },

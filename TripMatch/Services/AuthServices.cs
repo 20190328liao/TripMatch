@@ -224,38 +224,43 @@ namespace TripMatch.Services
                 return (userManager, jwtSettings, key, creds);
             }
 
+            // 修改：在產生 JWT 時一併加入 NameIdentifier，並在 SetAuthCookie 前刪除既有的 Cookie
             public string GenerateJwtToken(ApplicationUser user)
             {
-
                 ArgumentNullException.ThrowIfNull(user);
 
                 var settings = _jwtSettings.Value ?? throw new InvalidOperationException("JwtSettings 尚未設定 (IOptions<JwtSettings>.Value 為 null)。");
 
+                var now = DateTime.UtcNow;
+                var expires = now.AddDays(30);
+
                 var claims = new List<Claim>
                 {
+                    // 標準 sub + 明確的 NameIdentifier (整數 ID)
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
                     new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
                     new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                    new Claim("Avatar", user.Avatar ?? "") //不用常常查資料庫，直接放在 JWT 裡
+                    new Claim("Avatar", user.Avatar ?? string.Empty)
                 };
 
-                // Use cached signing credentials to avoid per-request allocations
                 var descriptor = new SecurityTokenDescriptor
                 {
-                    Issuer = settings.Issuer,
-                    Audience = settings.Audience,
+                    Issuer = _jwtSettings.Value.Issuer,
+                    Audience = _jwtSettings.Value.Audience,
                     Subject = new ClaimsIdentity(claims),
-                    NotBefore = DateTime.UtcNow,
-                    Expires = DateTime.UtcNow.AddDays(30),
+                    NotBefore = now,
+                    Expires = expires,
                     SigningCredentials = _signingCredentials
                 };
 
-                var handler = new JsonWebTokenHandler();
-                return handler.CreateToken(descriptor);
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                var token = handler.CreateToken(descriptor);
+                return handler.WriteToken(token);
             }
 
-            //使用者點擊連結，瀏覽器記住 Email，跳轉回註冊頁時自動帶入顯示已驗證。
             public void SetPendingCookie(HttpContext context, string? email)
             {
                 if (string.IsNullOrEmpty(email)) return;
@@ -272,15 +277,38 @@ namespace TripMatch.Services
 
             public void SetAuthCookie(HttpContext context, string token)
             {
-                context.Response.Cookies.Append("AuthToken", token, new CookieOptions
+                if (context == null) throw new ArgumentNullException(nameof(context));
+                if (string.IsNullOrWhiteSpace(token)) return;
+
+                // 先刪除舊的 cookie（保險）
+                try { context.Response.Cookies.Delete("AuthToken"); } catch { /* ignore */ }
+
+                // 解析 JWT 以取得 exp（若能）
+                DateTimeOffset? expires = null;
+                try
+                {
+                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(token);
+                    // JwtSecurityToken.ValidTo 為 UTC
+                    expires = jwt.ValidTo == DateTime.MinValue ? null : new DateTimeOffset(jwt.ValidTo);
+                }
+                catch
+                {
+                    // 若解析失敗，不阻止寫入 cookie，採用安全短時過期
+                    expires = DateTimeOffset.UtcNow.AddHours(8);
+                }
+
+                var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = false, // 正式環境請改 true
-                    SameSite = SameSiteMode.Lax,
-                    Path = "/",                // ← 加上這行
-                    Expires = DateTime.UtcNow.AddDays(30)
-                }
-                );
+                    // 以 request 是否為 https 決定 Secure；生產環境應強制 true
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.None, // 若跨子域/第三方情形需用 None
+                    Path = "/",
+                    Expires = expires
+                };
+
+                context.Response.Cookies.Append("AuthToken", token, cookieOptions);
             }
 
             // 2. 改用 Base64UrlEncode 並指向正確的 Controller Action

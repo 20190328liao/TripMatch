@@ -57,18 +57,62 @@
                 "RequestVerificationToken": window.csrfToken
             },
             xhrFields: { withCredentials: true },
-            success: function (response) {
-                showPopup({
-                    title: "登入成功",
-                    message: response.message || "歡迎回來！",
-                    type: "success",
-                    autoClose: true,
-                    seconds: 2
-                }).then(() => {
-                    const params = new URLSearchParams(window.location.search);
-                    const returnUrl = params.get('returnUrl');
-                    window.location.href = response.redirectUrl || returnUrl || window.Routes.Home.Index;
-                });
+            success: async function (response) {
+                // 前端登入回應處理：收到 success 後立即導向（或 reload）
+                if (response?.success) {
+                    // 顯示登入進度通知視窗（原本的登入通知窗）
+                    try {
+                        showPopup({
+                            title: "登入中",
+                            message: "登入成功，正在準備首頁，請稍候…",
+                            type: "info",
+                            autoClose: false // 由重導決定何時離開
+                        });
+                    } catch (e) {
+                        // 若 showPopup 不可用，忽略並繼續導向
+                    }
+
+                    const url = response.redirectUrl || '/';
+
+                    // 預載關鍵資源以縮短首次繪製時間（視專案實際檔案調整）
+                    const preloads = [
+                        '/css/site.css',
+                        '/css/AuthApi/Calendar.css',
+                        '/js/site.js',
+                        '/js/AuthApi/Calendar.js'
+                    ];
+                    preloads.forEach(href => {
+                        try {
+                            const link = document.createElement('link');
+                            link.rel = 'preload';
+                            link.href = href;
+                            link.as = href.endsWith('.css') ? 'style' : 'script';
+                            document.head.appendChild(link);
+                        } catch { /* ignore */ }
+                    });
+
+                    // 用一次 fetch 來 warm-up server（會帶 HttpOnly cookie，能讓伺服器提早建立狀態）
+                    try {
+                        await fetch(url, { method: 'GET', credentials: 'include', cache: 'no-cache' });
+                    } catch { /* 忽略 fetch 錯誤，仍然重導 */ }
+
+                    // 小幅等待讓通知窗先呈現（避免瞬間閃動）
+                    await new Promise(r => setTimeout(r, 200));
+
+                    // 清除前端 avatar 快取（避免舊帳號 avatar 殘留）
+                    try {
+                        localStorage.removeItem('tm_avatar');
+                    } catch (ex) {
+                        console.warn('清除 avatar 快取失敗', ex);
+                    }
+
+                    // 以 replace 方式導向，避免產生 history entry 並快速切換頁面
+                    window.location.replace(url);
+                    return;
+                }
+
+                // 顯示錯誤
+                alert(response?.message || '登入失敗');
             },
             error: function (err) {
                 showPopup({

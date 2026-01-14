@@ -71,4 +71,5 @@ namespace TripMatch.Models.Settings
         [Compare("NewPassword", ErrorMessage = "新密碼和確認密碼不符。")]
         public string? ConfirmPassword { get; set; }
     }
+
 }

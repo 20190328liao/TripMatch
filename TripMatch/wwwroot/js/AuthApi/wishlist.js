@@ -1,36 +1,113 @@
-// Åª¨ú¨Ï¥ÎªÌÄ@±æ²M³æ¨Ã¦b member center ²£¥Í¥d¤ù
-(function () {
-    const containerSelector = '#wishlistCardsContainer';
-    const apiGet = window.Routes?.AuthApi?.GetWishlist ?? '/api/auth/Wishlist';
-    const apiToggle = window.Routes?.AuthApi?.ToggleWishlist ?? '/api/auth/Wishlist/Toggle';
+ï»¿document.addEventListener('DOMContentLoaded', () => {
+    const wishlistContainer = document.getElementById('wishlist_cards');
+    const apiGet = window.Routes?.MemberCenterApi?.GetWish ?? '/api/MemberCenterApi/GetWish';
+    const apiToggle = window.Routes?.MemberCenterApi?.Toggle ?? '/api/MemberCenterApi/Toggle';
+    // undoTimers ä»¥ spotId (number) ç‚ºéµï¼Œå€¼ç‚º { timerId, toastEl, removeBtn }
+    const undoTimers = {};
 
-    function createCard(item) {
-        // ¦pªG imageUrl ¬° null ©Î¬°¥~³¡ placeholder¡Afallback ¨ì¥»¦a°²¹Ï¤ù
-        const imageUrlRaw = item.imageUrl || '';
-        const isPlaceholder = imageUrlRaw.toLowerCase().includes('placeholder');
-        const img = (!imageUrlRaw || isPlaceholder) ? '/img/placeholder.png' : imageUrlRaw;
+    if (!wishlistContainer) return;
 
-        // ¦pªG«áºİ¦^¶Ç tripId¡A¾É¦V Trip/Edit/{tripId}¡F§_«h¾É¦V«Ø¥ß¦æµ{¨Ã±a spotId
-        const viewMoreUrl = item.tripId ? `/Trip/Edit/${item.tripId}` : `/Trip/Create?spotId=${item.spotId}`;
+    // åˆå§‹è¼‰å…¥
+    loadWishlist();
 
-        return `
-        <div class="col">
-            <div class="wish_card" data-spotid="${item.spotId}" data-wishlistid="${item.wishlistItemId || ''}">
-                <div class="card_image">
-                    <img src="${img}" alt="${escapeHtml(item.spotTitle)}" class="img-fluid">
-                    <button type="button" class="wish_heart ${item.wishlistItemId ? 'active' : ''}" data-spotid="${item.spotId}">
-                        <i class="bi ${item.wishlistItemId ? 'bi-heart-fill' : 'bi-heart'}"></i>
-                    </button>
+    async function loadWishlist() {
+        try {
+            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) {
+                console.warn('GetWishlist è®€å–å¤±æ•—', res.status);
+                renderEmpty();
+                return;
+            }
+            const data = await res.json();
+            const items = (data && data.items) ? data.items : data;
+            render(items);
+        } catch (ex) {
+            console.error('è¼‰å…¥é¡˜æœ›æ¸…å–®å¤±æ•—', ex);
+            renderEmpty();
+        }
+    }
+
+    function safeParsePhotos(snapshot) {
+        if (!snapshot) return null;
+        try {
+            const parsed = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+            return null;
+        } catch (e) {
+            // è§£æå¤±æ•—ï¼Œå›å‚³ null è®“å‘¼å«ç«¯ä½¿ç”¨ placeholder
+            return null;
+        }
+    }
+
+    function attachImageFallbacks(container) {
+        const imgs = (container || wishlistContainer).querySelectorAll('img.card-img-top');
+        imgs.forEach(img => {
+            // è‹¥å·²è¨­å®šé handlerï¼Œè·³é
+            if (img.__wishlist_onerror_attached) return;
+            img.__wishlist_onerror_attached = true;
+
+            img.addEventListener('error', () => {
+                try {
+                    // è‹¥åŸå§‹ src æœ‰å•é¡Œï¼Œæ”¹ç‚ºé è¨­åœ–ç‰‡ï¼ˆpngï¼‰
+                    if (!img.src || img.src.endsWith('/img/placeholder.png')) return;
+                    img.src = '/img/placeholder.png';
+                } catch (e) {
+                    // ä¿éšªï¼šé¿å… error handler è‡ªèº«æ‹‹ä¾‹å¤–
+                    console.warn('image fallback error', e);
+                }
+            });
+
+            // optional: lazy load / retry could be added here
+        });
+    }
+
+    function render(items) {
+        if (!items || items.length === 0) {
+            renderEmpty();
+            return;
+        }
+        // ä¿®æ­£å¾Œçš„ render å…§éƒ¨ç‰‡æ®µ
+        wishlistContainer.innerHTML = items.map(item => {
+            // è‡ªå‹•ç›¸å®¹ SpotId æˆ– spotId
+            const currentSpotId = item.spotId ?? item.SpotId ?? '';
+            const currentSpotTitle = item.spotTitle ?? item.Name_ZH ?? item.name_ZH ?? 'æœªçŸ¥åœ°é»';
+
+            // å„ªå…ˆä½¿ç”¨ imageUrlï¼Œå¦å‰‡å˜—è©¦å¾ PhotosSnapshot è§£æï¼›éƒ½æ²’æœ‰å‰‡ä½¿ç”¨é è¨­ png
+            const parsedPhoto = safeParsePhotos(item.PhotosSnapshot);
+            const currentImageUrl = escapeHtml(item.imageUrl ?? parsedPhoto ?? '/img/placeholder.png');
+
+            return `
+        <div class="col" data-spot-col="${currentSpotId}">
+            <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
+                <button type="button"
+                        class="btn_remove_wish active"
+                        data-spotid="${currentSpotId}"
+                        title="å¾æ¸…å–®ç§»é™¤"
+                        style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:36px; height:36px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                </button>
+                <a href="/Spot/Detail?id=${currentSpotId}" class="d-block" aria-label="${escapeHtml(currentSpotTitle)}">
+                    <img src="${currentImageUrl}" class="card-img-top" alt="${escapeHtml(currentSpotTitle)}"
+                         style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                </a>
+                <div class="card-body">
+                    <h6 class="card-title text-truncate fw-bold mb-1">${escapeHtml(currentSpotTitle)}</h6>
                 </div>
-                <div class="card_content">
-                    <h4 class="card_title">${escapeHtml(item.spotTitle)}</h4>
-                    <p class="card_date">${formatDate(item.createdAt)}</p>
-                    <div class="card_footer">
-                        <a class="view_more_link" href="${viewMoreUrl}">View more...</a>
-                    </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <button class="btn btn-primary w-100 btn-view-more" data-id="${currentSpotId}">
+                        View More
+                    </button>
                 </div>
             </div>
         </div>`;
+        }).join('');
+
+        // åœ¨ innerHTML å¯«å›å¾Œï¼Œé™„åŠ  image error fallback handler
+        attachImageFallbacks();
+    }
+
+    function renderEmpty() {
+        wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">ç›®å‰æ²’æœ‰é¡˜æœ›æ¸…å–®</p></div>';
     }
 
     function escapeHtml(s) {
@@ -40,74 +117,182 @@
         });
     }
 
-    function formatDate(dt) {
-        if (!dt) return '';
-        try {
-            const d = new Date(dt);
-            return d.toLocaleDateString();
-        } catch { return ''; }
-    }
-
-    async function load() {
-        try {
-            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
-            if (!res.ok) {
-                console.warn('GetWishlist ¦^¶Ç«D¦¨¥\ª¬ºA', res.status);
-                return;
+    // äº‹ä»¶ä»£ç†ï¼ˆåŒ…å« View More èˆ‡ ç§»é™¤/å–æ¶ˆæ”¶è—ï¼‰
+    wishlistContainer.addEventListener('click', async (e) => {
+        const viewMoreBtn = e.target.closest('.btn-view-more');
+        if (viewMoreBtn) {
+            const spotId = viewMoreBtn.getAttribute('data-id');
+            if (spotId) {
+                window.location.href = `/Spot/Detail?id=${spotId}`;
             }
-            const data = await res.json();
-            // ¦pªG API ¦^¶Çª«¥ó¥]¦b { items: [...] } ªº¸Ü¡A¨ú items¡F§_«hª½±µ¨Ï¥Î¦^¶Ç°}¦C
-            const items = data && data.items ? data.items : data;
-            render(items);
-        } catch (ex) {
-            console.error('¸ü¤JÄ@±æ²M³æ¥¢±Ñ', ex);
-        }
-    }
-
-    function render(items) {
-        const $c = document.querySelector(containerSelector);
-        if (!$c) return;
-        if (!items || items.length === 0) {
-            $c.innerHTML = '<p class="text-muted">none WishList</p>';
             return;
         }
-        $c.innerHTML = items.map(createCard).join('');
-        bindEvents();
-    }
 
-    function bindEvents() {
-        document.querySelectorAll('.wish_heart').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const spotId = parseInt(btn.getAttribute('data-spotid'), 10);
-                if (!spotId) return;
-                try {
-                    const res = await fetch(apiToggle, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ SpotId: spotId })
-                    });
-                    if (!res.ok) {
-                        console.warn('ToggleWishlist «D¦¨¥\¦^À³', res.status);
-                    }
-                    // ­«·s¸ü¤J¦CªíÂ²³æ¥i¾a
-                    load();
-                } catch (ex) {
-                    console.error('¤Á´«Ä@±æ²M³æ¥¢±Ñ', ex);
-                }
-            });
+        const removeBtn = e.target.closest('.btn_remove_wish');
+        if (!removeBtn) return;
+
+        e.preventDefault();
+        const spotIdRaw = removeBtn.getAttribute('data-spotid')
+            || removeBtn.dataset?.spotid
+            || removeBtn.dataset?.spotId
+            || removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col');
+
+        // æ–°å¢é™¤éŒ¯ï¼šå°å‡ºå„ä¾†æºï¼Œç¢ºèªç‚ºä½•æœƒå¾—åˆ° "undefined"
+        console.log('wishlist debug - spotIdRaw:', spotIdRaw, {
+            attr_data_spotid: removeBtn.getAttribute('data-spotid'),
+            dataset_spotid: removeBtn.dataset?.spotid,
+            dataset_spotId: removeBtn.dataset?.spotId,
+            closest_data_spot_col: removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col'),
+            outerHTML: removeBtn.outerHTML
         });
-    }
 
-    // ªì©l¤Æ¡G¦b·|­û¤¤¤ß­¶­±¸ü¤J®É©I¥s
-    document.addEventListener('DOMContentLoaded', () => {
-        // ¥u¦b¦³ container ªº­¶­±°õ¦æ
-        if (document.querySelector(containerSelector)) {
-            load();
+        // éæ¿¾æ‰å­—ä¸² 'undefined' èˆ‡ç©ºå€¼ï¼Œä¸¦è§£æç‚ºæ•¸å­—
+        if (!spotIdRaw || spotIdRaw === 'undefined') {
+            console.error('Invalid spotId:', spotIdRaw, removeBtn);
+            return;
         }
+
+        const spotIdNum = Number(spotIdRaw);
+        if (!Number.isFinite(spotIdNum)) {
+            console.error('Invalid numeric spotId:', spotIdRaw);
+            return;
+        }
+
+        const cardCol = removeBtn.closest('.col');
+        if (!cardCol) return;
+
+        // æ¨£å¼ï¼šæ¨™è¨˜ç‚º pending
+        cardCol.classList.add('pending-remove');
+        cardCol.style.transition = 'all 0.35s ease';
+        cardCol.style.opacity = '0.5';
+        cardCol.style.pointerEvents = 'none';
+        removeBtn.setAttribute('disabled', 'true');
+
+        // å»ºç«‹ undo toast ä¸¦ç¶å®š undo è¡Œç‚º
+        const toastEl = showUndoToast(spotIdNum, () => {
+            // undo
+            if (undoTimers[spotIdNum]) {
+                clearTimeout(undoTimers[spotIdNum].timerId);
+                cleanupAfterUndo(spotIdNum, true);
+            }
+        });
+
+        // å»¶é²çœŸæ­£å‘¼å« APIï¼ˆå…è¨± undoï¼‰
+        const timerId = setTimeout(async () => {
+            try {
+                const response = await fetch(apiToggle, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ spotId: spotIdNum })
+                });
+
+                if (response.ok) {
+                    // æˆåŠŸï¼šç§»é™¤å¡ç‰‡èˆ‡ toast
+                    cardCol.remove();
+                    if (toastEl && toastEl.parentNode) toastEl.remove();
+                    delete undoTimers[spotIdNum];
+                    checkEmpty();
+                } else {
+                    // å¤±æ•—ï¼šé‚„åŸ UIï¼Œä¸¦å˜—è©¦é¡¯ç¤ºéŒ¯èª¤è¨Šæ¯
+                    let msg = `æ“ä½œå¤±æ•—ï¼š${response.status}`;
+                    try {
+                        const json = await response.json();
+                        if (json?.message) msg = json.message;
+                    } catch {
+                        try {
+                            const txt = await response.text();
+                            if (txt) msg = txt;
+                        } catch { }
+                    }
+                    console.error(msg);
+                    cleanupAfterUndo(spotIdNum, false);
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                cleanupAfterUndo(spotIdNum, false);
+            } finally {
+                if (undoTimers[spotIdNum]) delete undoTimers[spotIdNum];
+            }
+        }, 1000);
+
+        // å­˜ä¸‹ timer èˆ‡å…ƒç´ åƒè€ƒï¼Œä¾› undo ä½¿ç”¨
+        undoTimers[spotIdNum] = { timerId, toastEl, removeBtn, cardCol };
     });
 
-    // ±N load ¼ÉÅSµ¹¥ş°ì¡A¤è«K¨ä¥L«ö¶s¡]¨Ò¦p²£¥Í°²¸ê®Æ«á¡^­«¸üÄ@±æ²M³æ
-    window.reloadWishlist = load;
-})();
+    function cleanupAfterUndo(spotId, restored) {
+        const entry = undoTimers[spotId];
+        if (!entry) return;
+        // é‚„åŸå¡ç‰‡è¦–è¦ºèˆ‡æŒ‰éˆ•
+        try {
+            const { cardCol, removeBtn, toastEl } = entry;
+            if (cardCol) {
+                cardCol.classList.remove('pending-remove');
+                cardCol.style.opacity = '1';
+                cardCol.style.pointerEvents = 'auto';
+            }
+            if (removeBtn) {
+                removeBtn.removeAttribute('disabled');
+            }
+            if (toastEl && toastEl.parentNode) {
+                toastEl.remove();
+            }
+        } catch (e) {
+            console.warn('cleanupAfterUndo error', e);
+        } finally {
+            if (undoTimers[spotId]) {
+                clearTimeout(undoTimers[spotId].timerId);
+                delete undoTimers[spotId];
+            }
+            if (restored) checkEmpty(); // è‹¥é‚„åŸå¯èƒ½éœ€è¦æª¢æŸ¥ç©ºåˆ—è¡¨ï¼ˆä¿éšªï¼‰
+        }
+    }
+
+    function checkEmpty() {
+        if (!wishlistContainer) return;
+        if (wishlistContainer.querySelectorAll('.col').length === 0) {
+            wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">ç›®å‰æ²’æœ‰é¡˜æœ›æ¸…å–®</p></div>';
+        }
+    }
+
+    function showUndoToast(spotId, onUndo) {
+        // ç§»é™¤èˆŠ toastï¼ˆä¿éšªï¼‰
+        const existing = document.getElementById('undo_toast_' + spotId);
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'undo_toast_' + spotId;
+        toast.className = 'undo-toast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '2000';
+        toast.style.padding = '8px 12px';
+        toast.style.background = '#27354A';
+        toast.style.color = '#fff';
+        toast.style.borderRadius = '6px';
+        toast.style.display = 'flex';
+        toast.style.alignItems = 'center';
+        toast.style.gap = '8px';
+        toast.innerHTML = `
+            <span>å·²æ’ç¨‹ç§»é™¤</span>
+            <button class="btn btn-sm btn-light" id="undo_btn_${spotId}" type="button">é‚„åŸ</button>
+        `;
+        document.body.appendChild(toast);
+
+        const undoBtn = document.getElementById(`undo_btn_${spotId}`);
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => {
+                try { onUndo(); } catch (e) { console.error(e); }
+            });
+        }
+
+        // è‡ªå‹•é—œé–‰ toastï¼ˆä½†ä¸æœƒå–æ¶ˆå®šæ™‚å™¨ï¼›åªæ˜¯æ¸… UIï¼‰
+        setTimeout(() => {
+            const t = document.getElementById('undo_toast_' + spotId);
+            if (t) t.remove();
+        }, 2000 + 200); // èˆ‡åˆªé™¤å®šæ™‚å™¨ç•¥ç‚ºåŒæ­¥
+
+        return toast;
+    }
+});

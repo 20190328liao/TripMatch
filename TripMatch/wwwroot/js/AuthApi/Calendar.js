@@ -504,7 +504,7 @@
             const $btn = $(`
                 <div class="month-btn" data-month="${m}">
                     <div class="mn">${m + 1} 月</div>
-                    <div class="en">${d.toLocaleString('en-US', { month: 'short' })}</div>
+                    <div class="en">${d.toLocaleString('en-US', { month: 'long' })}</div>
                 </div>
             `);
             $grid.append($btn);
