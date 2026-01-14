@@ -12,14 +12,14 @@
                 廣告區
             </div>
             <div class="signContent s2 col-12 col-md-6 ">
-                <div class="mb-4">
+                <div class="loginWrap mb-4">
                     @* 使用 Url.Action 跳轉到登入頁 *@
                     <a href="@Url.Action("Login", "Auth")" class="titleWrap titleH1 inputNone">登入</a>
                     <a href="@Url.Action("Signup", "Auth")" class="titleWrap titleH1 inputLine">註冊</a>
                 </div>
 
                 <div class="formWrap">
-                    <label class="titleWrap titleH3 d-block">帳號 (電子郵件)</label>
+                    <label class="titleWrap titleH4 d-block">帳號 *</label>
 
                     <div class="input_row email_row">
                         <input id="email" class="email2" type="email" placeholder="example@gmail.com">
@@ -30,7 +30,7 @@
                         <div id="emailHint" class="inputHint"></div>
                     </div>
 
-                    <label class="titleWrap titleH3 d-block mt-3">密碼 *</label>
+                    <label class="titleWrap titleH4 d-block mt-3">密碼 *</label>
                     <div class="input_group_custom">
                         <input type="password" id="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
                         <span class="btn-toggle-pwd" data-target="#password">
