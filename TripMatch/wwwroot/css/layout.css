@@ -8,7 +8,9 @@ header {
 .topNav {
 	background-color: var(--color_nav);
 }
-
+.footer {
+	line-height: 30px;
+}
 .footerWrap {
 	width: 100%;
 	background: var(--color_nav);
@@ -18,3 +20,4 @@ header {
 	height:10px;
 }
 /*主要版面配置（header, nav, footer）會放class*/
+
