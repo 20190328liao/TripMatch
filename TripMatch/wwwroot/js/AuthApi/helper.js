@@ -1,4 +1,25 @@
-﻿(function (window, jQuery) {
+﻿(function () {
+    'use strict';
+    try {
+        if (typeof navigator !== 'undefined' && navigator.permissions && typeof navigator.permissions.query === 'function') {
+            const _orig = navigator.permissions.query;
+            // 若尚未被包裝，重新包裝成永遠以 navigator.permissions 為 receiver 的函式
+            if (_orig && !_orig.__tm_bound) {
+                const wrapped = function () {
+                    return _orig.apply(navigator.permissions, arguments);
+                };
+                try { wrapped.toString = function () { return _orig.toString(); }; } catch { }
+                wrapped.__tm_bound = true;
+                navigator.permissions.query = wrapped;
+                // 若需要也可保留原始在其他位置參考
+                navigator.permissions.__original_query = _orig;
+            }
+        }
+    } catch (e) {
+        try { console.warn('permissions-fix init failed', e); } catch { }
+    }
+})();
+(function (window, jQuery) {
     'use strict';
 
     // 防止此檔案被重複載入導致全域變數重覆宣告錯誤
