@@ -15,6 +15,8 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; } = String.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
+        public decimal Lat { get; set; }
+        public decimal Lng { get; set; }
         public List<string> DateStrings
         {
             get

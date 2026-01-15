@@ -52,6 +52,11 @@ namespace TripMatch.Services
             var trip = await _context.Trips
                 .FirstOrDefaultAsync(t => t.Id == tripId);
 
+
+
+            var tripRegionDetail = await _context.GlobalRegions
+                .Where(gr => gr.TripRegions.Any(tr => tr.TripId == tripId)).ToListAsync();
+
             if (trip != null)
             {
                 tripSimpleDto.Id = trip.Id;

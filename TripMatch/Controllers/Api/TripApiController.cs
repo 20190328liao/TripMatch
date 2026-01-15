@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TripMatch.Models;
 using TripMatch.Models.DTOs;
 using TripMatch.Services;
 
@@ -128,8 +126,6 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
-
-
 
         #endregion
 
