@@ -28,23 +28,28 @@ footer {
    ========================================= */
 
 .itinerary-wrapper {
-    /* 高度：100vh - 導覽列高度(約56px) */
-    height: calc(100vh - 56px);
+    /* 【修改】原本是 56px，建議改為 60px 或 62px */
+    /* 原因：導覽列可能有邊框或陰影佔用空間，稍微扣多一點確保底部不會被切掉 */
+    height: calc(100vh - 60px);
     display: flex;
     width: 100vw;
     position: relative;
-    margin-top: -1px; /* 消除接縫白線 */
+    margin-top: -1px;
 }
 
 /* 左側面板 - 行程列表 */
 .left-panel {
     width: 45vw;
-    min-width: 320px; /* 稍微加寬最小寬度 */
+    min-width: 320px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
     display: flex;
     flex-direction: column;
     z-index: 10;
+    /* 【新增】這兩行非常重要！ */
+    /* 確保左側面板高度絕對不會超過 wrapper，並強制子元素溢出時由子元素自己處理 */
+    height: 100%;
+    overflow: hidden;
 }
 
 /* 右側面板 - 地圖 */
@@ -74,9 +79,11 @@ footer {
 /* 行程內容捲動區塊 */
 .itinerary-content {
     flex-grow: 1;
-    overflow-y: auto; /* 只有這裡捲動 */
+    overflow-y: auto;
     background-color: #f8f9fa;
-    padding-bottom: 50px; /* 預留底部空間 */
+    /* 【確認】這裡維持您原本加大的 padding */
+    /* 這會讓最後一個行程下面多出一大塊空白，確保不會被遮住 */
+    padding-bottom: 120px !important;
 }
 
 /* --- 每一天的區塊 (Day Section) --- */
@@ -89,18 +96,21 @@ footer {
 
 /* --- 天數標題 --- */
 .day-header {
-    background-color: #e9ecef; /* 淺灰背景區隔 */
-    padding: 10px 20px;
+    background-color: #e9ecef;
+    /* 【修改 3】加大左右內距：原本是 10px 20px */
+    /* 改成 10px 30px (或更多)，讓文字往右移 */
+    padding: 10px 30px;
     font-weight: 700;
     color: #495057;
     position: sticky;
     top: 0;
-    z-index: 15; /* 確保捲動時黏在頂部 */
+    z-index: 15;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #dee2e6;
 }
+
 
 /* --- 行程項目列表容器 --- */
 .day-items-container {
@@ -108,8 +118,10 @@ footer {
 }
 
 /* --- 單一行程卡片 (Item) --- */
-.place-item {
-    padding: 15px 20px;
+.itinerary-item {
+    /* 【修改 4】加大左右內距：原本是 15px 20px */
+    /* 改成 15px 30px，這裡要跟上面的 header 保持一致，視覺才會整齊 */
+    padding: 15px 30px;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
     gap: 15px;
@@ -119,13 +131,29 @@ footer {
     background-color: #fff;
 }
 
-    .place-item:hover {
+    .itinerary-item:hover {
         background-color: #f8f9fa; /* 懸停效果 */
     }
 
-    .place-item:last-child {
+    .itinerary-item:last-child {
         border-bottom: none;
     }
+
+/* --- 新增：時間軸圓點樣式 --- */
+/* 這是為了讓 JS 中的 <div class="timeline-dot"> 排版好看一點 */
+.timeline-dot {
+    width: 24px;
+    height: 24px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #6c757d;
+    flex-shrink: 0; /* 防止被壓縮 */
+}
 
 /* 拖曳把手 */
 .drag-handle {
@@ -286,3 +314,32 @@ footer {
         color: #dc3545; /* Bootstrap Danger Red */
         /* 這裡由 JS 切換 class 為 bi-heart-fill，不需要 font-weight */
     }
+
+
+/* 1. 預設將刪除按鈕隱藏 */
+.itinerary-item .delete-btn {
+    opacity: 0; /* 完全透明 */
+    visibility: hidden; /* 不佔據互動空間 (避免誤觸) */
+    transition: all 0.2s; /* 加入一點漸變動畫，看起來比較順暢 */
+}
+
+/* 2. 當滑鼠移到卡片 (.itinerary-item) 上時，顯示按鈕 */
+.itinerary-item:hover .delete-btn {
+    opacity: 1; /* 變為不透明 */
+    visibility: visible; /* 可見並可點擊 */
+}
+
+.delete-btn {
+    /* 移除點擊時的藍色外框 */
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    /* 確保文字顏色正確 (Bootstrap 預設 btn-link 會是藍色，這裡強制為 danger 紅色) */
+    text-decoration: none;
+}
+
+/* 確保 Focus 狀態下也不要有框 */
+.delete-btn:focus, .delete-btn:active {
+    box-shadow: none !important;
+    outline: none !important;
+}

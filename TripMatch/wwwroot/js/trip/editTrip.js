@@ -14,18 +14,18 @@ document.addEventListener("DOMContentLoaded", async function () {
     // 步驟 A: 調整版面
     expandContainerToFullWidth();
 
-    // 【修改】定義變數來接收地圖實體
+    // 定義變數來接收地圖實體
     let mapInstance = null;
 
     try {
         const tripData = await $.get(`/api/TripApi/simple/${tripId}`);
         const dates = tripData.dateStrings || [];
 
-        // 【修改】接收 initGoogleMap 回傳的 map 物件
-        mapInstance = initGoogleMap('map', 'place-search-input', dates);
+        // 接收 initGoogleMap 回傳的 map 物件
+        mapInstance = initGoogleMap('map', 'place-search-input',dates);
 
-        // 【修改】將 map 物件傳入編輯頁面，讓列表點擊可以控制地圖
-        initEditPage(mapInstance);
+        // 將 map 物件傳入編輯頁面，讓列表點擊可以控制地圖
+        initEditPage(mapInstance,dates);
 
     } catch (error) {
         console.error("AJAX 載入行程詳情失敗:", error);
@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         // 墊底處理：即使 API 失敗也讓地圖出來
         mapInstance = initGoogleMap('map', 'place-search-input', []);
 
-        // 【修改】錯誤時也要傳入 map
-        initEditPage(mapInstance);
+        // 錯誤時也要傳入 map
+        initEditPage(tripId, mapInstance);
     }
 });

@@ -15,6 +15,8 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; } = String.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
+        public decimal Lat { get; set; }
+        public decimal Lng { get; set; }
         public List<string> DateStrings
         {
             get
@@ -22,7 +24,7 @@ namespace TripMatch.Models.DTOs
                 var dateList = new List<string>();
                 for (DateOnly date = StartDate; date <= EndDate; date = date.AddDays(1))
                 {
-                    dateList.Add(date.ToString("yyyy年MM月dd日"));
+                    dateList.Add(date.ToString("yyyy-MM-dd"));
                 }
                 return dateList;
             }
@@ -31,12 +33,26 @@ namespace TripMatch.Models.DTOs
 
     public class ItineraryItemDto
     {
+        public int Id { get; set; } 
         public int TripId { get; set; }
         public int SpotId { get; set; }
         public int DayNumber { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
         public int SortOrder { get; set; }
+        public SpotProfileDto Profile { get; set; } = new SpotProfileDto();
+    }
+
+    public class SpotProfileDto
+    {
+        public string PlaceId { get; set; } = string.Empty;
+        public string Name_ZH { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string PhotoUrl { get; set; } = string.Empty;
+        public decimal Lat { get; set; }
+        public decimal Lng { get; set; }
+        public decimal Rating { get; set; }
+
     }
 
     public class TripCreateDto
@@ -61,11 +77,12 @@ namespace TripMatch.Models.DTOs
         public List<string> PhotosSnapshot { get; set; } = [];
     }
 
-    public class WishlistDto    
+    public class WishlistDto
     {
         public int SpotId { get; set; }
         public bool AddToWishlist { get; set; }
-    }   
+    }
+
 
 
 

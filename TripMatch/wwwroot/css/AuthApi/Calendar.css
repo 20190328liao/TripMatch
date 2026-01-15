@@ -6,6 +6,15 @@
     margin-top: 2em;
 }
 
+/* 佔滿寬度並移除背景 */
+/*.container {
+    display: block;*/ /* 改回預設的 block */
+    /*width: 100%;*/ /* 強制佔滿寬度 */
+    /*background-color: transparent;*/ /* 移除背景色 */
+    /*padding: 0;
+    margin: 0;
+}*/
+
 .two-column {
     display: flex;
     gap: 1rem;

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TripMatch.Models;
 using TripMatch.Models.DTOs;
 using TripMatch.Services;
 
@@ -105,8 +103,29 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+    
+        [HttpDelete("DeleteSpotFromTrip/{id}")]
+        public async Task<IActionResult>  DeleteSpotFromTrip(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest("無效的 ID");
+                }
 
+                // 這裡執行刪除邏輯
+                bool success = await _tripServices.DeleteSpotFromTrip(id);
 
+                // 成功刪除通常回傳 204 No Content 或 200 OK
+                return Ok(new { message = $"已成功刪除景點, SpotId = {id}"});
+            }
+            catch (Exception ex)
+            {
+                // 伺服器錯誤
+                return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
+            }
+        }
 
         #endregion
 
