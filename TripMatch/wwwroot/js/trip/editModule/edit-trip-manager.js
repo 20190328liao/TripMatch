@@ -2,7 +2,7 @@
 let currentTripDates = [];
 
 export function initEditPage(mapInstance, dates) {
-    // 【修改】將 map 實體暫存到 window 或模組變數，供點擊列表時使用
+    //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
     window.currentMapInstance = mapInstance;
     currentTripDates = dates || [];
     loadTripData();
@@ -47,7 +47,7 @@ function renderItinerary(items, dates) {
     //取得行程列表容器並清空
     const container = document.getElementById('place-list');
     container.innerHTML = '';
-    
+
     //確保景點陣列不為NULL
     items = items || [];
 
@@ -120,8 +120,8 @@ function renderItinerary(items, dates) {
                 const googlePlaceId = item.profile ? item.profile.placeId : ""
 
                 const itemHtml = `
-                    <div class="itinerary-card itinerary-item" 
-                         data-id="${item.id}" 
+                    <div class="itinerary-card itinerary-item"
+                         data-id="${item.id}"
                          data-spot-id="${item.spotId}"
                          data-lat="${lat}"
                          data-lng="${lng}"
@@ -151,6 +151,9 @@ function renderItinerary(items, dates) {
                         </div>
                     </div>
                 `;
+
+                console.log("行程卡片 HTML:", itemHtml);
+
                 itemsContainer.insertAdjacentHTML('beforeend', itemHtml);
             });
         }
@@ -196,11 +199,25 @@ function bindItemEvents() {
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             const card = this.closest('.itinerary-item');
-            const itemId = card.getAttribute('data-id');
+            const id = card.getAttribute('data-id');
+
+           
 
             if (confirm('確定要移除此景點嗎？')) {
-                console.log(`準備刪除行程 ID: ${itemId}`);
-                // 這裡加入 $.ajax 刪除邏輯
+                console.log(`準備刪除行程 ID: ${id}`);
+
+
+                $.ajax({
+                    url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
+                    type: 'DELETE',   
+                    success: function (result) {                       
+                        refreshItineraryList();
+
+                    },
+                    error: function (xhr, status, error) {
+                        alert('發生錯誤：' + xhr.responseText);
+                    }
+                });             
             }
         });
     });

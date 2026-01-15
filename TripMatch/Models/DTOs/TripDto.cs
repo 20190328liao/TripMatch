@@ -31,6 +31,7 @@ namespace TripMatch.Models.DTOs
 
     public class ItineraryItemDto
     {
+        public int Id { get; set; } 
         public int TripId { get; set; }
         public int SpotId { get; set; }
         public int DayNumber { get; set; }
@@ -79,6 +80,7 @@ namespace TripMatch.Models.DTOs
         public int SpotId { get; set; }
         public bool AddToWishlist { get; set; }
     }
+
 
 
 

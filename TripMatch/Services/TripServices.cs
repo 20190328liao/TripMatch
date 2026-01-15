@@ -255,18 +255,19 @@ namespace TripMatch.Services
                         Lng = placesSnapshot.Lng,
                         Rating = placesSnapshot.Rating ?? 0
                     };
-                }else
+                }
+                else
                 {
                     // 若找不到快照資料, 要給預設
                     // 前端後續要想辦法把place id 傳過來，不然只有spot id也沒有用
                     spotProfile = new SpotProfileDto()
                     {
-                        PlaceId= "",   
+                        PlaceId = "",
                         Name_ZH = "未知景點",
                         Address = "未知地址",
                         PhotoUrl = "",
-                        Lat=0,
-                        Lng=0,
+                        Lat = 0,
+                        Lng = 0,
                         Rating = 0
                     };
                 }
@@ -274,6 +275,7 @@ namespace TripMatch.Services
 
                 ItineraryItemDto itemDto = new()
                 {
+                    Id = item.Id,
                     TripId = item.TripId,
                     SpotId = (int)item.SpotId,
                     DayNumber = item.DayNumber,
@@ -329,6 +331,26 @@ namespace TripMatch.Services
                 return false;
             }
         }
+
+        // 將景點自行程中刪除
+        public async Task<bool> DeleteSpotFromTrip(int Id)
+        {
+            var existing = await _context.ItineraryItems
+                    .FirstOrDefaultAsync(It => It.Id == Id);
+            if (existing != null)
+            {
+                _context.ItineraryItems.Remove(existing);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+
+        }
+
 
 
         #endregion
