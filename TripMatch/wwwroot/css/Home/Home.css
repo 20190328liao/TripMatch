@@ -14,8 +14,8 @@
 
 /* 僅針對首頁調整 */
 body {
-    background-color: var(--primary-mint);
-    overflow-x: hidden;
+/*    background-color: var(--primary-mint);*/
+/*    overflow-x: hidden;*/
 }
 
 /* --- 2. 主視覺區 Hero Section --- */

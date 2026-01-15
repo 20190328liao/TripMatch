@@ -40,11 +40,11 @@ header {
 }
 .footerWrap {
 	width: 100%;
-	background: var(--color_nav);
+/*	background: var(--color_nav);*/
 	text-align: center;
 	padding: 1rem 0;
 	margin-top: auto;
-	height:10px;
+/*	height:10px;*/
 }
 /*主要版面配置（header, nav, footer）會放class*/
 
