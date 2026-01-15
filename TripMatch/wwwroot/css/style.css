@@ -1,4 +1,26 @@
 ﻿
+/* =============================================
+   導覽列字體設定 (覆蓋 Bootstrap 預設值)
+   ============================================= */
+.navbar .nav-link {
+	font-size: 18px !important; /* 字體大小 */
+	font-weight: 600 !important; /* 字體粗細 */
+	color: var(--color_DarkGray) !important; /* 使用您 style.css 定義的變數 */
+	padding: 10px 15px !important; /* 增加按鈕間距 */
+}
+
+	/* 滑鼠移過去的顏色 */
+	.navbar .nav-link:hover {
+		color: var(--color_Dark) !important; /* 使用您定義的深色主題色 */
+	}
+
+/* "登入/註冊"  */
+.navbar .btn-text {
+	font-size: 18px !important;
+	font-weight: 600;
+}
+
+/*===============================================*/
 /*可能沒人習慣設計系統分類，元件，響應式，布局和變數，整合為一份*/
 *,
 *::before,
