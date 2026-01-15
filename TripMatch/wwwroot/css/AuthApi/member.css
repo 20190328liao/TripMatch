@@ -1,153 +1,283 @@
-﻿/* -----------------------------
-   外層 div 當邊框
+﻿/* =============================
+   Browser Default Override
+   ⚠ 不可刪除
+============================= */
+
+.inputLine,
+.inputNone,
+.backIndex,
+.back-home-link,
+.back-home-link a {
+    text-decoration: none;
+}
+
+input,
+button,
+select,
+textarea {
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+
+
+
+/* -----------------------------
+   全站共用基礎（尺寸 / 字級 / 小元件）
 ------------------------------ */
+#btnLogin {
+    font-size: 16pt;
+}
+.backIndex {
+margin:0;
+}
+.link {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    font-size: 14pt;
+    text-align: right;
+}
+
+/* -----------------------------
+   裝飾型元件（線條、分隔）
+------------------------------ */
+
 .lineBlackWrap {
     position: relative;
     display: flex;
     text-align: center;
     justify-content: center;
 }
-.lineStroke{
-    height: 1px;
+
+/* 線條*/
+.lineStroke {
+    display: block;
+    position: relative;
+    z-index: 0; /* 放在 .lineBlack 之下 */
+    height: 2px; /* 提高可見性 */
     border: none;
-    background: linear-gradient(
-        to right, 
-        transparent, 
-        var(--color_Gray, #ccc) 50%, 
-        transparent
-    );
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
-    width: 70%;
-    margin-top: 15px;
-    margin-bottom: 15px;
-}
-.lineBlack{
-    position: absolute;
-    background-color: var(--color_bk);
-    padding: 0 50px;
+    background: linear-gradient( to right, transparent 5%, var(--color_Gray, #ccc) 15%, var(--color_Gray, #ccc) 90%, transparent 95% );
+    width: 100%;
+    margin: 15px 0;
+    min-width: 550px; /* 若父容器過窄，仍顯示 */
 }
 
-/*登入註冊線條切換*/
-.signWrap{
-    position:relative;
+/* 中央遮蓋塊，確保在漸層之上 */
+.lineBlack {
+    font-size:18pt;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color_bk, #fff);
+    padding: 0 50px;
+    z-index: 1; /* 在 .lineStroke 上層 */
+    pointer-events: none;
 }
-.loginWrap{
+
+/* fallback：若漸層仍不可見，啟用細線 border-top */
+.lineStroke.fallback {
+    background: none;
+    height: 0;
+    border-top: 1px solid var(--color_Gray, #ccc);
+    box-shadow: none;
+}
+
+/* -----------------------------
+   登入 / 註冊 切換
+------------------------------ */
+.signWrap {
+    position: relative;
+}
+
+/* 強制合併 .loginWrap / #loginWrap 並讓切換項目維持 inline（桌機 + 手機） */
+.loginWrap,
+#loginWrap {
     margin-top: 50px;
     width: 100%;
-        text-align: center;
-    display: flexbox;
+    text-align: center;
+    display: flex;
     justify-content: center;
+    gap: 1rem;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 1rem;
 }
 
+/* 切換按鈕/標籤維持 inline（覆蓋先前 mobile 的 block 規則） */
+    .loginWrap .inputLine,
+    .loginWrap .inputNone,
+    #loginWrap .inputLine,
+    #loginWrap .inputNone {
+        width: auto !important;
+        padding: 0 1rem !important;
+        margin: 0 !important;
+        text-align: center !important;
+        white-space: normal;
+        cursor: pointer;
+    }
+
+/* 若想允許換行（自動改為換行行為，避免水平滾動），把上一行的 white-space 改為 normal */
+@media (max-width: 420px) {
+    /* 小螢幕極窄時可改為換行（選擇性）：解除 white-space 強制，避免溢出 */
+    .loginWrap .inputLine,
+    .loginWrap .inputNone,
+    #loginWrap .inputLine,
+    #loginWrap .inputNone {
+        white-space: normal !important;
+    }
+}
+
+/* 預設桌機排列：水平並列（會在 mobile 覆寫為直列） */
+.loginWrap {
+    margin-top: 50px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+    /* 切換按鈕/標籤的共同樣式（便於切換 active 狀態）*/
+    .loginWrap .inputLine,
+    .loginWrap .inputNone {
+        padding: 0 3rem; 
+        cursor: pointer;
+        line-height: 1;
+        text-align: center;
+    }
+
+/* 單獨狀態樣式 */
 .inputLine {
+    text-decoration: none;
     border-bottom: 4.5px solid var(--color_Light);
     font-weight: bold;
-    text-decoration: none;
     color: var(--color_Dark);
-    padding: 0 5rem;
+    white-space: nowrap;
 }
 
 .inputNone {
+    text-decoration: none;
     border-bottom: 3px solid var(--color_Gray);
     font-weight: 500;
-    text-decoration: none;
-    color: inherit;
     color: var(--color_DarkGray);
-    padding: 0 5rem;
+    white-space: normal;
 }
-.loginH1 {
-    align-items: center;
+
+/* 小螢幕：改為直列，一行一個（override 桌機 inline-block）*/
+@media (max-width: 992px) {
+    .lineStroke {
+        min-width: 450px; /* 若父容器過窄，仍顯示 */
+    }
+    .loginWrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 30px;
+        padding: 0 1rem;
+    }
+
+        .loginWrap .inputLine,
+        .loginWrap .inputNone {
+            width: 100% !important;
+            padding: 0.6rem 1rem !important;
+            margin: 0.25rem 0 !important;
+            text-align: center !important;
+            white-space: normal;
+        }
+
+    /* 手機版：登入按鈕與輸入欄位對齊（滿寬） */
+    #btnLogin,
+    .btn.confirmCheck.eLabel,
+    button.btn.confirmCheck.eLabel {
+        text-align:center;
+        font-size: 16pt;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+        padding: 0rem 1rem; /* 如需可微調 */
+        display: block;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+
 }
-/*登入註冊線條切換*/
+
+/* -----------------------------
+ 表單核心元件（input / hint / button）
+------------------------------ */
+.input_group_custom,
+.input_group_custom .input1,
+.input_group_custom .label1 {
+    box-sizing: border-box;
+    
+}
 
 .input_group_custom {
     position: relative;
-    min-height: 48px;
-    max-width: 28rem;
-    border: 1px solid var(--color_Border);
-    border-radius: 4px;
     display: flex;
-    align-items: center;
-    box-sizing: border-box;
+    height: 48px;
+    padding: 0 12px;
     margin-bottom: 1rem;
+    border: 1px solid var(--color_Border);
+    border-radius: 6px;
     background-color: var(--color_bk);
 }
 
-.email {
-    position: relative;
-    min-height: 48px;
-    max-width: 28rem;
-    border: 1px solid var(--color_Border);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-    margin-bottom: 1rem;
-    background-color: var(--color_bk);
-}
-
-
-/* 聚焦狀態 */
-.input_group_custom:focus-within {
-    border-color: var(--color_Primary);
-}
-
-/* -----------------------------
-   輸入框本體
------------------------------- */
-
-
-    .input_group_custom .input1:focus {
+    .input_group_custom input {
+        width: 100%;
+        border: none;
         outline: none;
         box-shadow: none;
+        appearance: none;
+        background: transparent;
+        height: 100%;
+        font-size: var(--fontBody);
+        padding-right: 40px; /* 預留給眼睛按鈕 */
     }
 
-input:-webkit-autofill {
-    font-size: 18px !important;
-    -webkit-text-fill-color: #000 !important; /* 字體顏色 */
-    transition: background-color 5000s ease-in-out 0s; /* 避免黃色背景閃爍 */
+    /* 聚焦狀態 */
+    .input_group_custom:focus-within {
+        border-color: var(--color_Primary);
+    }
+
+    /* 標籤樣式 (修正重疊) */
+    .input_group_custom .label1 {
+        font-size: var(--fontBody);
+        color: var(--color_font);
+        margin-bottom: 0.5rem;
+        align-self: flex-start;
+        display: block;
+    }
+
+/* 密碼顯示/隱藏按鈕 */
+.btn-toggle-pwd {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
 }
 
-/* -----------------------------
-   標籤樣式 (修正重疊)
------------------------------- */
-.input_group_custom .label1 {
-    font-size: var(--fontBody);
-    color: var(--color_font);
-    margin-bottom: 0.5rem;
-    align-self: flex-start;
-    display: block;
-}
-
-/* -----------------------------
-   密碼顯示/隱藏按鈕
------------------------------- */
-
-
-    /* 確保圖片大小適中 */
     .btn-toggle-pwd img {
         width: 20px;
         height: 20px;
         object-fit: contain;
     }
-
-
-.input_row {
-    display: flex;
-    flex-wrap: wrap; /* 允許在小螢幕換行 */
-    gap: 10px; /* 按鈕與輸入框的間距 */
-    align-items: flex-start; /* 對齊頂部 */
-    width: 100%;
-    margin-bottom: 1rem; /* 確保整列與下方有距離 */
-}
-
- 
-
-/* 寄驗證信按鈕樣式微調 */
-.btn_send_verify{
-    height: 48px;
-    margin: 0 !important;
-}
 
 /* IE/Edge 舊版密碼框按鈕 */
 input[type="password"]::-ms-reveal,
@@ -155,20 +285,18 @@ input[type="password"]::-ms-clear {
     display: none !important;
 }
 
-/* =============================================
-   輸入提示 - 確保寬度與輸入框一致
-   ============================================= */
-.inputHint {
+/* 輸入提示與 hint（合併） */
+.inputHint,
+.goodHint {
+    display: block;
     min-height: 1.2em;
-    font-size: 14px;
-    margin-top: 6px;
+    font-size: 16pt;
     line-height: 1.4;
     width: 100%;
     max-width: 28rem;
     box-sizing: border-box;
 }
 
-    /* 成功 / 錯誤狀態 */
     .inputHint.success {
         color: var(--color_Green);
     }
@@ -176,8 +304,83 @@ input[type="password"]::-ms-clear {
     .inputHint.error {
         color: var(--color_Contrast);
     }
+/* -----------------------------
+Email row（Login / Signup 分流）
+------------------------------ */
+/* Email row 與寬度控制 */
+.email_row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
 
+    .email_row input.email2 {
+        flex: 1;
+        min-height: 48px;
+        padding: 0 12px;
+        font-size: var(--fontBody);
+        border: 1px solid var(--color_Border);
+        border-radius: 4px;
+        background-color: var(--color_bk);
+        box-sizing: border-box;
+    }
 
+    .email_row button.eLabel {
+        height: 48px;
+        padding: 0 16px;
+        font-size: var(--fontBody);
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+/* 按鈕尺寸與共用樣式 */
+#btnRegister,
+.btn_next_step {
+    width: 100%;
+    max-width: 28rem;
+    box-sizing: border-box;
+}
+
+.btn_next_step {
+    background: var(--color_Gray);
+    color: var(--color_font);
+    border: none;
+    border-radius: 8px;
+    padding: 0.9rem 1.5rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 1.5rem;
+    display: block;
+}
+
+/* btn_send_verify */
+.btn_send_verify {
+    height: 48px;
+    margin: 0 !important;
+}
+
+/* 狀態樣式 */
+.input1.input_error {
+    border: 2px solid var(--color_Contrast);
+}
+
+.input1.input_success {
+    border: 2px solid var(--color_Green);
+}
+
+.input_success {
+    border-color: var(--color_Green);
+}
+
+.input_error {
+    border-color: var(--color_Contrast);
+}
+
+/* Avatar */
 .avatarImg {
     width: 40px;
     height: 40px;
@@ -193,140 +396,11 @@ input[type="password"]::-ms-clear {
     border: 1px solid #ddd;
 }
 
-/* =============================================
-   goodHint - 強制 Hint 獨立一行區塊
-   ============================================= */
-
-/* Email row 一行排版 */
-.email_row {
-    display: flex;
-    gap: 10px; /* 輸入框與按鈕間距 */
-    align-items: stretch; /* 高度對齊 */
-    width: 100%;
-    max-width: 28rem; /* 與建立帳戶按鈕同寬 */
-    margin-bottom: 0.5rem;
-}
-
-    .email_row input.email2 {
-        /*flex: 1;*/ /* 自動填滿剩餘空間 */
-        min-height: 48px;
-        padding: 0 12px;
-        font-size: var(--fontBody);
-        border: 1px solid var(--color_Border);
-        border-radius: 4px;
-        background-color: var(--color_bk);
-        box-sizing: border-box;
-    }
-
-    .email_row button.eLabel {
-        height: 48px;
-        padding: 0 16px;
-        font-size: var(--fontBody);
-        border-radius: 4px;
-        flex-shrink: 0; /* 防止按鈕縮小 */
-    }
-
-/* goodHint 提示文字 */
-.goodHint {
-    display: block;
-    width: 100%;
-    max-width: 28rem; /* 與輸入框對齊 */
-    margin-top: 6px;
-    margin-bottom: 1rem;
-}
-
-.inputHint {
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--color_Contrast);
-    display: block;
-}
-
-/* 密碼/確認密碼輸入框 */
-.input_group_custom {
-    position: relative;
-    min-height: 48px;
-    max-width: 28rem;
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--color_Border);
-    border-radius: 4px;
-    background-color: var(--color_bk);
-    margin-bottom: 0.5rem;
-    padding: 0 12px;
-    box-sizing: border-box;
-}
-
-    .input_group_custom .input1 {
-/*        flex: 1;*/
-        border: none;
-        outline: none;
-        box-shadow: none;
-        appearance: none;
-        background: transparent;
-        height: 100%;
-        font-size: var(--fontBody);
-        box-sizing: border-box;
-        padding-right: 40px; /* 預留給眼睛按鈕 */
-    }
-
-/* 密碼切換按鈕 */
-.btn-toggle-pwd {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 30px;
-    height: 30px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* 建立帳戶按鈕對齊輸入框寬度 */
-#btnRegister {
-    width: 100%;
-    max-width: 28rem;
-}
-
-
-.signContent.s1 {
-    background-color: var(--color_Dark);
-}
-
-.signContent.s2 {
-    background-color: var(--color_bk);
-}
-
-
-
-
-.confirmCheck {
-    width: 100%; /* 改為 100% 讓它自適應 */
-    max-width: 28rem; /* 設定與輸入框相同的最大寬度 */
-}
-
-/* --- 輸入框狀態切換 --- */
-.input1.input_error {
-    border: 2px solid var(--color_Contrast);
-}
-
-/* 驗證通過綠色*/
-.input1.input_success {
-    border: 2px solid var(--color_Green);
-}
-
-/* --- 彈窗樣式 --- */
+/* 彈窗 */
 .popup_overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background: rgba(0,0,0,0.5);
     z-index: 9998;
 }
 
@@ -334,11 +408,11 @@ input[type="password"]::-ms-clear {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%,-50%);
     background: var(--color_bk);
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     z-index: 9999;
     min-width: 320px;
     text-align: center;
@@ -351,36 +425,21 @@ input[type="password"]::-ms-clear {
     display: block;
 }
 
-.popup_success {
-    color: var(--color_Green);
-}
-
-.popup_error {
-    color: var(--color_Contrast);
-}
-
 .btn_popup_close {
     margin-top: 20px;
     padding: 8px 25px;
     background-color: var(--color_Dark);
-    color: white;
+    color: #fff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
 }
 
-.popH5 {
-    margin: 15px 0;
-}
-
-.popTime {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 10px;
-}
-
+/* privacy, systemMessage, misc */
 .privacy {
-    font-size: 14px;
+    font-size: 16pt;
+    margin-top: 15px;
+    margin-bottom: 0px;
 }
 
 .systemMessage {
@@ -393,56 +452,19 @@ input[type="password"]::-ms-clear {
     font-weight: bold;
 }
 
-.main-img {
-    width: 50%;
-    height: 50%;
-}
-
-
-/*輸入提示*/
-.inputHint {
-    min-height: 1.2em; /* 防止跳版 */
-    font-size: 14px;
-    margin-top: 6px;
-    line-height: 1.4;
-}
-
-    /* 成功 / 錯誤狀態 */
-    .inputHint.success {
-        color: var(--color_Green);
-    }
-
-    .inputHint.error {
-        color: var(--color_Contrast);
-    }
-
-/* input 本身狀態 */
-.input_success {
-    border-color: var(--color_Green);
-}
-
-.input_error {
-    border-color: var(--color_Contrast);
-}
-
-
-
-
-
+/* carousel image */
 .carousel-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
 }
 
-
-
-/*瀏覽器自動填入導致改顏色我要改回來*/
+/* 瀏覽器自動填入樣式 */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    /* 1. 利用 transition 凍結樣式變更 */
     transition: background-color 5000s ease-in-out 0s, font-size 5000s ease-in-out 0s;
     -webkit-box-shadow: 0 0 0 1000px var(--color_bk) inset !important;
     -webkit-text-fill-color: var(--color_font) !important;
@@ -450,7 +472,6 @@ input:-webkit-autofill:focus {
     font-size: var(--fontBody) !important;
 }
 
-    /* 2. 針對首行文字加強宣告 */
     input:-webkit-autofill::first-line {
         font-size: 24px !important;
     }
@@ -458,24 +479,18 @@ input:-webkit-autofill:focus {
 input:is(:-webkit-autofill, :autofill) {
     font-size: var(--fontBody) !important;
 }
-.GoogleWrap{
+
+/* Google button */
+.GoogleWrap {
     width: 100%;
-        text-align: center;
-    display: flexbox;
+    text-align: center;
+    display: flex;
     justify-content: center;
 }
 
-.googleBtn {
-    width: 60%;
-    cursor: pointer;
-}
 
-/*忘記密碼*/
-/* =============================================
-   忘記密碼 - 步驟指示器樣式
-   ============================================= */
 
-/* 步驟指示器容器 */
+/* 忘記密碼：步驟指示器 */
 .step_indicators {
     display: flex;
     justify-content: space-around;
@@ -516,17 +531,8 @@ input:is(:-webkit-autofill, :autofill) {
     font-weight: 500;
 }
 
-/* ★ 未完成狀態：灰底 (--color_Gray) + 白字 */
 .step_item.step_incomplete .step_badge {
     background-color: var(--color_Gray);
-    color: white;
-}
-
-.step_item.step_incomplete .step_number {
-    color: white;
-}
-
-.step_item.step_incomplete .step_badge i {
     color: white;
 }
 
@@ -534,17 +540,8 @@ input:is(:-webkit-autofill, :autofill) {
     color: var(--color_DarkGray);
 }
 
-/* ★ 完成狀態：綠底 + 白數字（不顯示勾） */
 .step_item.step_completed .step_badge {
     background-color: var(--color_Light);
-    color: white;
-}
-
-.step_item.step_completed .step_number {
-    color: white;
-}
-
-.step_item.step_completed .step_badge i {
     color: white;
 }
 
@@ -552,18 +549,9 @@ input:is(:-webkit-autofill, :autofill) {
     color: var(--color_DarkGray);
 }
 
-/* ★ 當前狀態：橘底 + 灰勾（用在 Step2） */
 .step_item.step_active .step_badge {
     background-color: var(--color_Contrast);
-    color: var(--color_DarkGray); /* 若有數字則為灰字 */
-}
-
-.step_item.step_active .step_number {
     color: var(--color_DarkGray);
-}
-
-.step_item.step_active .step_badge i {
-    color: var(--color_DarkGray); /* 勾改成灰色 */
 }
 
 .step_item.step_active .step_label {
@@ -571,238 +559,7 @@ input:is(:-webkit-autofill, :autofill) {
     font-weight: 600;
 }
 
-/* 輸入框組 */
-.input_group_custom {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input_custom {
-    width: 100%;
-    color: var(--color_font);
-    background-color: var(--color_bk);
-    border: 1px solid var(--color_Border);
-    font-size: var(--fontBody);
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    transition: border-color 0.2s;
-}
-
-    .input_custom:focus {
-        outline: none;
-        border-color: var(--color_Light);
-    }
-
-    .input_custom.input_success {
-        border-color: var(--color_Green);
-    }
-
-    .input_custom.input_error {
-        border-color: var(--color_Contrast);
-    }
-
-/* 輸入框列 */
-.input_row {
-    display: flex;
-    align-items: stretch;
-    width: 450px;
-}
-
-    .input_row .input_group_custom {
-        flex: 1;
-    }
-
-/* 發送驗證信按鈕 */
-.btn_send_verify {
-    background: var(--color_Light);
-    color: var(--color_font);
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-    white-space: nowrap;
-}
-
-    .btn_send_verify:hover:not(:disabled) {
-        background: #4fc89f;
-    }
-
-    .btn_send_verify:disabled {
-        background: var(--color_Gray);
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-/* 下一步按鈕 */
-.btn_next_step {
-    background: var(--color_Gray);
-    color: var(--color_font);
-    border: none;
-    border-radius: 8px;
-    padding: 0.9rem 1.5rem;
-    width: 100%;
-    max-width: 450px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-top: 1.5rem;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-    .btn_next_step:hover:not(:disabled) {
-        background: #a8a8a8;
-    }
-
-    .btn_next_step:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-/* 提示框 */
-.alert_custom {
-    display: flex;
-    gap: 1rem;
-    padding: 1.25rem;
-    background-color: #f0f8ff;
-    border-left: 4px solid var(--color_Light);
-    border-radius: 6px;
-    font-size: 0.95rem;
-    color: var(--color_font);
-    max-width: 450px;
-    margin: 0 auto;
-}
-
-    .alert_custom i {
-        font-size: 1.3rem;
-        color: var(--color_Light);
-        flex-shrink: 0;
-    }
-
-    .alert_custom strong {
-        display: block;
-        margin-bottom: 0.25rem;
-    }
-
-/* 輸入提示 */
-.inputHint {
-    min-height: 1.2em;
-    font-size: 14px;
-    margin-top: 6px;
-    line-height: 1.4;
-}
-
-    .inputHint.success {
-        color: var(--color_Green);
-    }
-
-    .inputHint.error {
-        color: var(--color_Contrast);
-    }
-
-
-
-/* RWD 調整 */
-@media (max-width: 768px) {
-    .step_indicators {
-        gap: 0.5rem;
-    }
-
-    .step_badge {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1.2rem;
-    }
-
-    .step_label {
-        font-size: 0.8rem;
-    }
-}
-
-/* 版面置中與寬度 */
-.forgot_wrap {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 32px 16px 64px;
-    text-align: center;
-}
-
-.forgot_form {
-    max-width: 480px;
-}
-
-/* 下一步按鈕樣式（已存在 class，這裡稍調字重與高度） */
-.btn_next_step {
-    background: var(--color_Gray);
-    color: var(--color_font);
-    border: none;
-    border-radius: 8px;
-    padding: 0.9rem 1.5rem;
-    width: 100%;
-    max-width: 450px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-top: 1.5rem;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-    .btn_next_step:hover:not(:disabled) {
-        background: #a8a8a8;
-    }
-
-    .btn_next_step:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-/* 當前狀態：橘底 + 白字/白勾 */
-.step_item.step_active .step_badge {
-    background-color: var(--color_Contrast);
-    color: white;
-}
-
-.step_item.step_active .step_number {
-    color: white;
-}
-
-.step_item.step_active .step_badge i {
-    color: white;
-}
-
-.step_item.step_active .step_label {
-    color: var(--color_font);
-    font-weight: 600;
-}
-
-/* 完成狀態：藍綠底 + 白勾（保持） */
-.step_item.step_completed .step_badge {
-    background-color: var(--color_Light);
-    color: white;
-}
-
-.step_item.step_completed .step_number {
-    color: white;
-}
-
-.step_item.step_completed .step_badge i {
-    color: white;
-}
-
-.step_item.step_completed .step_label {
-    color: var(--color_DarkGray);
-}
-
-/* 新增：讓現有 .pwdChange 也套用 input1 的樣式 */
+/* 新增 .pwdChange 兼容 */
 .input_group_custom .pwdChange,
 .input_group_custom input.pwdChange {
     flex: 1;
@@ -813,34 +570,12 @@ input:is(:-webkit-autofill, :autofill) {
     background: transparent;
     height: 100%;
     font-size: var(--fontBody);
+    padding-right: 48px;
     box-sizing: border-box;
-    padding-right: 48px; /* 增加空間，避免圖示遮蓋文字 */
-    z-index: 1; /* 讓輸入框在圖示下層（圖示使用較高 z-index） */
+    z-index: 1;
 }
 
-/* 確保切換按鈕不會遮住文字、且可點擊 */
-.btn-toggle-pwd {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2; /* 圖示置頂但不遮蓋文字（文字有 padding）*/
-}
-
-/* 若需要強制覆蓋 Bootstrap 的 padding，增加更高權重 */
-.input_group_custom .pwdChange.form-control {
-    padding-right: 48px !important;
-}
-
-/*願望清單*/
+/* undo-toast */
 .undo-toast {
     position: fixed;
     bottom: 20px;
@@ -857,126 +592,559 @@ input:is(:-webkit-autofill, :autofill) {
     animation: fadeInUp 0.3s ease;
 }
 
-
-
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translate(-50%, 20px);
+        transform: translate(-50%,20px);
     }
 
     to {
         opacity: 1;
-        transform: translate(-50%, 0);
+        transform: translate(-50%,0);
     }
 }
-/*電腦*/
-@media (min-width: 992px) {
-    .titleWrap.titleH1 {
-        font-size: 35px;
+
+
+
+/* 讓 .inputLine / .inputNone 使用固定寬度（顯示為 inline-block 以維持並排）*/
+.loginWrap .inputLine,
+.loginWrap .inputNone {
+    width: auto !important;
+    padding: 0 5rem !important; /* 桌機原本值 */
+    white-space: normal !important;
+}
+
+/* 讓表單內的輸入欄位、提示與按鈕與上方標題寬度一致並置中 */
+#loginForm .input_group_custom,
+#loginForm .inputHint,
+#loginForm .goodHint,
+#loginForm .btn_next_step,
+#loginForm #btnRegister {
+    width: 100%;
+    max-width: 600px;
+    min-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+/* Login 表單左右留白對齊 .inputLine / .inputNone */
+#loginForm {
+    padding-left: 8rem; /* 與 .inputLine 同步 */
+    padding-right: 8rem;
+    box-sizing: border-box;
+    width: 80%;
+    max-width: 100%;
+    white-space: normal;
+}
+
+    /* 讓欄位與提示滿寬，跟著 form 的內距收斂 */
+    #loginForm .input_group_custom,
+    #loginForm .inputHint,
+    #loginForm .goodHint {
+        max-width: 600px;
+        width: 100%;
+        box-sizing: border-box;
     }
+
+    /* 確保按鈕也對齊（btn_next_step / btnRegister） */
+    #loginForm .btn_next_step,
+    #loginForm #btnRegister {
+        max-width: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+.inputHint {
+    margin-top: 0.5rem; /* 視需要改為 0.25rem / 8px / 12px 等 */
+    display: block;
+    box-sizing: border-box;
+}
+#emailHint {
+    margin-top: 0.5rem;
+}
+
+#pwdHint {
+    margin-top: 0.5rem;
+}
+
+/* RWD: desktop */
+@media (min-width: 992px) {
+    /* 只鎖登入 / 註冊頁 */
+    .auth-page {
+        height: 100vh;
+        overflow: hidden;
+    }
+    .titleWrap.titleH4 {
+        font-size: 24pt;
+    }
+
+    #loginForm {
+        width: 100%;
+        max-width: 480px; /* 桌機區塊最大寬度，視需要調整 */
+        margin: 20px auto; /* 垂直間距與水平置中 */
+        padding-left: 0; /* 移除偏移，讓區塊可水平置中 */
+        padding-right: 0;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 使內部欄位與按鈕水平置中 */
+        gap: 0.75rem;
+    }
+
+        /* 確保內部欄位與按鈕在區塊內撐滿寬度但不超過區塊 max-width */
+        #loginForm .input_group_custom,
+        #loginForm .btn_next_step,
+        #loginForm #btnRegister,
+        #loginForm .email_row,
+        #loginForm .GoogleWrap {
+            width: 100%;
+            max-width: none; /* 由父區塊 max-width 控制 */
+            margin: 0;
+            box-sizing: border-box;
+        }
+    /* 禁止整個頁面出現垂直滾動（desktop） */
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden; /* 阻止整頁滾動 */
+    }
+
+    /* 確保左側 carousel 與父容器撐滿視窗（已加前述規則） */
+    .signContent.s1 .carousel,
+    .signContent.s1 .carousel-inner,
+    .signContent.s1 .carousel-item {
+        height: 100vh;
+        min-height: 100vh;
+    }
+
+    /* 右側內容（表單）在自身區塊滾動，避免推高整頁高度 */
+    .signContent.s2,
+    .signContent.s2 .formWrap,
+    #loginForm {
+        box-sizing: border-box;
+    }
+
+    .confirmCheck {
+        position: relative;
+        box-sizing: border-box;
+        max-width: 60rem;
+        min-width: 20rem;
+        height: 48px;
+        justify-content: center;
+    }
+
+    .eLabel {
+        width: 100%;
+        left: -2%;
+    }
+
+    .titleWrap.titleH1 {
+        font-size: var(--font_H1);
+    }
+
+    .titleWrap.titleH4 {
+        font-size: var(--font_H4);
+    }
+
     .carousel-item {
         height: 100vh;
     }
-    /*登入排版*/
+
+    /* 確保整個 carousel 與 inner 在桌機也填滿視窗 */
+    .signContent.s1 .carousel,
+    .signContent.s1 .carousel-inner,
+    .signContent.s1 .carousel-item {
+        height: 100vh;
+        min-height: 100vh;
+    }
+
     .loginForm {
         display: flex;
-        background-color: red;
-        width: auto;
-        height: auto;
         justify-content: center;
     }
-    .formWrap {
-        margin-top: 50px;
-        padding-left: 12rem;
-        padding-right: 12rem;
-    }
 
+    .formWrap {
+        margin-top: 30px;
+    }
 }
 
-/*手機*/
-    @media (max-width: 993px) {
-
-        .titleWrap.titleH1 {
-            font-size: 2rem;
-        }
-
-        /*登入排版*/
-        .loginForm {
-            display: flex;
-            background-color: red;
-            width: auto;
-            height: auto;
-            justify-content: center;
-
-        }
-
-        .formWrap {
-            margin-top: 50px;
-            padding-left: 8rem;
-            padding-right: 8rem;
-        }
-        /*登入排版*/
-
-        /*輪播圖*/
-        .signContent.s1.col-12.col-md-6 {
-            height: 50vh;
-            overflow: hidden;
-        }
-
-
-
-        .carousel-item {
-            height: 50vh;
-        }
-
-        .signContent.s1.col-12.col-md-6 .carousel,
-        .signContent.s1.col-12.col-md-6 .carousel-inner,
-        .signContent.s1.col-12.col-md-6 .carousel-item {
-            height: 50vh;
-        }
-
-            .signContent.s1.col-12.col-md-6 .carousel-item img {
-                width: 100%;
-                height: 100%;
-                object-fit: none;
-                object-position: center;
-                display: block;
-            }
-
-        .signContent.s2 {
-            height: auto;
-            min-height: auto;
-        }
-
-        .googleBtn {
-            width: 50%;
-            cursor: pointer;
-        }
-        /*輪播圖*/
-
-        .titleWrap.titleH1 {
-            font-size: 35px;
-        }
-
-        /*登入註冊線條切換*/
-
-
-
-        .inputLine {
-            padding: 0 4rem;
-        }
-
-        .inputNone {
-            padding: 0 4rem;
-        }
-
-        /* 讓輸入框組在 input_row 內也能正常伸展 */
-        .input_row .input_group_custom {
-            width: 200px; 
-            margin-bottom: 0;
-        }
-
-        /*登入註冊線條切換*/
+/* 行動版合併規則*/
+@media (max-width: 991px) {
+    .auth-page {
+        height: auto;
+        overflow: auto;
+    }
+  
+    /* loginWrap / #loginWrap：手機維持左右並列（如需等分可啟用註解區塊） */
+    .loginWrap,
+    #loginWrap {
+        margin: 30px auto;
+        width: 100%;
+        max-width: 420px;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important; /* 若需換行改為 wrap 或註解此行 */
+        justify-content: center !important;
+        gap: 0.5rem !important;
+        align-items: center !important;
+        padding: 0 0.75rem !important;
+        box-sizing: border-box;
     }
 
+        /* 切換按鈕（登入 / 註冊）維持 inline-flex，自適應寬度 */
+        .loginWrap > .inputLine,
+        .loginWrap > .inputNone,
+        #loginWrap > .inputLine,
+        #loginWrap > .inputNone {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+            width: auto !important;
+            padding: 0.5rem 0.9rem !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            white-space: normal;
+        }
+
+
+
+        .loginWrap > .inputLine,
+        .loginWrap > .inputNone {
+            flex: 1 1 50% !important;
+            max-width: calc(50% - 0.5rem) !important;
+        }
+
+
+    /* 極窄裝置備援：允許換行避免水平溢出（<=360px） */
+    @media (max-width: 360px) {
+        .loginWrap,
+        #loginWrap {
+            flex-wrap: wrap !important;
+        }
+
+            .loginWrap > .inputLine,
+            .loginWrap > .inputNone,
+            #loginWrap > .inputLine,
+            #loginWrap > .inputNone {
+                flex: 1 1 100% !important;
+                width: 100% !important;
+                white-space: normal;
+            }
+    }
+
+    /* #loginForm：手機置中區塊，內部元素填滿父寬度 */
+    #loginForm {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto 30px;
+        padding-left: 0;
+        padding-right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        box-sizing: border-box;
+    }
+
+        #loginForm .input_group_custom,
+        #loginForm .btn_next_step,
+        #loginForm #btnRegister,
+        #loginForm .email_row,
+        #loginForm .GoogleWrap {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        /* email_row 在窄螢幕改為直列 */
+        #loginForm .email_row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+
+
+        /* Google 按鈕在手機全寬 */
+        #loginForm .GoogleWrap .googleBtn,
+        #loginForm .GoogleWrap {
+            width: 95%;
+            max-width: none;
+        }
+
+    /* 手機按鈕：登入按鈕可與輸入欄對齊（滿寬） */
+    #btnLogin,
+    .btn.confirmCheck.eLabel,
+    button.btn.confirmCheck.eLabel {
+        font-size: 16pt;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+        padding: 0rem 1rem;
+        display: block;
+        margin-left: 0;
+        margin-right: 0;
+        height: 48px;
+        border-radius: 6px;
+    }
+}
+
+/* 調整：收斂「回到首頁」區塊間距與連結樣式 */
+.backIndexWrap {
+    text-align: center;
+    color: var(--color_Dark);
+    margin-top: 0.5rem; /* 原本過大的間距改小 */
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.backIndex {
+    color: var(--color_Dark);
+    margin: 0;
+    padding: 0.25rem 0;
+    text-decoration: none;
+}
+
+.back-home-link {
+    display: inline-block;
+    margin: 0;
+    padding: 0.25rem 0;
+    font-size: 16pt;
+    color: var(--color_Dark);
+    text-decoration: none;
+}
+
+    .back-home-link a {
+        color: var(--color_Dark);
+        text-decoration: none;
+    }
+
+    .back-home-link:hover,
+    .back-home-link:focus {
+        text-decoration: none;
+        color: var(--color_Dark);
+    }
+
+/* Signup: 讓 formWrap 與 Login 的 #loginForm 對齊並統一寬度，email row 同排 */
+.signContent.s2 .formWrap {
+    width: 100%;
+    max-width: 480px;     /* 與 Login 桌機版一致 */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+}
+
+/* email_row：水平排列，input 填滿剩餘空間，按鈕維持較小寬度 */
+.signContent.s2 .email_row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+}
+
+/* input 同 Login 欄位尺寸 */
+.signContent.s2 .email_row input.email2 {
+    flex: 1 1 auto;
+    min-width: 0; /* 重要，允許 flex 正確收縮 */
+    height: 48px;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+/* 寄驗證信按鈕：縮小寬度但保留可點擊區域 */
+.signContent.s2 .email_row button.eLabel {
+    flex: 0 0 auto;       /* 不撐滿剩餘空間 */
+    min-width: 80px;
+    height: 48px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* 行動版：表單最大寬度與 Login 一致，極窄螢幕允許換行 */
+@media (max-width: 992px) {
+    .signContent.s2 .formWrap {
+        max-width: 420px;  /* 與 Login 行動版一致 */
+    }
+
+    /* 若螢幕非常窄，改用換行避免溢出（按鈕仍保持小寬度） */
+    @media (max-width: 420px) {
+        .signContent.s2 .email_row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .signContent.s2 .email_row input.email2,
+        .signContent.s2 .email_row button.eLabel {
+            width: 100%;
+               max-width: none;
+
+        }
+        .signContent.s2 .email_row button.eLabel {
+            padding: 0.6rem 1rem;
+        }
+    }
+}
+
+.confirmCheck.eLabel {
+    font-size: 16pt;
+}
+/* =============================
+   註冊頁 Email row：輸入框寬、按鈕窄（最終覆蓋）
+============================= */
+.signContent.s2 .email_row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+    /* 信箱輸入框：吃滿剩餘寬度 */
+    .signContent.s2 .email_row input.email2 {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* 寄驗證信按鈕：固定窄寬 */
+    .signContent.s2 .email_row button.eLabel {
+        flex: 0 0 10rem; /* 關鍵 */
+        max-width: 10rem;
+        padding: 0;
+        white-space: nowrap;
+    }
+
+
+
+body {
+    overflow-y: auto;
+}
+
+.GoogleWrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.googleBtn {
+    width: 80%;
+}
+
+/* Policy modal: 白底黑字、響應式、可滾動 */
+.policy-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.policy-modal {
+    background: #fff;
+    color: #111;
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    outline: none;
+}
+
+.policy-modal__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.policy-modal__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+    color: #111;
+}
+
+.policy-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #333;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.policy-modal__body {
+    padding: 1rem 1.25rem;
+    overflow: auto;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: #111;
+}
+
+    /* 分段標題 */
+    .policy-modal__body h3 {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+
+    /* 文字小調整，確保可讀性 */
+    .policy-modal__body p {
+        margin: 0 0 0.75rem 0;
+    }
+
+/* footer 可放按鈕（目前只放關閉） */
+.policy-modal__footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+.policy-modal__btn {
+    background: var(--color_Light, #222);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* 手機優化 */
+@media (max-width: 600px) {
+    .policy-modal {
+        max-width: 94%;
+        max-height: 88vh;
+        border-radius: 10px;
+    }
+
+    .policy-modal__title {
+        font-size: 1rem;
+    }
+
+    .policy-modal__body {
+        font-size: 0.98rem;
+    }
+}
+
+.privacyLink, .serviceLink {
+    cursor:pointer;
+}
