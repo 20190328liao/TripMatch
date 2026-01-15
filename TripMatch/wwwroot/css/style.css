@@ -8,10 +8,7 @@
 	box-sizing: border-box; /*解決百分比寬度破版擠壓*/
 }
 
-ul,
-ol {
-	list-style: none;
-}
+
 
 html,
 body {

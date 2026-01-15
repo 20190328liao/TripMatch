@@ -330,7 +330,7 @@ namespace TripMatch.Services
                 await _context.SaveChangesAsync();
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 這裡可以 Log 錯誤原因
                 return false;

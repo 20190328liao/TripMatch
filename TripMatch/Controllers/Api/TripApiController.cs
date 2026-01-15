@@ -95,7 +95,7 @@ namespace TripMatch.Controllers.Api
                     return BadRequest(new { message = "新增失敗，請檢查行程或景點資訊是否正確" });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 4. 記錄 Log 並回傳 500 錯誤
                 // _logger.LogError(ex, "新增行程細項時發生意外錯誤");

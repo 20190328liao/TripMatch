@@ -669,6 +669,11 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* RWD: desktop */
 @media (min-width: 992px) {
+    /* 只鎖登入 / 註冊頁 */
+    .auth-page {
+        height: 100vh;
+        overflow: hidden;
+    }
     .titleWrap.titleH4 {
         font-size: 24pt;
     }
@@ -763,9 +768,12 @@ input:is(:-webkit-autofill, :autofill) {
     }
 }
 
-/* 行動版合併規則（Max width 992px）*/
-@media (max-width: 992px) {
-
+/* 行動版合併規則*/
+@media (max-width: 991px) {
+    .auth-page {
+        height: auto;
+        overflow: auto;
+    }
   
     /* loginWrap / #loginWrap：手機維持左右並列（如需等分可啟用註解區塊） */
     .loginWrap,
@@ -1016,11 +1024,7 @@ input:is(:-webkit-autofill, :autofill) {
         white-space: nowrap;
     }
 
-/* 只鎖登入 / 註冊頁 */
-.auth-page {
-    height: 100vh;
-    overflow-y: hidden;
-}
+
 
 body {
     overflow-y: auto;
@@ -1034,4 +1038,113 @@ body {
 
 .googleBtn {
     width: 80%;
+}
+
+/* Policy modal: 白底黑字、響應式、可滾動 */
+.policy-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.policy-modal {
+    background: #fff;
+    color: #111;
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    outline: none;
+}
+
+.policy-modal__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.policy-modal__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+    color: #111;
+}
+
+.policy-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #333;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.policy-modal__body {
+    padding: 1rem 1.25rem;
+    overflow: auto;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: #111;
+}
+
+    /* 分段標題 */
+    .policy-modal__body h3 {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+
+    /* 文字小調整，確保可讀性 */
+    .policy-modal__body p {
+        margin: 0 0 0.75rem 0;
+    }
+
+/* footer 可放按鈕（目前只放關閉） */
+.policy-modal__footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+.policy-modal__btn {
+    background: var(--color_Light, #222);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* 手機優化 */
+@media (max-width: 600px) {
+    .policy-modal {
+        max-width: 94%;
+        max-height: 88vh;
+        border-radius: 10px;
+    }
+
+    .policy-modal__title {
+        font-size: 1rem;
+    }
+
+    .policy-modal__body {
+        font-size: 0.98rem;
+    }
+}
+
+.privacyLink, .serviceLink {
+    cursor:pointer;
 }
