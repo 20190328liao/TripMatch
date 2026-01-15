@@ -1,4 +1,97 @@
-﻿
+﻿/* =============================================
+   彈窗設定和頭像----翊淳使用~~
+   ============================================= */
+.nav-link {
+	display:inline;
+}
+/* Popup: 只改文字顏色（成功 = --color_Light，錯誤 = --color_Contrast），不改背景 */
+.reg_popup .popup_title {
+	/* 移除之前可能設定的色帶背景 */
+	background-color: transparent !important;
+	background-image: none !important;
+	/* 如需保留少量內距，維持現有 padding */
+	padding: 0.6rem 1rem;
+	/* 若先前為白字，改回預設深色以配合新的文字色 */
+	color: inherit !important;
+}
+
+	/* 成功文字色 */
+	.reg_popup .popup_title.popup_success {
+		color: var(--color_Light) !important;
+		background-color: transparent !important;
+	}
+
+	/* 錯誤文字色 */
+	.reg_popup .popup_title.popup_error {
+		color: var(--color_Contrast) !important;
+		background-color: transparent !important;
+	}
+
+/* 確保內文維持可讀性（白底黑字） */
+.reg_popup .popH5 {
+	color: #111;
+}
+.avatarImg {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border: 1px solid #ddd;
+	display:inline;
+}
+/* Avatar */
+.avatarImg {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border: 1px solid #ddd;
+}
+
+.memberAvatar {
+	width: 200px;
+	height: 200px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid #ddd;
+}
+
+/* 彈窗 */
+.popup_overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.5);
+	z-index: 9998;
+}
+
+.reg_popup {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
+	background: var(--color_bk);
+	padding: 30px;
+	border-radius: 12px;
+	box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+	z-index: 9999;
+	min-width: 320px;
+	text-align: center;
+}
+
+.popup_title {
+	font-size: var(--font_H4);
+	font-weight: bold;
+	margin-bottom: 15px;
+	display: block;
+}
+
+.btn_popup_close {
+	margin-top: 20px;
+	padding: 8px 25px;
+	background-color: var(--color_Dark);
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+}
 /* =============================================
    導覽列字體設定 (覆蓋 Bootstrap 預設值)
    ============================================= */
@@ -22,6 +115,7 @@
 
 /*===============================================*/
 /*可能沒人習慣設計系統分類，元件，響應式，布局和變數，整合為一份*/
+/*翊淳使用~~*/
 *,
 *::before,
 *::after {
@@ -134,7 +228,7 @@ header {
 
 
 /* ============================================= 
-   Bootstrap 工具類別 
+   Bootstrap 工具類別 AI推薦的
    ============================================= */
 
 /* 隱藏/顯示 */
@@ -233,7 +327,9 @@ header {
 	padding-top: 1rem !important;
 	padding-bottom: 1rem !important;
 }
-
+/* ============================================= 
+ 翊淳寫的類別
+   ============================================= */
 /*各種通用元件（按鈕、標題）會放class*/
 
 /*標題*/

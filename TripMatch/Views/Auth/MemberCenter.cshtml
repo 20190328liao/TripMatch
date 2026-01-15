@@ -1,7 +1,7 @@
 ﻿@using System.Security.Claims
 @{
     ViewData["Title"] = "會員中心";
-    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
 
     var avatarUrl = User.FindFirst("Avatar")?.Value;
     if (string.IsNullOrEmpty(avatarUrl))

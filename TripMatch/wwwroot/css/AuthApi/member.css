@@ -109,7 +109,6 @@ margin:0;
     #loginWrap .inputLine,
     #loginWrap .inputNone {
         width: auto !important;
-        padding: 0 1rem !important;
         margin: 0 !important;
         text-align: center !important;
         white-space: normal;
@@ -142,7 +141,6 @@ margin:0;
     /* 切換按鈕/標籤的共同樣式（便於切換 active 狀態）*/
     .loginWrap .inputLine,
     .loginWrap .inputNone {
-        padding: 0 3rem; 
         cursor: pointer;
         line-height: 1;
         text-align: center;
@@ -437,8 +435,8 @@ Email row（Login / Signup 分流）
 
 /* privacy, systemMessage, misc */
 .privacy {
-    font-size: 16pt;
-    margin-top: 15px;
+    font-size: 14pt;
+    margin-top: 25px;
     margin-bottom: 0px;
 }
 
@@ -610,8 +608,8 @@ input:is(:-webkit-autofill, :autofill) {
 .loginWrap .inputLine,
 .loginWrap .inputNone {
     width: auto !important;
-    padding: 0 5rem !important; /* 桌機原本值 */
-    white-space: normal !important;
+    padding: 0 4.5rem !important; /* 桌機原本值 */
+    white-space: nowrap !important;
 }
 
 /* 讓表單內的輸入欄位、提示與按鈕與上方標題寬度一致並置中 */
@@ -801,7 +799,7 @@ input:is(:-webkit-autofill, :autofill) {
             justify-content: center !important;
             white-space: nowrap !important;
             width: auto !important;
-            padding: 0.5rem 0.9rem !important;
+            padding: 0.5rem 5rem !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             cursor: pointer !important;
@@ -1144,7 +1142,59 @@ body {
         font-size: 0.98rem;
     }
 }
+/* Restore policy modal header color & contrast */
+.policy-modal__header {
+    background: white; /* 可改為你想要的主色 */
+    color: #111;
+    border-bottom: none; /* 移除淡邊使色帶連續 */
+    padding: 1rem 1.25rem;
+}
 
-.privacyLink, .serviceLink {
-    cursor:pointer;
+.policy-modal__title {
+    color: #111; /* 確保標題為白色以利對比 */
+}
+
+.policy-modal__close {
+    color: var(--color_Light); /* 白色的關閉按鈕 */
+    background: transparent;
+    border: none;
+}
+
+/* footer 按鈕樣式反差調整（選用） */
+.policy-modal__footer {
+    background: transparent;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.policy-modal__btn {
+    background: var(--color_Light);
+    color: #111;
+}
+
+/* Popup: 只改文字顏色（成功 = --color_Light，錯誤 = --color_Contrast），不改背景 */
+.reg_popup .popup_title {
+    /* 移除之前可能設定的色帶背景 */
+    background-color: transparent !important;
+    background-image: none !important;
+    /* 如需保留少量內距，維持現有 padding */
+    padding: 0.6rem 1rem;
+    /* 若先前為白字，改回預設深色以配合新的文字色 */
+    color: inherit !important;
+}
+
+/* 成功文字色 */
+.reg_popup .popup_title.popup_success {
+    color: var(--color_Light) !important;
+    background-color: transparent !important;
+}
+
+/* 錯誤文字色 */
+.reg_popup .popup_title.popup_error {
+    color: var(--color_Contrast) !important;
+    background-color: transparent !important;
+}
+
+/* 確保內文維持可讀性（白底黑字） */
+.reg_popup .popH5 {
+    color: #111;
 }

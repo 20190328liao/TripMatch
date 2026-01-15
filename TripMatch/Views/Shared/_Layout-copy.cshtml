@@ -9,9 +9,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TripMatch</title>
-
+    @* 自動產生的bootstrap檔案，系統預設bootstrap，這兩隻沒css干擾，翊淳是用js和grid做響應式*@
     <link rel="stylesheet" href="~/bootstrap-grid.css" />
     <link rel="stylesheet" href="~/bootstrap.bundle.min.js" />
+
+    @* bootstrap.min.css可能註解沒差，再看有沒有人用*@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
     <link rel="stylesheet" href="~/css/style.css">
@@ -20,11 +22,9 @@
     @* 自動產生的檔案，處理 CSS Isolation (隔離) *@
     <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" />
 
-    @* <link rel="stylesheet" href="~/css/AuthApi/member.css"> *@
-    @* <link rel="stylesheet" href="~/css/AuthApi/Calendar.css"> *@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    @* Home頁面要用的 *@
+    @* Home頁面要用的*@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
@@ -35,7 +35,7 @@
 
     <style>
         body {
-            background-color: #62DEB1; 
+            background-color: white; 
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -61,7 +61,7 @@
                 </button>
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1" style="width:25px;height:25px;">
+                    <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
@@ -140,7 +140,7 @@
         window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
     </script>
 
-    @* 在 layout 中也保持單一載入點，使用版本化避免舊路徑快取 *@
+    @* 不能刪的，網頁會沒有彈窗,登出和頭貼 *@
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
