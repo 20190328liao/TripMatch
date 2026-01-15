@@ -16,7 +16,59 @@
     <link rel="stylesheet" href="./css/AuthApi/Calendar.css">
 </head>
 <body>
-    <div class="signWrap">
+
+<!-- Demo: col-6 / col-6（RWD） - 用於觀察輸入框放置 -->
+<section id="login-demo" style="padding:20px;background:#f2f6fb;border-bottom:1px solid #e6eef8;">
+    <style>
+        .demo-container{max-width:1100px;margin:0 auto}
+        .demo-row{display:flex;flex-wrap:wrap;gap:20px}
+        .demo-col{flex:1 1 100%;min-width:260px}
+        @media(min-width:768px){.demo-col{flex:0 0 50%;max-width:50%}}
+        .demo-panel{background:#fff;padding:18px;border-radius:8px;box-shadow:0 2px 8px rgba(15,23,42,0.06)}
+        .demo-left{display:flex;align-items:center;justify-content:center;color:#334155}
+        .demo-right .demo-form{max-width:420px;margin:0 auto}
+        .demo-field{margin-bottom:14px}
+        .demo-field label{display:block;margin-bottom:6px;font-weight:600;color:#0f172a}
+        .demo-field input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px}
+        .demo-field input:focus{outline:none;box-shadow:0 0 0 4px rgba(59,130,246,0.12);border-color:#3b82f6}
+        .demo-btn{padding:10px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer}
+        .debug-outline{outline:2px dashed rgba(99,102,241,0.20);padding:8px;border-radius:6px}
+        .mini-note{font-size:13px;color:#475569;margin-top:8px}
+    </style>
+    <div class="demo-container">
+        <div class="demo-row">
+            <div class="demo-col">
+                <div class="demo-panel demo-left debug-outline">
+                    <div>
+                        <h3 style="margin:0 0 8px 0">左側區塊</h3>
+                        <p class="mini-note">可放圖片、說明或示意圖，縮小視窗會堆疊於上方。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="demo-col">
+                <div class="demo-panel demo-right">
+                    <form class="demo-form" action="#" method="post" aria-label="示範登入表單">
+                        <h3 style="margin-top:0">登入</h3>
+                        <div class="demo-field">
+                            <label for="demo-username">帳號</label>
+                            <input id="demo-username" name="username" type="text" placeholder="請輸入帳號" />
+                        </div>
+                        <div class="demo-field">
+                            <label for="demo-password">密碼</label>
+                            <input id="demo-password" name="password" type="password" placeholder="請輸入密碼" />
+                        </div>
+                        <div class="demo-field">
+                            <button type="submit" class="demo-btn">登入</button>
+                        </div>
+                        <p class="mini-note">縮放視窗觀察輸入框寬度、間距與換行。輸入框有 focus 樣式以便觀察位置。</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+        <div class="signWrap">
     <div class="container-fluid p-0">
         <div class="row g-0 min-vh-100">
             <div class="signContent s1 col-12 col-md-6">

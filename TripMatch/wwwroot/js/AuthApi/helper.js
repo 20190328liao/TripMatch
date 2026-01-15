@@ -254,6 +254,8 @@
             if (input.length) {
                 var $parent = input.closest('.input_row, .input_group_custom');
                 var $hint = $('<div>').attr('id', selector.replace('#', '')).addClass('inputHint');
+                // 直接設定 margin-top，保證生成時有適當間距
+                $hint.css('margin-top', '1rem');
                 if ($parent.length) {
                     $parent.after($hint);
                 } else {
@@ -262,6 +264,7 @@
                 return $hint;
             }
             var $fallback = $('<div>').attr('id', selector.replace('#', '')).addClass('inputHint');
+            $fallback.css('margin-top', '1rem');
             $('body').append($fallback);
             return null;
         }
@@ -361,3 +364,31 @@
     });
 
 })(window, window.jQuery);
+
+// 開發專用：過濾來自 aspnetcore-browser-refresh 的 "Unknown payload: { \"type\" : \"Ping\" }" 訊息
+(function () {
+    'use strict';
+    // 只在本機開發環境啟用（避免誤過濾其他環境的警告）
+    try {
+        const host = (window && window.location && window.location.hostname) || '';
+        if (!/localhost|127\.0\.0\.1/.test(host)) return;
+
+        const _origWarn = console.warn.bind(console);
+        console.warn = function (...args) {
+            try {
+                if (args.length >= 1 && typeof args[0] === 'string') {
+                    const msg = args[0].toLowerCase();
+                    if (msg.includes('unknown payload') && /ping/.test(msg)) return;
+                }
+                if (args.length >= 2 && typeof args[1] === 'object' && args[1] && args[1].type === 'Ping') {
+                    return;
+                }
+            } catch (ex) {
+                try { _origWarn('console.warn filter error', ex); } catch {}
+            }
+            _origWarn(...args);
+        };
+    } catch (e) {
+        /* noop */
+    }
+})();

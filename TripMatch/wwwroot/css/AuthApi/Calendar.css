@@ -52,7 +52,7 @@
 .days {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 56px; /* 每格高度，必要時調整 */
+    grid-auto-rows: 56px; 
     gap: 0.5rem;
     justify-items: center;
     align-items: center;

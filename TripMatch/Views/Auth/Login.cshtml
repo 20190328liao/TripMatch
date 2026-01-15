@@ -4,6 +4,7 @@
     ViewData["Title"] = "登入";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
+<body class="auth-page">
 
 <div class="signWrap">
     <div class="container-fluid p-0">
@@ -39,10 +40,9 @@
                     <a href="@Url.Action("Signup", "Auth")" class="inputNone SignH1 titleWrap titleH1">註&ensp;冊</a>
                 </div>
 
-                <form id="loginForm">
+                <form id="loginForm" class="loginForm">
                     <div class="formWrap">
-                        <label class="titleWrap titleH4 d-block">帳號 *</label>
-                        
+                        <label class="account titleWrap titleH4 d-block">帳號 *</label>
                         <div class="input_group_custom">
                             <input id="email" name="email" class="input1 psw" type="email" placeholder="example@gmail.com">
                         </div>
@@ -51,7 +51,7 @@
                     </div>
 
                     <div class="formWrap">
-                        <label class="titleWrap titleH4 d-block">密碼 *</label>
+                        <label class="account titleWrap titleH4 d-block">密碼 *</label>
                         <div class="input_group_custom">
                             <input type="password" id="password" name="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文">
                             <span type="button" class="btn-toggle-pwd" data-target="#password" tabindex="-1">
@@ -59,17 +59,18 @@
                             </span>
                         </div>
                         <div id="pwdHint" class="inputHint"></div>
+             
+
+                        <p class="privacy">* 登入即表示您同意隱私權政策。</p>
+                        <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnLogin" disabled>登入</button>
                     </div>
                     
                     <div>
-                        <a href="/Auth/ForgotPassword">忘記密碼</a>
-                        <a href="/Auth/ForgotEmail">忘記帳號</a>
+                      
                     </div>
 
                     <div id="systemMessage" class="mt-3 p-2 d-none"></div>
-                    <p class="privacy">* 登入即表示您同意隱私權政策。</p>
-
-                    <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnLogin" disabled>登入</button>
+          
                     <div class="lineBlackWrap">
                         <div class="lineStroke"></div>
                         <div class="lineBlack">或</div></div>
@@ -79,11 +80,10 @@
                             <img src="~/img/googleBtn.png" alt="Google 登入" class="googleBtn">
                         </a>
                     </div>
-                    <div class="mt-4">
-                        <div class="backIndex mt-4 text-center">
-                         <a href="@Url.Action("Index", "Home")" class="back-home-link">
-                                回到首頁
-                            </a>
+                    <div class="backIndexWrap">
+                        <div class="backIndex back-home-link text-center">
+                            <a href="/Auth/ForgotPassword">忘記密碼</a>｜ <a href="/Auth/ForgotEmail">忘記帳號</a>
+                            ｜<a href="@Url.Action("Index", "Home")">回到首頁</a>
                         </div>
                     </div>
                 </form>
@@ -125,5 +125,5 @@
         </script>
     }
 }
-
+</body>
 
