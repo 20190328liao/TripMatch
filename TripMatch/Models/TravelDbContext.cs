@@ -106,7 +106,7 @@ public partial class TravelDbContext : DbContext
                 .IsRowVersion()
                 .IsConcurrencyToken()
                 .HasComment("樂觀並行控制欄位 (RowVersion)：確保多人同時編輯住宿資訊時不產生數據覆蓋");
-            entity.Property(e => e.SpotId).HasComment("飯店景點快照編號 (Places_Snapshot.SpotId)");
+            entity.Property(e => e.SpotId).HasComment("飯店景點快照編號 (PlacesSnapshot.SpotId)");
             entity.Property(e => e.TripId).HasComment("隸屬行程 ID (Trips.Id)");
 
             entity.HasOne(d => d.Spot).WithMany(p => p.Accommodations)

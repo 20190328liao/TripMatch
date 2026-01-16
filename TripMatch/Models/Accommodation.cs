@@ -19,7 +19,7 @@ public partial class Accommodation
     public int TripId { get; set; }
 
     /// <summary>
-    /// 飯店景點快照編號 (Places_Snapshot.SpotId)
+    /// 飯店景點快照編號 (PlacesSnapshot.SpotId)
     /// </summary>
     public int SpotId { get; set; }
 
