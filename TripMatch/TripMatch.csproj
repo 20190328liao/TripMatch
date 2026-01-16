@@ -30,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Views\Match\AskCalendar.cshtml" />
     <Content Remove="Views\test0112.cshtml" />
     <Content Remove="Views\Trip\index - 複製.cshtml" />
   </ItemGroup>

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TripMatch.Models.DTOs.TimeWindow;
-using TripMatch.Services; 
+using TripMatch.Services;
 
 namespace TripMatch.Controllers.Api
 {
@@ -73,11 +73,11 @@ namespace TripMatch.Controllers.Api
 
         // 5. 提交時間 (POST /api/timewindow/{groupId}/available)
         [HttpPost("{groupId}/available")]
-        public async Task<IActionResult> SubmitAvailableSlots(int groupId, [FromBody] List<AvailableSlotInput> slots)
+        public async Task<IActionResult> SubmitAvailability(int groupId, [FromBody] List<AvailableSlotInput> slots)
         {
             int userId = User.GetUserId();
             await _timeWindowService.SetAvailableSlotsAsync(groupId, userId, slots);
-            return Ok(new { message = "時間已提交" });
+            return Ok(new { message = "時間已成功送出" });
         }
 
         // 6. 取得推薦時間區段 (GET /api/timewindow/{groupId}/common-options)
@@ -132,7 +132,7 @@ namespace TripMatch.Controllers.Api
             var pref = await _timeWindowService.GetMyPreferenceAsync(groupId, userId);
             if (pref == null)
             {
-                  return Ok(null);
+                return Ok(null);
             }
             return Ok(pref);
         }

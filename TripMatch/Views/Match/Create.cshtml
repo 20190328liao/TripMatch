@@ -1,0 +1,340 @@
+﻿@{
+    ViewData["Title"] = "建立新團";
+}
+
+<style>
+    :root {
+        --bg: #f3f6fb;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --shadow: 0 10px 25px rgba(17, 24, 39, .08);
+        --green: #16a34a;
+        --grey-disabled: #9ca3af;
+        --blue-200: #dbeafe;
+        --blue-text: #1e40af;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    .page-wrap {
+        min-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+    }
+
+    .create-card {
+        background: var(--card);
+        border: 0;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 40px;
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .card-title {
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        text-align: center;
+        color: var(--text);
+    }
+
+    .card-desc {
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 32px;
+    }
+
+    .section-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 24px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .form-floating > .form-control {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        height: 58px;
+    }
+
+        .form-floating > .form-control:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 4px rgba(147, 197, 253, .25);
+        }
+
+    .form-floating > label {
+        color: var(--muted);
+        padding-left: 12px;
+    }
+
+    .btn-submit {
+        background: var(--green);
+        color: #fff;
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 700;
+        transition: all 0.2s;
+        margin-top: 30px;
+    }
+
+        .btn-submit:hover {
+            filter: brightness(0.95);
+            transform: translateY(-1px);
+        }
+
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+
+        .btn-submit:disabled {
+            background: var(--grey-disabled);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.7;
+        }
+
+    .back-link {
+        margin-bottom: 24px;
+        color: var(--muted);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        width: 100%;
+        max-width: 600px;
+    }
+
+        .back-link:hover {
+            color: var(--text);
+        }
+
+    .rules-section {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: var(--blue-200);
+        border-radius: 12px;
+        color: var(--blue-text);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .rules-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .rules-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+    }
+
+    .rules-list {
+        margin: 0;
+        padding-left: 24px;
+        font-size: 14px;
+        line-height: 1.6;
+        opacity: 0.9;
+    }
+
+        .rules-list li {
+            margin-bottom: 4px;
+        }
+</style>
+
+<div class="page-wrap">
+
+    <a href="@Url.Action("Index", "Match")" class="back-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        返回上一頁
+    </a>
+
+    <div class="create-card">
+        <h1 class="card-title">建立新團隊</h1>
+        <p class="card-desc">填寫基本資訊，讓夥伴們更清楚這次的目標</p>
+
+        <form id="createForm">
+
+            <div class="section-label">Basic Info / 基本資訊</div>
+
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control check-input" id="groupTitle" placeholder="團名" required maxlength="20">
+                <label for="groupTitle">團名 (例如：東京五日遊)</label>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <input type="text" class="form-control check-input" id="departFrom" placeholder="出發地" value="台北" required>
+                        <label for="departFrom">出發地</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <input type="number" class="form-control check-input" id="targetNumber" value="4" min="2" max="50" placeholder="人數" required>
+                        <label for="targetNumber">揪團人數</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-label">Schedule / 時間規劃</div>
+
+            <div class="form-floating mb-3">
+                <input type="number" class="form-control check-input" id="travelDays" value="5" min="1" max="30" placeholder="天數" required>
+                <label for="travelDays">預計旅行天數 (例如：5天)</label>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="form-floating">
+                        <input type="date" class="form-control check-input" id="dateStart" required placeholder="開始">
+                        <label for="dateStart">可出發期間 (起)</label>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-floating">
+                        <input type="date" class="form-control check-input" id="dateEnd" required placeholder="結束">
+                        <label for="dateEnd">可出發期間 (迄)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="text-muted small mt-2 ms-1">
+                <i class="bi bi-info-circle"></i> 請選擇大家「有空」的日期範圍，系統會從中找出符合天數的時段。
+            </div>
+
+            <button type="submit" class="btn-submit" id="btnSubmit" disabled>
+                建立群組
+            </button>
+
+            <div class="rules-section">
+                <div class="rules-header">
+                    <span>團隊規則說明</span>
+                </div>
+                <ul class="rules-list">
+                    <li>達到目標人數後將自動關閉團隊，不再接受新成員</li>
+                    <li>您可以隨時查看成員提交狀態和進度</li>
+                </ul>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const dateStartInput = document.getElementById('dateStart');
+            const dateEndInput = document.getElementById('dateEnd');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const allInputs = document.querySelectorAll('#createForm input, #createForm select');
+
+            const today = new Date().toISOString().split('T')[0];
+            dateStartInput.setAttribute('min', today);
+            dateEndInput.setAttribute('min', today);
+
+            function checkFormValidity() {
+                let isValid = true;
+                allInputs.forEach(input => {
+                    if (!input.value.trim()) isValid = false;
+                });
+                if (dateStartInput.value && dateEndInput.value) {
+                    if (new Date(dateStartInput.value) > new Date(dateEndInput.value)) {
+                        isValid = false;
+                    }
+                }
+                btnSubmit.disabled = !isValid;
+            }
+
+            allInputs.forEach(input => {
+                input.addEventListener('input', checkFormValidity);
+                input.addEventListener('change', checkFormValidity);
+            });
+
+            dateStartInput.addEventListener('change', function() {
+                dateEndInput.setAttribute('min', this.value);
+                if(dateEndInput.value && dateEndInput.value < this.value) {
+                    dateEndInput.value = '';
+                }
+                checkFormValidity();
+            });
+
+            checkFormValidity();
+
+            document.getElementById('createForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const title = document.getElementById('groupTitle').value.trim();
+                const departFrom = document.getElementById('departFrom').value.trim();
+                const targetNumber = parseInt(document.getElementById('targetNumber').value);
+                const travelDays = parseInt(document.getElementById('travelDays').value);
+                const dateStart = dateStartInput.value;
+                const dateEnd = dateEndInput.value;
+
+                const start = new Date(dateStart);
+                const end = new Date(dateEnd);
+                const windowDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+                if (windowDays < travelDays) {
+                    alert(`錯誤：您的日期範圍只有 ${windowDays} 天，但預計旅行需要 ${travelDays} 天。\n請擴大日期範圍或減少旅行天數。`);
+                    return;
+                }
+
+                const payload = { title, departFrom, targetNumber, travelDays, dateStart, dateEnd };
+
+                const originalText = btnSubmit.innerHTML;
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 建立中...';
+
+                try {
+                    const response = await fetch('/api/timewindow/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        window.location.href = `/Match/Invite/${data.groupId}`;
+                    } else {
+                        const error = await response.json();
+                        alert("建立失敗：" + (error.message || "系統錯誤"));
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = originalText;
+                        checkFormValidity();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("連線錯誤");
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = originalText;
+                    checkFormValidity();
+                }
+            });
+        });
+    </script>
+}
