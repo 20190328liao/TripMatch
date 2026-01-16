@@ -48,6 +48,16 @@ public partial class GlobalRegion
     /// </summary>
     public bool IsHot { get; set; }
 
+    /// <summary>
+    /// 緯度 (Latitude)：由 Google Maps API 取得，範圍 -90 到 90
+    /// </summary>
+    public decimal? Lat { get; set; }
+
+    /// <summary>
+    /// 經度 (Longitude)：由 Google Maps API 取得，範圍 -180 到 180
+    /// </summary>
+    public decimal? Lng { get; set; }
+
     public virtual ICollection<GlobalRegion> InverseParent { get; set; } = new List<GlobalRegion>();
 
     public virtual GlobalRegion? Parent { get; set; }

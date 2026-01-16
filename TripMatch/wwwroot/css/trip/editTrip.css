@@ -343,3 +343,14 @@ footer {
     box-shadow: none !important;
     outline: none !important;
 }
+
+/* 時間區塊 Hover 效果 */
+.edit-time-trigger:hover {
+    background-color: #f0f2f5;
+    border-radius: 4px;
+}
+
+/* 強制讓 Google Autocomplete 下拉選單顯示在 Bootstrap Modal 之上 */
+.pac-container {
+    z-index: 1060 !important; /* Bootstrap Modal 預設是 1055，所以要比它大 */
+}

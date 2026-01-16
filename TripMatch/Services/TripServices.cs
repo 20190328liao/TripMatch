@@ -52,8 +52,6 @@ namespace TripMatch.Services
             var trip = await _context.Trips
                 .FirstOrDefaultAsync(t => t.Id == tripId);
 
-
-
             var tripRegionDetail = await _context.GlobalRegions
                 .Where(gr => gr.TripRegions.Any(tr => tr.TripId == tripId)).ToListAsync();
 
@@ -63,13 +61,11 @@ namespace TripMatch.Services
                 tripSimpleDto.Title = trip.Title;
                 tripSimpleDto.StartDate = trip.StartDate;
                 tripSimpleDto.EndDate = trip.EndDate;
+                tripSimpleDto.Lat = tripRegionDetail[0].Lat;
+                tripSimpleDto.Lng = tripRegionDetail[0].Lng;
             }
-
             return tripSimpleDto;
         }
-
-
-
         #endregion
 
         #region 建立行程    
@@ -166,6 +162,8 @@ namespace TripMatch.Services
                         Level = dto_zh.Result.Types.Contains("country") ? 1 : 2,
                         ParentId = null, // 先不處理父層關係    
                         PlaceId = placeID,
+                        Lat = dto_zh.Result.Geometry.Location.Lat,
+                        Lng = dto_zh.Result.Geometry.Location.Lng,
                         CountryCode = dto_zh.Result.AddressComponents?.FirstOrDefault(c => c.Types.Contains("country"))?.ShortName ?? "??",
                         IsHot = true,
                     };
@@ -298,6 +296,12 @@ namespace TripMatch.Services
         }
 
 
+        public async Task<bool> AddAccommodation(int? userId, AccomadationDto dto)
+        {
+            return true;
+        }
+
+
 
 
         // 嘗試新增景點到行程
@@ -352,10 +356,25 @@ namespace TripMatch.Services
             {
                 return false;
             }
-
-
         }
 
+        public async Task<bool> UpdateSpotTime(SpotTimeDto Dto)
+        {
+            if (Dto.Id <=0)
+                return false;
+           
+            var existing = await _context.ItineraryItems
+                    .FirstOrDefaultAsync(It => It.Id == Dto.Id);
+
+            if (existing != null)
+            {
+                existing.StartTime = Dto.StartTime;
+                existing.EndTime = Dto.EndTime;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
 
 
         #endregion
@@ -363,11 +382,11 @@ namespace TripMatch.Services
         #region 景點快照與願望清單
 
         // 嘗試新增景點快照，若已存在則回傳既有的 SpotId
-        public async Task<int> TryAddPlaceSnapshot(PlaceSnapshotDto dto)
+        public async Task<int> TryAddPlaceSnapshot(PlaceSnapshotDto Dto)
         {
             // 1. 先嘗試找出該筆資料
             var existingPlace = await _context.PlacesSnapshots
-                .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == dto.ExternalPlaceId);
+                .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == Dto.ExternalPlaceId);
 
             // 2. 如果資料已存在，直接回傳 ID
             if (existingPlace != null)
@@ -377,16 +396,16 @@ namespace TripMatch.Services
 
             PlacesSnapshot obj = new()
             {
-                ExternalPlaceId = dto.ExternalPlaceId,
-                NameZh = dto.NameZh,
-                NameEn = dto.NameEn,
-                LocationCategoryId = _sharedService.GetLocationCategoryId(dto.LocationCategory),
-                AddressSnapshot = dto.Address,
-                Lat = dto.Lat,
-                Lng = dto.Lng,
-                Rating = dto.Rating,
-                UserRatingsTotal = dto.UserRatingsTotal,
-                PhotosSnapshot = JsonSerializer.Serialize(dto.PhotosSnapshot),
+                ExternalPlaceId = Dto.ExternalPlaceId,
+                NameZh = Dto.NameZh,
+                NameEn = Dto.NameEn,
+                LocationCategoryId = _sharedService.GetLocationCategoryId(Dto.LocationCategory),
+                AddressSnapshot = Dto.Address,
+                Lat = Dto.Lat,
+                Lng = Dto.Lng,
+                Rating = Dto.Rating,
+                UserRatingsTotal = Dto.UserRatingsTotal,
+                PhotosSnapshot = JsonSerializer.Serialize(Dto.PhotosSnapshot),
                 CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = DateTimeOffset.Now
             };
@@ -403,7 +422,7 @@ namespace TripMatch.Services
                 // 此時資料庫已經有這筆資料了，我們再次查詢並取回它的 ID
                 var reFetchedPlace = await _context.PlacesSnapshots
                     .AsNoTracking() // 建議用 NoTracking，因為剛才 Add 失敗的物件可能還在追蹤中
-                    .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == dto.ExternalPlaceId);
+                    .FirstOrDefaultAsync(ps => ps.ExternalPlaceId == Dto.ExternalPlaceId);
 
                 return reFetchedPlace?.SpotId ?? -1;
             }

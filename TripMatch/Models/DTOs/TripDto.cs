@@ -6,6 +6,7 @@ namespace TripMatch.Models.DTOs
     public class TripDetailDto
     {
         public TripSimpleDto TripInfo { get; set; } = new TripSimpleDto();
+        public AccomadationDto Accomadation { get; set; } = new AccomadationDto();  
         public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
     }
 
@@ -15,8 +16,8 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; } = String.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
-        public decimal Lat { get; set; }
-        public decimal Lng { get; set; }
+        public decimal? Lat { get; set; }
+        public decimal? Lng { get; set; }
         public List<string> DateStrings
         {
             get
@@ -31,9 +32,30 @@ namespace TripMatch.Models.DTOs
         }
     }
 
+    public class FlightDto
+    {
+        public int TripId { get; set; }
+        public string Carrier { get; set; } = string.Empty;
+        public string FlightNumber { get; set; } = string.Empty;   
+        public TimeOnly DepartureTime { get; set; }    
+        public TimeOnly ArrivalTime { get; set; }
+        public string FromAirport { get; set; } = string.Empty;
+        public string ToAirport { get; set; } = string.Empty;
+    }   
+
+    public class AccomadationDto
+    {
+        public int TripId { get; set; }
+        public int SpotId { get; set; }
+        public string HotelName { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public DateOnly CheckInDate { get; set; }
+        public DateOnly CheckOutDate { get; set; }
+    }
+
     public class ItineraryItemDto
     {
-        public int Id { get; set; } 
+        public int Id { get; set; }
         public int TripId { get; set; }
         public int SpotId { get; set; }
         public int DayNumber { get; set; }
@@ -54,6 +76,15 @@ namespace TripMatch.Models.DTOs
         public decimal Rating { get; set; }
 
     }
+
+    public class SpotTimeDto
+    {
+        public int Id { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
+    }
+
+   
 
     public class TripCreateDto
     {
@@ -115,30 +146,46 @@ namespace TripMatch.Models.DTOs
         public string Status { get; set; }
     }
 
-    // 核心資料：對應 Place API 的 result 物件
     public class PlaceResult
     {
-        // 對應資料庫的 Name
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        // 用來解析出 CountryCode (如 JP, TW)
         [JsonPropertyName("address_components")]
         public List<AddressComponent> AddressComponents { get; set; } = new List<AddressComponent>();
 
-        // 用來判斷 Level (是國家 country 還是城市 locality)
         [JsonPropertyName("types")]
         public List<string> Types { get; set; }
+
+        // --- 新增：地理資訊欄位 ---
+        [JsonPropertyName("geometry")]
+        public Geometry Geometry { get; set; } = new Geometry();
     }
 
-    // 地址組件：Google 會把地址拆成很多小塊
+    // 1. 定義 Geometry 物件
+    public class Geometry
+    {
+        [JsonPropertyName("location")]
+        public Location Location { get; set; } = new Location();
+    }
+
+    // 2. 定義 Location 物件 (這就是存取 Lat, Lng 的地方)
+    public class Location
+    {
+        [JsonPropertyName("lat")]
+        public decimal Lat { get; set; }
+
+        [JsonPropertyName("lng")]
+        public decimal Lng { get; set; }
+    }
+
     public class AddressComponent
     {
         [JsonPropertyName("long_name")]
         public string LongName { get; set; }
 
         [JsonPropertyName("short_name")]
-        public string ShortName { get; set; } // 這是我們要的 CountryCode 來源
+        public string ShortName { get; set; }
 
         [JsonPropertyName("types")]
         public List<string> Types { get; set; }

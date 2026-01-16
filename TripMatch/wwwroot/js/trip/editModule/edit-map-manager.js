@@ -10,7 +10,7 @@ let inputElement = null;
 
 // 匯出初始化函式
 // 參數化：傳入 HTML ID，這樣以後 ID 變了不用改這裡的邏輯
-export function initGoogleMap(mapElementId, searchInputId, dates) {
+export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
 
     // 檢查 Google API 是否載入
     if (typeof google === 'undefined' || !google.maps) {
@@ -20,18 +20,26 @@ export function initGoogleMap(mapElementId, searchInputId, dates) {
 
     const mapElement = document.getElementById(mapElementId);
     inputElement = document.getElementById(searchInputId);
-
-    tripDates = dates || [];
-    
+    tripDates = tripSimpleInfo.dateStrings || [];    
 
     if (!mapElement) {
         console.warn(`找不到地圖容器: #${mapElementId}`);
         return;
     }
+    
+    // 使用邏輯或運算子，同時處理 null, undefined, 0
+    // 只要 latitude 是「虛值」(Falsy)，就採用後面的預設值
+    let latitude = tripSimpleInfo.lat || 25.033976;
+    let longitude = tripSimpleInfo.lng || 121.564421;
 
-    // 1. 初始化地圖
+    // 檢查是否真的拿到了有效數字（防止字串或其他異常）
+    if (isNaN(latitude) || isNaN(longitude)) {
+        latitude = 25.033976;
+        longitude = 121.564421;
+    }
+
     map = new google.maps.Map(mapElement, {
-        center: { lat: 25.033976, lng: 121.564421 }, // 預設台北101
+        center: { lat: Number(latitude), lng: Number(longitude) }, // 強制轉為 Number 確保 API 讀取正確
         zoom: 13,
         mapTypeControl: false,
     });
@@ -66,8 +74,6 @@ export function showPlaceByGoogleId(googlePlaceId, spotId) {
         }
     });
 }
-
-
 
 // 內部私有函式：設定自動完成 (不需匯出)
 function setupAutocomplete() {
@@ -281,10 +287,9 @@ function handleAddPlaceToItinerary(spotId, place, day) {
     });
 }
 
-
 //將搜尋到的景點儲存到景點快照資料庫
 // 儲存景點快照 (回傳 Promise)
-function savePlaceToDatabase(place) {
+export function savePlaceToDatabase(place) {
     return new Promise((resolve, reject) => {
 
         let significantType = '';

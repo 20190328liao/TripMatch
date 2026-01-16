@@ -18,14 +18,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     let mapInstance = null;
 
     try {
-        const tripData = await $.get(`/api/TripApi/simple/${tripId}`);
-        const dates = tripData.dateStrings || [];
-
+        const tripSimpleInfo = await $.get(`/api/TripApi/simple/${tripId}`);
+        
         // 接收 initGoogleMap 回傳的 map 物件
-        mapInstance = initGoogleMap('map', 'place-search-input',dates);
+        mapInstance = initGoogleMap('map', 'place-search-input', tripSimpleInfo);
 
-        // 將 map 物件傳入編輯頁面，讓列表點擊可以控制地圖
-        initEditPage(mapInstance,dates);
+        // 將 map 物件傳入編輯頁面，讓列表點擊可以控制地圖       
+        initEditPage(mapInstance, tripSimpleInfo);
 
     } catch (error) {
         console.error("AJAX 載入行程詳情失敗:", error);

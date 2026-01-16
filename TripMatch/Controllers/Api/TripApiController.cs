@@ -69,6 +69,42 @@ namespace TripMatch.Controllers.Api
             return Ok(tripDetail);
         }
 
+        [HttpPost("AddAccommodation")]
+        public async Task<IActionResult> AddAccommodation([FromBody] AccomadationDto dto)
+        {
+          
+            if (dto == null)
+                return BadRequest(new { message = "請求資料格式錯誤" });
+
+            try
+            {
+                // 3. 呼叫 Service 執行邏輯 (這會處理 SortOrder 計算與新增)
+                bool isSuccess = await _tripServices.AddAccommodation(_tagUserId.UserId, dto);
+
+                if (isSuccess)
+                {
+                    // 回傳 200 OK
+                    return Ok(new { message = "景點已成功加入行程" });
+                }
+                else
+                {
+                    // 可能是 TripId 或 SpotId 在資料庫找不到，回傳 400
+                    return BadRequest(new { message = "新增失敗，請檢查行程或景點資訊是否正確" });
+                }
+            }
+            catch (Exception ex)
+            {
+               
+                // 4. 記錄 Log 並回傳 500 錯誤
+                // _logger.LogError(ex, "新增行程細項時發生意外錯誤");
+                return StatusCode(500, new { message = "伺服器發生錯誤，請稍後再試" });
+            }
+        }
+
+
+
+
+
         [HttpPost("AddSpotToTrip")]
         public async Task<IActionResult> AddSpotToTrip([FromBody] ItineraryItemDto dto)
         {
@@ -123,6 +159,31 @@ namespace TripMatch.Controllers.Api
             catch (Exception ex)
             {
                 // 伺服器錯誤
+                return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
+            }
+        }
+
+        [HttpPost("UpdateSpotTime")]
+        public async Task<IActionResult> UpdateSpotTime([FromBody] SpotTimeDto dto)
+        {
+            try
+            {
+                if (dto == null || dto.Id <= 0)
+                {
+                    return BadRequest("無效的行程細項資料");
+                }
+                bool success = await _tripServices.UpdateSpotTime(dto);
+                if (success)
+                {
+                    return Ok(new { message = "行程細項已更新" });
+                }
+                else
+                {
+                    return NotFound("找不到指定的行程細項");
+                }
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
