@@ -157,7 +157,7 @@ namespace TripMatch.Controllers
 
             if (result.Succeeded)
             {
-                // 寫入站域 cookie，以便前端檢查 (注意 SameSite 與 Secure 設定需與 AuthService.SetPendingCookie 一致)
+                // 寫入站域 cookie，供前端 polling/register 流程使用
                 _authService.SetPendingCookie(HttpContext, user.Email);
 
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
@@ -165,8 +165,10 @@ namespace TripMatch.Controllers
                     return Ok(new { success = true, message = "Email 驗證成功！" });
                 }
 
-                // 瀏覽器直接點連結 -> 導回 Signup（正常跳轉）
-                return RedirectToAction("Signup");
+                // 原本直接導到 Signup，改為先顯示 CheckEmail 頁面（前端會導回註冊或顯示後續操作）
+                ViewData["Status"] = "Success";
+                ViewData["Message"] = "Email 驗證成功，請回到註冊頁完成帳號設定。";
+                return View("CheckEmail");
             }
             else
             {
