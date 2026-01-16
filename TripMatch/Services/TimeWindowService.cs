@@ -137,8 +137,8 @@ namespace TripMatch.Services
                 _context.Preferences.Add(pref);
             }
 
-            pref.BudgetMin = request.BudgetMin;
-            pref.BudgetMax = request.BudgetMax;
+            //pref.BudgetMin = request.BudgetMin;
+            //pref.BudgetMax = request.BudgetMax;
             pref.HotelRating = request.HotelRating;
             pref.Tranfer = request.Transfer;
             pref.PlacesToGo = request.PlacesToGo;
