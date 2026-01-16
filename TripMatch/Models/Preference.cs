@@ -9,9 +9,7 @@ public partial class Preference
 
     public int GroupId { get; set; }
 
-    public int? BudgetMin { get; set; }
-
-    public int? BudgetMax { get; set; }
+    public int? HotelBudget { get; set; }
 
     public int? HotelRating { get; set; }
 

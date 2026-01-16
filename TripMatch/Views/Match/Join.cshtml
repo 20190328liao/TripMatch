@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "加入群組中...";
+}
+
+<div class="d-flex flex-column align-items-center justify-content-center" style="height: 80vh;">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3 text-muted fw-bold">正在處理您的加入請求...</p>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", async function() {
+            // 1. 取得後端傳來的狀態
+            const isAuthenticated = @(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false");
+            const inviteCode = '@ViewBag.InviteCode';
+
+            // 2. 邏輯 A：未登入
+            if (!isAuthenticated) {
+                alert("請先登入以加入團隊");
+                // 跳轉至登入頁，並設定 ReturnUrl 為當前頁面 (登入後會自動跳回來這裡繼續執行)
+                const returnUrl = encodeURIComponent(window.location.pathname);
+                window.location.href = `/Auth/Login?returnUrl=${returnUrl}`;
+                return;
+            }
+
+            // 3. 邏輯 B：已登入 -> 呼叫加入 API
+            try {
+                const response = await fetch('/api/timewindow/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inviteCode: inviteCode })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 加入成功 (或原本就在群組)，跳轉至偏好設定頁
+                    window.location.href = `/Match/Preferences/${data.groupId}`;
+                } else {
+                    const error = await response.json();
+                    alert("加入失敗：" + (error.message || "邀請碼無效"));
+                    window.location.href = '/Home/Index'; // 失敗回首頁
+                }
+            } catch (err) {
+                console.error(err);
+                alert("系統發生錯誤");
+                window.location.href = '/Home/Index';
+            }
+        });
+    </script>
+}

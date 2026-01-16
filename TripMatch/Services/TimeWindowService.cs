@@ -24,13 +24,14 @@ namespace TripMatch.Services
             {
                 OwnerUserId = ownerUserId,
                 InviteCode = GenerateInviteCode(),
-                TargetNumber = request.TargetNumber, // 對應資料庫 TargetNumber
+                TargetNumber = request.TargetNumber,
+                Title = request.Title,
+                DepartFrom = request.DepartFrom,
                 TravelDays = request.TravelDays,
+
                 DateStart = request.DateStart?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today,
                 DateEnd = request.DateEnd?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today.AddDays(30),
                 Status = "JOINING",
-                Title = "新揪團行程", 
-                DepartFrom = "TPE", 
                 CreatedAt = DateTime.Now,
                 UpdateAt = DateTime.Now
             };
@@ -137,8 +138,7 @@ namespace TripMatch.Services
                 _context.Preferences.Add(pref);
             }
 
-            pref.BudgetMin = request.BudgetMin;
-            pref.BudgetMax = request.BudgetMax;
+            pref.HotelBudget = request.HotelBudget;
             pref.HotelRating = request.HotelRating;
             pref.Tranfer = request.Transfer;
             pref.PlacesToGo = request.PlacesToGo;

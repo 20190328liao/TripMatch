@@ -1,7 +1,5 @@
 ﻿@{
     ViewData["Title"] = "時間媒合";
-    // 移除預設的 Layout 邊距限制，讓背景色能滿版
-    // 如果你的 _Layout.cshtml 有 container，可能需要自行調整，或在此頁面使用自訂樣式覆蓋
 }
 
 <style>
@@ -14,27 +12,35 @@
         --shadow: 0 10px 25px rgba(17, 24, 39, .08);
         --green: #16a34a;
         --green-100: #eaf7ee;
-        --green-200: #bfe8cc;
         --blue-100: #e6f0ff;
         --blue-500: #2563eb;
         --disabled: #d1d5db;
     }
 
-    /* 確保背景色滿版 */
     body {
         background: var(--bg);
         color: var(--text);
     }
 
-    /* 覆寫 Bootstrap 的 input focus 顏色以符合你的設計 */
-    .form-control:focus {
-        border-color: #93c5fd;
-        box-shadow: 0 0 0 3px rgba(147, 197, 253, .35);
+    .form-floating > .form-control {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        height: 58px;
     }
 
-    /* 你的 Layout 結構 */
+        .form-floating > .form-control:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(147, 197, 253, .35);
+        }
+
+    .form-floating > label {
+        color: var(--muted);
+        padding-left: 12px;
+    }
+
     .page-wrap {
-        min-height: 80vh; /* 調整高度適應內容 */
+        min-height: 80vh;
         display: flex;
         flex-direction: column;
     }
@@ -43,7 +49,6 @@
         padding: 18px 0;
         display: flex;
         align-items: center;
-        gap: 10px;
     }
 
     .back-link {
@@ -66,16 +71,16 @@
         }
 
     .header-section {
-        padding: 18px 24px 20px;
+        padding: 18px 24px 30px;
         text-align: center;
     }
 
         .header-section h1 {
             margin: 0;
-            font-size: 36px; /* 稍微調小一點適應各裝置 */
-            letter-spacing: 2px;
+            font-size: 36px;
             font-weight: 800;
             color: var(--text);
+            letter-spacing: 2px;
         }
 
         .header-section p {
@@ -88,19 +93,18 @@
         width: min(1100px, 92vw);
         margin: 0 auto;
         display: grid;
-        grid-template-columns: 1fr 1fr; /* 預設兩欄 */
+        grid-template-columns: 1fr 1fr;
         gap: 32px;
         padding-bottom: 28px;
     }
 
-    /* 卡片設計：整合 Border-0 與你的 Shadow */
     .custom-card {
         background: var(--card);
-        border: 0; /* Bootstrap border-0 */
+        border: 0;
         border-radius: 14px;
         box-shadow: var(--shadow);
-        padding: 26px 26px 22px;
-        height: 100%; /* 讓兩邊等高 */
+        padding: 30px;
+        height: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -137,21 +141,34 @@
     }
 
     .desc {
-        margin: 0 0 18px;
+        margin: 0 0 24px;
         color: var(--muted);
         font-size: 14px;
         line-height: 1.6;
     }
 
-    /* 按鈕樣式整合 */
+    .hint-box {
+        border: 1px solid #bfe8cc;
+        background: var(--green-100);
+        color: #14532d;
+        border-radius: 10px;
+        padding: 14px 14px;
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
     .custom-btn {
         width: 100%;
-        margin-top: auto; /* 將按鈕推到底部 */
+        margin-top: auto;
         border: none;
         border-radius: 10px;
         padding: 12px 14px;
         font-size: 15px;
         font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
         transition: all 0.2s;
     }
 
@@ -185,17 +202,6 @@
         cursor: not-allowed;
     }
 
-    /* 浮動標籤微調 */
-    .form-floating > .form-control {
-        border-radius: 8px;
-        border: 1px solid var(--line);
-    }
-
-    .form-floating > label {
-        font-size: 14px;
-        color: var(--muted);
-    }
-
     @@media (max-width: 860px) {
         .cards-grid {
             grid-template-columns: 1fr;
@@ -218,7 +224,7 @@
 
     <div class="header-section">
         <h1>時間媒合</h1>
-        <p>建立專屬旅程，或是加入夥伴的冒險</p>
+        <p>選擇加入現有團隊或建立新團隊</p>
     </div>
 
     <div class="cards-grid">
@@ -238,9 +244,11 @@
 
             <p class="desc">已經有朋友建立團隊了嗎？輸入邀請碼加入他們。</p>
 
-            <form id="joinForm">
+            <form id="joinForm" style="margin-top: auto;">
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control text-uppercase" id="inviteCode" placeholder="例如：AB1234" maxlength="10" required>
+                    <input type="text" class="form-control text-uppercase fw-bold"
+                           id="inviteCode" placeholder="例如：AB1234" maxlength="10" required
+                           style="letter-spacing: 1px;">
                     <label for="inviteCode">輸入邀請碼</label>
                 </div>
 
@@ -261,73 +269,27 @@
                 <h2 class="card-title-text">我沒有邀請碼</h2>
             </div>
 
-            <p class="desc">建立一個新的團隊，設定日期範圍並邀請朋友。</p>
+            <p class="desc">建立一個新的團隊，並邀請朋友一起規劃行程。</p>
 
-            <form id="createForm">
-                <div class="row g-2">
-                    <div class="col-12">
-                        <div class="form-floating mb-3">
-                            <input type="number" class="form-control" id="targetNumber" value="4" min="2" placeholder="人數">
-                            <label for="targetNumber">預計人數 (含自己)</label>
-                        </div>
-                    </div>
+            <div class="hint-box">
+                建立團隊後，系統會產生一組邀請碼，你可以分享給朋友加入。
+            </div>
 
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="dateStart" placeholder="開始">
-                            <label for="dateStart">開始日期</label>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="dateEnd" placeholder="結束">
-                            <label for="dateEnd">結束日期</label>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn custom-btn btn-create" id="btnCreate">
-                    建立新團
-                </button>
-            </form>
+            <a href="@Url.Action("Create", "Match")" class="btn custom-btn btn-create">
+                建立新團
+            </a>
         </div>
 
     </div>
-
-    <div class="text-center text-muted small pb-4">
-        團隊成員可以一起協調出發時間和地點
-    </div>
-
 </div>
 
 @section Scripts {
     <script>
-        // === 1. 初始化與日期邏輯 ===
-        document.addEventListener("DOMContentLoaded", function() {
-            const today = new Date().toISOString().split('T')[0];
-            const dateStartInput = document.getElementById('dateStart');
-            const dateEndInput = document.getElementById('dateEnd');
-
-            // 設定最小日期
-            dateStartInput.setAttribute('min', today);
-            dateEndInput.setAttribute('min', today);
-
-            // 當開始日期改變，連動結束日期
-            dateStartInput.addEventListener('change', function() {
-                dateEndInput.setAttribute('min', this.value);
-                if(dateEndInput.value && dateEndInput.value < this.value) {
-                    dateEndInput.value = '';
-                }
-            });
-        });
-
-        // === 2. 邀請碼輸入監聽 (控制按鈕狀態) ===
         const inviteInput = document.getElementById('inviteCode');
         const btnJoin = document.getElementById('btnJoin');
 
         inviteInput.addEventListener('input', () => {
             const code = inviteInput.value.trim();
-            // 簡單驗證：有輸入即可，或設定長度限制
             const isValid = code.length >= 2;
 
             btnJoin.disabled = !isValid;
@@ -340,14 +302,14 @@
             }
         });
 
-        // === 3. 處理「加入」邏輯 ===
         document.getElementById('joinForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const inviteCode = inviteInput.value.trim();
-            const btn = document.getElementById('btnJoin');
+            const originalText = btnJoin.innerHTML;
 
             // Loading 狀態
-            setLoading(btn, true, '加入中...');
+            btnJoin.disabled = true;
+            btnJoin.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 加入中...';
 
             try {
                 const response = await fetch('/api/timewindow/join', {
@@ -358,75 +320,19 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    // 跳轉到偏好設定
                     window.location.href = `/Match/Preferences/${data.groupId}`;
                 } else {
                     const error = await response.json();
                     alert("加入失敗：" + (error.message || "邀請碼無效"));
-                    setLoading(btn, false, '加入團隊');
+                    btnJoin.disabled = false;
+                    btnJoin.innerHTML = originalText;
                 }
             } catch (err) {
                 console.error(err);
                 alert("連線錯誤");
-                setLoading(btn, false, '加入團隊');
+                btnJoin.disabled = false;
+                btnJoin.innerHTML = originalText;
             }
         });
-
-        // === 4. 處理「建立」邏輯 ===
-        document.getElementById('createForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const targetNumber = parseInt(document.getElementById('targetNumber').value);
-            const dateStart = document.getElementById('dateStart').value;
-            const dateEnd = document.getElementById('dateEnd').value;
-            const btn = document.getElementById('btnCreate');
-
-            // 驗證
-            if (!dateStart || !dateEnd) { alert("請選擇完整的日期範圍"); return; }
-            if (new Date(dateStart) > new Date(dateEnd)) { alert("結束日期不能早於開始日期"); return; }
-
-            // 計算天數
-            const start = new Date(dateStart);
-            const end = new Date(dateEnd);
-            const diffTime = Math.abs(end - start);
-            const travelDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-            const payload = { targetNumber, travelDays, dateStart, dateEnd };
-
-            // Loading 狀態
-            setLoading(btn, true, '建立中...');
-
-            try {
-                const response = await fetch('/api/timewindow/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    // 跳轉
-                    window.location.href = `/Match/Preferences/${data.groupId}`;
-                } else {
-                    const error = await response.json();
-                    alert("開團失敗：" + (error.message || "未知錯誤"));
-                    setLoading(btn, false, '建立新團');
-                }
-            } catch (err) {
-                console.error(err);
-                alert("系統發生錯誤");
-                setLoading(btn, false, '建立新團');
-            }
-        });
-
-        // Helper: 按鈕 Loading 切換
-        function setLoading(btn, isLoading, text) {
-            btn.disabled = isLoading;
-            if (isLoading) {
-                btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${text}`;
-            } else {
-                btn.innerHTML = text;
-            }
-        }
     </script>
 }
