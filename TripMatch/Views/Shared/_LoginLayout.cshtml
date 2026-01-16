@@ -89,6 +89,82 @@
          data-apis='@Json.Serialize(authApis)'
          data-member-center-apis='@Json.Serialize(memberCenterApis)'
          style="display:none;"></div>
+
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
+            <div class="container-fluid">
+                @* logo *@
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/img/Logo/Logo0114.png" alt="TripMatch Logo" style="height: 40px; width: auto;">
+                </a>
+                @* 漢堡按鈕 *@
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        @* <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li> *@
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Trip" asp-action="Index">我的行程</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Spot" asp-action="Index">景點探索</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Billing" asp-action="Index">記帳分帳</a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            var avatarUrl = User.FindFirst("Avatar")?.Value;
+                            if (string.IsNullOrEmpty(avatarUrl))
+                            {
+                                avatarUrl = Url.Content("~/img/default_avatar.png");
+                            }
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Auth" asp-action="MemberCenter">
+                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2" style="cursor: pointer;">
+                                </a>
+                                <a class="nav-link dropdown-toggle p-0" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter">個人資料</a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form class="form-inline" asp-controller="AuthApi" asp-action="Logout" method="post">
+                                            <button id="btnLogout" type="submit" class="dropdown-item">登出</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">登入</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
     <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
@@ -98,5 +174,11 @@
 
     @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
     @RenderSection("Scripts", required: false)
+
+    <footer class="footerWrap">
+        <div class="container text-center">
+            &copy; 2025 - TripMatch - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
 </body>
 </html>

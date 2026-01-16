@@ -662,7 +662,7 @@ namespace TripMatch.Controllers.Api
             return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
         }
 
-
+        // 更新 GetMemberProfile：儲存與回傳皆以原始 Unicode 字串為主，僅對舊資料偵測並解碼
         [HttpGet("GetMemberProfile")]
         [Authorize]
         public async Task<IActionResult> GetMemberProfile()
@@ -689,7 +689,7 @@ namespace TripMatch.Controllers.Api
             string fullNameToReturn;
             if (string.IsNullOrWhiteSpace(userRecord.FullName))
             {
-                // DB 無值：用 Email @ 前段當預設，並嘗試寫回（寫回時處理中文編碼）
+                // DB 無值：用 Email @ 前段當預設，並嘗試寫回（直接存 Unicode）
                 var defaultName = (userRecord.Email ?? "").Split('@').FirstOrDefault() ?? "未設定";
                 fullNameToReturn = defaultName;
 
@@ -698,7 +698,7 @@ namespace TripMatch.Controllers.Api
                     var userEntity = await _userManager.FindByIdAsync(userId);
                     if (userEntity != null && string.IsNullOrWhiteSpace(userEntity.FullName))
                     {
-                        userEntity.FullName = EncodeFullNameIfNeeded(defaultName);
+                        userEntity.FullName = defaultName; // 直接存 Unicode
                         await _userManager.UpdateAsync(userEntity);
                     }
                 }
@@ -709,6 +709,7 @@ namespace TripMatch.Controllers.Api
             }
             else
             {
+                // 若資料庫仍殘留舊的 URL-encoded 字串，嘗試解碼；否則直接回傳原值
                 fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
             }
 
@@ -1129,40 +1130,38 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        // 保留兼容舊資料的解碼輔助：只有在欄位看起來像 URL-encoded 時解碼
         private static string DecodeFullNameIfNeeded(string? fullName)
         {
-            // 假設定 FullName 可能是 URL 編碼（如 %E4%B8%AD%E6%96%87），否則直接回傳原值
             if (string.IsNullOrEmpty(fullName))
                 return string.Empty;
 
             try
             {
-                // 嘗試解碼（如 System.Net.WebUtility.UrlDecode）
-                return System.Net.WebUtility.UrlDecode(fullName);
+                return LooksLikeUrlEncoded(fullName) ? System.Net.WebUtility.UrlDecode(fullName) : fullName;
             }
             catch
             {
-                // 解碼失敗則回傳原值
                 return fullName;
             }
         }
 
-        private static string EncodeFullNameIfNeeded(string fullName)
+        private static bool LooksLikeUrlEncoded(string s)
         {
-            // 假設定 FullName 可能包含非 ASCII 字元，進行 URL 編碼
-            if (string.IsNullOrEmpty(fullName))
-                return string.Empty;
+            if (string.IsNullOrEmpty(s)) return false;
+            for (int i = 0; i < s.Length - 2; i++)
+            {
+                if (s[i] == '%' && IsHexChar(s[i + 1]) && IsHexChar(s[i + 2]))
+                    return true;
+            }
+            return false;
+        }
 
-            try
-            {
-                // 使用 System.Net.WebUtility.UrlEncode 進行編碼
-                return System.Net.WebUtility.UrlEncode(fullName);
-            }
-            catch
-            {
-                // 編碼失敗則回傳原值
-                return fullName;
-            }
+        private static bool IsHexChar(char c)
+        {
+            return (c >= '0' && c <= '9') ||
+                   (c >= 'a' && c <= 'f') ||
+                   (c >= 'A' && c <= 'F');
         }
 
         [HttpPost("ImportCalendarJson")]
@@ -1295,9 +1294,8 @@ namespace TripMatch.Controllers.Api
             });
         }
 
-     
 
-        // 新增 UpdateFullName API 方法
+        // 更新 UpdateFullName：直接存入原始 Unicode（string）
         [HttpPost("UpdateFullName")]
         [Authorize]
         public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel? model)
@@ -1316,22 +1314,18 @@ namespace TripMatch.Controllers.Api
             var user = await _userManager.FindByIdAsync(userIdClaim);
             if (user == null) return NotFound(new { success = false, message = "找不到使用者" });
 
-            // 與 GetMemberProfile 的 Encode/Decode 邏輯一致：儲存時進行編碼
-            user.FullName = EncodeFullNameIfNeeded(name);
+            // 直接存原始 Unicode，不再 UrlEncode
+            user.FullName = name;
 
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded)
             {
-                // 重新產生 JWT 以反映新的 claim（如果有的話）
                 try
                 {
                     var token = _authService.GenerateJwtToken(user);
                     _authService.SetAuthCookie(HttpContext, token);
                 }
-                catch
-                {
-                    // 非致命：更新失敗仍回傳成功給前端
-                }
+                catch { /* 非致命 */ }
 
                 return Ok(new { success = true, message = "自訂名稱已更新" });
             }
@@ -1339,6 +1333,5 @@ namespace TripMatch.Controllers.Api
             var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "更新失敗";
             return BadRequest(new { success = false, message = errorMsg, errors = result.Errors });
         }
-   
     }
 }
