@@ -44,6 +44,9 @@ namespace TripMatch
             // 註冊 Typed HttpClient (會自動處理 HttpClient 的生命週期)
             builder.Services.AddHttpClient<GooglePlacesClient>();
             builder.Services.AddScoped<PlacesImageService>();
+            //通知服務
+            builder.Services.AddSingleton<TripMatch.Services.InMemoryNotificationStore>();
+            builder.Services.AddHostedService<TripMatch.Services.EmailVerificationReminderService>();
 
             // 取得UserId服務註冊（必須在 Build 之前）
             builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
