@@ -1,4 +1,5 @@
 ﻿<!DOCTYPE html>
+@* 翊淳使用避免頭貼或路由消失 *@
 @using System.Text.Json
 @{
     // 以 Url.Action 產生 server 路徑（MVC view），安全序列化給 client
@@ -64,37 +65,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - TripMatch</title>
     <script>
-        (function () {
-            'use strict';
-            try {
-                if (typeof navigator !== 'undefined' && navigator.permissions && typeof navigator.permissions.query === 'function') {
-                    const _orig = navigator.permissions.query;
-                    // 若尚未被包裝，重新包裝成永遠以 navigator.permissions 為 receiver 的函式
-                    if (_orig && !_orig.__tm_bound) {
-                        const wrapped = function () {
-                            return _orig.apply(navigator.permissions, arguments);
-                        };
-                        try { wrapped.toString = function () { return _orig.toString(); }; } catch {}
-                        wrapped.__tm_bound = true;
-                        navigator.permissions.query = wrapped;
-                        // 若需要也可保留原始在其他位置參考
-                        navigator.permissions.__original_query = _orig;
-                    }
-                }
-            } catch (e) {
-                try { console.warn('permissions-fix init failed', e); } catch {}
-            }
-        })();
+
     </script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     @* 使用 ~/ 符號，Razor 會自動解析正確的根目錄路徑 *@
-    <link rel="stylesheet" href="~/css/reset.css">
+    <link rel="stylesheet" href="~/css/style.css">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/variables.css">
-    <link rel="stylesheet" href="~/css/components.css">
-    <link rel="stylesheet" href="~/css/layout.css">
-    <link rel="stylesheet" href="~/css/responsive.css">
     <link rel="stylesheet" href="~/css/AuthApi/member.css">
     <link rel="stylesheet" href="~/css/AuthApi/Calendar.css">
 
@@ -115,7 +91,8 @@
          style="display:none;"></div>
     @* 這裡是各個頁面內容插入的位置 *@
     @RenderBody()
- 
+    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
+
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
 
 

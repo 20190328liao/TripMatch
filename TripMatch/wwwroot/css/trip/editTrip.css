@@ -1,250 +1,356 @@
 /* =========================================
-           1. 暴力清除 Layout 預設間距
+   1. 版面重置與基礎 Layout 設定
    ========================================= */
 
-/* 針對導覽列 (Navbar) */
+/* 針對導覽列 (Navbar) - 移除下方間距 */
 header, nav, .navbar {
-    margin-bottom: 0 !important; /* 移除下方間距 */
-    z-index: 1030; /* 確保陰影蓋在內容之上 */
+    margin-bottom: 0 !important;
+    z-index: 1030;
     position: relative;
 }
 
-/* 針對主要內容容器 (Main) */
-body, main, .container, .container-fluid, .body-content {
+/* 【修改這裡】移除 .container 和 .container-fluid */
+/* 只針對 body, main 和 .body-content 做重置 */
+body, main, .body-content {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
+    overflow: hidden; /* 隱藏外層捲軸 */
 }
 
-/* 隱藏頁尾，避免佔用高度 */
+/* 隱藏頁尾 */
 footer {
     display: none !important;
 }
 
 /* =========================================
-           2. 您的自定義佈局
+   2. 編輯頁面主框架 (Itinerary Wrapper)
    ========================================= */
 
-/* 隱藏外層捲軸 */
-body {
-    overflow: hidden;
-}
-
 .itinerary-wrapper {
-    /* 調整高度：100螢幕高度 - 導覽列高度(約56~60px) */
-    /* 如果您發現還有卷軸，可以微調這個 px 值 */
-    height: calc(100vh - 56px);
+    /* 【修改】原本是 56px，建議改為 60px 或 62px */
+    /* 原因：導覽列可能有邊框或陰影佔用空間，稍微扣多一點確保底部不會被切掉 */
+    height: calc(100vh - 60px);
     display: flex;
     width: 100vw;
     position: relative;
-    margin-top: -1px; /* 稍微上提 1px 消除可能的細微白線 */
+    margin-top: -1px;
 }
 
+/* 左側面板 - 行程列表 */
 .left-panel {
     width: 45vw;
-    min-width: 200px;
+    min-width: 320px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
     display: flex;
     flex-direction: column;
     z-index: 10;
+    /* 【新增】這兩行非常重要！ */
+    /* 確保左側面板高度絕對不會超過 wrapper，並強制子元素溢出時由子元素自己處理 */
+    height: 100%;
+    overflow: hidden;
 }
 
+/* 右側面板 - 地圖 */
 .right-panel {
     flex-grow: 1;
-    background-color: lightcoral;
     position: relative;
+    background-color: #f0f0f0;
 }
 
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================================
+   3. 左側面板詳細樣式 (新整合部分)
+   ========================================= */
+
+/* 導覽與標題區塊 */
+.itinerary-nav {
+    flex-shrink: 0; /* 防止被壓縮 */
+    z-index: 20;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 行程內容捲動區塊 */
+.itinerary-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    /* 【確認】這裡維持您原本加大的 padding */
+    /* 這會讓最後一個行程下面多出一大塊空白，確保不會被遮住 */
+    padding-bottom: 120px !important;
+}
+
+/* --- 每一天的區塊 (Day Section) --- */
+.day-section {
+    background: #fff;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+/* --- 天數標題 --- */
+.day-header {
+    background-color: #e9ecef;
+    /* 【修改 3】加大左右內距：原本是 10px 20px */
+    /* 改成 10px 30px (或更多)，讓文字往右移 */
+    padding: 10px 30px;
+    font-weight: 700;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+
+/* --- 行程項目列表容器 --- */
+.day-items-container {
+    padding: 0;
+}
+
+/* --- 單一行程卡片 (Item) --- */
+.itinerary-item {
+    /* 【修改 4】加大左右內距：原本是 15px 20px */
+    /* 改成 15px 30px，這裡要跟上面的 header 保持一致，視覺才會整齊 */
+    padding: 15px 30px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+    .itinerary-item:hover {
+        background-color: #f8f9fa; /* 懸停效果 */
+    }
+
+    .itinerary-item:last-child {
+        border-bottom: none;
+    }
+
+/* --- 新增：時間軸圓點樣式 --- */
+/* 這是為了讓 JS 中的 <div class="timeline-dot"> 排版好看一點 */
+.timeline-dot {
+    width: 24px;
+    height: 24px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #6c757d;
+    flex-shrink: 0; /* 防止被壓縮 */
+}
+
+/* 拖曳把手 */
+.drag-handle {
+    color: #adb5bd;
+    cursor: grab;
+    padding-top: 4px; /* 對齊視覺中心 */
+}
+
+    .drag-handle:hover {
+        color: #6c757d;
+    }
+
+/* 時間顯示欄 */
+.place-time {
+    min-width: 45px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #495057;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.2;
+    padding-top: 2px;
+}
+
+/* 景點資訊欄 */
+.place-info {
+    flex-grow: 1;
+    min-width: 0; /* 讓 text-truncate 生效的關鍵 */
+}
+
+.place-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #212529;
+    margin-bottom: 4px;
+    /* 文字過長省略 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.place-address {
+    font-size: 0.8rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+}
+
+    /* 限制地址最多顯示一行 */
+    .place-address span {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+/* =========================================
+   4. 右側地圖浮動元件
+   ========================================= */
+
+/* 搜尋框容器 */
 .search-container {
     position: absolute;
     top: 15px;
     left: 15px;
     z-index: 5; /* 確保在 Google Map 圖層之上 */
     width: 320px;
+    max-width: 90%;
 }
 
-/* 4. 地圖容器 */
-#map {
-    width: 100%;
-    height: 100%;
-    background-color: #f0f0f0; /* 地圖載入前的底色 */
-}
-
-
-/* 確保外層容器圓角一致 */
 .search-box {
     border-radius: 8px;
-    overflow: hidden; /* 確保圓角不會被子元素切掉 */
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-/* 當輸入框被點擊時，讓左邊的圖示區塊邊框也跟著變色 */
-.search-box:focus-within .input-group-text,
-.search-box:focus-within #place-search-input {
-    border-color: #86b7fe; /* Bootstrap 預設藍 */
-    outline: 0;
+    .search-box .input-group-text {
+        background-color: #fff;
+        border: none;
+        padding-left: 15px;
+        cursor: default;
+    }
+
+#place-search-input {
+    border: none;
+    box-shadow: none; /* 移除預設陰影 */
+    height: 45px; /* 增加點擊高度 */
 }
 
-/* 3. 移除輸入框點擊時的預設陰影，改用外層 .shadow 處理 */
-#place-search-input:focus {
-    box-shadow: none;
+/* 搜尋框 Focus 效果 */
+.search-box:focus-within {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.input-group-text{
-    cursor: pointer;
-}
+    .search-box:focus-within .input-group-text i {
+        color: #0d6efd !important; /* Bootstrap Primary Blue */
+    }
 
+/* =========================================
+   5. Google Maps InfoWindow 自定義樣式
+   ========================================= */
 
-
-/* --- 1. InfoWindow 佈局樣式 --- */
 .info-window-content {
-    overflow: hidden; /* 防止內容溢出 */
+    overflow: hidden;
+    font-family: var(--bs-body-font-family);
 }
 
 .info-window-img {
     width: 100%;
-    height: 240px;
+    height: 180px; /* 稍微縮小高度以適配小螢幕 */
     object-fit: cover;
     display: block;
-    vertical-align: bottom; /* 消除圖片底部細微縫隙 */
 }
 
 .info-window-address {
-    word-break: break-all;
-    white-space: normal;
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 4px;
     line-height: 1.4;
 }
 
-/* --- 2. 加入行程按鈕效果 --- */
-#add-to-itinerary-btn {
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* 加入行程下拉選單按鈕 */
+.dropdown-menu {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: none;
+    border-radius: 8px;
 }
 
-    #add-to-itinerary-btn:hover {
-        filter: brightness(0.95); /* 變暗增加層次 */
-        transform: translateY(-1px); /* 輕微上浮 */
-    }
-
-    #add-to-itinerary-btn:active {
-        transform: scale(0.95); /* 按壓縮小效果 */
-        box-shadow: inset 0 3px 5px rgba(0,0,0,0.1) !important; /* 內部陰影 */
-    }
-
-/* --- 3. 愛心收藏按鈕效果 (包含解決消失問題) --- */
+/* 愛心收藏按鈕 (修正版) */
 .wishlist-heart {
-    /* 佈局設定 */
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 大小與空間設定 */
-    width: 40px;
-    height: 40px;
-    font-size: 1.5rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
     cursor: pointer;
-    /* 關鍵：防止愛心被左邊按鈕擠壓消失 */
     flex-shrink: 0;
-    /* 動畫過渡 */
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
-    border-radius: 50%; /* 如果滑鼠移上去要有圓形背景 */
+    transition: transform 0.2s, background-color 0.2s;
+    border-radius: 50%;
+    margin-left: 8px;
 }
 
     .wishlist-heart:hover {
-        background-color: rgba(220, 53, 69, 0.1); /* 淡淡的紅色背景 */
-        transform: scale(1.1); /* 放大 */
-    }
-
-    .wishlist-heart:active {
-        transform: scale(0.8); /* Q彈縮小 */
-    }
-
-    /* 預留：當愛心被選中時的樣式 (之後 JS 切換 class 用) */
-    .wishlist-heart.active i {
-        font-weight: 900 !important; /* 變為實心 (Bootstrap Icon 邏輯) */
+        background-color: rgba(220, 53, 69, 0.1);
         transform: scale(1.1);
     }
 
+    .wishlist-heart:active {
+        transform: scale(0.9);
+    }
+
+    /* 愛心選中狀態 */
+    .wishlist-heart.active i {
+        color: #dc3545; /* Bootstrap Danger Red */
+        /* 這裡由 JS 切換 class 為 bi-heart-fill，不需要 font-weight */
+    }
 
 
-/* =========================================
-           左側行程編輯面板樣式
-   ========================================= */
-
-/* 全域版面配置 */
-/*.itinerary-wrapper {
-    display: flex;
-    height: calc(100vh - 56px);
-}*/
-
-/*.left-panel {
-    width: 450px;
-    border-right: 1px solid #dee2e6;
-    display: flex;
-    flex-direction: column;
-    background: #f8f9fa;
-}*/
-
-.right-panel {
-    flex: 1;
-    position: relative;
+/* 1. 預設將刪除按鈕隱藏 */
+.itinerary-item .delete-btn {
+    opacity: 0; /* 完全透明 */
+    visibility: hidden; /* 不佔據互動空間 (避免誤觸) */
+    transition: all 0.2s; /* 加入一點漸變動畫，看起來比較順暢 */
 }
 
-#map {
-    height: 100%;
-    width: 100%;
+/* 2. 當滑鼠移到卡片 (.itinerary-item) 上時，顯示按鈕 */
+.itinerary-item:hover .delete-btn {
+    opacity: 1; /* 變為不透明 */
+    visibility: visible; /* 可見並可點擊 */
 }
 
-/* 時間軸樣式 */
-.day-section {
-    padding: 20px;
+.delete-btn {
+    /* 移除點擊時的藍色外框 */
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    /* 確保文字顏色正確 (Bootstrap 預設 btn-link 會是藍色，這裡強制為 danger 紅色) */
+    text-decoration: none;
 }
 
-.day-title {
-    font-weight: bold;
-    margin-bottom: 15px;
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    z-index: 5;
+/* 確保 Focus 狀態下也不要有框 */
+.delete-btn:focus, .delete-btn:active {
+    box-shadow: none !important;
+    outline: none !important;
 }
 
-.timeline-container {
-    border-left: 2px solid #e0e0e0; /* 時間軸垂直線 */
-    margin-left: 15px;
-    padding-left: 25px;
+/* 時間區塊 Hover 效果 */
+.edit-time-trigger:hover {
+    background-color: #f0f2f5;
+    border-radius: 4px;
 }
 
-.itinerary-card {
-    position: relative;
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/* 圓圈圖示 */
-.timeline-dot {
-    position: absolute;
-    left: -38px;
-    top: 15px;
-    width: 24px;
-    height: 24px;
-    background: white;
-    border: 2px solid #ddd;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* 搜尋框浮動樣式 */
-.search-container {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 5;
-    width: 350px;
+/* 強制讓 Google Autocomplete 下拉選單顯示在 Bootstrap Modal 之上 */
+.pac-container {
+    z-index: 1060 !important; /* Bootstrap Modal 預設是 1055，所以要比它大 */
 }

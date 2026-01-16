@@ -29,6 +29,10 @@ namespace TripMatch.Controllers.Api
 
         private readonly ILogger<AuthApiController> _logger;
 
+        // In-memory notification store
+        private readonly InMemoryNotificationStore _store;
+
+
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -46,6 +50,7 @@ namespace TripMatch.Controllers.Api
      IEmailSender<ApplicationUser> emailSender,
      TravelDbContext dbContext,
      ITagUserId tagUserId,
+     InMemoryNotificationStore store,
      ILogger<AuthApiController> logger
      )
         {
@@ -56,9 +61,22 @@ namespace TripMatch.Controllers.Api
             _dbContext = dbContext;
             _tagUserId = tagUserId;
             _logger = logger;
+            _store = store;
         }
 
+    
+        [HttpGet("~/api/userstatus/emailconfirmed")]
+        [Authorize]
+        public async Task<IActionResult> EmailConfirmed()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+            var user = await _userManager.FindByIdAsync(userId);
+            var confirmed = user != null && await _userManager.IsEmailConfirmedAsync(user);
+
+            return Ok(new { emailConfirmed = confirmed });
+        }
 
         [HttpGet("GetLockedRanges")]
         [Authorize]
@@ -230,6 +248,16 @@ namespace TripMatch.Controllers.Api
                 await _emailSender.SendConfirmationLinkAsync(user, email, callbackUrl!);
 
                 _authService.SetPendingCookie(HttpContext, user.Email);
+
+                // 如果使用記憶體方案，記錄寄送事件供 background service 使用
+                try
+                {
+                    _store?.AddVerificationEmail(user.Id.ToString(), DateTime.UtcNow, "SendConfirmation invoked");
+                }
+                catch
+                {
+                    // non-fatal: 失敗不影響主要流程
+                }
 
                 return Ok(new { message = "驗證信已發送，請檢查信箱或垃圾郵件。" });
             }
@@ -543,8 +571,38 @@ namespace TripMatch.Controllers.Api
             return Ok(new { message = "已清除密碼重設資訊" });
         }
 
+        // 新增：把原本 NotificationsController 的路由直接放在此 controller 中
+        // 使用 ~ 前綴以指定絕對路徑，維持原來的 /api/notifications 路徑
 
+        [HttpGet("~/api/notifications")]
+        [Authorize]
+        public IActionResult GetMyNotifications()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            var items = _store.GetNotifications(userId);
+            return Ok(items);
+        }
 
+        [HttpPost("~/api/notifications/markread/{id:int}")]
+        [Authorize]
+        public IActionResult MarkRead(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (_store.MarkNotificationRead(userId, id)) return Ok();
+            return NotFound();
+        }
+
+        [HttpPost("~/api/notifications/dismissall")]
+        [Authorize]
+        public IActionResult DismissAll()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            _store.DismissAll(userId);
+            return Ok();
+        }
 
         private static Task<bool> IsValidImageAsync(IFormFile file)
         {
@@ -790,6 +848,21 @@ namespace TripMatch.Controllers.Api
             if (result.Succeeded)
             {
                 // 成功：返回 JSON（供 AJAX 使用）
+                // 若使用 in-memory 通知，註冊已驗證時可以自動清除該使用者相關提醒
+                try
+                {
+                    // 把該使用者的所有 EmailVerificationReminder 類型通知標示為已讀
+                    var notifs = _store.GetNotifications(user.Id.ToString());
+                    foreach (var n in notifs.Where(x => string.Equals(x.Type, "EmailVerificationReminder", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        _store.MarkNotificationRead(user.Id.ToString(), n.Id);
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+
                 return Ok(new { success = true, message = "Email 驗證成功！" });
             }
             else
@@ -896,7 +969,7 @@ namespace TripMatch.Controllers.Api
 
         private static string? ParseFirstPhotoFromSnapshot(string photosSnapshot)
         {
-            // 嘗試解析常見的 JSON 陣列格式或直接是 URL 的情況，回傳第一張可用的 URL（否則回傳 null）
+            // 嘗試解析常見的 JSON 陣列格式或直接是 URL 的情況，回傳第一張可用的 URL（否則回傳 null ）
             try
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(photosSnapshot);
@@ -1058,7 +1131,7 @@ namespace TripMatch.Controllers.Api
 
         private static string DecodeFullNameIfNeeded(string? fullName)
         {
-            // 假設 FullName 可能是 URL 編碼（如 %E4%B8%AD%E6%96%87），否則直接回傳原值
+            // 假設定 FullName 可能是 URL 編碼（如 %E4%B8%AD%E6%96%87），否則直接回傳原值
             if (string.IsNullOrEmpty(fullName))
                 return string.Empty;
 
@@ -1076,7 +1149,7 @@ namespace TripMatch.Controllers.Api
 
         private static string EncodeFullNameIfNeeded(string fullName)
         {
-            // 假設 FullName 可能包含非 ASCII 字元，進行 URL 編碼
+            // 假設定 FullName 可能包含非 ASCII 字元，進行 URL 編碼
             if (string.IsNullOrEmpty(fullName))
                 return string.Empty;
 
@@ -1220,6 +1293,51 @@ namespace TripMatch.Controllers.Api
                 acceptedDates = accepted.Select(d => d.ToString("yyyy-MM-dd")).ToArray(),
                 rejectedDates = rejected.Select(d => d.ToString("yyyy-MM-dd")).ToArray()
             });
+        }
+
+     
+
+        // 新增 UpdateFullName API 方法
+        [HttpPost("UpdateFullName")]
+        [Authorize]
+        public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel? model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.FullName))
+                return BadRequest(new { success = false, message = "名稱不可為空" });
+
+            var name = model.FullName.Trim();
+            if (name.Length > 25)
+                return BadRequest(new { success = false, message = "名稱長度不能超過25字" });
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out _))
+                return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userIdClaim);
+            if (user == null) return NotFound(new { success = false, message = "找不到使用者" });
+
+            // 與 GetMemberProfile 的 Encode/Decode 邏輯一致：儲存時進行編碼
+            user.FullName = EncodeFullNameIfNeeded(name);
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                // 重新產生 JWT 以反映新的 claim（如果有的話）
+                try
+                {
+                    var token = _authService.GenerateJwtToken(user);
+                    _authService.SetAuthCookie(HttpContext, token);
+                }
+                catch
+                {
+                    // 非致命：更新失敗仍回傳成功給前端
+                }
+
+                return Ok(new { success = true, message = "自訂名稱已更新" });
+            }
+
+            var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "更新失敗";
+            return BadRequest(new { success = false, message = errorMsg, errors = result.Errors });
         }
    
     }

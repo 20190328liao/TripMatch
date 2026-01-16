@@ -20,14 +20,17 @@ namespace TripMatch.Services.ExternalClients
             {
                 throw new Exception("找不到 Google API Key，請檢查 appsettings.json 設定。");
             }
-        }     
+        }
 
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
+            // 修改處：在 fields 中增加 geometry/location
             var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}" +
-                $"&fields=name,address_components,types,photos&key={_apiKey}&language={lang}";
+                      $"&fields=name,address_components,types,photos,geometry/location&key={_apiKey}&language={lang}";
+
             var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
+
             return await response.Content.ReadFromJsonAsync<GooglePlaceDetailDto>();
         }
 

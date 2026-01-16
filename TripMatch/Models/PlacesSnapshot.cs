@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripMatch.Models;
 
@@ -27,13 +26,11 @@ public partial class PlacesSnapshot
     /// <summary>
     /// 景點中文名稱
     /// </summary>
-    [Column("Name_Zh")]
     public string NameZh { get; set; } = null!;
 
     /// <summary>
     /// 景點英文名稱
     /// </summary>
-    [Column("Name_En")]
     public string? NameEn { get; set; }
 
     /// <summary>
