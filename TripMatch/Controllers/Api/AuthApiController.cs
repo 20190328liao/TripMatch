@@ -82,55 +82,64 @@ namespace TripMatch.Controllers.Api
         [Authorize]
         public async Task<IActionResult> GetLockedRanges(int? userId)
         {
-            // 1. 取得使用者 ID (優先從 Token 拿)
-            if (!userId.HasValue)
+            try
             {
-                var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
-                userId = parsed;
+                if (!userId.HasValue)
+                {
+                    var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
+                    userId = parsed;
+                }
+
+                var ranges = await _dbContext.TripMembers
+                    .AsNoTracking()
+                    .Where(tm => tm.UserId == userId.Value)
+                    .Select(tm => new { tm.Trip.StartDate, tm.Trip.EndDate })
+                    .Where(t => t.StartDate != default && t.EndDate != default)
+                    .Distinct()
+                    .ToListAsync();
+
+                var result = ranges.Select(r => new
+                {
+                    start = r.StartDate.ToString("yyyy-MM-dd"),
+                    end = r.EndDate.ToString("yyyy-MM-dd")
+                }).ToList();
+
+                return Ok(new { ranges = result });
             }
-
-            // 2. 撈取該使用者的行程區間
-            // 使用 AsNoTracking 提高讀取效能
-            var ranges = await _dbContext.TripMembers
-                .AsNoTracking()
-                .Where(tm => tm.UserId == userId.Value)
-                .Select(tm => new { tm.Trip.StartDate, tm.Trip.EndDate })
-                .Where(t => t.StartDate != default && t.EndDate != default)
-                .Distinct()
-                .ToListAsync();
-
-            // 3. 格式化回傳
-            var result = ranges.Select(r => new
+            catch (Exception ex)
             {
-                start = r.StartDate.ToString("yyyy-MM-dd"),
-                end = r.EndDate.ToString("yyyy-MM-dd")
-            }).ToList();
-
-            // 4. 自動加上「今天以前」的鎖定區間 (如果你希望後端統一處理)
-            return Ok(new { ranges = result });
+                _logger?.LogError(ex, "GetLockedRanges failed for userId={UserId}", userId);
+                return StatusCode(500, new { success = false, message = "伺服器端發生錯誤，請查看伺服器日誌以取得詳細資訊。" });
+            }
         }
 
         [HttpGet("GetLeaves")]
         [Authorize]
         public async Task<IActionResult> GetLeaves(int? userId)
         {
-            if (!userId.HasValue)
+            try
             {
-                var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
-                userId = parsed;
+                if (!userId.HasValue)
+                {
+                    var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var parsed)) return Unauthorized();
+                    userId = parsed;
+                }
+
+                var leaves = await _dbContext.Set<LeaveDate>()
+                    .Where(l => l.UserId == userId.Value && l.LeaveDate1.HasValue)
+                    .Select(l => l.LeaveDate1!.Value.ToString("yyyy-MM-dd"))
+                    .ToListAsync();
+
+                return Ok(new { dates = leaves });
             }
-
-            // 資料表為 LeaveDate 且欄位為DateOnly
-            var leaves = await _dbContext.Set<LeaveDate>()
-                .Where(l => l.UserId == userId.Value && l.LeaveDate1.HasValue)
-                .Select(l => l.LeaveDate1!.Value.ToString("yyyy-MM-dd"))
-                .ToListAsync();
-            //return Ok();
-            return Ok(new { dates = leaves });
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "GetLeaves failed for userId={UserId}", userId);
+                return StatusCode(500, new { success = false, message = "伺服器端發生錯誤，請查看伺服器日誌以取得詳細資訊。" });
+            }
         }
-
 
 
         [HttpPost("Signin")]
@@ -662,65 +671,67 @@ namespace TripMatch.Controllers.Api
             return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
         }
 
-        // 更新 GetMemberProfile：儲存與回傳皆以原始 Unicode 字串為主，僅對舊資料偵測並解碼
         [HttpGet("GetMemberProfile")]
         [Authorize]
         public async Task<IActionResult> GetMemberProfile()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
-                return NotFound(new { success = false, message = "找不到使用者" });
-
-            var userRecord = await _dbContext.AspNetUsers
-                .AsNoTracking()
-                .Where(u => u.UserId == intUserId)
-                .Select(u => new
-                {
-                    u.Email,
-                    u.BackupEmail,
-                    Avatar = u.Avatar,
-                    FullName = u.FullName
-                })
-                .FirstOrDefaultAsync();
-
-            if (userRecord == null)
-                return NotFound(new { success = false, message = "找不到使用者" });
-
-            string fullNameToReturn;
-            if (string.IsNullOrWhiteSpace(userRecord.FullName))
+            try
             {
-                // DB 無值：用 Email @ 前段當預設，並嘗試寫回（直接存 Unicode）
-                var defaultName = (userRecord.Email ?? "").Split('@').FirstOrDefault() ?? "未設定";
-                fullNameToReturn = defaultName;
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
+                    return NotFound(new { success = false, message = "找不到使用者" });
 
-                try
-                {
-                    var userEntity = await _userManager.FindByIdAsync(userId);
-                    if (userEntity != null && string.IsNullOrWhiteSpace(userEntity.FullName))
+                var userRecord = await _dbContext.AspNetUsers
+                    .AsNoTracking()
+                    .Where(u => u.UserId == intUserId)
+                    .Select(u => new
                     {
-                        userEntity.FullName = defaultName; // 直接存 Unicode
-                        await _userManager.UpdateAsync(userEntity);
-                    }
-                }
-                catch
-                {
-                    // 寫回失敗不影響回傳
-                }
-            }
-            else
-            {
-                // 若資料庫仍殘留舊的 URL-encoded 字串，嘗試解碼；否則直接回傳原值
-                fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
-            }
+                        u.Email,
+                        u.BackupEmail,
+                        Avatar = u.Avatar,
+                        FullName = u.FullName
+                    })
+                    .FirstOrDefaultAsync();
 
-            return Ok(new
+                if (userRecord == null)
+                    return NotFound(new { success = false, message = "找不到使用者" });
+
+                string fullNameToReturn;
+                if (string.IsNullOrWhiteSpace(userRecord.FullName))
+                {
+                    var defaultName = (userRecord.Email ?? "").Split('@').FirstOrDefault() ?? "未設定";
+                    fullNameToReturn = defaultName;
+
+                    try
+                    {
+                        var userEntity = await _userManager.FindByIdAsync(userId);
+                        if (userEntity != null && string.IsNullOrWhiteSpace(userEntity.FullName))
+                        {
+                            userEntity.FullName = defaultName;
+                            await _userManager.UpdateAsync(userEntity);
+                        }
+                    }
+                    catch { }
+                }
+                else
+                {
+                    fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    email = userRecord.Email,
+                    backupEmail = userRecord.BackupEmail,
+                    avatar = userRecord.Avatar,
+                    fullName = fullNameToReturn
+                });
+            }
+            catch (Exception ex)
             {
-                success = true,
-                email = userRecord.Email,
-                backupEmail = userRecord.BackupEmail,
-                avatar = userRecord.Avatar,
-                fullName = fullNameToReturn
-            });
+                _logger?.LogError(ex, "GetMemberProfile failed for userClaim={UserClaim}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                return StatusCode(500, new { success = false, message = "伺服器端發生錯誤，請查看伺服器日誌以取得詳細資訊。" });
+            }
         }
 
         // 上傳頭像 API
@@ -1025,6 +1036,17 @@ namespace TripMatch.Controllers.Api
             try
             {
                 await _emailSender.SendConfirmationLinkAsync(user, backupEmail, callbackUrl!);
+
+                // 新增：在成功寄出備援驗證信後建立通知（供前端 notifications.js 顯示）
+                try
+                {
+                    _store?.AddVerificationEmail(user.Id.ToString(), DateTime.UtcNow, "備援信箱驗證信已寄出");
+                }
+                catch
+                {
+                    // non-fatal: 若記憶體通知儲存失敗，不應阻斷主要流程
+                }
+
                 return Ok(new { message = "已寄出驗證信，請至備援信箱點擊連結以驗證。" });
             }
             catch
