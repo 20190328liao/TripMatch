@@ -228,11 +228,53 @@
             });
         }
 
+        // 修改：按下「重設密碼」會導到 ForgotPassword，並帶上備援信箱參數，讓頁面自動處理後續
         // Step2 的兩個按鈕行為（登入 / 重設密碼）
         const btnLogin = document.getElementById('btn_next_step1');
         if (btnLogin) btnLogin.addEventListener('click', function () { window.location.href = window.Routes?.Auth?.Login || '/Auth/Login'; });
+
         const btnReset = document.getElementById('btn_next_step2');
-        if (btnReset) btnReset.addEventListener('click', function () { window.location.href = window.Routes?.Auth?.ForgotPassword || '/Auth/ForgotPassword'; });
+        if (btnReset) btnReset.addEventListener('click', function () {
+            // 導到 ForgotPassword 並帶上參數 goStep=2 與備援信箱 email
+            const emailValue = input ? input.value.trim() : '';
+            const base = window.Routes?.Auth?.ForgotPassword || '/Auth/ForgotPassword';
+            const qs = new URLSearchParams();
+            qs.set('goStep', '2');
+            if (emailValue) qs.set('email', emailValue);
+            window.location.href = `${base}?${qs.toString()}`;
+        });
+
+        // 修改：強化回到頁面時以 session/cookie 判斷並啟用「下一步」按鈕（不自動跳轉）
+        async function checkOnceAndShow() {
+            try {
+                const result = await window.ForgotEmailClient.getBackupResult();
+                if (result && (result.userId || result.email)) {
+                    // 標記已驗證，預填欄位並啟用下一步按鈕讓使用者可以前往 Step2
+                    isVerified = true;
+                    if (input) {
+                        input.readOnly = true;
+                    }
+                    setHint('☑ 備援信箱驗證成功！', 'success');
+
+                    // 啟用畫面上的「下一步」按鈕（id="btn_next_step"）
+                    if (btnNext) {
+                        btnNext.disabled = false;
+                        btnNext.classList.remove('btn_Gray');
+                        btnNext.classList.add('btn_light');
+                    }
+
+                    // 同時把 Step2 顯示內容的帳號文字更新（但不自動切換畫面）
+                    const account = result.email || result.account || result.username || '';
+                    const step2Content = document.getElementById('step3_content'); // 此頁以 step3_content 做 Step2 顯示
+                    if (step2Content) {
+                        const h3 = step2Content.querySelector('h3');
+                        if (h3) h3.innerHTML = `成功找回帳號：您的帳號是：<strong>${account}</strong>`;
+                    }
+                }
+            } catch (e) {
+                console.error("checkOnceAndShow failed:", e);
+            }
+        }
 
         // 使用者回到視窗（可能在信箱點擊驗證）時只做一次檢查（不輪詢）
         window.addEventListener('focus', function () { if (!isVerified) checkOnceAndShow(); });

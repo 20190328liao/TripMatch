@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TripMatch.Models.Settings
 {
@@ -73,6 +74,7 @@ namespace TripMatch.Models.Settings
     }
     public class UpdateFullNameModel
     {
+        [Column(TypeName = "nvarchar(256)")]
         public string? FullName { get; set; }
     }
 

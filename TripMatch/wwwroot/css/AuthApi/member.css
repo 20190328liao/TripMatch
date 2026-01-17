@@ -679,7 +679,7 @@ input:is(:-webkit-autofill, :autofill) {
         overflow: hidden;
     }
     .titleWrap.titleH4 {
-        font-size: 24pt;
+        font-size: var(--f_h4);
     }
 
     #loginForm {
@@ -731,8 +731,8 @@ input:is(:-webkit-autofill, :autofill) {
     .confirmCheck {
         position: relative;
         box-sizing: border-box;
-        max-width: 60rem;
-        min-width: 20rem;
+        
+        min-width: 30rem;
         height: 48px;
         justify-content: center;
     }
@@ -805,7 +805,7 @@ input:is(:-webkit-autofill, :autofill) {
             justify-content: center !important;
             white-space: nowrap !important;
             width: auto !important;
-            padding: 0.5rem 5rem !important;
+            padding: 0.5rem 7.5rem !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             cursor: pointer !important;
@@ -823,6 +823,10 @@ input:is(:-webkit-autofill, :autofill) {
 
     /* 極窄裝置備援：允許換行避免水平溢出（<=360px） */
     @media (max-width: 360px) {
+        .account {
+            font-size: var(--f_h3);
+        }
+
         .loginWrap,
         #loginWrap {
             flex-wrap: wrap !important;
