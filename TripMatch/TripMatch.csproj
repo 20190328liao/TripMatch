@@ -72,6 +72,8 @@
     <Folder Include="wwwroot\css\AttractionExplorer\" />
     <Folder Include="wwwroot\img\Avatars\" />
     <Folder Include="wwwroot\js\AttractionExplorer\" />
+    <Folder Include="wwwroot\js\trip\editModule\components\" />
+    <Folder Include="wwwroot\js\trip\editModule\utils\" />
   </ItemGroup>
 
 </Project>
