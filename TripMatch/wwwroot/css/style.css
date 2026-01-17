@@ -1,12 +1,13 @@
-﻿/* =============================================
+﻿
+/* =============================================
    彈窗設定和頭像----翊淳使用~~
    ============================================= */
- /* 讓 avatar 與下拉箭頭（#navbarDropdown）同列且不換行 */
+/* 讓 avatar 與下拉箭頭（#navbarDropdown）同列且不換行 */
 .navbar .nav-item.dropdown {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.35rem; 
-	white-space: nowrap; 
+	gap: 0.35rem;
+	white-space: nowrap;
 }
 
 /* 確保包含 avatar 的連結與 dropdown 按鈕都為 inline-flex 並垂直置中 */
@@ -20,16 +21,8 @@
 	line-height: 1;
 }
 
-/* avatar 圖片為固定方尺寸、block 能避免 baseline 影響 */
-.navbar .avatarImg,
-#navAvatar {
-	width: 40px;
-	height: 40px;
-	display: block;
-	object-fit: cover;
-	border-radius: 50%;
-	border: 1px solid #ddd;
-}
+/* avatar 圖片已改動態js設定css */
+
 
 /* 如果你先前有針對 #navbarDropdown 的舊規則，讓這裡覆寫它 */
 #navbarDropdown {
@@ -70,7 +63,7 @@
 .reg_popup .popH5 {
 	color: #111;
 }
-/* Avatar */
+/* 會員中心的大Avatar */
 
 .memberAvatar {
 	width: 200px;
@@ -122,10 +115,11 @@
    導覽列字體設定 (覆蓋 Bootstrap 預設值)
    ============================================= */
 .navbar .nav-link {
-	font-size: 18px !important; /* 字體大小 */
-	font-weight: 600 !important; /* 字體粗細 */
-	color: var(--color_DarkGray) !important; /* 使用您 style.css 定義的變數 */
-	padding: 10px 15px !important; /* 增加按鈕間距 */
+    font-size: 18px !important; /* 字體大小 */
+    font-weight: 600 !important; /* 字體粗細 */
+    color: var(--color_DarkGray) !important; /* 使用您 style.css 定義的變數 */
+    padding: 10px 15px !important; /* 增加按鈕間距 */
+    white-space: nowrap; /* 防止換行 */
 }
 
 	/* 滑鼠移過去的顏色 */
@@ -176,12 +170,12 @@ header {
 }
 .footer {
 	line-height: 30px;
+	width:100%;
 }
 .footerWrap {
 	width: 100%;
 /*	background: var(--color_nav);*/
 	text-align: center;
-	padding: 1rem 0;
 	margin-top: auto;
 /*	height:10px;*/
 }
@@ -203,6 +197,8 @@ header {
 	/* ===============================
      色彩系統 Colors (可以換顏色) --c 開頭
      =============================== */
+
+	--light: #F8FAFC;
 	--color_font: #000000;
 	--color_btnLight: #ffffff;
 	--color_Light: #62DEB1;
@@ -211,7 +207,7 @@ header {
 	--color_Green: #2AB514;
 	/*提示*/
 	--color_nav: #DAF3F3;
-	/*淡藍色導覽列*/
+	/*淡藍色*/
 	--color_DarkGray: #464646;
 	--color_Gray: #C0C0C0;
 	/*未驗證登入按鈕*/

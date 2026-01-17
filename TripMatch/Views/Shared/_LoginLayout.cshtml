@@ -91,19 +91,20 @@
          style="display:none;"></div>
 
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
+        <nav class="navbar navbar-expand-lg navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
             <div class="container-fluid">
                 @* logo *@
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     <img src="~/img/Logo/Logo0114.png" alt="TripMatch Logo" style="height: 40px; width: auto;">
                 </a>
-                @* 漢堡按鈕 *@
+                @* 漢堡按鈕（保留原本的 data-bs-target 選擇器） *@
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                @* 在 lg（>=992px）以上展開，使用 d-lg-inline-flex 以配合新的斷點 *@
+                <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
@@ -171,13 +172,13 @@
 
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
 
-
+    <script src="~/js/AuthApi/checkEmail.js"></script>
     @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
     @RenderSection("Scripts", required: false)
 
-    <footer class="footerWrap">
-        <div class="container text-center">
-            &copy; 2025 - TripMatch - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="footer-fullwidth">
+        <div class="footer-inner">
+            &copy; 2025 - 想想 TripMatch - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy & Terms</a>
         </div>
     </footer>
 </body>

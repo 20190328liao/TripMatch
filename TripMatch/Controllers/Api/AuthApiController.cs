@@ -957,8 +957,9 @@ namespace TripMatch.Controllers.Api
                     var cookieOptions = new CookieOptions
                     {
                         HttpOnly = true,
-                        Secure = Request.IsHttps,
-                        SameSite = SameSiteMode.Lax,
+                        Secure = Request.IsHttps,            // 本機若用 https 則為 true，部署時務必啟用 HTTPS
+                        SameSite = SameSiteMode.None,       // 允許第三方追蹤轉跳後仍會帶回 cookie
+                        Path = "/",
                         Expires = DateTimeOffset.UtcNow.AddMinutes(30)
                     };
                     Response.Cookies.Append("BackupLookupPending", tokenForUrl, cookieOptions);
@@ -973,8 +974,7 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, new { message = "寄信失敗，請稍後再試。" });
             }
         }
-        // Replace the token-based ConfirmBackupLookup
-        // Replace the token-based ConfirmBackupLookup
+        // 完整替換 ConfirmBackupLookup 方法，加入對 SendGrid / 追蹤鏈結可能改寫的容錯解碼，並寫入 SameSite=None cookie
         [HttpGet("ConfirmBackupLookup")]
         public async Task<IActionResult> ConfirmBackupLookup(string t)
         {
@@ -985,8 +985,63 @@ namespace TripMatch.Controllers.Api
 
             try
             {
-                var protectedPayload = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(t));
-                var json = _dataProtector.Unprotect(protectedPayload);
+                // 嘗試多種解碼方式以容錯第三方追蹤/重新導向可能造成的編碼改變
+                string protectedPayload = string.Empty;
+                bool unprotected = false;
+                Exception lastEx = null;
+
+                // 1) 常見情況：t 為 Base64Url( protectedPayload )
+                try
+                {
+                    var decoded = WebEncoders.Base64UrlDecode(t);
+                    protectedPayload = Encoding.UTF8.GetString(decoded);
+                    unprotected = true;
+                }
+                catch (Exception ex1)
+                {
+                    lastEx = ex1;
+                    // 2) 嘗試先反 URL encode（SendGrid 可能雙重或改寫）
+                    try
+                    {
+                        var unescaped = Uri.UnescapeDataString(t);
+                        var decoded2 = WebEncoders.Base64UrlDecode(unescaped);
+                        protectedPayload = Encoding.UTF8.GetString(decoded2);
+                        unprotected = true;
+                    }
+                    catch (Exception ex2)
+                    {
+                        lastEx = ex2;
+                        // 3) 最後嘗試直接把 t 當作已受保護字串（若寄送時沒有再 base64）
+                        try
+                        {
+                            protectedPayload = t;
+                            unprotected = true;
+                        }
+                        catch (Exception ex3)
+                        {
+                            lastEx = ex3;
+                        }
+                    }
+                }
+
+                if (!unprotected)
+                {
+                    _logger?.LogWarning(lastEx, "ConfirmBackupLookup: failed to decode token");
+                    return BadRequest("驗證連結無效或已被改寫，請重新發送驗證信。");
+                }
+
+                // 反保護
+                string json;
+                try
+                {
+                    json = _dataProtector.Unprotect(protectedPayload);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "ConfirmBackupLookup: Unprotect failed");
+                    return BadRequest("驗證連結已過期或無效。");
+                }
+
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -1004,12 +1059,14 @@ namespace TripMatch.Controllers.Api
                     return BadRequest("驗證連結已過期或無效。");
                 }
 
+                // 若包含 userId（會員中心流程），直接更新使用者資料
                 if (root.TryGetProperty("userId", out var userIdProp) && userIdProp.TryGetInt32(out var uid))
                 {
                     var user = await _userManager.FindByIdAsync(uid.ToString());
                     if (user == null) return BadRequest("找不到對應使用者，無法完成備援信箱驗證。");
 
-                    if (!string.IsNullOrEmpty(user.Email) && string.Equals(user.Email.Trim(), email?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(user.Email) &&
+                        string.Equals(user.Email.Trim(), email?.Trim(), StringComparison.OrdinalIgnoreCase))
                     {
                         return BadRequest("備援信箱不可與主要註冊信箱相同。");
                     }
@@ -1027,24 +1084,21 @@ namespace TripMatch.Controllers.Api
 
                     Response.Cookies.Delete("BackupLookupPending");
 
-                    // 已登入會員中心的流程仍導回會員中心
-                    var redirectUrl = "/Auth/MemberCenter?backupVerified=1";
-                    return Redirect(redirectUrl);
+                    return Redirect("/Auth/MemberCenter?backupVerified=1");
                 }
 
+                // 非會員中心流程：把原始 token (t) 存成 cookie 供前端檢查
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Lax,
+                    SameSite = SameSiteMode.None,
+                    Path = "/",
                     Expires = DateTimeOffset.UtcNow.AddMinutes(30)
                 };
-                // 寫入 token（或標記）讓前端在 CheckEmail 讀到並顯示下一步按鈕
                 Response.Cookies.Append("BackupLookupPending", t, cookieOptions);
 
-                // 注意：本專案為 Razor Pages，使用絕對路徑導向 CheckEmail page（避免 Url.Action 產生 MVC controller route）
-                var redirectCheck = "/Auth/CheckEmail?backupVerified=1";
-                return Redirect(redirectCheck);
+                return Redirect("/Auth/CheckEmail?backupVerified=1");
             }
             catch (Exception ex)
             {
@@ -1171,6 +1225,38 @@ namespace TripMatch.Controllers.Api
             catch { }
 
             return Ok(new { success = true, message = "自訂名稱已更新", fullName = user.FullName });
+        }
+
+        // 新增於 AuthApiController 類別內
+        [HttpPost("CreatePasswordResetSessionForUser")]
+        public async Task<IActionResult> CreatePasswordResetSessionForUser([FromBody] string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "請提供信箱" });
+
+            var user = await _userManager.FindByEmailAsync(email.Trim());
+            if (user == null)
+                return NotFound(new { message = "找不到對應使用者" });
+
+            try
+            {
+                // 產生原始 token，並進行 Base64Url 編碼（與 SendPasswordReset 相同）
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+                // 將重設資訊寫入 Session（24 小時內有效）
+                HttpContext.Session.SetString("PasswordResetUserId", user.Id.ToString());
+                HttpContext.Session.SetString("PasswordResetCode", encoded);
+                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
+
+                var redirect = Url.Action("ForgotPassword", "Auth");
+                return Ok(new { redirect });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "CreatePasswordResetSessionForUser failed for {Email}", email);
+                return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
+            }
         }
     }
 }

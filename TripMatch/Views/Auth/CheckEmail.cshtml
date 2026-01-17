@@ -5,13 +5,15 @@
     // 取得後端傳來的狀態 (Success 或 Error)
     var status = ViewData["Status"] as string;
     var message = ViewData["Message"] as string;
+
+    // 將下一步預設導向 ForgotEmail（避免導到 Signup）
+    var btnLink = Url.Action("ForgotEmail", "Auth");
     var redirectUrl = Url.Action("Signup", "Auth");
 
     // 預設圖片與文字
     var imgSrc = "~/img/checkEmailimg.png"; 
     var titleText = "恭喜您，信箱驗證成功！";
     var btnText = "請繼續下一步";
-    var btnLink = Url.Action("Signup", "Auth"); 
     var titleColor = "";
 
     if (status == "Error")
@@ -19,7 +21,8 @@
         imgSrc = "~/img/checkEmailimg_2.png"; // 請確認失敗圖片路徑
         titleText = message ?? "驗證連結已失效";
         btnText = "重新發送驗證信";
-        btnLink = Url.Action("Signup", "Auth"); // 失敗也回註冊頁重發
+        // 若是錯誤仍保留導回註冊的選項（可視需求調整）
+        btnLink = Url.Action("Signup", "Auth");
         titleColor = "color: #FF6B6B;";
     }
 }
@@ -34,22 +37,19 @@
 
         <img src="@Url.Content(imgSrc)" alt="@status" class="main-img" style="max-width: 200px; margin-bottom: 20px;">
 
-
         <div class="titleWrap titleH4 mb-4" style="@titleColor">
             @titleText
         </div>
 
+        <!-- 狀態顯示（給 checkEmail.js 使用） -->
+        <div id="verifyStatus" class="mb-3"></div>
 
-        <a href="@btnLink" class="btn btn_light">
-            @btnText
-        </a>
+        <!-- 下一步由前端控制（checkEmail.js 會啟用或自動導向） -->
+        <a id="btn_next_step" class="btn btn_light" href="javascript:void(0);" role="button">@btnText</a>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        $(function() {
-            // 這裡可以加一些額外的特效或邏輯
-        });
-    </script>
+    <!-- 載入前端邏輯：檢查 cookie/localStorage 並啟用「下一步」 -->
+    <script src="~/js/AuthApi/checkEmail.js" asp-append-version="true"></script>
 }

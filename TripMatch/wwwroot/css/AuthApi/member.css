@@ -382,12 +382,6 @@ Email row（Login / Signup 分流）
 }
 
 /* Avatar */
-.avatarImg {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-    border: 1px solid #ddd;
-}
 
 .memberAvatar {
     width: 200px;
@@ -710,6 +704,7 @@ input:is(:-webkit-autofill, :autofill) {
     html, body {
         height: 100%;
         margin: 0;
+        padding: 0;
         overflow: hidden; /* 阻止整頁滾動 */
     }
 
@@ -774,6 +769,12 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* 行動版合併規則*/
 @media (max-width: 991px) {
+    .account.titleWrap.titleH4 {
+        font-size: var(--f_h3); /* 約 18px，視需要可調為 1.25rem */
+        line-height: 1.2;
+        margin-bottom: 0.35rem; /* 與輸入欄距離微調 */
+    }
+
     .auth-page {
         height: auto;
         overflow: auto;
@@ -1033,6 +1034,7 @@ input:is(:-webkit-autofill, :autofill) {
 
 body {
     overflow-y: auto;
+    background-color: white;
 }
 
 .GoogleWrap {
@@ -1205,3 +1207,25 @@ body {
 .reg_popup .popH5 {
     color: #111;
 }
+
+/* 新增：讓 footer 滿版（不受上層 container 限制） */
+.footer-fullwidth {
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    text-align: center;
+    background-color: white;
+    width: 100vw;
+    box-sizing: border-box; /* 確保 padding 不會超出視窗 */
+    background: inherit; /* 如需背景色可改寫 */
+    z-index: 1;
+}
+
+    /* 內部內容仍需置中且有最大寬度 */
+    .footer-fullwidth .footer-inner {
+        max-width: 1200px; /* 或配合 site container 寬度 */
+        margin: 0 auto;
+        padding: 16px; /* 視設計調整 */
+    }
