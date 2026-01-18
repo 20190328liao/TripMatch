@@ -160,3 +160,59 @@
         init();
     }
 })();
+
+(function () {
+    const STYLE_ID = "avatar-global-style";
+
+    function ensureAvatarStyle() {
+        if (document.getElementById(STYLE_ID)) return;
+        const css = `
+.avatarImg {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+@media (max-width: 576px) {
+  .avatarImg { width: 32px; height: 32px; }
+}
+`;
+        const style = document.createElement("style");
+        style.id = STYLE_ID;
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+    }
+
+    function applyAvatarClass() {
+        // 可能出現 avatar 的常見 selector，必要時可擴充
+        const selectors = [
+            "img#navAvatar",
+            "img.avatarImg",
+            "img.avatar",
+            "img[data-avatar]",
+            "img[id^='avatar']"
+        ];
+        selectors.forEach((sel) => {
+            document.querySelectorAll(sel).forEach((el) => {
+                if (el.tagName === "IMG") el.classList.add("avatarImg");
+            });
+        });
+    }
+
+    // 初始化
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+            ensureAvatarStyle();
+            applyAvatarClass();
+        });
+    } else {
+        ensureAvatarStyle();
+        applyAvatarClass();
+    }
+
+    // 對外提供 API，若 avatar 是動態更新可呼叫 applyAvatarClass()
+    window.AvatarHelper = {
+        ensureAvatarStyle,
+        applyAvatarClass
+    };
+})();

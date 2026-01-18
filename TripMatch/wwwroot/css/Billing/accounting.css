@@ -110,6 +110,8 @@ body {
     }
 
 /* --- 登入後的大頭貼與下拉選單 --- */
+
+
 #userAvatar {
     width: 45px;
     height: 45px;
@@ -577,6 +579,52 @@ input, select {
     .budget-grid {
         grid-template-columns: 1fr 1fr;
     }
+}
+
+/* Mobile: fix collapsed navbar background and positioning for accounting page */
+@media (max-width: 992px) {
+  /* 針對 Bootstrap 的 collapse 與專屬 .nav-center 都處理 */
+  .navbar .navbar-collapse,
+  .navbar .nav-center {
+    position: absolute;
+    top: 70px; /* 與 .navbar.height 一致 */
+    left: 0;
+    width: 100%;
+    background: var(--bk, #ffffff); /* 明確給白底或變數色 */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    z-index: 1050;
+    padding: 8px 0;
+  }
+
+  /* Bootstrap collapse 先維持預設隱藏行為，顯示時為 block */
+  .navbar .navbar-collapse.collapse { display: none; }
+  .navbar .navbar-collapse.collapse.show,
+  .navbar .nav-center.show {
+    display: block;
+  }
+
+  /* 內部連結改為直式排列、寬度撐滿，避免浮動/定位錯亂 */
+  .navbar .navbar-collapse .navbar-nav,
+  .navbar .nav-center {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  .navbar .navbar-nav .nav-link,
+  .nav-center a {
+    display: block;
+    padding: 12px 20px;
+    color: var(--text-main, #333);
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    white-space: nowrap;
+  }
+
+  .navbar .navbar-nav .nav-link:last-child,
+  .nav-center a:last-child {
+    border-bottom: none;
+  }
 }
 
 /* 偵錯切換按鈕 (僅供測試) */

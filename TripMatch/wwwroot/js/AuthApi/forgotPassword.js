@@ -4,6 +4,9 @@
     const codeParam = urlParams.get('code');
     const error = urlParams.get('error');
 
+    const goStepParam = urlParams.get('goStep') || urlParams.get('backupToReset');
+    const goStepEmail = urlParams.get('email');
+
     let verified = false;
     let currentUserId = userIdParam || "";
     let currentCode = codeParam || "";
@@ -341,4 +344,61 @@
 
         window.location.href = window.Routes.Auth.Login;
     }
+
+    // 在檔案開頭的初始化區塊（在解析 urlParams、userIdParam、codeParam、error 之後）加入下列處理
+    (function () {
+        const backupToReset = urlParams.get('backupToReset');
+        const backupEmailParam = urlParams.get('email');
+
+        // 若從備援信箱頁面導入，則預填 email 並自動觸發寄發重設信（安全：仍需 Email 接收者點擊信中連結以完成重設）
+        if (backupToReset === '1' && backupEmailParam) {
+            try {
+                const decodedEmail = decodeURIComponent(backupEmailParam);
+                $("#email").val(decodedEmail);
+                // 先顯示提示並啟用按鈕，稍後觸發點擊（避免 race condition）
+                const $btnSend = $("#btn_send_reset");
+                const emailResult = Validator.validateEmail(decodedEmail);
+                if (emailResult.valid) {
+                    setFieldHint("email", `☑ 已填入：${decodedEmail}`, "success");
+                    $btnSend.prop("disabled", false).removeClass("btn_Gray").addClass("btn_light");
+                    // 延遲觸發確保事件處理器已經綁定
+                    setTimeout(() => { $btnSend.trigger("click"); }, 250);
+                } else {
+                    setFieldHint("email", "Email 格式不正確，請確認", "error");
+                }
+            } catch { /* 忽略 */ }
+            // 清除 QueryString 以免重複觸發
+            if (window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        }
+    })();
+
+    // 自動處理區段：從備援信箱或參數導入時，自動填入 email 並寄送驗證信
+    (function handleGoStep2FromBackup() {
+        if (goStepParam !== '2' || !goStepEmail) return;
+        try {
+            const decodedEmail = decodeURIComponent(goStepEmail);
+            // 預填並觸發寄送重設信（SendPasswordReset），之後會顯示提示，使用者仍需點郵件內連結取得 token
+            $("#email").val(decodedEmail);
+            // 若按鈕尚未綁定 handler，延遲觸發
+            setTimeout(() => {
+                const $btn = $("#btn_send_reset");
+                if ($btn.length) {
+                    // 先啟用按鈕外觀以便 click handler可運作
+                    $btn.prop("disabled", false).removeClass("btn_Gray").addClass("btn_light");
+                    $btn.trigger("click");
+                }
+            }, 250);
+        } catch (e) {
+            console.warn("處理 goStep=2 參數失敗", e);
+        } finally {
+            // 清除 query string 避免重複觸發
+            if (window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        }
+    })();
 });
