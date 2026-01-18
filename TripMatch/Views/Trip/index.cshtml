@@ -1,6 +1,8 @@
-﻿@{
+﻿@model TripMatch.Models.DTOs.MyTripsDto
+@{
     ViewData["Title"] = "我的行程";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
+    var taggedUserId = ViewBag.TaggedUserId as int?;
 }
 
 @* 1. 頁面專屬 CSS 區塊 *@
@@ -9,16 +11,84 @@
 }
 
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">我的行程</h1>
+    <div class="mytrip-header">
+        <h1 class="mytrip-title">我的行程</h1>
         <a asp-controller="Trip" asp-action="Create" class="btn btn_light">
-            ＋ 建立新行程
+            + 建立新行程
         </a>
-
     </div>
 
-    <div id="trip-list" class="row"></div>
+    <!-- 測試行程有沒有進來 -->
+    <div style="margin:12px 0; color:#111; font-weight:700;">
+        共 @(Model?.Trips?.Count ?? -1) 個行程
+        <p>Current tagged UserId: <strong>@taggedUserId.Value</strong></p>
+    </div>
+
+    <div class="grid">
+        @foreach(var t in Model.Trips)
+        {
+            var dataText = $"{t.StartDate:yyyy/MM/dd} - {t.EndDate:yyyy/MM/dd}";
+            <article class="card"
+                     data-trip-id="@t.TripId"
+                     data-details-url="@t.DetailsUrl"
+                     data-is-owner="@(t.IsOwner ? "1" : "0")">
+
+                <div class="card-cover"
+                     style="background-image:url('https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400');">
+
+                </div>
+
+                <div class="card-body">
+                    <div class="card-title">@t.Title</div>
+                    <div class="card-date">@dataText</div>
+                </div>
+
+                <div class="card-actions">
+                    <button type="button" class="kebab-btn" aria-label="更多">
+                        <span class="kebab-dot"></span>
+                        <span class="kebab-dot"></span>
+                        <span class="kebab-dot"></span>
+                    </button>
+
+                    <div class="menu" role="menu">
+                        <button type="button" class="menu-item" data-action="members">成員</button>
+                        <button type="button" class="menu-item danger" data-action="danger">
+                            @(t.IsOwner ? "刪除" : "退出")
+                        </button>
+                    </div>
+                </div>
+
+            </article>
+        }
+    </div>
 </div>
+
+<!-- Members Modal -->
+<div id="membersModal" class="modal-backdrop" hidden>
+    <div class="myModal">
+        <div class="modal-header">
+            <h3>行程成員</h3>
+            <button class="modal-close" aria-label="關閉">×</button>
+        </div>
+
+        <div class="modal-body">
+            <!-- 先用假資料，之後可 AJAX -->
+            <ul id="membersList"></ul>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-close btn btn_light">關閉</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
 
 @section Scripts {
     <script src="~/js/trip/trip.js" asp-append-version="true"></script>

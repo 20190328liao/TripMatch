@@ -114,6 +114,25 @@ namespace TripMatch.Models.DTOs
         public bool AddToWishlist { get; set; }
     }
 
+    public class TripMemberDto
+    {
+        public int UserId { get; set; }
+        public string DisplayName { get; set; } = "";
+        public byte RoleType { get; set; } // 1 owner, 2 member
+    }
+
+    public class TripCardDto
+    {
+        public int TripId { get; set; }
+        public string Title { get; set; } = "";
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
+        public string? CoverImageUrl { get; set; }
+
+        public bool IsOwner { get; set; } // 目前固定，之後做團主判斷(從 TripMembers 中 RoleType 抓)
+        public string DetailsUrl { get; set; } = "#";
+        public string MembersUrl { get; set; } = "#";
+    }
 
 
 

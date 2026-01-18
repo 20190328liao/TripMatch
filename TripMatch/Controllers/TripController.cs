@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using TripMatch.Models;
 using TripMatch.Services;
 
 namespace TripMatch.Controllers
@@ -9,16 +11,22 @@ namespace TripMatch.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ITagUserId _tagUserId;
-        public TripController(ILogger<HomeController> logger, ITagUserId tagUserId)
+        private readonly TripServices _tripServices;
+        public TripController(ILogger<HomeController> logger, ITagUserId tagUserId, TripServices tripServices)
         {
             _logger = logger;
             _tagUserId = tagUserId;
+            _tripServices = tripServices;
         }
 
         [Authorize]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+
+            var user = _tagUserId.UserId;
+            ViewBag.TaggedUserId = user;
+            var vm = await _tripServices.GetMyTripsAsync(user);
+            return View(vm);
         }
 
         public IActionResult Create()
