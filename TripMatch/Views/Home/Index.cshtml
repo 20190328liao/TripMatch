@@ -82,7 +82,7 @@ else
             </div>
         </div>
 
-        <div id="contentMatch" class="mode-content">
+        @* <div id="contentMatch" class="mode-content">
             <div class="card-header"><i class="fa-solid fa-link"></i> 已有邀請碼或邀請朋友</div>
             <div class="input-group">
                 <input type="text" id="joinCodeInput" placeholder="請輸入12碼 邀請碼，例如：TRIP1234ABCD" oninput="checkJoinInput()">
@@ -108,6 +108,50 @@ else
                     <div class="qr-placeholder"><i class="fa-solid fa-qrcode"></i></div>
                     <p style="font-size:12px; color:#999; margin-top:5px;">掃碼加入行程</p>
                 </div>
+            </div>
+        </div> *@
+
+        <div id="contentMatch" class="mode-content card-panel">
+
+            <div class="card-header-custom text-center mb-4">
+                <i class="fa-solid fa-user-group"></i> 選擇 加入現有團隊 或 建立新團隊
+            </div>
+
+            <div class="action-split-container">
+
+                <div class="action-box left-box">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-envelope-open-text"></i>
+                    </div>
+                    <h3>我有邀請碼</h3>
+                    <p class="desc-text">輸入朋友分享的邀請碼，<br>立即加入他們的行程！</p>
+
+                    <div class="join-input-area">
+                        <input type="text" id="joinCodeInput" class="form-control mb-3" placeholder="例如：TRIP1234ABCD" oninput="checkJoinInput()">
+                        <button class="btn btn_light w-100 btn-outline-dashed" id="btnJoinTrip" onclick="joinTrip()">
+                            加入團隊
+                        </button>
+                    </div>
+                </div>
+
+                <div class="vertical-divider">
+                    <span class="divider-text">OR</span>
+                </div>
+
+                <div class="action-box right-box">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <h3>我沒有邀請碼</h3>
+                    <p class="desc-text">還沒有行程嗎？<br>建立一個新旅程並邀請朋友。</p>
+
+                    <div class="create-btn-area">
+                        <button class="btn btn_light w-100 btn-outline-dashed" onclick="createTrip()">
+                            <i class="fa-solid fa-plus"></i> 建立新團
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
 

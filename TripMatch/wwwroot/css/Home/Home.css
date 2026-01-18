@@ -1,4 +1,4 @@
-﻿/* --- CSS 變數定義 (如果 site.css 沒有，這裡可以保留) --- */
+﻿
 :root {
     --primary-mint: #62DEB1;
     --dark-mint: #36b38c;
@@ -19,6 +19,7 @@ body {
 }
 
 /* --- 2. 主視覺區 Hero Section --- */
+/*綠色漸層背景、圓弧底部造型*/
 .hero-section {
     padding: 50px 20px 80px;
     text-align: center;
@@ -29,7 +30,7 @@ body {
     box-shadow: 0 10px 30px -10px rgba(0, 121, 107, 0.3);
     margin-bottom: 40px;
 }
-
+/*顯示「未登入」狀態文字*/
 .status-indicator {
     font-size: 24px;
     font-weight: bold;
@@ -38,7 +39,7 @@ body {
     color: var(--btn-dark);
     text-shadow: 0 1px 2px rgba(255,255,255,0.5);
 }
-
+/*大標題「輕鬆規劃您的旅遊行程」*/
 .hero-title {
     font-size: 32px;
     color: white;
@@ -46,7 +47,7 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     font-weight: 800;
 }
-
+/*包覆兩個切換按鈕的容器*/
 .hero-btns {
     margin-bottom: 40px;
     display: flex;
@@ -63,19 +64,20 @@ body {
         transition: 0.3s;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-
+/*「已有出發日計畫」與「和朋友媒合時間」按鈕。*/
 .btn-mode {
     background-color: var(--btn-light);
     color: #004D40;
 }
+/*當前被選中的按鈕樣式 (深綠色)*/
+.btn-mode.active {
+    background-color: var(--btn-dark);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 121, 107, 0.2);
+}
 
-    .btn-mode.active {
-        background-color: var(--btn-dark);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 121, 107, 0.2);
-    }
-
+/*中間白色卡片容器*/
 .main-card {
     background: white;
     max-width: 900px;
@@ -87,11 +89,11 @@ body {
     position: relative;
     z-index: 10;
 }
-
+/*切換顯示「計畫」或「媒合」內容的區塊*/
 .mode-content {
     display: none;
 }
-
+    /*控制目前要顯示哪一個區塊*/
     .mode-content.active {
         display: block;
     }
@@ -145,6 +147,7 @@ body {
         outline: none;
     }
 
+/*標題「建立行程」*/
 .card-header {
     font-size: 20px;
     font-weight: bold;
@@ -154,7 +157,7 @@ body {
     gap: 10px;
 }
 
-.input-group {
+/*.input-group {
     display: flex;
     gap: 10px;
     margin-bottom: 25px;
@@ -258,7 +261,7 @@ body {
     font-size: 70px;
     color: var(--primary-mint);
 }
-
+*/
 .btn-action-main {
     width: 100%;
     padding: 16px;
@@ -278,7 +281,129 @@ body {
         transform: translateY(-1px);
     }
 
-/* --- 3. 服務流程 --- */
+/* =============================================
+   左右分流卡片設計 (Join vs Create)
+   ============================================= */
+/*讓左右兩個區塊並排顯示 (Flexbox)*/
+.action-split-container {
+    display: flex;
+    align-items: stretch; /* 讓左右等高 */
+    justify-content: space-between;
+    gap: 30px;
+    position: relative;
+    padding: 10px;
+}
+
+/* 左右區塊共同設定 */
+.action-box {
+    flex: 1; /* 各佔 50% */
+    text-align: center;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 圓形圖示背景 */
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    background-color: var(--color_nav); /* 淡藍色背景 */
+    color: var(--color_Dark); /* 深色圖示 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.action-box h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color_DarkGray);
+    margin-bottom: 10px;
+}
+
+.action-box .desc-text {
+    color: var(--color_Gray);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    min-height: 44px; /* 保持高度一致 */
+}
+
+/* 輸入框區域優化 */
+.join-input-area {
+    width: 100%;
+    max-width: 280px; /* 限制寬度讓視覺集中 */
+}
+
+.create-btn-area {
+    width: 100%;
+    max-width: 280px;
+    margin-top: auto; /* 讓按鈕對齊底部 */
+}
+
+/* 虛線按鈕 (建立新團專用) */
+.btn-outline-dashed {
+    background: transparent;
+/*    border: 2px dashed var(--color_Dark);*/
+    color: var(--color_Dark);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+    .btn-outline-dashed:hover {
+        background: var(--color_nav);
+        border-color: var(--color_Dark);
+        color: var(--color_Dark);
+    }
+
+/* =============================================
+   中間分隔線 (Vertical Divider)
+   ============================================= */
+.vertical-divider {
+    width: 1px;
+    background-color: var(--color_Border);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/*線中間的 "OR" 文字*/
+.divider-text {
+    background-color: var(--color_card); /* 確保蓋住線條 */
+    color: #999;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid var(--color_Border);
+    border-radius: 12px;
+    position: absolute;
+    white-space: nowrap;
+}
+
+/* =============================================
+   響應式設計 (手機版：上下排列)
+   ============================================= */
+@media screen and (max-width: 768px) {
+    .action-split-container {
+        flex-direction: column; /* 改為垂直排列 */
+        gap: 40px;
+    }
+
+    /* 手機版分隔線改為橫向 */
+    .vertical-divider {
+        width: 100%;
+        height: 1px;
+        margin: 10px 0;
+    }
+}
+
+/* =============================================
+   服務流程
+   ============================================= */
 .how-it-works {
     background: white;
     padding: 80px 5% 50px;
