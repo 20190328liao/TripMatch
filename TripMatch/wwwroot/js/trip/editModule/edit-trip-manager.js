@@ -1,5 +1,8 @@
-﻿const tripId = document.getElementById('current-trip-id').value;
+﻿import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
+
+const tripId = document.getElementById('current-trip-id').value;
 let currentTripDates = [];
+
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
     //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
@@ -12,7 +15,7 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     loadTripData();
 }
 
-import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
+
 
 
 // 【新增函式】插入彈窗 HTML 到頁面底部
