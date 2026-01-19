@@ -121,8 +121,42 @@
             data: JSON.stringify(email),
             success: function (res) {
                 isSending = false;
-                startCooldown(30);
-                showPopup({ title: "驗證信已發送", message: "請點擊信中連結，驗證後回到此頁重新整理即可。" });
+
+                if (res.action === 'password_reset_needed') {
+                    // 若後端回傳需要走重設密碼流程：建立 session 並導向 ForgotPassword（或顯示說明）
+                    showPopup({ title: "提示", message: res.message || "請設定密碼。", type: "info" }).then(async () => {
+                        try {
+                            const resp = await fetch('/api/auth/CreatePasswordResetSessionForUser', {
+                                method: 'POST',
+                                credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(email)
+                            });
+                            const json = await resp.json().catch(() => ({}));
+                            if (resp.ok && json.redirect) {
+                                window.location.href = json.redirect;
+                            } else {
+                                window.location.href = '/Auth/ForgotPassword';
+                            }
+                        } catch {
+                            window.location.href = '/Auth/ForgotPassword';
+                        }
+                    });
+                    return;
+                }
+
+                // 原本處理（已驗證 / 已發送 等）
+                if (res.verified) {
+                    isEmailVerified = true;
+                    $("#email").val(email).prop("readonly", true);
+                    $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
+                    setFieldHint("email", "☑ 此信箱已驗證成功！請直接設定密碼。", "success");
+                    validateForm();
+                    showPopup({ title: "提示", message: "您先前已完成驗證，請直接設定密碼即可。", type: "success" });
+                } else {
+                    startCooldown(30);
+                    showPopup({ title: "發送成功", message: res.message || "驗證信已發送，請檢查信箱。", type: "success" });
+                }
             },
             error: function (err) {
                 isSending = false;

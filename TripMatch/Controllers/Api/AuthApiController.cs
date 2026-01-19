@@ -203,10 +203,16 @@ namespace TripMatch.Controllers.Api
                 if (!string.IsNullOrEmpty(user.PasswordHash))
                     return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
 
-                if (user.EmailConfirmed)
+                // 若 EmailConfirmed 為 true，但尚未設定密碼，不直接視為可註冊
+                if (await _userManager.IsEmailConfirmedAsync(user))
                 {
-                    _authService.SetPendingCookie(HttpContext, user.Email);
-                    return Ok(new { verified = true, message = "此帳號已驗證成功，請直接設定密碼。" });
+                    _logger?.LogInformation("SendConfirmation: email {Email} confirmed but no password. Request password reset.", email);
+                    // 回傳前端指示，讓前端啟動安全的密碼設定/重設流程
+                    return Ok(new
+                    {
+                        action = "password_reset_needed",
+                        message = "此信箱已驗證但尚未設定密碼。系統將協助您走設定密碼流程。"
+                    });
                 }
             }
 
@@ -218,11 +224,9 @@ namespace TripMatch.Controllers.Api
                     return BadRequest(new { message = "系統錯誤，請重新發送驗證信" });
             }
 
-            // 產生 token 與 Base64Url 編碼
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-            // 明確指定 controller: "Auth" —— 這會產生 /Auth/ConfirmEmail?userId=...&code=...
             var callbackUrl = Url.Action("ConfirmEmail", "Auth", new { userId = user.Id, code = code }, Request.Scheme);
 
             try
@@ -342,7 +346,7 @@ namespace TripMatch.Controllers.Api
                 // 寄信前檢查：Email 未驗證
                 if (!await _userManager.IsEmailConfirmedAsync(user))
                 {
-                    return BadRequest(new { message = "此信箱尚未驗證，請先完成信箱驗證。" });
+                    return BadRequest(new { message = "此信網尚未驗證，請先完成信網驗證。" });
                 }
             }
             else
