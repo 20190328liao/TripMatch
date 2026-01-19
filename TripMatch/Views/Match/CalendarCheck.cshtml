@@ -3,6 +3,7 @@
     // 接收後端傳來的旗標 (轉成小寫 js boolean)
     var hasData = (ViewBag.HasCalendarData as bool?) ?? false;
     string hasDataJs = hasData.ToString().ToLower();
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
 }
 
 <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" />

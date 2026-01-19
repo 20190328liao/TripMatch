@@ -1,7 +1,7 @@
 ﻿@model TripMatch.Models.DTOs.TimeWindow.PreferencesViewModel
 @{
     ViewData["Title"] = "團隊規劃";
-    Layout = null;
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
 }
 
 <!DOCTYPE html>
@@ -545,15 +545,6 @@
                 selectedLocationNames.add(cityName);
             }
             console.log("目前已選地點:", Array.from(selectedLocationNames));
-        }
-
-        // 移除卡片 (僅視覺移除)
-        function removeCard(event, btnElement) {
-            event.stopPropagation(); // 防止觸發 toggleSelection
-            const card = btnElement.closest('.location-card');
-            const val = card.getAttribute('data-val');
-            selectedLocationNames.delete(val);
-            card.remove();
         }
 
         function addCustomLocation() {

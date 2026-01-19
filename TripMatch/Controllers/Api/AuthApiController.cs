@@ -120,54 +120,121 @@ namespace TripMatch.Controllers.Api
 
 
         [HttpPost("Signin")]
-        public async Task<IActionResult> Signin([FromBody] LoginModel data)
+        //[IgnoreAntiforgeryToken]//暫時忽略Token
+        public async Task<IActionResult> Signin()
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(new { success = false, message = "輸入資料格式錯誤" });
-            }
-
-            var result = await _signInManager.PasswordSignInAsync(data.Email!, data.Password!, isPersistent: false, lockoutOnFailure: true);
-
-            ApplicationUser? user = null;
-
-            if (result.Succeeded)
-            {
-                user = await _userManager.FindByEmailAsync(data.Email!);
-                if (user != null)
+                // Log headers & cookies for diagnosis
+                try
                 {
-                    // 保險：清除舊 Cookie/Session，避免殘留資料在前端短暫顯示
-                    try { HttpContext.Session?.Clear(); } catch { }
-                    try { Response.Cookies.Delete("PendingEmail"); } catch { }
-                    try { Response.Cookies.Delete("AuthToken"); } catch { }
+                    var hdrs = Request.Headers.ToDictionary(h => h.Key, h => string.Join(";", h.Value));
+                    _logger?.LogInformation("Signin request headers: {@hdrs}", hdrs);
 
-                    var token = _authService.GenerateJwtToken(user);
-                    _authService.SetAuthCookie(HttpContext, token);
-                    _authService.SetPendingCookie(HttpContext, user.Email);
+                    var cks = Request.Cookies.ToDictionary(c => c.Key, c => c.Value);
+                    _logger?.LogInformation("Signin request cookies: {@cks}", cks);
+                }
+                catch { /* 不阻斷正常流程 */ }
+
+                // Read raw body (if any)
+                string rawBody = string.Empty;
+                if (Request.ContentLength > 0)
+                {
+                    // Enable rewind not necessary here if body not read earlier
+                    using var reader = new StreamReader(Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+                    rawBody = await reader.ReadToEndAsync();
+                    _logger?.LogInformation("Signin raw body: {rawBody}", rawBody);
+                    // rewind stream for future readers (defensive)
+                    try { Request.Body.Position = 0; } catch { }
                 }
 
-                return Ok(new
+                string? email = null;
+                string? password = null;
+
+                // 1) 支援 Content-Type: application/x-www-form-urlencoded 或 multipart/form-data
+                if (Request.HasFormContentType)
                 {
-                    success = true,
-                    message = "登入成功",
-                    redirectUrl = Url.Action("Index", "Home")
-                });
-            }
+                    var form = await Request.ReadFormAsync();
+                    email = form["Email"].FirstOrDefault() ?? form["email"].FirstOrDefault();
+                    password = form["Password"].FirstOrDefault() ?? form["password"].FirstOrDefault();
+                    _logger?.LogInformation("Signin parsed from form: email present={EmailPresent}", !string.IsNullOrEmpty(email));
+                }
+                // 2) 支援 JSON body
+                else if (!string.IsNullOrWhiteSpace(rawBody))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(rawBody);
+                        var root = doc.RootElement;
+                        if (root.ValueKind == JsonValueKind.Object)
+                        {
+                            if (root.TryGetProperty("Email", out var e1) && e1.ValueKind == JsonValueKind.String) email = e1.GetString();
+                            else if (root.TryGetProperty("email", out var e2) && e2.ValueKind == JsonValueKind.String) email = e2.GetString();
 
-            if (user == null)
+                            if (root.TryGetProperty("Password", out var p1) && p1.ValueKind == JsonValueKind.String) password = p1.GetString();
+                            else if (root.TryGetProperty("password", out var p2) && p2.ValueKind == JsonValueKind.String) password = p2.GetString();
+                        }
+                    }
+                    catch (JsonException jex)
+                    {
+                        _logger?.LogWarning(jex, "Signin JSON parse failed");
+                        return BadRequest(new { success = false, message = "無效的 JSON。" });
+                    }
+                }
+
+                email = email?.Trim();
+
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                {
+                    _logger?.LogInformation("Signin missing credentials. email present={EmailPresent}", !string.IsNullOrEmpty(email));
+                    return BadRequest(new { success = false, message = "請提供 Email 與 Password。" });
+                }
+
+                var result = await _signInManager.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: true);
+                ApplicationUser? user = null;
+
+                if (result.Succeeded)
+                {
+                    user = await _userManager.FindByEmailAsync(email);
+                    if (user != null)
+                    {
+                        try { HttpContext.Session?.Clear(); } catch { }
+                        try { Response.Cookies.Delete("PendingEmail"); } catch { }
+                        try { Response.Cookies.Delete("AuthToken"); } catch { }
+
+                        var token = _authService.GenerateJwtToken(user);
+                        _authService.SetAuthCookie(HttpContext, token);
+                        _authService.SetPendingCookie(HttpContext, user.Email);
+                    }
+
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "登入成功",
+                        redirectUrl = Url.Action("Index", "Home")
+                    });
+                }
+
+                if (user == null)
+                {
+                    user = await _userManager.FindByEmailAsync(email);
+                }
+
+                if (result.IsLockedOut)
+                {
+                    return StatusCode(423, new { success = false, message = "帳號已被鎖定，請稍後再試。" });
+                }
+
+                var accessFailedCount = user != null ? await _userManager.GetAccessFailedCountAsync(user) : 0;
+                var remainingAttempts = 5 - accessFailedCount;
+
+                return BadRequest(new { success = false, message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
+            }
+            catch (Exception ex)
             {
-                user = await _userManager.FindByEmailAsync(data.Email!);
+                _logger?.LogError(ex, "Signin error");
+                return StatusCode(500, new { success = false, message = "系統錯誤，請稍後再試。" });
             }
-
-            if (result.IsLockedOut)
-            {
-                return StatusCode(423, new { success = false, message = "帳號已被鎖定，請稍後再試。" });
-            }
-
-            var accessFailedCount = user != null ? await _userManager.GetAccessFailedCountAsync(user) : 0;
-            var remainingAttempts = 5 - accessFailedCount;
-
-            return BadRequest(new { success = false, message = $"帳號或密碼錯誤。剩餘嘗試次數：{remainingAttempts}" });
         }
         // 登出 API
         [HttpPost("Logout")]
