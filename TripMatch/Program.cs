@@ -43,6 +43,7 @@ namespace TripMatch
 
             // 註冊 Typed HttpClient (會自動處理 HttpClient 的生命週期)
             builder.Services.AddHttpClient<GooglePlacesClient>();
+            builder.Services.AddHttpClient<AirLabsClient>();
             builder.Services.AddScoped<PlacesImageService>();
             //通知服務
             //builder.Services.AddSingleton<TripMatch.Services.InMemoryNotificationStore>();

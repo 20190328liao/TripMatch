@@ -354,3 +354,205 @@ footer {
 .pac-container {
     z-index: 1060 !important; /* Bootstrap Modal 預設是 1055，所以要比它大 */
 }
+
+/* =========================================
+   航班卡片樣式 (Flight Card Styles)
+   ========================================= */
+
+/* 卡片容器：設定陰影、圓角與白色背景 */
+.flight-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0; /* 淺灰色邊框 */
+    border-radius: 12px; /* 圓潤邊角 */
+    padding: 1.25rem; /* 內部留白 */
+    margin-bottom: 1rem; /* 卡片間距 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 輕微浮起效果 */
+    position: relative; /* 為了讓刪除按鈕絕對定位 */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 滑鼠懸停時的效果 */
+.flight-card:hover {
+    transform: translateY(-2px); /* 輕微上浮 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 新增日期標題樣式 */
+.flight-date-header {
+    font-size: 0.9rem;
+    color: #6c757d;
+    background-color: #f8f9fa; /* 淺灰背景 */
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block; /* 讓背景只包住文字 */
+    margin-bottom: 12px; /* 與下方內容隔開 */
+    font-weight: 600;
+}
+
+/* --- 左側：航空公司 --- */
+.flight-airline-box {
+    min-width: 80px;
+    text-align: center;
+    margin-right: 1.5rem;
+}
+
+/* 航空公司名稱 (模仿圖片的手寫/粗體感) */
+.flight-airline-name {
+    /*font-family: 'Arial Narrow', sans-serif;*/ /* 較窄的字體 */
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: #212529;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+/* 航班編號標籤 */
+.flight-number-badge {
+    font-size: 0.8rem;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* --- 中間：時間與地點 --- */
+.flight-time-group {
+    text-align: center;
+    min-width: 80px;
+}
+
+/* 時間大字 (例如 17:00) */
+.flight-time-large {
+    font-size: 1.25rem; /* 大尺寸 */
+    font-weight: 700;
+    line-height: 1;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+/* 機場代碼 (例如 RMQ) */
+.flight-airport-code {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* --- 中央裝飾區塊 (飛行時間、線條、直飛) --- */
+.flight-route-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+    max-width: 200px; /* 限制最大寬度，避免線條拉太長 */
+    padding: 0 1rem;
+}
+
+/* 飛行總時數 (例如 1小時30分鐘) */
+.flight-duration-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+/* 裝飾線條容器 */
+.flight-line-container {
+    position: relative;
+    width: 100%;
+    height: 20px; /* 給予高度讓飛機垂直置中 */
+    display: flex;
+    align-items: center;
+}
+
+/* 灰色橫線 */
+.flight-line-bar {
+    width: 100%;
+    height: 2px;
+    background-color: #adb5bd; /* 深灰色線條 */
+}
+
+/* 飛機圖示 (絕對定位在線條右側) */
+.flight-icon-plane {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg); /* 垂直置中並旋轉向右 */
+    color: #6c757d;
+    font-size: 1.2rem;
+    background-color: #fff; /* 背景白色遮擋線條 */
+    padding-left: 4px;
+}
+
+/* 直飛文字 */
+.flight-direct-text {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #198754; /* 綠色 */
+    margin-top: 4px;
+}
+
+/* --- 右上角刪除按鈕 --- */
+.flight-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 30px;
+    color: #adb5bd;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.flight-delete-btn:hover {
+    color: #dc3545; /* 懸停變紅色 */
+}
+
+
+
+/* 1. 預設將刪除按鈕隱藏 */
+.flight-delete-btn {
+    opacity: 0; /* 完全透明 */
+    visibility: hidden; /* 不佔據互動空間 (避免誤觸) */
+    transition: all 0.2s; /* 加入一點漸變動畫，看起來比較順暢 */
+}
+
+/* 2. 當滑鼠移到卡片 上時，顯示按鈕 */
+.flight-card:hover .flight-delete-btn {
+    opacity: 1; /* 變為不透明 */
+    visibility: visible; /* 可見並可點擊 */
+}
+
+.flight-delete-btn {
+    /* 移除點擊時的藍色外框 */
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    /* 確保文字顏色正確 (Bootstrap 預設 btn-link 會是藍色，這裡強制為 danger 紅色) */
+    text-decoration: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* RWD: 在手機版時調整間距 */
+@media (max-width: 576px) {
+    .flight-time-large {
+        font-size: 1.8rem; /* 手機版字體縮小 */
+    }
+
+    .flight-airline-box {
+        margin-right: 0;
+        margin-bottom: 1rem;
+        width: 100%; /* 航空公司獨佔一行 */
+    }
+}
