@@ -46,6 +46,14 @@ namespace TripMatch.Controllers
         }
 
         // Login (GET)
+        [HttpGet]
+        public IActionResult Login(string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        // Login (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(InputModel model, string? returnUrl = null)
