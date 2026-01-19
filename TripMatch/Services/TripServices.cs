@@ -209,6 +209,50 @@ namespace TripMatch.Services
                 EndDate = trip.EndDate
             };
 
+            // 取得並填寫航班資料
+            var flights = await _context.Flights.Where(f => f.TripId == tripId).ToListAsync();
+
+            // 將 Entity 轉為 DTO
+            foreach (var flight in flights)
+            {
+                FlightDto flightDto = new()
+                {
+                    Id = flight.Id,
+                    TripId = flight.TripId,
+                    Carrier = flight.Carrier ?? "",
+                    FlightNumber = flight.FlightNumber,
+                    FromAirport = flight.FromAirport ?? "",
+                    ToAirport = flight.ToAirport ?? "",                   
+
+                    DepTimeLocal = flight.DepartUtc.ToString("yyyy-MM-dd HH:mm"),           
+                    DepTimeUtc = flight.DepartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),                
+                    ArrTimeLocal = flight.ArriveUtc.ToString("yyyy-MM-dd HH:mm"),
+                    ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                };
+                tripDetailDto.Flights.Add(flightDto);
+            }
+
+
+            // 取得並填寫住宿資料    
+            var accommodations = await _context.Accommodations.Where(a => a.TripId == tripId).ToListAsync();
+            // 將 Entity 轉為 DTO
+            foreach (var accom in accommodations)
+            {
+                AccommodationDto accomDto = new()
+                {
+                    Id = accom.Id,
+                    TripId = accom.TripId,
+                    SpotId = accom.SpotId,
+                    HotelName = accom.HotelName ?? "",
+                    Address = accom.Address ?? "",
+                    CheckInDate = accom.CheckInDate,
+                    CheckOutDate = accom.CheckOutDate
+                };
+                tripDetailDto.Accomadations.Add(accomDto);
+            }
+
+
+
 
             // 如果行程存在，我們直接從 trip 中提取並排序明細
             // 這是在記憶體中進行的，非常快
@@ -299,12 +343,30 @@ namespace TripMatch.Services
         }
 
 
-        public async Task<bool> AddAccommodation(int? userId, AccomadationDto dto)
+        public async Task<bool> AddAccommodation(AccommodationDto dto)
         {
-            return true;
+             Accommodation accommodation = new()
+            {
+                TripId = dto.TripId,
+                SpotId = dto.SpotId,
+                 HotelName = dto.HotelName,
+                Address = dto.Address,
+                CheckInDate = dto.CheckInDate,
+                CheckOutDate = dto.CheckOutDate,
+                CreatedAt = DateTimeOffset.Now
+            };
+            try
+            {
+                _context.Accommodations.Add(accommodation);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                // 這裡可以 Log 錯誤原因
+                return false;
+            }
         }
-
-
 
 
         // 嘗試新增景點到行程
@@ -620,6 +682,23 @@ namespace TripMatch.Services
             catch (Exception ex)
             {
                 // 這裡可以記錄 Log，例如：_logger.LogError(ex, "儲存航班失敗");
+                return false;
+            }
+        }
+
+
+        public async Task<bool> DeleteFlight(int id)
+        {
+            var existing = await _context.Flights
+                    .FirstOrDefaultAsync(f => f.Id == id);
+            if (existing != null)
+            {
+                _context.Flights.Remove(existing);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
                 return false;
             }
         }

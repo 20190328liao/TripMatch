@@ -180,7 +180,7 @@ function loadTripData() {
         success: function (data) {
             console.log("行程詳細資料:", data);
             const items = data.itineraryItems || [];
-            const accommodations = data.accommodations || [];
+            const accommodations = data.accomadations || [];
             const flights = data.flights || []; 
 
             TripApi.getDetail(currentTripId).then(data => {
@@ -229,8 +229,6 @@ function renderItinerary(items, dates, accommodations, flights) {
             }
         });
     });
-
-
   
 
     // ==========================================
@@ -777,12 +775,12 @@ function saveHotelData() {
         if (!spotId) return;
 
         const dto = {
-            TripId: parseInt(tripId),
-            SpotId: parseInt(spotId),
-            HotelName: selectedHotelPlace.name, 
-            Address: selectedHotelPlace.formatted_address,
-            CheckInDate: checkIn,
-            CheckOutDate: checkOut,          
+            tripId: parseInt(currentTripId),
+            spotId: parseInt(spotId),
+            hotelName: selectedHotelPlace.name, 
+            address: selectedHotelPlace.formatted_address,
+            checkInDate: checkIn,
+            checkOutDate: checkOut,          
         };
 
         $.ajax({

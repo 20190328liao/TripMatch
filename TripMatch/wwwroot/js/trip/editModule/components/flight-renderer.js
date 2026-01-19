@@ -21,22 +21,79 @@
             html += `<div class="text-center py-3 text-muted small bg-light rounded border border-dashed">尚未安排航班</div>`;
         } else {
             flights.forEach(f => {
+
+                // 在生成 HTML 之前先處理日期格式
+                const dateObj = new Date(f.depTimeLocal);
+                // 格式範例：2月25日 (週二)
+                const dateStr = dateObj.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+
+                // 1. 處理時間顯示 (只取 HH:mm)
+                // 假設 f.depTimeLocal 格式為 "2025-02-25 09:40"
+                const depTime = f.depTimeLocal.split(' ')[1].substring(0, 5);
+                const arrTime = f.arrTimeLocal.split(' ')[1].substring(0, 5);
+
+                // 2. 計算飛行時間 (Duration)
+                let durationStr = "計算中...";
+                if (f.depTimeUtc && f.arrTimeUtc) {
+                    const start = new Date(f.depTimeUtc);
+                    const end = new Date(f.arrTimeUtc);
+                    const diffMs = end - start;
+                    // 算出小時與分鐘
+                    const hrs = Math.floor(diffMs / (1000 * 60 * 60));
+                    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    durationStr = `${hrs}小時 ${mins}分鐘`;
+                }
+
+                // 3. 生成 HTML (模仿圖片樣式)
                 html += `
-                <div class="flight-card d-flex gap-3 mb-2 p-2 border rounded position-relative align-items-center">
-                    <div class="bg-light rounded p-2 text-center" style="min-width: 60px;">
-                        <i class="bi bi-airplane text-primary"></i>
+                <div class="flight-card">
+                    <div class="flight-date-header">
+                        ${dateStr}
                     </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold text-dark">${f.flightNumber} <span class="text-muted small fw-normal">| ${f.airlineName}</span></div>
-                        <div class="small mt-1 d-flex align-items-center gap-2">
-                             <span class="badge bg-secondary bg-opacity-10 text-dark">${f.depIata} ${f.depTime}</span>
-                             <i class="bi bi-arrow-right text-muted" style="font-size: 0.8rem;"></i>
-                             <span class="badge bg-secondary bg-opacity-10 text-dark">${f.arrIata} ${f.arrTime}</span>
+                    <div class="d-flex align-items-center flex-wrap justify-content-center justify-content-md-start">
+            
+                        <!-- 左側：航空公司 -->
+                        <div class="flight-airline-box">
+                            <div class="flight-airline-name">${f.carrier}</div>
+                            <span class="flight-number-badge">${f.flightNumber}</span>
                         </div>
-                        <div class="text-muted small mt-1"><i class="bi bi-calendar-event me-1"></i>${new Date(f.flightDate).toLocaleDateString()}</div>
+
+                        <!-- 中間：航程資訊容器 -->
+                        <div class="d-flex flex-grow-1 align-items-center justify-content-center gap-3 gap-md-4">
+                
+                            <!-- 出發地 -->
+                            <div class="flight-time-group">
+                                <div class="flight-time-large">${depTime}</div>
+                                <div class="flight-airport-code">${f.fromAirport}</div>
+                            </div>
+
+                            <!-- 中間裝飾：時間 + 線條 + 直飛 -->
+                            <div class="flight-route-info">
+                                <!-- 上方：飛行時間 -->
+                                <div class="flight-duration-text">${durationStr}</div>
+                    
+                                <!-- 中間：線條與飛機 -->
+                                <div class="flight-line-container">
+                                    <div class="flight-line-bar"></div>
+                                    <i class="bi bi-airplane-fill flight-icon-plane"></i>
+                                </div>
+
+                                <!-- 下方：直飛 -->
+                                <div class="flight-direct-text">直飛</div>
+                            </div>
+
+                            <!-- 抵達地 -->
+                            <div class="flight-time-group">
+                                <div class="flight-time-large">${arrTime}</div>
+                                <div class="flight-airport-code">${f.toAirport}</div>
+                            </div>
+                        </div>
+
                     </div>
-                    <button class="btn btn-link text-danger p-0 position-absolute top-0 end-0 mt-1 me-2 delete-flight-btn" data-id="${f.id}">
-                        <i class="bi bi-x-lg"></i>
+
+                    <!-- 刪除按鈕 -->
+                    <button class="flight-delete-btn delete-flight-btn" data-id="${f.id}" title="移除航班">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </div>`;
             });

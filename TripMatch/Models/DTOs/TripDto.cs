@@ -6,8 +6,10 @@ namespace TripMatch.Models.DTOs
     public class TripDetailDto
     {
         public TripSimpleDto TripInfo { get; set; } = new TripSimpleDto();
-        public AccomadationDto Accomadation { get; set; } = new AccomadationDto();  
+        public List<FlightDto> Flights { get; set; } = [];
+        public List<AccommodationDto> Accomadations { get; set; } = [];
         public List<ItineraryItemDto> ItineraryItems { get; set; } = [];
+        public List<TripMemberDto> TripMembers { get; set; } = [];  
     }
 
     public class TripSimpleDto
@@ -34,6 +36,7 @@ namespace TripMatch.Models.DTOs
 
     public class FlightDto
     {
+        public int Id { get; set; } 
         public int TripId { get; set; }
         public string Carrier { get; set; } = string.Empty;
         public string FlightNumber { get; set; } = string.Empty;
@@ -42,7 +45,7 @@ namespace TripMatch.Models.DTOs
         public string ArrTimeLocal { get; set; } = string.Empty;
         public string ArrTimeUtc { get; set; } = string.Empty;
         public string FromAirport { get; set; } = string.Empty;
-        public string ToAirport { get; set; } = string.Empty;        
+        public string ToAirport { get; set; } = string.Empty;
         public string FromLocation { get; set; } = string.Empty;
         public string ToLocation { get; set; } = string.Empty;
 
@@ -67,16 +70,17 @@ namespace TripMatch.Models.DTOs
 
             return new DateTimeOffset(local, offset);
         }
-    }      
+    }
 
-    public class AccomadationDto
+    public class AccommodationDto
     {
+        public int Id { get; set; }
         public int TripId { get; set; }
         public int SpotId { get; set; }
         public string HotelName { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-        public DateOnly CheckInDate { get; set; }
-        public DateOnly CheckOutDate { get; set; }
+        public DateTime CheckInDate { get; set; }
+        public DateTime CheckOutDate { get; set; }
     }
 
     public class ItineraryItemDto
@@ -109,8 +113,6 @@ namespace TripMatch.Models.DTOs
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
     }
-
-   
 
     public class TripCreateDto
     {
@@ -159,27 +161,6 @@ namespace TripMatch.Models.DTOs
         public string DetailsUrl { get; set; } = "#";
         public string MembersUrl { get; set; } = "#";
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // 最外層：接收 Google API 的完整回應
     public class GooglePlaceDetailDto

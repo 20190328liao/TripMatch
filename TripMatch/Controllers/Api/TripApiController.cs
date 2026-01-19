@@ -101,7 +101,7 @@ namespace TripMatch.Controllers.Api
         }
 
         [HttpPost("AddAccommodation")]
-        public async Task<IActionResult> AddAccommodation([FromBody] AccomadationDto dto)
+        public async Task<IActionResult> AddAccommodation([FromBody] AccommodationDto dto)
         {
 
             if (dto == null)
@@ -110,7 +110,7 @@ namespace TripMatch.Controllers.Api
             try
             {
                 // 3. 呼叫 Service 執行邏輯 (這會處理 SortOrder 計算與新增)
-                bool isSuccess = await _tripServices.AddAccommodation(_tagUserId.UserId, dto);
+                bool isSuccess = await _tripServices.AddAccommodation(dto);
 
                 if (isSuccess)
                 {
@@ -346,6 +346,33 @@ namespace TripMatch.Controllers.Api
             {
                 // 失敗：回傳 400 或 500
                 return BadRequest("航班新增失敗，請檢查行程 ID 是否正確或稍後再試");
+            }
+        }
+
+        [HttpDelete("DeleteFlight/{id}")]
+        public async Task<IActionResult> DeleteFlight(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest("無效的航班 ID");
+                }
+                // 呼叫服務層刪除航班
+                bool success = await _tripServices.DeleteFlight(id);
+                if (success)
+                {
+                    return Ok(new { message = $"已成功刪除航班, FlightId = {id}" });
+                }
+                else
+                {
+                    return NotFound("找不到指定的航班");
+                }
+            }
+            catch (Exception ex)
+            {
+                // 伺服器錯誤
+                return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
 
