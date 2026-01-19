@@ -988,7 +988,7 @@ namespace TripMatch.Controllers.Api
                 // 嘗試多種解碼方式以容錯第三方追蹤/重新導向可能造成的編碼改變
                 string protectedPayload = string.Empty;
                 bool unprotected = false;
-                Exception lastEx = null;
+                Exception? lastEx = null;
 
                 // 1) 常見情況：t 為 Base64Url( protectedPayload )
                 try

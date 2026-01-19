@@ -372,14 +372,14 @@ body {
     z-index: 1;
 }
 
-.debug-toggle {
+/*.debug-toggle {
     position: fixed;
     bottom: 20px;
     left: 20px;
     z-index: 2000;
-}
+}*/
 
-    .debug-toggle button {
+/*    .debug-toggle button {
         background: #333;
         color: white;
         border: none;
@@ -388,4 +388,4 @@ body {
         cursor: pointer;
         opacity: 0.8;
         font-size: 12px;
-    }
+    }*/

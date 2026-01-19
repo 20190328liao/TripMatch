@@ -41,6 +41,7 @@
                 </div>
 
                 <form id="loginForm" class="loginForm">
+                    <input type="hidden" name="returnUrl" value="@(ViewData["ReturnUrl"] ?? "")" />
                     <div class="formWrap">
                         <label class="account titleWrap titleH4 d-block">帳號 *</label>
                         <div class="input_group_custom">

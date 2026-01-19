@@ -126,11 +126,17 @@ function joinTrip() {
     checkJoinInput();
 }
 
-// 主按鈕動作
+// 主按鈕動作（修正後）
 function handleMainAction() {
+    const btn = document.getElementById('mainActionButton');
+    // 可從按鈕 data-return-url 讀取目標（若有），否則預設導向 Match Index
+    const returnUrl = (btn && btn.dataset && btn.dataset.returnUrl) ? btn.dataset.returnUrl : '/Match/Index';
+
     if (!isLoggedIn) {
-        toggleLogin();
+        // 引導到登入頁並帶上 returnUrl，登入成功後伺服器/前端會導回 returnUrl
+        window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(returnUrl);
     } else {
-        alert('正在為您導向行程規劃頁面...');
+        // 已登入直接前往 Match
+        window.location.href = returnUrl;
     }
 }

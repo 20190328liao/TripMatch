@@ -120,20 +120,12 @@
       });
     });
 
-    // avatar click opens dropdown on desktop
+    // avatar click: 允許預設導向（點頭貼會前往 MemberCenter）
+    // 單純把 avatar 的 click handler 改為不阻止預設行為，桌機若要開下拉請點旁邊的 .dropdown-toggle
     root.querySelectorAll('.avatar-link').forEach(avatar => {
       avatar.addEventListener('click', (e) => {
-        if (window.innerWidth >= 992) {
-          e.preventDefault();
-          const dropdown = avatar.closest('.nav-avatar') || avatar.closest('.dropdown') || avatar.parentElement;
-          if (!dropdown) return;
-          const menu = dropdown.querySelector('.dropdown-menu');
-          const toggleBtn = dropdown.querySelector('.dropdown-toggle');
-          // close others
-          root.querySelectorAll('.dropdown-menu.show').forEach(m => { if (m !== menu) m.classList.remove('show'); });
-          root.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(t => { if (t !== toggleBtn) t.setAttribute('aria-expanded', 'false'); });
-          toggleMenu(menu, toggleBtn);
-        }
+        // 不呼叫 e.preventDefault()，保留 a 標籤的導向行為
+        // 如果你想在桌機點 avatar 也開 dropdown，可改為偵測按鍵或改成雙擊等特殊行為
       });
     });
   }

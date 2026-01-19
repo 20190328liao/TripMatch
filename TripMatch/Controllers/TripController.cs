@@ -4,7 +4,7 @@ using TripMatch.Services;
 
 namespace TripMatch.Controllers
 {
-
+    
     public class TripController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -14,13 +14,12 @@ namespace TripMatch.Controllers
             _logger = logger;
             _tagUserId = tagUserId;
         }
-
         [Authorize]
         public IActionResult Index()
         {
             return View();
         }
-
+      
         public IActionResult Create()
         {
             return View();

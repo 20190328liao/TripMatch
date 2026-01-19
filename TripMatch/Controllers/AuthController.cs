@@ -45,14 +45,36 @@ namespace TripMatch.Controllers
             return View();
         }
 
-        [HttpGet]
-        public IActionResult Login()
+        // Login (GET)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(InputModel model, string? returnUrl = null)
         {
-            if (User?.Identity?.IsAuthenticated == true)
+            ViewData["ReturnUrl"] = returnUrl;
+
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction("Index", "Home");
+                return View(model);
             }
-            return View();
+            // 檢查 Email 與 Password 不為 null
+            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
+            {
+                ModelState.AddModelError(string.Empty, "請輸入帳號與密碼。");
+                return View(model);
+            }
+            // 不使用 RememberMe，固定為 false
+            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, isPersistent: false, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return LocalRedirect(returnUrl);
+                }
+                return RedirectToAction("Index", "Match");
+            }
+
+            ModelState.AddModelError(string.Empty, "登入失敗，請檢查帳號或密碼。");
+            return View(model);
         }
 
         [HttpGet]
@@ -296,6 +318,8 @@ namespace TripMatch.Controllers
             TempData["Message"] = "密碼已更新。";
             return RedirectToAction("MemberCenter");
         }
+
+
 
         // Google 登入跳轉
         [HttpGet]
