@@ -36,12 +36,38 @@ namespace TripMatch.Models.DTOs
     {
         public int TripId { get; set; }
         public string Carrier { get; set; } = string.Empty;
-        public string FlightNumber { get; set; } = string.Empty;   
-        public TimeOnly DepartureTime { get; set; }    
-        public TimeOnly ArrivalTime { get; set; }
+        public string FlightNumber { get; set; } = string.Empty;
+        public string DepTimeLocal { get; set; } = string.Empty;
+        public string DepTimeUtc { get; set; } = string.Empty;
+        public string ArrTimeLocal { get; set; } = string.Empty;
+        public string ArrTimeUtc { get; set; } = string.Empty;
         public string FromAirport { get; set; } = string.Empty;
-        public string ToAirport { get; set; } = string.Empty;
-    }   
+        public string ToAirport { get; set; } = string.Empty;        
+        public string FromLocation { get; set; } = string.Empty;
+        public string ToLocation { get; set; } = string.Empty;
+
+        // --- 內建轉換邏輯 ---
+
+        // 取得出發時間的 DateTimeOffset
+        public DateTimeOffset DepartDateTimeOffset => ConvertToOffset(DepTimeLocal, DepTimeUtc);
+
+        // 取得抵達時間的 DateTimeOffset
+        public DateTimeOffset ArriveDateTimeOffset => ConvertToOffset(ArrTimeLocal, ArrTimeUtc);
+
+        private DateTimeOffset ConvertToOffset(string localStr, string utcStr)
+        {
+            DateTime local = DateTime.Parse(localStr);
+            DateTime utc = DateTime.Parse(utcStr);
+
+            // 利用 TimeOfDay 計算時差，並處理跨日邊界
+            TimeSpan offset = local.TimeOfDay - utc.TimeOfDay;
+
+            if (offset.TotalHours < -12) offset = offset.Add(TimeSpan.FromDays(1));
+            if (offset.TotalHours > 14) offset = offset.Add(TimeSpan.FromDays(-1));
+
+            return new DateTimeOffset(local, offset);
+        }
+    }      
 
     public class AccomadationDto
     {

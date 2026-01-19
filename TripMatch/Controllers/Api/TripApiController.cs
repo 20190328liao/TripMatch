@@ -103,7 +103,7 @@ namespace TripMatch.Controllers.Api
         [HttpPost("AddAccommodation")]
         public async Task<IActionResult> AddAccommodation([FromBody] AccomadationDto dto)
         {
-          
+
             if (dto == null)
                 return BadRequest(new { message = "請求資料格式錯誤" });
 
@@ -125,7 +125,7 @@ namespace TripMatch.Controllers.Api
             }
             catch (Exception ex)
             {
-               
+
                 // 4. 記錄 Log 並回傳 500 錯誤
                 // _logger.LogError(ex, "新增行程細項時發生意外錯誤");
                 return StatusCode(500, new { message = "伺服器發生錯誤，請稍後再試" });
@@ -139,7 +139,7 @@ namespace TripMatch.Controllers.Api
         [HttpPost("AddSpotToTrip")]
         public async Task<IActionResult> AddSpotToTrip([FromBody] ItineraryItemDto dto)
         {
-            Console.WriteLine("AddSpotToTrip");  
+            Console.WriteLine("AddSpotToTrip");
             // 1. 基礎驗證：確保 dto 不是空值
             if (dto == null)
             {
@@ -149,7 +149,7 @@ namespace TripMatch.Controllers.Api
             try
             {
                 // 3. 呼叫 Service 執行邏輯 (這會處理 SortOrder 計算與新增)
-                bool isSuccess = await _tripServices.TryAddSpotToTrip(_tagUserId.UserId,dto);
+                bool isSuccess = await _tripServices.TryAddSpotToTrip(_tagUserId.UserId, dto);
 
                 if (isSuccess)
                 {
@@ -170,9 +170,9 @@ namespace TripMatch.Controllers.Api
             }
         }
 
-    
+
         [HttpDelete("DeleteSpotFromTrip/{id}")]
-        public async Task<IActionResult>  DeleteSpotFromTrip(int id)
+        public async Task<IActionResult> DeleteSpotFromTrip(int id)
         {
             try
             {
@@ -185,7 +185,7 @@ namespace TripMatch.Controllers.Api
                 bool success = await _tripServices.DeleteSpotFromTrip(id);
 
                 // 成功刪除通常回傳 204 No Content 或 200 OK
-                return Ok(new { message = $"已成功刪除景點, SpotId = {id}"});
+                return Ok(new { message = $"已成功刪除景點, SpotId = {id}" });
             }
             catch (Exception ex)
             {
@@ -272,6 +272,83 @@ namespace TripMatch.Controllers.Api
             bool reuslt = await _tripServices.IsInWishList(_tagUserId.UserId, spotId);
             return Ok(new { AddToWishlist = reuslt });
         }
+        #endregion
+
+        #region 航班資訊 Proxy
+
+        // [Proxy] 1. 轉發航線查詢
+        [HttpGet("ProxyFlightRoutes")]
+        public async Task<IActionResult> ProxyFlightRoutes(string depIata, string arrIata)
+        {
+            if (string.IsNullOrEmpty(depIata) || string.IsNullOrEmpty(arrIata))
+            {
+                return BadRequest(new { message = "請提供出發與抵達機場代碼" });
+            }
+
+            try
+            {
+                // 改透過 Service 呼叫
+                var jsonResult = await _tripServices.ProxyFlightRoutes(depIata, arrIata);
+                return Content(jsonResult, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "查詢航線失敗", error = ex.Message });
+            }
+        }
+
+        // [Proxy] 2. 轉發航班詳細查詢
+        [HttpGet("ProxyFlightDetail")]
+        public async Task<IActionResult> ProxyFlightDetail(string flightIata)
+        {
+            if (string.IsNullOrEmpty(flightIata))
+            {
+                return BadRequest(new { message = "請提供航班代���" });
+            }
+
+            try
+            {
+                // 改透過 Service 呼叫
+                var jsonResult = await _tripServices.ProxyFlightDetail(flightIata);
+                return Content(jsonResult, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "查詢航班失敗", error = ex.Message });
+            }
+        }
+
+        [HttpPost("AddFlight")]
+        public async Task<IActionResult> AddFlight(FlightDto dto)
+        {
+            // 1. 驗證資料是否為空
+            if (dto == null)
+            {
+                return BadRequest("無效的請求資料");
+            }
+
+            // 2. 自動檢查實體模型驗證 (如：[Required] 標籤)
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // 3. 呼叫服務層
+            bool isSuccess = await _tripServices.AddFlight(dto);
+
+            // 4. 根據結果回傳對應的 HTTP 狀態碼
+            if (isSuccess)
+            {
+                // 成功：回傳 200 OK，也可以回傳自定義訊息或物件
+                return Ok(new { message = "航班已成功新增", data = dto });
+            }
+            else
+            {
+                // 失敗：回傳 400 或 500
+                return BadRequest("航班新增失敗，請檢查行程 ID 是否正確或稍後再試");
+            }
+        }
+
         #endregion
     }
 }
