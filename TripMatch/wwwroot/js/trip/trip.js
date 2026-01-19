@@ -91,6 +91,8 @@
             }
 
             // 點卡片其他區域 -> 跳轉到行程頁
+
+         
             const detailsUrl = card.dataset.detailsUrl;
             if (detailsUrl && detailsUrl !== "#") {
                 window.location.href = detailsUrl;

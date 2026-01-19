@@ -498,8 +498,8 @@ namespace TripMatch.Services
                     StartDate = tm.Trip.StartDate,
                     EndDate = tm.Trip.EndDate,
                     CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400" : tm.Trip.CoverImageUrl,
-                    IsOwner = (tm.RoleType == 1),
-                    DetailsUrl = $"/Trip/Index?tripId={tm.TripId}",
+                    IsOwner = (tm.RoleType == 1),                   
+                    DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
                 })
                 .ToListAsync();
