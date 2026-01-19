@@ -1,0 +1,114 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using TripMatch.Models
+@{
+    // 使用 ~/css/navbar-custom.css 與 ~/js/navbar.js（請確保這兩個檔案存在並已載入）
+}
+<link rel="stylesheet" href="~/css/navbar-custom.css" />
+
+<nav class="navbar navbar-expand-lg navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow" role="navigation">
+    <div class="container-fluid">
+        @* logo *@
+        <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+            <img src="~/img/Logo/Logo0114.png" alt="TripMatch Logo" style="height: 40px; width: auto;">
+        </a>
+
+        @* Avatar 放在漢堡左側（僅在已登入時輸出，CSS 會在手機把它定位到漢堡左邊） *@
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            var avatarUrl = User.FindFirst("Avatar")?.Value;
+            if (string.IsNullOrEmpty(avatarUrl))
+            {
+                avatarUrl = Url.Content("~/img/default_avatar.png");
+            }
+            <div class="nav-avatar">
+                <a class="avatar-link" asp-controller="Auth" asp-action="MemberCenter" title="會員中心">
+                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle" style="cursor:pointer;">
+                </a>
+
+                @* 桌機顯示的下拉（手機由 CSS 隱藏） *@
+                <button class="dropdown-toggle desktop-only" type="button" aria-haspopup="true" aria-expanded="false" aria-label="會員選單"></button>
+                <ul class="dropdown-menu desktop-only" role="menu" aria-label="會員選單">
+                    <li><a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter">個人資料</a></li>
+                    <li class="dropdown-divider" aria-hidden="true"></li>
+                    <li>
+                        @* 改為由 JS 處理（btn-logout），form 提供 action 與 return url *@
+                        <form class="form-inline logout-form" asp-controller="AuthApi" asp-action="Logout" method="post" data-return-url='@Url.Content("~/")'>
+                            <div id="btnLogout" type="button" class="dropdown-item btn-logout">登出</div>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        }
+
+        @* 漢堡按鈕（放在 Avatar 右側）；補上 data-bs-toggle 以正確觸發 Bootstrap collapse *@
+        <button class="navbar-toggler" type="button" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+            <span class="navbar-toggler-icon" aria-hidden="true"></span>
+        </button>
+
+        <div id="navbarSupportedContent" class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
+            <ul class="navbar-nav flex-grow-1">
+                @* 桌機主選單（只在桌機顯示） *@
+                <li class="nav-item desktop-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Trip" asp-action="Index">我的行程</a>
+                </li>
+                <li class="nav-item desktop-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Spot" asp-action="Index">景點探索</a>
+                </li>
+                <li class="nav-item desktop-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Billing" asp-action="Index">記帳分帳</a>
+                </li>
+
+                @* 手機專用：固定五項順序（我的行程、景點探索、記帳分帳、個人資料/註冊、登出/登入）
+                   - 個人資料 & 登出 只在已登入顯示（跟桌機行為一致）
+                   - 註冊 & 登入 只在未登入顯示
+                   - mobile-only class 控制顯示/隱藏（CSS 已處理） *@
+                <li class="nav-item mobile-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Trip" asp-action="Index">我的行程</a>
+                </li>
+                <li class="nav-item mobile-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Spot" asp-action="Index">景點探索</a>
+                </li>
+                <li class="nav-item mobile-only">
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Billing" asp-action="Index">記帳分帳</a>
+                </li>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="nav-item mobile-only">
+                        <a class="nav-link text-dark" asp-controller="Auth" asp-action="MemberCenter">個人資料</a>
+                    </li>
+                    <li class="nav-item mobile-only">
+                        <form class="d-inline logout-form" asp-controller="AuthApi" asp-action="Logout" method="post" data-return-url='@Url.Content("~/")'>
+                            <div type="button" class="nav-link text-dark btn-as-link btn-logout">登出</div>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    @* 未登入：在手機選單顯示 註冊 / 登入 *@
+                    <li class="nav-item mobile-only">
+                        <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>
+                    </li>
+                    <li class="nav-item mobile-only">
+                        <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">登入</a>
+                    </li>
+                }
+            </ul>
+
+            @* 桌機右側：保留水平 nav（Avatar 已在上方 nav-avatar 中處理），加上 desktop-right 讓它靠右 *@
+            <ul class="navbar-nav desktop-only desktop-right">
+                @if (User.Identity?.IsAuthenticated == false)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">登入</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<script src="~/js/navbar.js"></script>

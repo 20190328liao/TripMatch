@@ -9,12 +9,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TripMatch</title>
-    
-    <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
@@ -55,7 +53,7 @@
         // 讓 helper.js 可以把 CSRF token 放進 AJAX header
         window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
     </script>
-    <script src="~/bootstrap.bundle.min.js" asp-append-version="true"></script>
+
     @* 不能刪的，網頁會沒有彈窗,登出和頭貼 *@
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>

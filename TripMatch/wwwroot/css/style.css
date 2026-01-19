@@ -71,6 +71,7 @@
 	border-radius: 50%;
 	object-fit: cover;
 	border: 1px solid #ddd;
+	box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* 彈窗 */
@@ -111,27 +112,7 @@
 	border-radius: 4px;
 	cursor: pointer;
 }
-/* =============================================
-   導覽列字體設定 (覆蓋 Bootstrap 預設值)
-   ============================================= */
-.navbar .nav-link {
-    font-size: 18px !important; /* 字體大小 */
-    font-weight: 600 !important; /* 字體粗細 */
-    color: var(--color_DarkGray) !important; /* 使用您 style.css 定義的變數 */
-    padding: 10px 15px !important; /* 增加按鈕間距 */
-    white-space: nowrap; /* 防止換行 */
-}
 
-	/* 滑鼠移過去的顏色 */
-	.navbar .nav-link:hover {
-		color: var(--color_Dark) !important; /* 使用您定義的深色主題色 */
-	}
-
-/* "登入/註冊"  */
-.navbar .btn-text {
-	font-size: 18px !important;
-	font-weight: 600;
-}
 
 /*===============================================*/
 /*可能沒人習慣設計系統分類，元件，響應式，布局和變數，整合為一份*/
@@ -197,7 +178,7 @@ header {
 	/* ===============================
      色彩系統 Colors (可以換顏色) --c 開頭
      =============================== */
-
+	--primary-mint: #62DEB1;
 	--light: #F8FAFC;
 	--color_font: #000000;
 	--color_btnLight: #ffffff;

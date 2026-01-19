@@ -64,26 +64,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - TripMatch</title>
-    <script>
 
-    </script>
-    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
-    @* 使用 ~/ 符號，Razor 會自動解析正確的根目錄路徑 *@
-    <link rel="stylesheet" href="~/css/style.css">
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/AuthApi/member.css">
-    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css">
+    @* 與 _Layout-copy 保持一致的 CSS/JS 載入順序（確保 navbar 外觀一致） *@
+
+    <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" />
+
+
+    <link rel="stylesheet" href="~/css/AuthApi/member.css" asp-append-version="true" />
 
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
-    <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
-    @* 這裡可以預留給各別頁面加入額外的 CSS *@
+
     @await RenderSectionAsync("Styles", required: false)
+
+    <style>
+        body { min-height: 100vh; display:flex; flex-direction:column; }
+        main { flex:1; }
+    </style>
 </head>
 
 <body>
-    @* 在這裡放共用的 Header/Nav *@
     <div id="route-data"
          data-pages='@Json.Serialize(authPages)'
          data-apis='@Json.Serialize(authApis)'
@@ -91,89 +95,38 @@
          style="display:none;"></div>
 
     <header>
-        <nav class="navbar navbar-expand-lg navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow">
-            <div class="container-fluid">
-                @* logo *@
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <img src="~/img/Logo/Logo0114.png" alt="TripMatch Logo" style="height: 40px; width: auto;">
-                </a>
-                @* 漢堡按鈕（保留原本的 data-bs-target 選擇器） *@
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                @* 在 lg（>=992px）以上展開，使用 d-lg-inline-flex 以配合新的斷點 *@
-                <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li> *@
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Trip" asp-action="Index">我的行程</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Spot" asp-action="Index">景點探索</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Billing" asp-action="Index">記帳分帳</a>
-                        </li>
-                    </ul>
-
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            var avatarUrl = User.FindFirst("Avatar")?.Value;
-                            if (string.IsNullOrEmpty(avatarUrl))
-                            {
-                                avatarUrl = Url.Content("~/img/default_avatar.png");
-                            }
-
-                            <li class="nav-item dropdown">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Auth" asp-action="MemberCenter">
-                                    <img id="navAvatar" src="@avatarUrl" alt="Avatar" class="avatarImg rounded-circle me-2" style="cursor: pointer;">
-                                </a>
-                                <a class="nav-link dropdown-toggle p-0" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                    <li>
-                                        <a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter">個人資料</a>
-                                    </li>
-                                    <li><hr class="dropdown-divider" /></li>
-                                    <li>
-                                        <form class="form-inline" asp-controller="AuthApi" asp-action="Logout" method="post">
-                                            <button id="btnLogout" type="submit" class="dropdown-item">登出</button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">登入</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
+        @await Html.PartialAsync("_NavbarPartial")
     </header>
     
-    @* 這裡是各個頁面內容插入的位置 *@
-    @RenderBody()
-    <script src="~/lib/bootstrap/dist/js/bootstrap.js" asp-append-version="true"></script>
+    <main class="main-content">
+        @RenderBody()
+    </main>
 
+    @* 與 _Layout-copy 保持一致的腳本順序 *@
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // 讓 helper.js 可以把 CSRF token 放進 AJAX header（若專案使用 antiforgery）
+        window.csrfToken = (window.csrfToken || '');
+    </script>
+
+    @* 保留原本需要的腳本（如 jquery, helper, avatar, logout）並與 Layout-copy 同步順序 *@
+    <script src="~/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
 
-    <script src="~/js/AuthApi/checkEmail.js"></script>
-    @* 頁面各自提供專屬腳本（由 view 的 @section Scripts 引入） *@
+    <script>
+    // 放在 bootstrap.bundle.min.js 之後、其他自訂 script 之前
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.querySelector('#carouselExample');
+      if (el && window.bootstrap && bootstrap.Carousel) {
+        new bootstrap.Carousel(el, { interval: 4000, pause: 'hover' });
+      }
+    });
+    </script>
+
     @RenderSection("Scripts", required: false)
 
     <footer class="footer-fullwidth">
