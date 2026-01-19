@@ -27,6 +27,13 @@
   function initNavbar(root) {
     if (!root) return;
 
+    // 已初始化就跳過，避免重複綁定導致奇怪行為（例如開一次後不能再次開啟）
+    if (root.dataset.navbarInit === '1') {
+      debug('navbar already initialized for root', root);
+      return;
+    }
+    root.dataset.navbarInit = '1';
+
     // navbar collapse toggler
     root.querySelectorAll('.navbar-toggler').forEach(toggler => {
       toggler.addEventListener('click', (e) => {
@@ -178,11 +185,22 @@
     initLogoutButtons();
   }
 
+  // 先在 DOMContentLoaded 初始化（確保 DOM 可用）
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAll);
+    document.addEventListener('DOMContentLoaded', initAll); 
   } else {
     initAll();
   }
+
+  // 如果 bootstrap 載入較晚，再在 window load 時嘗試一次（initAll 已設計為 idempotent）
+  window.addEventListener('load', () => {
+    try {
+      initAll();
+      debug('navbar.initAll on window.load');
+    } catch (e) {
+      debug('navbar init on load failed', e);
+    }
+  });
 
   // global handlers: 點擊外側關閉、Esc
   document.addEventListener('click', (e) => {

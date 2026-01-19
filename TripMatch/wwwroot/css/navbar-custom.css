@@ -14,6 +14,55 @@
     --tm-avatar-gap: 15px; /* Avatar 與漢堡間距（使用者要求 15px） */
 }
 
+/* 強制 navbar 與展開選單在最上層並可正常捲動（解決開一次後無法再次開啟） */
+:root {
+  --nav-height-mobile: 70px; /* 與 layout/樣式同步調整 */
+}
+
+/* 讓整個 navbar 位於較高 z-index，避免被其他 fixed/absolute 元素蓋住 */
+nav.navbar {
+  position: relative;
+  z-index: 2200;
+}
+
+/* navbar toggler 保持可點擊（碰到 overlay 要優先） */
+.navbar .navbar-toggler {
+  position: relative;
+  z-index: 2225;
+}
+
+/* collapse 區塊在手機展開時改成絕對定位且滿寬，避免被主內容遮蔽 */
+.navbar-collapse.collapse {
+  /* 保持預設行為，在需要時由 .show 覆寫 */
+  transition: none; /* 可根據需要移除動畫抖動 */
+}
+
+/* 展開時的樣式：置頂、白底、陰影、可捲動 */
+    .navbar-collapse.collapse.show {
+        height: 18rem !important;
+        position: absolute !important;
+        top: 100% !important; /* 緊貼 navbar 底部 */
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        max-height: calc(100vh - var(--nav-height-mobile)) !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.14) !important;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        z-index: 2210 !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+/* dropdown menu（桌機）也應該高於一般內容 */
+nav.navbar .dropdown-menu {
+  z-index: 2230;
+}
+
+/* 若頁面有固定元素（footer-fullwidth、sidebars）覆蓋，降低它們的 z-index 或提高 navbar 的 z-index */
+/* Example: .footer-fullwidth { z-index: 1000; } */
 
 /* ------------------------------------------------------------
    Reset：取消 ul/ol 的預設符號與 margin/padding，避免有點點
@@ -167,6 +216,7 @@
     display: none;
     width: 100%;
     align-items: center;
+    z-index: 1200;
 }
 
 /* 顯示控制 */
@@ -325,9 +375,10 @@
       right: auto !important;
       left: auto !important;
       width: auto !important;
-      height: auto !important;
+      height: 18rem !important;
       background: transparent !important;
       padding: 0 !important;
+      overflow-y:hidden;
       border-radius: 0 !important;
       box-shadow: none !important;
       display: flex !important;
@@ -389,6 +440,7 @@
         top: 50% !important;
         right: var(--tm-toggler-right) !important;
         transform: translateY(-50%) !important;
+        height:auto;
         z-index: 2200 !important;
         display: inline-flex !important;
         align-items: center;
@@ -519,7 +571,7 @@
 }
 
 /* 調整：統一 .navbar-collapse.show 的白色選單尺寸與捲動行為
-   放在檔案末端以覆寫先前規則 */
+   放在檔案末端以覆蓋先前規則 */
 .navbar-collapse.show {
     height: 18rem;
     font-size: 18px !important;
