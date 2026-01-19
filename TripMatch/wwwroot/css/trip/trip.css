@@ -230,3 +230,54 @@
     font-weight: 700;
     cursor: pointer;
 }
+
+.invite-row {
+    margin-bottom: 12px;
+}
+
+.invite-label {
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #111;
+}
+
+.invite-code-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.invite-code {
+    display: inline-block;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f9fafb;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+
+.btn-copy {
+    background: #62DEB1;
+    color: #fff;
+    border: none;
+}
+
+    .btn-copy:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+.invite-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6b7280;
+    min-height: 16px;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 12px 0;
+}

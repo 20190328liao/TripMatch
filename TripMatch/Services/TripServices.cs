@@ -568,6 +568,32 @@ namespace TripMatch.Services
             await _context.SaveChangesAsync();
         }
 
+        // 取得驗證碼
+        public async Task<Guid> GetInviteCodeAsync(int userId, int tripId)
+        {
+            var isMember = await _context.TripMembers
+                .AsNoTracking()
+                .AnyAsync(tm => tm.TripId == tripId && tm.UserId == userId);
+
+            if (!isMember)
+            {
+                throw new UnauthorizedAccessException("Not a member of this trip.");
+            }
+
+            var code = await _context.Trips
+                .AsNoTracking()
+                .Where(t => t.Id == tripId)
+                .Select(t => t.InviteCode)
+                .FirstOrDefaultAsync();
+
+            if (code == Guid.Empty)
+            {
+                throw new Exception("InviteCode is empty.");
+            }
+
+            return code;
+        }
+
         #endregion
 
 

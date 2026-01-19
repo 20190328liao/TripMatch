@@ -63,6 +63,26 @@ namespace TripMatch.Controllers.Api
             return Ok(new { ok = true });
         }
 
+        [HttpGet("{tripId:int}/invite-code")]
+        public async Task<IActionResult> InviteCode(int tripId)
+        {
+            var userId = _tagUserId.UserId.Value;
+            if (userId <= 0) return Unauthorized();
+
+            try
+            {
+                var code = await _tripServices.GetInviteCodeAsync(userId, tripId);
+                return Ok(new
+                {
+                    inviteCode = code.ToString() // Guid -> String
+                });
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
         #endregion
 
         #region 建立行程
