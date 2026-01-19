@@ -1,0 +1,689 @@
+﻿:root {
+    /* Theme */
+    --primary: #62DEB1;
+    --primaryDark: #00968A;
+    --bg: #ffffff;
+    --text: #111;
+    --muted: #6b7280;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .12);
+    --shadow2: 0 10px 18px rgba(0, 0, 0, .16);
+    --radius: 16px;
+    /* Layout knobs (因為你改用 _Layout navbar，這裡只需要保留 navbar 的高度) */
+    --layoutNavH: 0px; /* 若你的 _Layout navbar 更高/更低，改這個即可 */
+    --gutter: 16px;
+    /* Left sidebar (Popular + Search) */
+    --sideW: 360px; /* 左側欄寬度 */
+    --sidePad: 14px;
+    --searchH: 44px;
+    /* Right panel */
+    --panelW: 360px;
+}
+
+/* ========== Base Reset ========== */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    /* Explore 頁通常不需要 body 捲動；捲動交給側欄/面板內容 */
+    overflow: hidden;
+}
+
+/* 有些 _Layout / Bootstrap 可能會加 container padding 或 body margin，這裡保守清掉可能影響滿版的狀態 */
+body {
+    padding: 0 !important;
+}
+
+/* ========== Page Frame ========== */
+.app {
+    min-height: 100vh;
+}
+
+.main {
+    position: relative;
+    height: 100vh;
+    /* 讓內容避開 _Layout navbar（你說用 _Layout 的就好） */
+    padding-top: var(--layoutNavH);
+    /* 避免因為內部絕對定位元素造成外層出現卷軸 */
+    overflow: hidden;
+}
+
+/* ========== Map ========== */
+#map {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--layoutNavH);
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    z-index: 1;
+    background: #eef2f7;
+}
+
+/* ========== Left Sidebar: Popular (vertical) ========== */
+/* 把原本 bottom bar 的 popular 改成左側欄 */
+.popular {
+    position: absolute;
+    left: var(--gutter);
+    top: calc(var(--layoutNavH) + var(--gutter));
+    /* edit var(--gutter)*/
+    bottom: auto;
+    height: 85vh;
+    width: var(--sideW);
+    z-index: 3200;
+    background: rgba(255, 255, 255, .96);
+    border: 1px solid rgba(0, 0, 0, .10);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* 原本 popular 有 transform/opacity 的 transition，保留但改為側欄行為 */
+    transition: transform .22s ease, opacity .22s ease;
+}
+
+    .popular.hidden {
+        transform: translateX(calc(-1 * (var(--sideW) + 24px)));
+        opacity: 0;
+        pointer-events: none;
+    }
+
+/* 標題列：直向側欄頂部 */
+.popularTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px var(--sidePad);
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
+    background: linear-gradient(180deg, rgba(98, 222, 177, .20), rgba(98, 222, 177, .06));
+}
+
+.popularTitle {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    text-shadow: none;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    user-select: none;
+    font-size: 14px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.tab {
+    cursor: pointer;
+    color: rgba(0, 0, 0, .65);
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, .10);
+    background: rgba(255, 255, 255, .8);
+}
+
+    .tab.active {
+        color: #111;
+        font-weight: 800;
+        border-color: rgba(0, 0, 0, .18);
+        background: #fff;
+    }
+
+/* 右上角關閉熱門 */
+.popularClose {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, .10);
+    background: rgba(255, 255, 255, .95);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .10);
+    cursor: pointer;
+    font-size: 20px;
+    display: grid;
+    place-items: center;
+}
+
+/* Cards: 改成縱向清單並可捲動 */
+.cardsRow {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px var(--sidePad) var(--sidePad) var(--sidePad);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-type: y proximity;
+    overscroll-behavior: contain;
+}
+
+    .cardsRow::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .cardsRow::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, .15);
+        border-radius: 999px;
+    }
+
+/* 單張卡片 */
+.pCard {
+    min-width: 0; /* 取消原本 min-width:320 的水平卡需求 */
+    width: 100%;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .10);
+    padding: 14px;
+    border: 1px solid rgba(0, 0, 0, .08);
+    cursor: pointer;
+    scroll-snap-align: start;
+}
+
+    .pCard h4 {
+        margin: 0 0 6px 0;
+        font-size: 16px;
+        font-weight: 900;
+    }
+
+    .pCard .rate {
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .pCard .thumb {
+        height: 92px;
+        margin-top: 10px;
+        border-radius: 14px;
+        background: rgba(98, 222, 177, .18);
+        border: 1px solid rgba(0, 0, 0, .06);
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+    }
+
+/* ========== Search: anchor into left sidebar top area ========== */
+/* 你的 HTML 裡 map-search 跟 searchBtn 是獨立元素：用 fixed/absolute 把它們放到左側欄上方 */
+.map-search {
+    position: absolute;
+    left: calc(var(--gutter) + 12px);
+    top: calc(var(--layoutNavH) + var(--gutter) + 12px);
+    z-index: 3300;
+    height: var(--searchH);
+    width: calc(var(--sideW) - 12px - 12px - 52px - 10px); /* 留出右側按鈕空間 */
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.14);
+}
+
+    .map-search .ma-icon {
+        font-size: 16px;
+        opacity: .75;
+    }
+
+#searchInput {
+    border: 0;
+    outline: 0;
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    background: transparent;
+}
+
+#searchBtn.iconBtn,
+.iconBtn#searchBtn {
+    position: absolute;
+    top: calc(var(--layoutNavH) + var(--gutter) + 12px);
+    left: calc(var(--gutter) + 12px + (var(--sideW) - 12px - 12px - 52px - 10px) + 10px);
+    z-index: 3301;
+    width: 52px;
+    height: var(--searchH);
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.14);
+}
+
+#searchBtn:hover {
+    background: rgba(0,0,0,0.04);
+}
+
+/* Google Autocomplete dropdown needs to be above map/panel */
+.pac-container {
+    z-index: 10001 !important;
+    border-radius: 12px;
+    box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    border: 1px solid rgba(0,0,0,0.12);
+    overflow: hidden;
+}
+
+.pac-item {
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+    .pac-item:hover {
+        background: rgba(0,0,0,0.04);
+    }
+
+.pac-item-query {
+    font-size: 14px;
+}
+
+/* 為了讓「熱門景點欄」真的預留搜尋列空間：把 popularTop 往下推 */
+.popularTop {
+    padding-top: calc(12px + var(--searchH) + 14px);
+}
+
+/* ========== Right Info Panel ========== */
+.panel {
+    position: absolute;
+    top: calc(var(--layoutNavH) + var(--gutter));
+    right: var(--gutter);
+    width: var(--panelW);
+    max-height: calc(100vh - var(--layoutNavH) - (var(--gutter) * 2));
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    z-index: 3500;
+    transform: translateX(calc(var(--panelW) + 40px));
+    opacity: 0;
+    pointer-events: none;
+    transition: transform .22s ease, opacity .22s ease;
+}
+
+    .panel.open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+.panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
+    background: linear-gradient(180deg, rgba(98, 222, 177, .16), rgba(98, 222, 177, .06));
+}
+
+    .panelHeader h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: .5px;
+    }
+
+.panelClose {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, .12);
+    background: #fff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+
+.panelBody {
+    padding: 12px;
+    overflow: auto;
+    max-height: calc(100vh - var(--layoutNavH) - (var(--gutter) * 2) - 56px);
+}
+
+.hero {
+    height: 150px;
+    border-radius: 14px;
+    background: #f3f4f6;
+    background-image: linear-gradient(135deg, rgba(98, 222, 177, .25), rgba(0, 150, 138, .18));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: rgba(0, 0, 0, .55);
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
+
+    .hero::after {
+        content: "";
+        position: absolute;
+        inset: -60px;
+        background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 55%);
+        transform: rotate(12deg);
+        opacity: .55;
+        pointer-events: none;
+    }
+
+.kv {
+    display: grid;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.label {
+    width: 74px;
+    color: var(--muted);
+    flex: 0 0 auto;
+}
+
+.value {
+    flex: 1;
+}
+
+.stars {
+    color: #f59e0b;
+    font-weight: 700;
+}
+
+.hours {
+    white-space: pre-line;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    background: #fafafa;
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+/* ========== FAB (anchored to panel) ========== */
+.fabWrap {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    z-index: 3700;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.panel.open .fabWrap {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fabActions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    transform: translateX(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform .2s ease, opacity .2s ease;
+}
+
+.fabWrap.expanded .fabActions {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.actionCard {
+    width: 170px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 14px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, .12);
+    padding: 12px 12px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.fab {
+    width: 60px;
+    height: 60px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--primary);
+    box-shadow: var(--shadow2);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    transform: rotate(0deg);
+    transition: transform .2s ease, background .2s ease;
+}
+
+.fabWrap.expanded .fab {
+    transform: rotate(45deg);
+    background: var(--primaryDark);
+}
+
+/* ========== Popular reopen button (when hidden) ========== */
+.popularReopen {
+    position: absolute;
+    left: var(--gutter);
+    bottom: var(--gutter);
+    z-index: 3300;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, .10);
+    background: #fff;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    display: none;
+    font-size: 20px;
+}
+
+.popular.hidden ~ .popularReopen {
+    display: block;
+}
+
+/* ========== Toast ========== */
+.toast {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--layoutNavH) + 18px);
+    transform: translateX(-50%) translateY(-6px);
+    background: rgba(17, 17, 17, .92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    z-index: 9000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+    .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+/* ========== Modal ========== */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+    display: none;
+    z-index: 8000;
+    padding: 16px;
+}
+
+    .overlay.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+.myModal {
+    width: min(520px, 92vw);
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: var(--shadow2);
+    overflow: hidden;
+}
+
+.modalHead {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+    .modalHead h3 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 900;
+    }
+
+.modalClose {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, .12);
+    background: #fff;
+    cursor: pointer;
+    font-size: 18px;
+    display: grid;
+    place-items: center;
+}
+
+.modalBody {
+    padding: 14px 18px 18px 18px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.listItem {
+    border: 2px solid rgba(0, 0, 0, .10);
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-color .15s ease, transform .08s ease;
+}
+
+    .listItem:hover {
+        border-color: rgba(0, 150, 138, .45);
+    }
+
+    .listItem:active {
+        transform: scale(.99);
+    }
+
+.chip {
+    font-size: 12px;
+    color: #fff;
+    background: var(--primaryDark);
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 800;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 980px) {
+    :root {
+        --sideW: 320px;
+        --panelW: 340px;
+    }
+}
+
+@media (max-width: 880px) {
+    /* 手機/窄螢幕：左側欄改成底部抽屜較合理（但仍不改 HTML） */
+    .popular {
+        left: var(--gutter);
+        right: var(--gutter);
+        width: auto;
+        top: auto;
+        bottom: var(--gutter);
+        height: 46vh;
+        border-radius: 20px;
+        transform: translateY(0);
+    }
+
+        .popular.hidden {
+            transform: translateY(calc(46vh + 24px));
+        }
+
+    /* 搜尋列改到左上浮在地圖上（避開底部抽屜） */
+    .map-search {
+        position: absolute;
+        left: var(--gutter);
+        top: calc(var(--layoutNavH) + var(--gutter));
+        width: calc(100vw - (var(--gutter) * 2) - 52px - 10px);
+    }
+
+    #searchBtn.iconBtn,
+    .iconBtn#searchBtn {
+        position: absolute;
+        left: calc(var(--gutter) + (100vw - (var(--gutter) * 2) - 52px - 10px) + 10px);
+        top: calc(var(--layoutNavH) + var(--gutter));
+    }
+
+    /* Panel：改成底部置中浮層 */
+    .panel {
+        left: 50%;
+        right: auto;
+        top: auto;
+        bottom: calc(var(--gutter) + 52px); /* 避開 popular reopen */
+        width: min(520px, 92vw);
+        max-height: 60vh;
+        transform: translateX(-50%) translateY(22px);
+        opacity: 0;
+    }
+
+        .panel.open {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+    .fabWrap {
+        right: 22px;
+        bottom: 22px;
+    }
+}
+
