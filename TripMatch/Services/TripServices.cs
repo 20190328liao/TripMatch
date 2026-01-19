@@ -442,8 +442,6 @@ namespace TripMatch.Services
                 return false;
         }
 
-
-        // 更新使用者的願望清單 (加入或移除)
         public async Task<bool> UpdateWishList(int? userId, int spotId, bool AddToWishlist)
         {
             if (userId == null)
@@ -483,5 +481,97 @@ namespace TripMatch.Services
         }
 
         #endregion
+
+        #region 我的行程主頁
+
+        // 抓我自己的行程
+        public async Task<MyTripsDto> GetMyTripsAsync(int? userId = null)
+        {
+            var trips = await _context.TripMembers
+                .AsNoTracking()
+                .Where(tm => tm.UserId == userId)
+                .OrderByDescending(tm => tm.Trip.StartDate)
+                .Select(tm => new TripCardDto
+                {
+                    TripId = tm.Trip.Id,
+                    Title = tm.Trip.Title,
+                    StartDate = tm.Trip.StartDate,
+                    EndDate = tm.Trip.EndDate,
+                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400" : tm.Trip.CoverImageUrl,
+                    IsOwner = (tm.RoleType == 1),                   
+                    DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
+                    MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
+                })
+                .ToListAsync();
+            return new MyTripsDto { Trips = trips };
+        }
+
+        // return 成員名單
+        public async Task<List<TripMemberDto>> GetMembersAsync(int userId, int tripId)
+        {
+            // 只有成員能查看
+            var isMember = await _context.TripMembers
+                .AsNoTracking()
+                .AnyAsync(x => x.TripId == tripId &&  x.UserId == userId);
+
+            if (!isMember) throw new UnauthorizedAccessException("Not a trip member.");
+
+            // 搜尋該行程的所有成員
+            var members = await _context.TripMembers
+                .AsNoTracking()
+                .Where(x => x.TripId == tripId)
+                .OrderBy(x => x.RoleType)
+                .Select(x => new TripMemberDto
+                {
+                    UserId = x.UserId,
+                    RoleType = x.RoleType,
+                    DisplayName = x.User.FullName ?? $"User#{x.UserId}" 
+                })
+                .ToListAsync();
+            return members;
+        }
+
+        // 刪除行程
+        public async Task DeleteTripAsync(int userId, int tripId)
+        {
+            // 只允許 owner 刪除
+            var myRole = await _context.TripMembers
+                .Where(x => x.TripId == tripId && x.UserId == userId)
+                .Select(x => (byte?)x.RoleType)
+                .FirstOrDefaultAsync();
+
+            if (myRole is null) throw new UnauthorizedAccessException("Not a trip member.");
+            if (myRole != 1) throw new UnauthorizedAccessException("Only owner can delete.");
+
+            // 刪除策略:
+            // -> 若 DB 有 cascade，直接刪 Trip
+            // -> 若沒有 cascade，需先刪 TripMembers/關聯表，再刪 Trip
+            var trip = await _context.Trips.FindAsync(tripId);
+            if (trip == null) return;
+
+            _context.Trips.Remove(trip);
+            await _context.SaveChangesAsync();
+        }
+
+        // 離開行程
+        public async Task LeaveTripAsync(int userId, int tripId)
+        {
+            var tm = await _context.TripMembers
+                .FirstOrDefaultAsync(x => x.TripId == tripId && x.UserId == userId);
+
+            if (tm == null) return;
+
+            // owner 不允許直接 leave
+            if (tm.RoleType == 1) throw new InvalidCastException("Owner cannot leave.");
+
+            _context.TripMembers.Remove(tm);
+            await _context.SaveChangesAsync();
+        }
+
+        #endregion
+
+
+
+
     }
 }

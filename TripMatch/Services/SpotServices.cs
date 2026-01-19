@@ -1,4 +1,7 @@
-﻿using TripMatch.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using TripMatch.Models;
+using TripMatch.Models.DTOs;
 
 namespace TripMatch.Services
 {
@@ -13,5 +16,8 @@ namespace TripMatch.Services
         }
 
         // 在下面開始添加與景點相關的服務方法
+        // 我的行程
+        
     }
 }
+

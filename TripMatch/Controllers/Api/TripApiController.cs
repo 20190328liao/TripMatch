@@ -24,12 +24,43 @@ namespace TripMatch.Controllers.Api
 
         #region 我的行程主頁
 
-        [HttpGet]
+        [HttpGet("mine")]
         [Authorize]
         public async Task<IActionResult> GetTrips()
         {
             List<Models.DTOs.TripSimpleDto> trips = await _tripServices.GetTrips(_tagUserId.UserId);
             return Ok(trips);
+        }
+
+        [HttpGet("{tripId:int}/members")]
+        public async Task<IActionResult> Members(int tripId)
+        {
+            var user = _tagUserId.UserId.Value;
+            var members = await _tripServices.GetMembersAsync(user, tripId);
+            return Ok(members);
+        }
+
+        [HttpDelete("{tripId:int}")]
+        public async Task<IActionResult> Delete(int tripId)
+        {
+            var user = _tagUserId.UserId.Value;
+            try
+            {
+                await _tripServices.DeleteTripAsync(user, tripId);
+                return Ok(new { ok = true });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        [HttpPost("{tripId:int}/leave")]
+        public async Task<IActionResult> Leave(int tripId)
+        {
+            var user = _tagUserId.UserId.Value;
+            await _tripServices.LeaveTripAsync(user, tripId);
+            return Ok(new { ok = true });
         }
 
         #endregion
