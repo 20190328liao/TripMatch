@@ -147,7 +147,10 @@
 	box-sizing: border-box; /*解決百分比寬度破版擠壓*/
 }
 
-
+.footer-inner {
+	text-align: center;
+	font-size: 18pt;
+}
 
 html,
 body {
@@ -170,17 +173,6 @@ header {
 
 .topNav {
 	background-color: var(--color_nav);
-}
-.footer {
-	line-height: 30px;
-	width:100%;
-}
-.footerWrap {
-	width: 100%;
-/*	background: var(--color_nav);*/
-	text-align: center;
-/*	margin-top: auto;*/
-/*	height:10px;*/
 }
 /*主要版面配置（header, nav, footer）會放class*/
 
@@ -327,31 +319,80 @@ header {
 		color: var(--color_font);
 	}
 
-/* 響應式設計以後再改 */
 
-@media (max-width: 992px) {
-	/*字大小*/
-	.titleWrap.titleH1 {
-		font-size: var(--f_h1);
+
+
+/* Fix: footer 固定且不受 transform/hover 等影響 */
+.footer {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	height: 60px; /* 設定固定高度 */
+	background-color: #fff; /* 建議加上背景色，避免透出後方內容 */
+	z-index: 1000;
+	/* 強制取消位移，防止某些 JS 插件（如滾動偵測）修改它 */
+	transform: translate(0, 0) !important;
+	top: auto !important;
+	/* 基本樣式佈局 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-top: 1px solid #eee;
+}
+
+/* 為 main 留出 footer 高度，避免內容被遮擋 */
+main, .main-content {
+	min-height: calc(100vh - var(--site-footer-height));
+	padding-bottom: var(--site-footer-height); /* 留出空間給 Footer */
+	box-sizing: border-box;
+}
+:root {
+	--site-footer-height: 60px;
+	--site-header-height: 0px; /* 如果有頂部導航欄，請填寫高度（如 56px） */
+}
+
+/* 確保全螢幕高度基礎 */
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+/* 輪播圖容器：計算剩餘高度 */
+.signContent.s1,
+.signContent.s1 .carousel,
+.signContent.s1 .carousel-inner,
+.signContent.s1 .carousel-item {
+	/* 核心：100vh 減去頁首與頁尾 */
+	height: calc(100vh - var(--site-footer-height) - var(--site-header-height)) !important;
+}
+
+	/* 圖片處理：確保不變形且填滿 */
+	.signContent.s1 .carousel-item img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover; /* 關鍵：裁切填滿不拉伸 */
+		object-position: center;
 	}
 
-	.titleWrap.titleH2 {
-		font-size: var(--f_h2);
-	}
+/* 若 carousel 放在 .container 等會有內距的父元素，避免上下 padding 導致看起來沒滿版 */
+.signContent.s1 .container,
+.signContent.s1 .formWrap {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 
-	.titleWrap.titleH3 {
-		font-size: var(--f_h3);
-	}
-
-	.titleWrap.titleH4 {
-		font-size: var(--f_h4);
-	}
-
-	.titleWrap.titleH5 {
-		font-size: var(--f_h5);
-	}
-
-	.contentWrap {
-		font-size: var(--f_body);
-	}
+/* 手機微調：避免過高導致遮蔽重要按鈕 */
+@media (max-width: 767.98px) {
+    .signContent.s1,
+    .signContent.s1 .carousel,
+    .signContent.s1 .carousel-inner,
+    .signContent.s1 .carousel-item {
+        height: calc(100vh - var(--site-footer-height) - var(--site-header-height) - 56px) !important;
+    }
 }

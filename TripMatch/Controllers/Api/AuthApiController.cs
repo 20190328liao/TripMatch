@@ -1424,5 +1424,45 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
             }
         }
+
+        [ApiController]
+        [Route("api/[controller]")]
+        public partial class MemberCenterApiController : ControllerBase
+        {
+            private readonly TravelDbContext _dbContext;
+
+            public MemberCenterApiController(TravelDbContext dbContext)
+            {
+                _dbContext = dbContext;
+            }
+
+            [HttpGet("GetWish")]
+            [Authorize]
+            public async Task<IActionResult> GetWish()
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+                var items = await _dbContext.Wishlists
+                    .AsNoTracking()
+                    .Where(w => w.UserId == userId)
+                    .Select(w => new WishlistCard
+                    {
+                        SpotId = w.SpotId,
+                        // 若有關聯 Spot（PlacesSnapshot），投影其欄位；若無則 null
+                        Name_ZH = w.Spot != null ? w.Spot.NameZh : null,
+                        Name = w.Spot != null ? w.Spot.NameZh : null,
+                        Address = w.Spot != null ? w.Spot.AddressSnapshot : null,
+                        ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : null,
+                        PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
+                        // Frontend 可用 PhotosSnapshot 或 ImageUrl 決定顯示圖
+                        FirstImageUrl = null,
+                        ImageUrl = null
+                    })
+                    .ToListAsync();
+
+                return Ok(items);
+            }
+        }
     }
 }

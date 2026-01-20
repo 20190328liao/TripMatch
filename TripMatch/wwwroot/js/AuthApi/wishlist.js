@@ -77,7 +77,7 @@
             const currentImageUrl = escapeHtml(item.imageUrl ?? parsedPhoto ?? '/img/placeholder.png');
 
             return `
-        <div class="col" data-spot-col="${currentSpotId}">
+        <div class="col-md-4 col-lg-2" data-spot-col="${currentSpotId}">
             <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
                 <button type="button"
                         class="btn_remove_wish active"
@@ -88,7 +88,7 @@
                 </button>
                 <a href="/Spot/Detail?id=${currentSpotId}" class="d-block" aria-label="${escapeHtml(currentSpotTitle)}">
                     <img src="${currentImageUrl}" class="card-img-top" alt="${escapeHtml(currentSpotTitle)}"
-                         style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                         style="height: 250px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
                 </a>
                 <div class="card-body">
                     <h6 class="card-title text-truncate fw-bold mb-1">${escapeHtml(currentSpotTitle)}</h6>
@@ -119,36 +119,37 @@
 
     // 事件代理（包含 View More 與 移除/取消收藏）
     wishlistContainer.addEventListener('click', async (e) => {
+        // 在 wishlistContainer 的 click 事件代理中，取代原本簡單的 redirect 邏輯
+        // 找到下列區塊並替換（在檔案內同一位置替換原有 viewMoreBtn 相關程式）
         const viewMoreBtn = e.target.closest('.btn-view-more');
         if (viewMoreBtn) {
             const spotId = viewMoreBtn.getAttribute('data-id');
-            if (spotId) {
-                window.location.href = `/Spot/Detail?id=${spotId}`;
+            if (!spotId) return;
+
+            try {
+                // 以 SpotId 向後端撈 ExternalPlaceId（若有）
+                const res = await fetch(`/api/auth/GetExternalPlaceId/${encodeURIComponent(spotId)}`, {
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (res.ok) {
+                    const json = await res.json();
+                    const ext = json?.externalPlaceId;
+                    // 若有 ExternalPlaceId，帶入查詢參數；否則回退到原本的 SpotId 查詢
+                    if (ext) {
+                        window.location.href = `/Spot/Detail?id=${encodeURIComponent(spotId)}&placeId=${encodeURIComponent(ext)}`;
+                    } else {
+                        window.location.href = `/Spot/Detail?id=${encodeURIComponent(spotId)}`;
+                    }
+                } else {
+                    // 若 API 回傳非 2xx，直接使用 SpotId 導頁（容錯）
+                    window.location.href = `/Spot/Detail?id=${encodeURIComponent(spotId)}`;
+                }
+            } catch (err) {
+                console.error('Fetch externalPlaceId failed', err);
+                window.location.href = `/Spot/Detail?id=${encodeURIComponent(spotId)}`;
             }
-            return;
-        }
-
-        const removeBtn = e.target.closest('.btn_remove_wish');
-        if (!removeBtn) return;
-
-        e.preventDefault();
-        const spotIdRaw = removeBtn.getAttribute('data-spotid')
-            || removeBtn.dataset?.spotid
-            || removeBtn.dataset?.spotId
-            || removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col');
-
-        // 新增除錯：印出各來源，確認為何會得到 "undefined"
-        console.log('wishlist debug - spotIdRaw:', spotIdRaw, {
-            attr_data_spotid: removeBtn.getAttribute('data-spotid'),
-            dataset_spotid: removeBtn.dataset?.spotid,
-            dataset_spotId: removeBtn.dataset?.spotId,
-            closest_data_spot_col: removeBtn.closest('[data-spot-col]')?.getAttribute('data-spot-col'),
-            outerHTML: removeBtn.outerHTML
-        });
-
-        // 過濾掉字串 'undefined' 與空值，並解析為數字
-        if (!spotIdRaw || spotIdRaw === 'undefined') {
-            console.error('Invalid spotId:', spotIdRaw, removeBtn);
             return;
         }
 

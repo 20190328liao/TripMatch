@@ -29,16 +29,25 @@ input[type="password"]::-ms-clear {
 /* ================================
    Button
 ================================ */
-
-.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, #btnResetEmail {
-    padding-bottom: 10px;
+.calendarBtnWrap .btn {
+    width: 15rem;
+    border: none;
+    border-radius:10px;
+}
+.calendarBtnWrap .btn1 {
+    width: 10rem;
+    border: none;
+    border-radius: 10px;
+}
+.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .edit_link, .info_label {
+    padding-bottom: 5px;
     height: 48px;
     font-size: 18pt;
     margin: 10px;
     white-space: nowrap;
 }
 .btn-confirm {
-    background-color: var(--color_Light) ;
+    background: linear-gradient(180deg, rgba(98, 222, 177, .16), rgba(98, 222, 177, .06));
     color: black;
 }
 .btn-edit {
@@ -295,6 +304,7 @@ margin:0;
         overflow-wrap: break-word !important;
         max-width: 100% !important;
         white-space: nowrap;
+        font-size: 18pt;
     }
     .member_center_wrap,
     .profile_container,
@@ -627,14 +637,7 @@ Email row（Login / Signup 分流）
     font-weight: bold;
 }
 
-/* carousel image */
-.carousel-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-}
+
 
 /* 瀏覽器自動填入樣式 */
 input:-webkit-autofill,
@@ -868,7 +871,7 @@ input:is(:-webkit-autofill, :autofill) {
         border-radius: 18px;
         border: 1px var(--color_Gray);
         min-width:10px;
-        height: 35rem;
+        height: 40rem;
         white-space: nowrap;
         font-size: 18pt;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
@@ -885,7 +888,7 @@ input:is(:-webkit-autofill, :autofill) {
         border-radius: 18px;
         border: 1px var(--color_Gray);
         width: 35%;
-        height: 35rem;
+        height: 40rem;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     /* 只鎖登入 / 註冊頁 */
@@ -923,13 +926,7 @@ input:is(:-webkit-autofill, :autofill) {
         }
 
 
-    /* 確保左側 carousel 與父容器撐滿視窗（已加前述規則） */
-    .signContent.s1 .carousel,
-    .signContent.s1 .carousel-inner,
-    .signContent.s1 .carousel-item {
-        height: 100vh;
-        min-height: 100vh;
-    }
+
 
     /* 右側內容（表單）在自身區塊滾動，避免推高整頁高度 */
     .signContent.s2,
@@ -960,17 +957,7 @@ input:is(:-webkit-autofill, :autofill) {
         font-size: var(--font_H4);
     }
 
-    .carousel-item {
-        height: 100vh;
-    }
-
-    /* 確保整個 carousel 與 inner 在桌機也填滿視窗 */
-    .signContent.s1 .carousel,
-    .signContent.s1 .carousel-inner,
-    .signContent.s1 .carousel-item {
-        height: 100vh;
-        min-height: 100vh;
-    }
+ 
 
     .loginForm {
         display: flex;
@@ -1431,8 +1418,7 @@ input:is(:-webkit-autofill, :autofill) {
         width: 100% !important;
         max-width: none !important;
         min-width: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
+        min-height: 25rem;
         box-shadow: 0 5px 15px rgba(0,0,0,0.06);
         border-radius: 12px;
         padding: 14px;

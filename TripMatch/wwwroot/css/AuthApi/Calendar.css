@@ -25,7 +25,7 @@
 /* header styles adjusted for two panels */
 .year-header,
 .month-header {
-    background-color: var(--color_Calendar) !important;
+    background: linear-gradient(180deg, rgba(98, 222, 177, .16), rgba(98, 222, 177, .06));
     display: flex;
     justify-content: space-between;
     align-items: center;
