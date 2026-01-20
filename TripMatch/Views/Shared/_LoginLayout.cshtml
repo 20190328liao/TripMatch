@@ -70,14 +70,12 @@
     <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
-<<<<<<< HEAD
+
     @* <link rel="stylesheet" href="~/TripMatch.styles.css" asp-append-version="true" /> *@
-=======
-   
->>>>>>> 122c6052b4d6581e24b3ee5bbbf5ad171b7701cd
 
 
     <link rel="stylesheet" href="~/css/AuthApi/member.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" />
 
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
@@ -88,45 +86,9 @@
     <style>
         body { min-height: 100vh; display:flex; flex-direction:column; }
         main { flex:1; }
-        
-        /* 僅對登入/會員頁作用（確保 &lt;body class=&quot;auth-page&quot;&gt; 已存在） */
-        /* 恢復 Bootstrap 預設 navbar-toggler 樣式，避免 member.css 改變 */
-        .auth-page .navbar-toggler {
-            padding: 0.25rem 0.75rem !important;
-            font-size: 1.25rem !important;
-            line-height: 1 !important;
-            background-color: transparent !important;
-            border: 1px solid transparent !important;
-            border-radius: 0.25rem !important;
-            height: auto !important;
-            width: auto !important;
-        }
-
         /* 避免 member.css 把 container 改為 inline-block 影響寬度與 navbar 位置 */
         .auth-page .container {
             display: block !important;
-        }
-
-        /* 確保 navbar-collapse 在手機展開時高度自動，且不被固定小高度遮蔽 */
-        .auth-page .navbar-collapse {
-            height: auto !important;
-            max-height: calc(100vh - 56px) !important;
-            overflow-y: auto !important;
-        }
-
-        /* 如果 member.css 對 .btn 做全站高度改寫，限定在 auth-page 內 */
-        .auth-page .navbar .btn,
-        .auth-page .navbar .btn-text,
-        .auth-page .navbar .nav-link {
-            height: auto !important;
-            padding: 0.375rem 0.75rem !important;
-            line-height: 1 !important;
-            font-size: 1rem !important; /* 或使用你想要的大小 */
-        }
-
-        /* 鎖定 .navbar-toggler-icon 的背景尺寸，避免被其他規則改變 */
-        .auth-page .navbar-toggler-icon {
-            background-size: 1.25rem 1.25rem !important;
         }
     </style>
 </head>
@@ -175,8 +137,8 @@
 
     @RenderSection("Scripts", required: false)
 
-    <footer class="footer-fullwidth">
-        <div class="footer-inner">
+    <footer class="footer">
+        <div>
             &copy; 2025 - 想想 TripMatch - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy & Terms</a>
         </div>
     </footer>

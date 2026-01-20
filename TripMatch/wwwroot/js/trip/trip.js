@@ -15,7 +15,6 @@
         grid?.addEventListener('click', async (e) => {
             const card = e.target.closest(".card");
             if (!card) {
-                grid.innerHTML = "<p>還沒有行程</p>"; // 還要調整
                 return;
             }
 
@@ -58,7 +57,7 @@
                         if (!ok) return;
 
                         try {
-                            const res = await fetch(`("${API_BASE}/${tripId}`, {
+                            const res = await fetch(`${API_BASE}/${tripId}`, {
                                 method: "DELETE",
                                 headers: { "X-Requested-With": "XMLHttpRequest" }
                             });
@@ -91,7 +90,9 @@
             }
 
             // 點卡片其他區域 -> 跳轉到行程頁
-
+            if (menu.classList.contains("open")) {
+                return;
+            }
          
             const detailsUrl = card.dataset.detailsUrl;
             if (detailsUrl && detailsUrl !== "#") {
@@ -101,26 +102,34 @@
 
 
 
-        // Modal 控制
-        const membersModal = document.getElementById("membersModal");
-        const membersList = document.getElementById("membersList");
+    // Modal 控制
+    const membersModal = document.getElementById("membersModal");
+    const membersList = document.getElementById("membersList");
+    const inviteCodeText = document.getElementById("inviteCodetext");
+    const btnCopyIntive = document.getElementById("btnCopyInvite");
+    const inviteHint = document.getElementById("inviteHint");
 
         // 開啟 members modal
-        async function openMembersModal(tripId) {
-            // fake data
-            membersList.innerHTML = `
-            <li>載入中...</li>
-        `;
+    async function openMembersModal(tripId) {
+        
+        membersList.innerHTML = `<li>載入中...</li>`;
+        inviteCodeText.textContent = "載入中...";
+        inviteHint.textContent = "";
+        btnCopyIntive.disabled = true;
 
-            membersModal.hidden = false;
+        membersModal.hidden = false;
 
-            try {
-                const res = await fetch(`${API_BASE}/${tripId}/members`, {
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
-                });
-                if (!res.ok) throw new Error(`Http ${res.status}`);
+        try {
+            const [membersRes, inviteRes] = await Promise.all([
+                fetch(`${API_BASE}/${tripId}/members`, { headers: { "X-Requested-With": "XMLHttpRequest" } }),
+                fetch(`${API_BASE}/${tripId}/invite-code`, { headers: { "X-Requested-With": "XMLHttpRequest" } }),
+            ]);
+            if (!membersRes.ok) throw new Error(`Members Http ${membersRes.status}`);
+            if (!inviteRes.ok) throw new Error(`InviteCode Http ${inviteRes.status}`);
 
-                const members = await res.json();
+            const members = await membersRes.json();
+            const inviteData = await inviteRes.json();
+
                 // TripMember => 1:團主 2.成員
                 membersList.innerHTML = members
                     .map(m => {
@@ -133,35 +142,66 @@
                 if (!members.length) {
                     membersList.innerHTML = `<li>尚無成員</li>`;
                 }
-            } catch (err) {
-                console.error(err);
-                membersList.innerHTML = `<li>載入失敗，請稍後再試</li>`;
+
+            const code = inviteData?.inviteCode ?? "";
+            inviteCodeText.textContent = code || "(無)";
+            btnCopyIntive.disabled = !code;
+
+            btnCopyIntive.onclick = async () => {
+                await copyTextToClipboard(code);
+                inviteHint.textContent = "已複製邀請碼";
+                setTimeout(() => { inviteHint.textContent = ""; }, 1500);
             }
+        } catch (err) {
+            console.error(err);
+            membersList.innerHTML = `<li>載入失敗，請稍後再試</li>`;
+            inviteCodeText.textContent = "載入失敗";
+            btnCopyIntive.disabled = true;
         }
 
-        function closeMembersModal() {
-            membersModal.hidden = true;
-            membersList.innerHTML = "";
+    }
+
+    async function copyTextToClipboard(text) {
+        // 優先使用 Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
         }
+        // fallback : textarea + execCommand
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.body.execCommand("copy");
+        document.body.removeChild(ta);
+    }
+
+    function closeMembersModal() {
+        membersModal.hidden = true;
+        membersList.innerHTML = "";
+    }
 
         // 綁定 關閉modal事件
-        membersModal.addEventListener('click', (e) => {
-            if (e.target.classList.contains("modal-backdrop") ||
-                e.target.classList.contains("modal-close") ||
-                e.target.classList.contains("btn-close")
-            ) {
-                closeMembersModal();
-            }
-        });
-
-        // 防 XSS：把名字當純文字
-        function escapeHtml(s) {
-            return String(s)
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
+    membersModal.addEventListener('click', (e) => {
+        if (e.target.classList.contains("modal-backdrop") ||
+            e.target.classList.contains("modal-close") ||
+            e.target.classList.contains("btn-close")
+        ) {
+            closeMembersModal();
         }
-
     });
+
+    // 防 XSS：把名字當純文字
+    function escapeHtml(s) {
+        return String(s)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+});

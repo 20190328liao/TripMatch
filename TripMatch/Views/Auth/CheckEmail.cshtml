@@ -6,8 +6,8 @@
     var status = ViewData["Status"] as string;
     var message = ViewData["Message"] as string;
 
-    // 將下一步預設導向 ForgotEmail（避免導到 Signup）
-    var btnLink = Url.Action("ForgotEmail", "Auth");
+    // 將下一步預設導向 Signup（回註冊頁）
+    var btnLink = Url.Action("Signup", "Auth");
     var redirectUrl = Url.Action("Signup", "Auth");
 
     // 預設圖片與文字
@@ -29,8 +29,8 @@
 
 <div class="check-container text-center" style="padding-top: 50px;">
     <div class="logo-header mb-4">
-        <span class="h3">TripMatch</span>
-        <span style="font-weight: normal; font-size: 1.1rem; margin-left: 10px;">旅遊規劃平台</span>
+        <img class="logoImg" src="~/img/Logo/Part1.png" />
+        <h4 class="logoContent">旅遊規劃平台</h4>
     </div>
 
     <div id="displayArea">

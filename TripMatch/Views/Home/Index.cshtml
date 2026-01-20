@@ -20,6 +20,7 @@
             flex: 1;
         }
     </style>
+    
 }
 
 <header class="hero-section">
@@ -176,20 +177,6 @@
     </div>
 </section>
 
-<div style="margin:8px 0; padding:8px; background:#fff8; border-radius:6px; font-size:0.9rem;">
-    <strong>Debug (server-side)：</strong>
-    <div>IsAuthenticated: @User?.Identity?.IsAuthenticated</div>
-    <div>User.Identity.Name: @User?.Identity?.Name</div>
-    <div>
-        Claims:
-        <ul>
-        @foreach (var c in User?.Claims ?? Enumerable.Empty<System.Security.Claims.Claim>())
-        {
-            <li>@c.Type: @c.Value</li>
-        }
-        </ul>
-    </div>
-</div>
 
 @section Scripts {
     <script src="~/js/Home/Home.js" asp-append-version="true"></script>

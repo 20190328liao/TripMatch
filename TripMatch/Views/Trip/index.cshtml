@@ -72,8 +72,19 @@
         </div>
 
         <div class="modal-body">
-            <!-- 先用假資料，之後可 AJAX -->
             <ul id="membersList"></ul>
+            <hr class="modal-divider" />
+            <!-- 邀請碼區域 -->
+            <div class="invite-row">
+                <div class="invite-label">邀請碼</div>
+
+                <div class="">
+                    <code id="inviteCodetext" class="invite-code">載入中...</code>
+                    <button type="button" id="btnCopyInvite" class="btn btn_light btn-copy" disabled>copy</button>
+                </div>
+                <div id="inviteHint" class="invite-hint"></div>
+            </div>
+
         </div>
         <div class="modal-footer">
             <button class="btn-close btn btn_light">關閉</button>

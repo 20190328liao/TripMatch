@@ -16,13 +16,16 @@ namespace TripMatch.Services
 
         private readonly GooglePlacesClient _googlePlacesClient;
 
+        private readonly AirLabsClient _airLabsClient;
+
         private readonly SharedService _sharedService;
 
-        public TripServices(TravelDbContext context, SharedService sharedService, GooglePlacesClient googlePlacesClient)
+        public TripServices(TravelDbContext context, SharedService sharedService, GooglePlacesClient googlePlacesClient, AirLabsClient airLabsClient)
         {
             _context = context;
             _sharedService = sharedService;
             _googlePlacesClient = googlePlacesClient;
+            _airLabsClient = airLabsClient;
         }
 
         #region 行程資訊
@@ -206,6 +209,50 @@ namespace TripMatch.Services
                 EndDate = trip.EndDate
             };
 
+            // 取得並填寫航班資料
+            var flights = await _context.Flights.Where(f => f.TripId == tripId).ToListAsync();
+
+            // 將 Entity 轉為 DTO
+            foreach (var flight in flights)
+            {
+                FlightDto flightDto = new()
+                {
+                    Id = flight.Id,
+                    TripId = flight.TripId,
+                    Carrier = flight.Carrier ?? "",
+                    FlightNumber = flight.FlightNumber,
+                    FromAirport = flight.FromAirport ?? "",
+                    ToAirport = flight.ToAirport ?? "",                   
+
+                    DepTimeLocal = flight.DepartUtc.ToString("yyyy-MM-dd HH:mm"),           
+                    DepTimeUtc = flight.DepartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),                
+                    ArrTimeLocal = flight.ArriveUtc.ToString("yyyy-MM-dd HH:mm"),
+                    ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                };
+                tripDetailDto.Flights.Add(flightDto);
+            }
+
+
+            // 取得並填寫住宿資料    
+            var accommodations = await _context.Accommodations.Where(a => a.TripId == tripId).ToListAsync();
+            // 將 Entity 轉為 DTO
+            foreach (var accom in accommodations)
+            {
+                AccommodationDto accomDto = new()
+                {
+                    Id = accom.Id,
+                    TripId = accom.TripId,
+                    SpotId = accom.SpotId,
+                    HotelName = accom.HotelName ?? "",
+                    Address = accom.Address ?? "",
+                    CheckInDate = accom.CheckInDate,
+                    CheckOutDate = accom.CheckOutDate
+                };
+                tripDetailDto.Accomadations.Add(accomDto);
+            }
+
+
+
 
             // 如果行程存在，我們直接從 trip 中提取並排序明細
             // 這是在記憶體中進行的，非常快
@@ -296,18 +343,36 @@ namespace TripMatch.Services
         }
 
 
-        public async Task<bool> AddAccommodation(int? userId, AccomadationDto dto)
+        public async Task<bool> AddAccommodation(AccommodationDto dto)
         {
-            return true;
+             Accommodation accommodation = new()
+            {
+                TripId = dto.TripId,
+                SpotId = dto.SpotId,
+                 HotelName = dto.HotelName,
+                Address = dto.Address,
+                CheckInDate = dto.CheckInDate,
+                CheckOutDate = dto.CheckOutDate,
+                CreatedAt = DateTimeOffset.Now
+            };
+            try
+            {
+                _context.Accommodations.Add(accommodation);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                // 這裡可以 Log 錯誤原因
+                return false;
+            }
         }
-
-
 
 
         // 嘗試新增景點到行程
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
         {
-            // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)
+            // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)int? userId, ItineraryItemDto dto
             int nextSortOrder = await _context.ItineraryItems
                 .Where(x => x.TripId == dto.TripId && x.DayNumber == dto.DayNumber)
                 .Select(x => (int?)x.SortOrder) // 使用 int? 預防當天還沒資料的情況
@@ -360,9 +425,9 @@ namespace TripMatch.Services
 
         public async Task<bool> UpdateSpotTime(SpotTimeDto Dto)
         {
-            if (Dto.Id <=0)
+            if (Dto.Id <= 0)
                 return false;
-           
+
             var existing = await _context.ItineraryItems
                     .FirstOrDefaultAsync(It => It.Id == Dto.Id);
 
@@ -497,8 +562,8 @@ namespace TripMatch.Services
                     Title = tm.Trip.Title,
                     StartDate = tm.Trip.StartDate,
                     EndDate = tm.Trip.EndDate,
-                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400" : tm.Trip.CoverImageUrl,
-                    IsOwner = (tm.RoleType == 1),                   
+                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/800/400?{tm.Trip.Id}" : tm.Trip.CoverImageUrl,
+                    IsOwner = (tm.RoleType == 1),
                     DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
                 })
@@ -512,7 +577,7 @@ namespace TripMatch.Services
             // 只有成員能查看
             var isMember = await _context.TripMembers
                 .AsNoTracking()
-                .AnyAsync(x => x.TripId == tripId &&  x.UserId == userId);
+                .AnyAsync(x => x.TripId == tripId && x.UserId == userId);
 
             if (!isMember) throw new UnauthorizedAccessException("Not a trip member.");
 
@@ -525,7 +590,7 @@ namespace TripMatch.Services
                 {
                     UserId = x.UserId,
                     RoleType = x.RoleType,
-                    DisplayName = x.User.FullName ?? $"User#{x.UserId}" 
+                    DisplayName = x.User.FullName ?? $"User#{x.UserId}"
                 })
                 .ToListAsync();
             return members;
@@ -568,10 +633,101 @@ namespace TripMatch.Services
             await _context.SaveChangesAsync();
         }
 
+        // 取得驗證碼
+        public async Task<Guid> GetInviteCodeAsync(int userId, int tripId)
+        {
+            var isMember = await _context.TripMembers
+                .AsNoTracking()
+                .AnyAsync(tm => tm.TripId == tripId && tm.UserId == userId);
+
+            if (!isMember)
+            {
+                throw new UnauthorizedAccessException("Not a member of this trip.");
+            }
+
+            var code = await _context.Trips
+                .AsNoTracking()
+                .Where(t => t.Id == tripId)
+                .Select(t => t.InviteCode)
+                .FirstOrDefaultAsync();
+
+            if (code == Guid.Empty)
+            {
+                throw new Exception("InviteCode is empty.");
+            }
+
+            return code;
+        }
+
         #endregion
 
+        #region 航班資訊
+        // 航線查詢
+        public async Task<string> ProxyFlightRoutes(string depIata, string arrIata)
+        {
+            // 這裡只是單純的 Pass-through，但未來如果需要快取 (Cache) 或紀錄 Log，可以加在這裡
+            return await _airLabsClient.GetRoutesAsync(depIata, arrIata);
+        }
+
+        // 航班詳細查詢
+        public async Task<string> ProxyFlightDetail(string flightIata)
+        {
+            return await _airLabsClient.GetFlightDetailAsync(flightIata);
+        }
+
+        // 新增航班
+        public async Task<bool> AddFlight(FlightDto dto)
+        {
+            if (dto == null) return false;
+
+            try
+            {
+                var tripExists = await _context.Trips.AnyAsync(t => t.Id == dto.TripId);
+                if (!tripExists) return false;
+
+                // 3. 實體轉換 (Mapping)
+                Flight flight = new()
+                {
+                    TripId = dto.TripId,
+                    Carrier = dto.Carrier,
+                    FlightNumber = dto.FlightNumber,
+                    DepartUtc = dto.DepartDateTimeOffset,
+                    ArriveUtc = dto.ArriveDateTimeOffset,
+                    FromAirport = dto.FromAirport,
+                    ToAirport = dto.ToAirport,
+                    CreatedAt = DateTimeOffset.Now
+                };
+
+                // 4. 執行存檔
+                _context.Flights.Add(flight);
+                var result = await _context.SaveChangesAsync();
+
+                // 5. 判斷是否成功寫入至少一筆資料
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                // 這裡可以記錄 Log，例如：_logger.LogError(ex, "儲存航班失敗");
+                return false;
+            }
+        }
 
 
-
+        public async Task<bool> DeleteFlight(int id)
+        {
+            var existing = await _context.Flights
+                    .FirstOrDefaultAsync(f => f.Id == id);
+            if (existing != null)
+            {
+                _context.Flights.Remove(existing);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        #endregion
     }
 }

@@ -28,47 +28,74 @@
     });
 }
 
+const AIRLABS_KEY = "34aaa904-fced-4a04-9f6c-2501c6e0ded0";
+
 export const TripApi = {
-    // 1. 取得行程詳情
+    // 取得行程詳情
     getDetail: (tripId) => {
         return sendRequest(`/api/TripApi/detail/${tripId}`, 'GET');
     },
 
-    // 2. 加入一般景點
+    // 加入景點
     addSpot: (dto) => {
         return sendRequest('/api/TripApi/AddSpotToTrip', 'POST', dto);
     },
 
-    // 3. 加入住宿
-    addAccommodation: (dto) => {
-        return sendRequest('/api/TripApi/AddAccommodation', 'POST', dto);
-    },
-
-    // 4. 刪除景點
+    // 刪除景點
     deleteSpot: (id) => {
         return sendRequest(`/api/TripApi/DeleteSpotFromTrip/${id}`, 'DELETE');
     },
 
-    // 5. 刪除住宿
-    deleteAccommodation: (id) => {
-        return sendRequest(`/api/TripApi/DeleteAccommodation/${id}`, 'DELETE');
-    },
-
-    // 6. 更新時間
+    // 更新景點時間
     updateSpotTime: (dto) => {
         return sendRequest('/api/TripApi/UpdateSpotTime', 'POST', dto);
     },
 
-    // 7. 儲存快照
+    // [修改] 1. 搜尋航線 (改呼叫後端 Proxy)
+    searchFlightRoute: (depIata, arrIata) => {
+        // 呼叫自己的後端 API
+        const url = `/api/TripApi/ProxyFlightRoutes?depIata=${depIata}&arrIata=${arrIata}`;
+        return $.get(url);
+    },
+
+    // [修改] 2. 搜尋航班詳細 (改呼叫後端 Proxy)
+    searchFlightDetail: (flightIata) => {
+        // 呼叫自己的後端 API
+        const url = `/api/TripApi/ProxyFlightDetail?flightIata=${flightIata}`;
+        return $.get(url);
+    },
+
+    // 新增航班
+    addFlight: (dto) => {
+        return sendRequest('/api/TripApi/AddFlight', 'POST', dto);
+    },
+
+    // 刪除航班
+    deleteFlight: (id) => {
+        return sendRequest(`/api/TripApi/DeleteFlight/${id}`, 'DELETE');
+    },
+
+    // 加入住宿
+    addAccommodation: (dto) => {
+        return sendRequest('/api/TripApi/AddAccommodation', 'POST', dto);
+    },    
+
+    // 刪除住宿
+    deleteAccommodation: (id) => {
+        return sendRequest(`/api/TripApi/DeleteAccommodation/${id}`, 'DELETE');
+    },  
+
+    // 儲存快照
     addSnapshot: (dto) => {
         return sendRequest('/api/TripApi/AddSnapshot', 'POST', dto);
     },
 
-    // 8. 願望清單
+    // 願望清單
     updateWishList: (dto) => {
         return sendRequest('/api/TripApi/UpdateWishList', 'POST', dto);
     },
 
+    // 檢查是否在願望清單中
     checkIsWishlist: (spotId) => {
         return sendRequest('/api/TripApi/CheckIsWishlist', 'POST', spotId);
     }

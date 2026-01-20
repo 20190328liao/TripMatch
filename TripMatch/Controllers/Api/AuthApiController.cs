@@ -256,6 +256,7 @@ namespace TripMatch.Controllers.Api
 
 
         // 寄送驗證信 API
+        // Replace the existing SendConfirmation method with this one
         [HttpPost("SendConfirmation")]
         public async Task<IActionResult> SendConfirmation([FromBody] string email)
         {
@@ -263,56 +264,71 @@ namespace TripMatch.Controllers.Api
                 return BadRequest(new { message = "請提供 Email" });
 
             email = email.Trim();
+            var lower = email.ToLowerInvariant();
 
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            // 1. 先從資料庫查是否存在此使用者 (同時檢查主信箱與備援信箱)
+            var existing = await _userManager.Users
+                .FirstOrDefaultAsync(u =>
+                    (u.Email != null && u.Email.ToLower() == lower) ||
+                    (u.BackupEmail != null && u.BackupEmail.ToLower() == lower));
+
+            if (existing != null)
             {
-                if (!string.IsNullOrEmpty(user.PasswordHash))
-                    return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
-
-                // 若 EmailConfirmed 為 true，但尚未設定密碼，不直接視為可註冊
-                if (await _userManager.IsEmailConfirmedAsync(user))
+                // 情況 A：如果是主信箱匹配
+                if (!string.IsNullOrEmpty(existing.Email) && string.Equals(existing.Email.Trim(), email, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger?.LogInformation("SendConfirmation: email {Email} confirmed but no password. Request password reset.", email);
-                    // 回傳前端指示，讓前端啟動安全的密碼設定/重設流程
-                    return Ok(new
+                    // 已設定密碼 -> 已註冊，叫他去登入
+                    if (!string.IsNullOrEmpty(existing.PasswordHash))
+                        return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
+
+                    // 已驗證但尚未設定密碼 -> 直接通關！不用寄信
+                    if (await _userManager.IsEmailConfirmedAsync(existing))
                     {
-                        action = "password_reset_needed",
-                        message = "此信箱已驗證但尚未設定密碼。系統將協助您走設定密碼流程。"
-                    });
+                        _authService.SetPendingCookie(HttpContext, existing.Email);
+                        return Ok(new
+                        {
+                            action = "already_confirmed",
+                            message = "此信箱已完成驗證，請直接設定密碼。",
+                            email = existing.Email
+                        });
+                    }
+                    // 尚未驗證：則繼續執行後面的寄信流程
+                }
+                else // 情況 B：如果是備援信箱匹配
+                {
+                    if (existing.BackupEmailConfirmed)
+                    {
+                        return Ok(new { action = "backup_already_confirmed", message = "此信箱已作為備援信箱驗證過。" });
+                    }
                 }
             }
 
-            if (user == null)
+            // 2. 若找不到現存紀錄，才建立新的暫存使用者
+            ApplicationUser? userToUse = existing;
+            if (userToUse == null)
             {
-                user = new ApplicationUser { UserName = email, Email = email };
-                var createResult = await _userManager.CreateAsync(user);
-                if (!createResult.Succeeded)
-                    return BadRequest(new { message = "系統錯誤，請重新發送驗證信" });
+                userToUse = new ApplicationUser { UserName = email, Email = email };
+                var createResult = await _userManager.CreateAsync(userToUse);
+                if (!createResult.Succeeded) return BadRequest(new { message = "系統錯誤，請重新發送" });
             }
 
-            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-            var callbackUrl = Url.Action("ConfirmEmail", "Auth", new { userId = user.Id, code = code }, Request.Scheme);
+            // 3. 執行寄信流程 (只有沒驗證過的人才會走到這裡)
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(userToUse);
+            var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var callbackUrl = Url.Action("ConfirmEmail", "Auth", new { userId = userToUse.Id, code = encodedCode }, Request.Scheme);
 
             try
             {
-                _logger?.LogInformation("SendConfirmation: sending confirmation to {Email} via {Callback}", email, callbackUrl);
-                await _emailSender.SendConfirmationLinkAsync(user, email, callbackUrl!);
-
-                _authService.SetPendingCookie(HttpContext, user.Email);
-
-                return Ok(new { message = "驗證信已發送，請檢查信箱或垃圾郵件。" });
+                await _emailSender.SendConfirmationLinkAsync(userToUse, email, callbackUrl!);
+                _authService.SetPendingCookie(HttpContext, userToUse.Email);
+                return Ok(new { message = "驗證信已發送，請檢查信箱。" });
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "SendConfirmation: failed to send confirmation to {Email}", email);
-                return BadRequest(new { message = "發送失敗，請稍後再試。" });
+                _logger?.LogError(ex, "發送失敗");
+                return BadRequest(new { message = "寄信失敗，但您可以稍後再試，或檢查資料庫狀態。" });
             }
         }
-
-
         // 註冊 (設定密碼) API
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] Register model)
@@ -413,7 +429,7 @@ namespace TripMatch.Controllers.Api
                 // 寄信前檢查：Email 未驗證
                 if (!await _userManager.IsEmailConfirmedAsync(user))
                 {
-                    return BadRequest(new { message = "此信網尚未驗證，請先完成信網驗證。" });
+                    return BadRequest(new { message = "尚未驗證，請先完成驗證。" });
                 }
             }
             else
@@ -1028,7 +1044,7 @@ namespace TripMatch.Controllers.Api
                     var cookieOptions = new CookieOptions
                     {
                         HttpOnly = true,
-                        Secure = Request.IsHttps,            // 本機若用 https 則為 true，部署時務必啟用 HTTPS
+                        Secure = true,            // 本機若用 https 則為 true，部署時務必啟用 HTTPS
                         SameSite = SameSiteMode.None,       // 允許第三方追蹤轉跳後仍會帶回 cookie
                         Path = "/",
                         Expires = DateTimeOffset.UtcNow.AddMinutes(30)
@@ -1162,14 +1178,14 @@ namespace TripMatch.Controllers.Api
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = Request.IsHttps,
+                    Secure = true,
                     SameSite = SameSiteMode.None,
                     Path = "/",
                     Expires = DateTimeOffset.UtcNow.AddMinutes(30)
                 };
                 Response.Cookies.Append("BackupLookupPending", t, cookieOptions);
 
-                return Redirect("/Auth/CheckEmail?backupVerified=1");
+                return RedirectToAction("CheckEmail", "Auth", new { backupVerified = 1 });
             }
             catch (Exception ex)
             {
@@ -1187,16 +1203,95 @@ namespace TripMatch.Controllers.Api
 
             try
             {
-                var protectedPayload = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(cookie));
-                var json = _dataProtector.Unprotect(protectedPayload);
+                string protectedPayload;
+                try
+                {
+                    var decoded = WebEncoders.Base64UrlDecode(cookie);
+                    protectedPayload = Encoding.UTF8.GetString(decoded);
+                }
+                catch (Exception decodeEx)
+                {
+                    _logger?.LogWarning(decodeEx, "GetBackupLookupResult: Base64Url decode failed for cookie.");
+                    Response.Cookies.Delete("BackupLookupPending");
+                    return Ok(new { found = false });
+                }
+
+                string json;
+                try
+                {
+                    json = _dataProtector.Unprotect(protectedPayload);
+                }
+                catch (Exception unprotectEx)
+                {
+                    _logger?.LogWarning(unprotectEx, "GetBackupLookupResult: Unprotect failed for payload.");
+                    Response.Cookies.Delete("BackupLookupPending");
+                    return Ok(new { found = false });
+                }
+
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                var email = root.GetProperty("email").GetString();
-                var expiresAt = root.GetProperty("expiresAt").GetDateTime();
-
-                if (string.IsNullOrEmpty(email) || expiresAt < DateTime.UtcNow)
+                // 取得 email
+                string? email = null;
+                if (root.TryGetProperty("email", out var emailProp) && emailProp.ValueKind == JsonValueKind.String)
                 {
+                    email = emailProp.GetString();
+                }
+
+                // 取得 expiresAt（容錯解析）
+                DateTime expiresAtUtc = DateTime.MinValue;
+                bool hasValidExpiry = false;
+                if (root.TryGetProperty("expiresAt", out var expiresProp))
+                {
+                    try
+                    {
+                        if (expiresProp.ValueKind == JsonValueKind.String)
+                        {
+                            var s = expiresProp.GetString();
+                            if (!string.IsNullOrEmpty(s) &&
+                                DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+                            {
+                                expiresAtUtc = parsed.ToUniversalTime();
+                                hasValidExpiry = true;
+                            }
+                        }
+                        else if (expiresProp.ValueKind == JsonValueKind.Number)
+                        {
+                            // 如果前端/其它流程以 ticks 或 unix seconds 儲存，可在此擴充解析
+                            // 目前不預設處理數字型態，但嘗試使用 GetDateTime 以兼容性解析
+                            try
+                            {
+                                expiresAtUtc = expiresProp.GetDateTime().ToUniversalTime();
+                                hasValidExpiry = true;
+                            }
+                            catch { /* ignore */ }
+                        }
+                        else if (expiresProp.ValueKind == JsonValueKind.Object)
+                        {
+                            // 可能是複雜物件，嘗試讀取 string 欄位
+                            if (expiresProp.TryGetProperty("DateTime", out var dtProp) && dtProp.ValueKind == JsonValueKind.String)
+                            {
+                                var s = dtProp.GetString();
+                                if (!string.IsNullOrEmpty(s) &&
+                                    DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed2))
+                                {
+                                    expiresAtUtc = parsed2.ToUniversalTime();
+                                    hasValidExpiry = true;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "GetBackupLookupResult: expiresAt parsing failed.");
+                    }
+                }
+
+                if (string.IsNullOrEmpty(email) || !hasValidExpiry || expiresAtUtc < DateTime.UtcNow)
+                {
+                    _logger?.LogInformation("GetBackupLookupResult: cookie invalid or expired. emailPresent={EmailPresent} hasValidExpiry={HasExpiry} expiresAt={ExpiresAt}",
+                        !string.IsNullOrEmpty(email), hasValidExpiry, hasValidExpiry ? expiresAtUtc.ToString("o") : "(invalid)");
+
                     Response.Cookies.Delete("BackupLookupPending");
                     return Ok(new { found = false });
                 }
@@ -1209,7 +1304,6 @@ namespace TripMatch.Controllers.Api
 
                 if (userByBackup != null)
                 {
-                    // 回傳對應的主信箱（若主信箱尚未註冊/驗證，也一併告知）
                     return Ok(new
                     {
                         found = true,
@@ -1242,8 +1336,9 @@ namespace TripMatch.Controllers.Api
                 Response.Cookies.Delete("BackupLookupPending");
                 return Ok(new { found = false, message = "此信箱未綁定任何已註冊且驗證過的帳號。" });
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "GetBackupLookupResult: unexpected error while parsing backup lookup cookie.");
                 Response.Cookies.Delete("BackupLookupPending");
                 return Ok(new { found = false });
             }
@@ -1327,6 +1422,46 @@ namespace TripMatch.Controllers.Api
             {
                 _logger?.LogError(ex, "CreatePasswordResetSessionForUser failed for {Email}", email);
                 return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
+            }
+        }
+
+        [ApiController]
+        [Route("api/[controller]")]
+        public partial class MemberCenterApiController : ControllerBase
+        {
+            private readonly TravelDbContext _dbContext;
+
+            public MemberCenterApiController(TravelDbContext dbContext)
+            {
+                _dbContext = dbContext;
+            }
+
+            [HttpGet("GetWish")]
+            [Authorize]
+            public async Task<IActionResult> GetWish()
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+                var items = await _dbContext.Wishlists
+                    .AsNoTracking()
+                    .Where(w => w.UserId == userId)
+                    .Select(w => new WishlistCard
+                    {
+                        SpotId = w.SpotId,
+                        // 若有關聯 Spot（PlacesSnapshot），投影其欄位；若無則 null
+                        Name_ZH = w.Spot != null ? w.Spot.NameZh : null,
+                        Name = w.Spot != null ? w.Spot.NameZh : null,
+                        Address = w.Spot != null ? w.Spot.AddressSnapshot : null,
+                        ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : null,
+                        PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
+                        // Frontend 可用 PhotosSnapshot 或 ImageUrl 決定顯示圖
+                        FirstImageUrl = null,
+                        ImageUrl = null
+                    })
+                    .ToListAsync();
+
+                return Ok(items);
             }
         }
     }

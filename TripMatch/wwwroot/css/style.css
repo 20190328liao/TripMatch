@@ -147,7 +147,10 @@
 	box-sizing: border-box; /*解決百分比寬度破版擠壓*/
 }
 
-
+.footer-inner {
+	text-align: center;
+	font-size: 18pt;
+}
 
 html,
 body {
@@ -170,17 +173,6 @@ header {
 
 .topNav {
 	background-color: var(--color_nav);
-}
-.footer {
-	line-height: 30px;
-	width:100%;
-}
-.footerWrap {
-	width: 100%;
-/*	background: var(--color_nav);*/
-	text-align: center;
-	margin-top: auto;
-/*	height:10px;*/
 }
 /*主要版面配置（header, nav, footer）會放class*/
 
@@ -327,31 +319,51 @@ header {
 		color: var(--color_font);
 	}
 
-/* 響應式設計以後再改 */
 
-@media (max-width: 992px) {
-	/*字大小*/
-	.titleWrap.titleH1 {
-		font-size: var(--f_h1);
-	}
 
-	.titleWrap.titleH2 {
-		font-size: var(--f_h2);
-	}
-
-	.titleWrap.titleH3 {
-		font-size: var(--f_h3);
-	}
-
-	.titleWrap.titleH4 {
-		font-size: var(--f_h4);
-	}
-
-	.titleWrap.titleH5 {
-		font-size: var(--f_h5);
-	}
-
-	.contentWrap {
-		font-size: var(--f_body);
-	}
+/* 把 site footer height 提前定義，確保變數在使用前已存在 */
+:root {
+    --site-footer-height: 60px;
+    --site-header-height: 0px;
+    /* 其餘變數保留 */
 }
+
+/* 讓 body 使用 Flexbox 產生 sticky footer（內容高時 footer 跟著往下，內容不足時 footer 貼底） */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 主內容佔滿剩餘空間 */
+main, .main-content {
+    flex: 1 0 auto;
+    box-sizing: border-box;
+    /* 若希望在 footer 為 fixed 時避免覆蓋，可保留 padding-bottom */
+    padding-bottom: 0;
+}
+
+/* Footer 改為在文流中（sticky footer），不使用 fixed（避免覆蓋內容） */
+.footer {
+    position: relative; /* 或 static */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: var(--site-footer-height);
+    background-color: #fff;
+    z-index: 1000;
+    display: flex;
+    font-size: 16pt;
+	height:20px;
+	padding:10px;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid #eee;
+}
+
