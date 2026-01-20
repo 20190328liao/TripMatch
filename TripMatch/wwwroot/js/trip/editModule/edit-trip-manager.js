@@ -1,13 +1,20 @@
-﻿import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
+﻿import { TripApi } from './api/trip-api.js';
+import { AddFlightModal } from './components/add-flight-modal.js';
+import { FlightRenderer } from './components/flight-renderer.js';
+import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
 
-const tripId = document.getElementById('current-trip-id').value;
+const currentTripId = document.getElementById('current-trip-id').value;
 let currentTripDates = [];
+let addFlightModal;
+let flightRenderer;
 
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
     //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
     window.currentMapInstance = mapInstance;
     currentTripDates = tripSimpleInfo.dateStrings || [];
+    addFlightModal = new AddFlightModal();
+    flightRenderer = new FlightRenderer('flight-wrapper'); // 指定要渲染到哪個 ID
 
     initTimeEditModal();
     initHotelEditModal();
@@ -168,13 +175,19 @@ function loadTripData() {
     `);
 
     $.ajax({
-        url: `/api/TripApi/detail/${tripId}`,
+        url: `/api/TripApi/detail/${currentTripId}`,
         type: 'GET',
         success: function (data) {
             console.log("行程詳細資料:", data);
             const items = data.itineraryItems || [];
-            const accommodations = data.accommodations || [];
-            renderItinerary(items, currentTripDates, accommodations);
+            const accommodations = data.accomadations || [];
+            const flights = data.flights || []; 
+
+            TripApi.getDetail(currentTripId).then(data => {
+                // [修改] 傳入 flights 資料
+                renderItinerary(items, currentTripDates, accommodations, flights);
+            });
+        
         },
         error: function (xhr) {
             console.error("載入失敗", xhr);
@@ -186,14 +199,37 @@ function loadTripData() {
 /**
  * 渲染行程列表 (包含空天數)
  */
-function renderItinerary(items, dates, accommodations) {
+function renderItinerary(items, dates, accommodations, flights) {
 
     //取得行程列表容器並清空
     const container = document.getElementById('place-list');
     container.innerHTML = '';
 
-    //確保景點陣列不為NULL
-    items = items || [];
+    // A. [新增] 建立航班區塊容器
+    const flightWrapper = document.createElement('div');
+    flightWrapper.id = 'flight-wrapper'; // 給 ID 讓 renderer 找得到
+    container.appendChild(flightWrapper);
+
+    // 呼叫 Renderer 渲染內容
+    flightRenderer.render(flights || []);
+
+    // 綁定「新增航班」按鈕事件 (因為 HTML 是 renderer 產生的，所以要在這裡綁)
+    const addBtn = document.getElementById('btn-add-flight-trigger');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            addFlightModal.open(currentTripId, () => loadTripData());
+        });
+    }
+
+    // 綁定「刪除航班」按鈕
+    document.querySelectorAll('.delete-flight-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (confirm("刪除航班?")) {
+                TripApi.deleteFlight(e.currentTarget.dataset.id).then(() => loadTripData());
+            }
+        });
+    });
+  
 
     // ==========================================
     // 【新增】 渲染頂部「住宿資訊」區塊
@@ -295,10 +331,11 @@ function renderItinerary(items, dates, accommodations) {
 
 
 
-
-
-
-
+    // ==========================================
+    // 【新增】 渲染頂部「景點」區塊
+    // ==========================================
+    //確保景點陣列不為NULL
+    items = items || [];
 
     // 1. 資料分組：按 DayNumber 分組 { 1: [...], 2: [...] }
     const groupedItems = items.reduce((acc, item) => {
@@ -452,6 +489,7 @@ function renderItinerary(items, dates, accommodations) {
         }
 
         container.appendChild(daySection);
+        console.log("完成渲染 Day ", container);
     });
 
     bindItemEvents();
@@ -737,12 +775,12 @@ function saveHotelData() {
         if (!spotId) return;
 
         const dto = {
-            TripId: parseInt(tripId),
-            SpotId: parseInt(spotId),
-            HotelName: selectedHotelPlace.name, 
-            Address: selectedHotelPlace.formatted_address,
-            CheckInDate: checkIn,
-            CheckOutDate: checkOut,          
+            tripId: parseInt(currentTripId),
+            spotId: parseInt(spotId),
+            hotelName: selectedHotelPlace.name, 
+            address: selectedHotelPlace.formatted_address,
+            checkInDate: checkIn,
+            checkOutDate: checkOut,          
         };
 
         $.ajax({

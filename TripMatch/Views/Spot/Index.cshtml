@@ -1,19 +1,122 @@
-﻿@{
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
     ViewData["Title"] = "景點探索";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
+    var taggedUserId = ViewBag.TaggedUserId as int?;
 }
-
-@* 1. 頁面專屬 CSS 區塊 *@
 @section Styles {
-    @* <link rel="stylesheet" href="~/css/trip/trip.css" /> *@
+    <link rel="stylesheet" href="~/css/Spot/Spot.css" />
 }
 
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">景點探索</h1>       
-    </div>
+
+<div class="app">
+    <main class="main">
+        <div id="map"></div>
+
+        <!-- Search -->
+        <!-- <div class="searchWrap"> -->
+        <div class="map-search pe-auto">
+            @* <span class="ma-icon">🔎</span> *@
+            <input id="searchInput" placeholder="搜尋地點 / 地址 / 關鍵字(Enter)" />
+        </div>
+        <button class="iconBtn" id="searchBtn" title="搜尋" aria-label="搜尋">🔍</button>
+        <!-- </div> -->
+        <!-- 黑色提示泡泡 eg.景點已加入行程 -->
+        <div class="toast" id="toast"></div>
+
+        <!-- 右側景點資訊欄 -->
+        <aside class="panel" id="panel">
+            <div class="panelHeader">
+                <h3 id="pName">景點名稱</h3>
+                <button class="panelClose" id="panelClose" title="收合">×</button>
+            </div>
+
+            <div class="panelBody">
+                <!-- 景點圖片 -->
+                <div class="hero" id="pHero">Place Image</div>
+                <!-- 景點資訊 -->
+                <div class="kv">
+                    <!-- 評分 -->
+                    <div class="row">
+                        <div class="label">評分：</div>
+                        <div class="value"><span id="pRating">評分數字4.5</span><span class="stars">⭐</span></div>
+                    </div>
+                    <!-- 地址 -->
+                    <div class="row">
+                        <div class="label">地址：</div>
+                        <div class="value" id="pAddress">熱門景點地址value</div>
+                    </div>
+                    <!-- 營業時間 -->
+                    <div class="row">
+                        <div class="label">營業時間：</div>
+                        <div class="value">
+                            <div class="hours" id="pHours">營業時間12:00</div>
+                        </div>
+                    </div>
+                    <!-- 電話 -->
+                    <div class="row">
+                        <div class="label">電話：</div>
+                        <div class="value" id="pPhone">phoneNumber123456</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- +按紐區 -->
+            <div class="fabWrap" id="fabWrap">
+                <div class="fabActions" id="fabActions">
+                    <div class="actionCard" id="btnWishlist">加入願望清單</div>
+                    <div class="actionCard" id="btnTrip">加入行程</div>
+                </div>
+                <button class="fab" id="fab" aria-label="更多">+</button>
+            </div>
+        </aside>
+
+        <!-- 熱門景點卡片區 -->
+        <section class="popular" id="popular">
+            <div class="popularTop">
+                <div style="display:flex; align-items:flex-end; gap:18px;">
+                    <!-- 熱門景點標題 -->
+                    <div class="popularTitle">熱門景點</div>
+                    <!-- 熱門景點卡片本人 -->
+                    <div class="tabs" role="tablist" aria-label="熱門分類">
+                        <div class="tab active" data-cat="restaurant">餐廳</div>
+                        <div class="tab" data-cat="entertainment">娛樂</div>
+                        <div class="tab" data-cat="all">全部</div>
+                    </div>
+                </div>
+                <!-- 關閉熱門景點btn -->
+                <button class="popularClose" id="popularClose" title="收合熱門">×</button>
+            </div>
+            <!-- 熱門區捲軸 -->
+            <div class="cardsRow" id="cardsRow"></div>
+        </section>
+
+        <!-- 叫出熱門的按鈕 -->
+        <button class="popularReopen" id="popularReopen" title="顯示熱門" aria-label="顯示熱門">⭐</button>
+
+        <!-- 遮罩層 -->
+        <div class="overlay" id="overlay">
+            <!-- 彈出視窗模塊 -->
+            <div class="myModal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+                <!-- 彈出視窗標題 -->
+                <div class="modalHead">
+                    <h3 id="mTitle">加入...</h3>
+                    <button class="modalClose" id="modalClose" aria-label="關閉">×</button>
+                </div>
+                <!-- 彈出視窗內容 -->
+                <div class="modalBody">
+                    <div class="list" id="modalList"></div>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
-@section Scripts {
-    @* <script src="~/js/trip/trip.js" asp-append-version="true"></script> *@
+
+@section Scripts{
+    <script src="~/js/Spot/Api.js"></script>
+    <script src="~/js/Spot/Spot.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjP02IEHpWAsFoiJXSMXI7PJ3jOuvJRyg&libraries=places&callback=initMap" async defer></script>
 }

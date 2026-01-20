@@ -69,10 +69,8 @@
     <Folder Include="Migrations\" />
     <Folder Include="NewFolder2\" />
     <Folder Include="NewFolder\" />
-    <Folder Include="wwwroot\css\AttractionExplorer\" />
     <Folder Include="wwwroot\img\Avatars\" />
     <Folder Include="wwwroot\img\Icon\" />
-    <Folder Include="wwwroot\js\AttractionExplorer\" />
   </ItemGroup>
 
 </Project>
