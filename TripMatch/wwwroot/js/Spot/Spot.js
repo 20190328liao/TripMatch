@@ -199,7 +199,7 @@ const tripApi = {
             photosJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
         };
 
-        await apiFetch("/api/spot", {
+        await apiFetch("/api/spot/wishlist", {
             method: "POST",
             body: JSON.stringify(payload),
         });
@@ -221,7 +221,7 @@ const tripApi = {
             //phone: place.phone,
             photosJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
         };
-        await apiFetch("/api/spot", { method: "POST", body: payload });
+        await apiFetch("/api/spot/itinerary", { method: "POST", body: payload });
         return { ok: true };
     }
 };

@@ -157,7 +157,7 @@ namespace TripMatch.Models.DTOs
         public DateOnly EndDate { get; set; }
         public string? CoverImageUrl { get; set; }
 
-        public bool IsOwner { get; set; } // 目前固定，之後做團主判斷(從 TripMembers 中 RoleType 抓)
+        public bool IsOwner { get; set; }
         public string DetailsUrl { get; set; } = "#";
         public string MembersUrl { get; set; } = "#";
     }
