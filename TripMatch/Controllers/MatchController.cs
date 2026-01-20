@@ -18,10 +18,9 @@ namespace TripMatch.Controllers
             _context = context;
         }
 
-        [HttpGet]
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpGet]
@@ -45,7 +44,7 @@ namespace TripMatch.Controllers
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdStr, out int userId))
             {
-                 bool hasCalendarData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
+                bool hasCalendarData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
 
                 // 傳遞給前端：true = 有資料(不用跳窗)，false = 沒資料(要跳窗)
                 ViewBag.HasCalendarData = hasCalendarData;
@@ -57,7 +56,7 @@ namespace TripMatch.Controllers
 
             return View();
         }
-            
+
         [HttpGet("/Match/Join/{inviteCode}")]
         public IActionResult Join(string inviteCode)
         {
@@ -67,17 +66,17 @@ namespace TripMatch.Controllers
 
         public async Task<IActionResult> GetLocations()
         {
-             var locations = await _context.GlobalRegions
-                .Include(g => g.Parent)
-                .Where(g => g.Level == 2 && g.IsHot)
-                .OrderBy(g => g.Id)
-                .Select(g => new
-                {
-                    id = g.Id,
-                    city = g.Name, 
-                    country = g.Parent != null ? g.Parent.Name : ""
-                })
-                .ToListAsync();
+            var locations = await _context.GlobalRegions
+               .Include(g => g.Parent)
+               .Where(g => g.Level == 2 && g.IsHot)
+               .OrderBy(g => g.Id)
+               .Select(g => new
+               {
+                   id = g.Id,
+                   city = g.Name,
+                   country = g.Parent != null ? g.Parent.Name : ""
+               })
+               .ToListAsync();
 
             return Ok(locations);
         }
@@ -85,6 +84,36 @@ namespace TripMatch.Controllers
         [HttpGet("/Match/Preferences/{groupId}")]
         public async Task<IActionResult> Preferences(int groupId)
         {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(userIdStr, out int userId);
+
+            var groupInfo = await _context.TravelGroups
+                .Where(g => g.GroupId == groupId)
+                .Select(g => new { g.InviteCode, g.TargetNumber })
+                .FirstOrDefaultAsync();
+
+            if (groupInfo == null)
+            {
+                return NotFound("找不到該群組");
+            }
+
+             var members = await _context.GroupMembers
+                .Where(m => m.GroupId == groupId)
+                .Select(m => new { m.SubmittedAt })
+                .ToListAsync();
+
+            int joinedCount = members.Count;
+            int submittedCount = members.Count(m => m.SubmittedAt != null);
+
+            var myPref = await _context.Preferences
+        .FirstOrDefaultAsync(p => p.GroupId == groupId && p.UserId == userId);
+
+            List<string> mySavedLocs = new List<string>();
+            if (myPref != null && !string.IsNullOrEmpty(myPref.PlacesToGo))
+            {
+                mySavedLocs = myPref.PlacesToGo.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+            }
+
             var hotRegions = await _context.GlobalRegions
                 .Include(g => g.Parent)
                 .Where(g => g.Level == 2 && g.IsHot)
@@ -94,7 +123,12 @@ namespace TripMatch.Controllers
             var viewModel = new PreferencesViewModel
             {
                 GroupId = groupId,
-                InviteCode = "TRIP" + groupId.ToString().PadLeft(4, '0'),
+                InviteCode = groupInfo.InviteCode,
+                TargetNumber = groupInfo.TargetNumber,
+                JoinedCount = joinedCount,
+                SubmittedCount = submittedCount,
+                MySelectedLocations = mySavedLocs,
+
                 HotLocations = hotRegions.Select(g => new LocationItem
                 {
                     Id = g.Id,
@@ -102,6 +136,7 @@ namespace TripMatch.Controllers
                     Country = g.Parent != null ? g.Parent.Name : "未知"
                 }).ToList()
             };
+
             return View(viewModel);
         }
 

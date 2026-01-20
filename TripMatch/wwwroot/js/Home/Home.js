@@ -13,6 +13,10 @@ function switchMode(mode) {
         btnMatch.classList.add('active'); btnPlan.classList.remove('active');
         contentMatch.classList.add('active'); contentPlan.classList.remove('active');
     }
+    const mainBtn = document.getElementById('mainActionButton');
+    if (mainBtn) {
+        mainBtn.style.display = (mode === 'match') ? 'none' : 'block';
+    }
 }
 
 // 登入狀態切換 (注意：這裡會操作到 Layout 上的元素 id="navAuth")
@@ -64,79 +68,31 @@ function toggleLogin() {
     }
 }
 
-// 複製文字
-function copyText(id) {
-    const input = document.getElementById(id);
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    alert('已成功複製到剪貼簿！');
-}
-
-// 隨機生成邀請碼
-function generateNewCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = 'TRIP';
-    for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    document.getElementById('inviteCode').value = result;
-    document.getElementById('inviteLink').value = `https://trip.ai/join?code=${result}`;
-}
-
-// 複製並自動填入
-function copyAndFill(id) {
-    const code = document.getElementById(id).value;
-    navigator.clipboard.writeText(code);
-
-    // 自動填入上方的輸入框
-    const joinInput = document.getElementById('joinCodeInput');
-    if (joinInput) {
-        joinInput.value = code;
-        checkJoinInput();
-    }
-
-    alert(`已複製邀請碼：${code}\n並已自動為您填入「加入行程」輸入框！`);
-}
-
-// 檢查加入行程的輸入框
+// 檢查加入行程的輸入框 (控制按鈕顏色變化)
 function checkJoinInput() {
     const val = document.getElementById('joinCodeInput').value;
     const btn = document.getElementById('btnJoinTrip');
-    if (val.length >= 4) {
-        btn.classList.add('ready');
-    } else {
-        btn.classList.remove('ready');
+    if (btn) {
+        // 當邀請碼長度大於等於 4 時啟用按鈕視覺效果
+        if (val.trim().length >= 4) {
+            btn.classList.add('ready');
+        } else {
+            btn.classList.remove('ready');
+        }
     }
 }
 
-// 加入行程互動
+// 跳轉-加入團隊
 function joinTrip() {
-    const code = document.getElementById('joinCodeInput').value;
-    if (!isLoggedIn) {
-        alert('請先點擊右上角「登入」後再加入行程！');
+    const code = document.getElementById('joinCodeInput').value.trim();
+    if (!code) {
+        alert("請輸入邀請碼");
         return;
     }
-    if (code.trim() === "") {
-        alert('請輸入有效的邀請碼！');
-        return;
-    }
-
-    alert(`🎉 加入成功！\n您已進入行程：[ ${code} ]\n現在可以開始與朋友共同規劃時間了！`);
-    document.getElementById('joinCodeInput').value = "";
-    checkJoinInput();
+    window.location.href = `/Match/Join/${encodeURIComponent(code)}`;
 }
 
-// 主按鈕動作（修正後）
-function handleMainAction() {
-    const btn = document.getElementById('mainActionButton');
-    // 可從按鈕 data-return-url 讀取目標（若有），否則預設導向 Match Index
-    const returnUrl = (btn && btn.dataset && btn.dataset.returnUrl) ? btn.dataset.returnUrl : '/Match/Index';
-
-    if (!isLoggedIn) {
-        // 引導到登入頁並帶上 returnUrl，登入成功後伺服器/前端會導回 returnUrl
-        window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(returnUrl);
-    } else {
-        // 已登入直接前往 Match
-        window.location.href = returnUrl;
-    }
+// 跳轉-建立新團
+function createTrip() {
+    window.location.href = '/Match/Create';
 }

@@ -6,5 +6,6 @@
         public int? HotelRating { get; set; }
         public bool Transfer { get; set; }
         public string? PlacesToGo { get; set; }
+        public int? TotalBudget { get; set; }
     }
 }

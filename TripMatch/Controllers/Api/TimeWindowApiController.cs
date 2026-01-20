@@ -62,6 +62,25 @@ namespace TripMatch.Controllers.Api
             return Ok(status);
         }
 
+        // 補：取得群組詳細資訊
+        [HttpGet("{groupId}/details")]
+        public async Task<IActionResult> GetGroupDetails(int groupId)
+        {
+            dynamic groupData = await _timeWindowService.GetGroupStatusAsync(groupId);
+
+            if (groupData == null)
+                return NotFound(new { message = "找不到群組" });
+
+            string code = groupData.inviteCode;
+
+            return Ok(new
+            {
+                groupId = groupId,
+                inviteCode = code,
+                inviteLink = $"{Request.Scheme}://{Request.Host}/Match/Join/{code}"
+            });
+        }
+
         // 4. 儲存偏好 (PUT /api/timewindow/{groupId}/preferences)
         [HttpPut("{groupId}/preferences")]
         public async Task<IActionResult> UpsertPreferences(int groupId, [FromBody] UpsertPreferenceRequest request)

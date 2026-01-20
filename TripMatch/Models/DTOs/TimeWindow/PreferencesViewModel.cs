@@ -5,8 +5,12 @@ namespace TripMatch.Models.DTOs.TimeWindow
     public class PreferencesViewModel
     {
         public int GroupId { get; set; }
-        public string InviteCode { get; set; } // 預設或從 DB 撈
+        public string InviteCode { get; set; }
+        public int TargetNumber { get; set; } 
+        public int JoinedCount { get; set; }
+        public int SubmittedCount { get; set; }
 
+        public List<string> MySelectedLocations { get; set; } = new List<string>();
         public List<LocationItem> HotLocations { get; set; } = new List<LocationItem>();
     }
 

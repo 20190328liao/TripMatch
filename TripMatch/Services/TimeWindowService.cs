@@ -84,6 +84,20 @@ namespace TripMatch.Services
             _context.GroupMembers.Add(newMember);
             await _context.SaveChangesAsync();
 
+            var hasPreference = await _context.Preferences
+            .AnyAsync(p => p.GroupId == group.GroupId && p.UserId == userId);
+
+            if (!hasPreference)
+            {
+                _context.Preferences.Add(new Preference
+                {
+                    GroupId = group.GroupId,
+                    UserId = userId,
+                    CreatedAt = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+
             return newMember;
         }
 
@@ -95,7 +109,7 @@ namespace TripMatch.Services
             return new string(Enumerable.Repeat(chars, 6)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
         }
-        
+
         // 3. 取得群組狀態
         public async Task<object?> GetGroupStatusAsync(int groupId)
         {
@@ -142,6 +156,7 @@ namespace TripMatch.Services
             pref.HotelRating = request.HotelRating;
             pref.Tranfer = request.Transfer;
             pref.PlacesToGo = request.PlacesToGo;
+            pref.TotalBudget = request.TotalBudget;
 
             await _context.SaveChangesAsync();
             return pref;
@@ -175,7 +190,7 @@ namespace TripMatch.Services
             member.SubmittedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
-        }        
+        }
 
         // 6. 算出推薦的時間區段 (核心演算法)
         public async Task<List<CommonTimeRangeDto>> GetCommonTimeRangesAsync(int groupId)

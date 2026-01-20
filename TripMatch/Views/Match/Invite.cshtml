@@ -1,299 +1,326 @@
 ﻿@{
-    ViewData["Title"] = "分享邀請碼";
-    Layout = "~/Views/Shared/_Layout-copy.cshtml";
+	ViewData["Title"] = "分享邀請碼";
+	Layout = "~/Views/Shared/_Layout-copy.cshtml";
 }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-    :root {
-        --bg: #f3f6fb;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --shadow: 0 10px 25px rgba(17, 24, 39, .08);
-        --green: #16a34a;
-        --blue-200: #dbeafe;
-        --blue-text: #1e40af;
-        --primary: #2563eb;
-    }
+	:root {
+		--bg: #f3f6fb;
+		--card: #ffffff;
+		--text: #111827;
+		--muted: #6b7280;
+		--line: #e5e7eb;
+		--shadow: 0 10px 25px rgba(17, 24, 39, .08);
+		--green: #16a34a;
+		--blue-200: #dbeafe;
+		--blue-text: #1e40af;
+		--primary: #2563eb;
+	}
 
-    body {
-        background: var(--bg);
-        color: var(--text);
-    }
+	body {
+		background: var(--bg);
+		color: var(--text);
+	}
 
-    .page-wrap {
-        min-height: 90vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 40px 20px;
-    }
+	.page-wrap {
+		min-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 40px 20px;
+	}
 
-    .invite-card {
-        background: var(--card);
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        padding: 40px;
-        width: 100%;
-        max-width: 480px;
-        text-align: center;
-    }
+	.invite-card {
+		background: var(--card);
+		border-radius: 20px;
+		box-shadow: var(--shadow);
+		padding: 40px;
+		width: 100%;
+		max-width: 480px;
+		text-align: center;
+	}
 
-    .card-title {
-        font-size: 24px;
-        font-weight: 800;
-        margin-bottom: 24px;
-        color: var(--text);
-    }
+	.card-title {
+		font-size: 24px;
+		font-weight: 800;
+		margin-bottom: 24px;
+		color: var(--text);
+	}
 
-    /* 邀請碼區塊 */
-    .code-box {
-        background: #f8fafc;
-        border: 2px dashed #cbd5e1;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 30px;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+	/* 邀請碼區塊 */
+	.code-box {
+		background: #f8fafc;
+		border: 2px dashed #cbd5e1;
+		border-radius: 12px;
+		padding: 20px;
+		margin-bottom: 30px;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
 
-    .code-label {
-        font-size: 13px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
+	.code-label {
+		font-size: 13px;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		font-weight: 700;
+		margin-bottom: 8px;
+	}
 
-    /* 邀請碼與按鈕容器 */
-    .code-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-    }
+	/* 邀請碼與按鈕容器 */
+	.code-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+	}
 
-    .invite-code {
-        font-size: 36px;
-        font-weight: 900;
-        color: var(--primary);
-        letter-spacing: 2px;
-        font-family: monospace;
-        line-height: 1;
-    }
+	.invite-code {
+		font-size: 36px;
+		font-weight: 900;
+		color: var(--primary);
+		letter-spacing: 2px;
+		font-family: monospace;
+		line-height: 1;
+	}
 
-    /* 複製按鈕樣式 */
-    .btn-copy {
-        background: white;
-        border: 1px solid var(--line);
-        color: var(--muted);
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
+	/* 複製按鈕樣式 */
+	.btn-copy {
+		background: white;
+		border: 1px solid var(--line);
+		color: var(--muted);
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
 
-        .btn-copy:hover {
-            background: var(--bg);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
+		.btn-copy:hover {
+			background: var(--bg);
+			color: var(--primary);
+			border-color: var(--primary);
+		}
 
-        .btn-copy:active {
-            transform: scale(0.95);
-        }
+		.btn-copy:active {
+			transform: scale(0.95);
+		}
 
-    /* Tooltip 提示 */
-    .copy-tooltip {
-        position: absolute;
-        bottom: 5px;
-        background: #111827;
-        color: white;
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
-    }
+	/* Tooltip 提示 */
+	.copy-tooltip {
+		position: absolute;
+		bottom: 5px;
+		background: #111827;
+		color: white;
+		font-size: 12px;
+		padding: 4px 8px;
+		border-radius: 4px;
+		opacity: 0;
+		transition: opacity 0.3s;
+		pointer-events: none;
+	}
 
-        .copy-tooltip.show {
-            opacity: 1;
-        }
+		.copy-tooltip.show {
+			opacity: 1;
+		}
 
-    /* QR Code */
-    .qr-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 30px;
-    }
+	/* QR Code */
+	.qr-container {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 30px;
+	}
 
-    .qr-frame {
-        padding: 15px;
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
+	.qr-frame {
+		padding: 15px;
+		background: #fff;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
 
-    /* 規則區塊 */
-    .rules-section {
-        background-color: var(--blue-200);
-        border-radius: 12px;
-        padding: 20px;
-        color: var(--blue-text);
-        text-align: left;
-        margin-bottom: 30px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
+	/* 規則區塊 */
+	.rules-section {
+		background-color: var(--blue-200);
+		border-radius: 12px;
+		padding: 20px;
+		color: var(--blue-text);
+		text-align: left;
+		margin-bottom: 30px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
 
-    .rules-header {
-        font-size: 14px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+	.rules-header {
+		font-size: 14px;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 
-    .rules-icon {
-        width: 18px;
-        height: 18px;
-        flex-shrink: 0;
-    }
+	.rules-icon {
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+	}
 
-    .rules-list {
-        font-size: 13px;
-        margin: 0;
-        padding-left: 24px;
-        opacity: 0.9;
-        line-height: 1.6;
-    }
+	.rules-list {
+		font-size: 13px;
+		margin: 0;
+		padding-left: 24px;
+		opacity: 0.9;
+		line-height: 1.6;
+	}
 
-    .btn-next {
-        background: var(--text);
-        color: #fff;
-        width: 100%;
-        border: none;
-        border-radius: 12px;
-        padding: 16px;
-        font-size: 16px;
-        font-weight: 700;
-        transition: transform 0.2s;
-        text-decoration: none;
-        display: inline-block;
-    }
+	.btn-next {
+		background: var(--text);
+		color: #fff;
+		width: 100%;
+		border: none;
+		border-radius: 12px;
+		padding: 16px;
+		font-size: 16px;
+		font-weight: 700;
+		transition: transform 0.2s;
+		text-decoration: none;
+		display: inline-block;
+	}
 
-        .btn-next:hover {
-            transform: translateY(-2px);
-            color: #fff;
-        }
+		.btn-next:hover {
+			transform: translateY(-2px);
+			color: #fff;
+		}
 </style>
 
 <div class="page-wrap">
 
-    <div class="invite-card">
-        <h1 class="card-title">分享邀請碼給朋友</h1>
+	<div class="invite-card">
+		<h1 class="card-title">分享邀請碼給朋友</h1>
 
-        <div class="code-box">
-            <div class="code-label">INVITE CODE</div>
+		<div class="code-box">
+			<div class="code-label">INVITE CODE</div>
 
-            <div class="code-row">
-                <div class="invite-code" id="displayCode">LOADING</div>
+			<div class="code-row">
+				<div class="invite-code" id="displayCode">LOADING</div>
 
-                <button class="btn-copy" onclick="copyToClipboard()" title="複製邀請碼">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                </button>
-            </div>
+				<button class="btn-copy" onclick="copyToClipboard()" title="複製邀請碼">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+				</button>
+			</div>
 
-            <div class="copy-tooltip" id="copyTooltip">已複製！</div>
-        </div>
+			<div class="copy-tooltip" id="copyTooltip">已複製！</div>
+		</div>
 
-        <div class="qr-container">
-            <div class="qr-frame">
-                <div id="qrcode"></div>
-            </div>
-        </div>
+		<div class="qr-container">
+			<div class="qr-frame">
+				<div id="qrcode"></div>
+			</div>
+		</div>
 
-        <div class="rules-section">
-            <div class="rules-header">
-                <svg class="rules-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                團隊規則
-            </div>
-            <ul class="rules-list">
-                <li>滿員邀請碼將失效</li>
-                <li>所有成員提交後系統會自動計算最佳時間</li>
-            </ul>
-        </div>
+		<div class="rules-section">
+			<div class="rules-header">
+				<svg class="rules-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10"></circle>
+					<line x1="12" y1="16" x2="12" y2="12"></line>
+					<line x1="12" y1="8" x2="12.01" y2="8"></line>
+				</svg>
+				團隊規則
+			</div>
+			<ul class="rules-list">
+				<li>滿員邀請碼將失效</li>
+				<li>所有成員提交後系統會自動計算最佳時間</li>
+			</ul>
+		</div>
 
-        <a href="javascript:void(0)" onclick="goToNext()" class="btn-next">
-            分享完成，下一步
-        </a>
-    </div>
+		<a href="javascript:void(0)" onclick="goToNext()" class="btn-next">
+			分享完成，下一步
+		</a>
+	</div>
 </div>
 
 <script>
-    const groupId = '@ViewBag.GroupId';
-    let currentInviteCode = "";
+	const groupId = '@ViewBag.GroupId';
+	let currentInviteCode = "";
 
-    document.addEventListener("DOMContentLoaded", async function() {
-        if(!groupId) return;
+	document.addEventListener("DOMContentLoaded", async function() {
 
-        try {
-            const response = await fetch(`/api/timewindow/${groupId}/status`);
-            if (response.ok) {
-                const data = await response.json();
-                currentInviteCode = data.inviteCode;
+		const displayCodeElement = document.getElementById('displayCode');
+		const qrArea = document.getElementById('qrcode');
 
-                document.getElementById('displayCode').textContent = currentInviteCode;
-                joinUrl = `${window.location.origin}/Match/Join/${currentInviteCode}`;
+		try
+		{
+			const response = await fetch(`/api/timewindow/${groupId}/details`);
 
-                new QRCode(document.getElementById("qrcode"), {
-                    text: joinUrl,
-                    width: 160,
-                    height: 160,
-                    colorDark : "#111827",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-            }
-        } catch (err) {
-            console.error("無法取得邀請碼", err);
-        }
-    });
+			if (response.ok)
+			{
+				const data = await response.json();
+				currentInviteCode = data.inviteCode;
 
-    function copyToClipboard() {
-        if (!currentInviteCode) return;
+				if (displayCodeElement) {
+					displayCodeElement.innerText = data.inviteCode;
+				}
 
-        navigator.clipboard.writeText(currentInviteCode).then(() => {
-            const tooltip = document.getElementById('copyTooltip');
-            tooltip.classList.add('show');
-            setTimeout(() => tooltip.classList.remove('show'), 2000);
-        }).catch(err => {
-            console.error('複製失敗', err);
-            alert("複製失敗，請手動選取複製");
-        });
-    }
+				if (qrArea)
+				{
+					qrArea.innerHTML = ""; 
+					new QRCode(qrArea, {
+						text: data.inviteLink,
+						width: 128,
+						height: 128,
+						colorDark : "#000000",
+						colorLight : "#ffffff",
+						correctLevel : QRCode.CorrectLevel.H
+					});
+				}
+			}
+			else
+			{
+				console.warn("API 回傳失敗:", response.status);
+				if(displayCodeElement) displayCodeElement.innerText = "載入失敗";
+			}
+		}
+		catch (err)
+		{
+			console.error("載入邀請資訊失敗:", err);
+			if(displayCodeElement) displayCodeElement.innerText = "錯誤";
+		}
+	});
 
-    function goToNext() {
-        window.location.href = `/Match/Preferences/${groupId}`;
-    }
+	function copyToClipboard()
+	{
+		if (!currentInviteCode)
+		{
+			alert("邀請碼載入中，請稍後再試...");
+			return;
+		}
+
+		navigator.clipboard.writeText(currentInviteCode).then(() => {
+			const tooltip = document.getElementById('copyTooltip');
+			if (tooltip) {
+				tooltip.classList.add('show');
+				setTimeout(() => tooltip.classList.remove('show'), 2000);
+			} else {
+				alert("邀請碼已複製！");
+			}
+		}).catch(err => {
+			console.error('複製失敗', err);
+			alert("複製失敗，請手動選取複製");
+		});
+	}
+
+	function goToNext() {
+		window.location.href = `/Match/Preferences/${groupId}`;
+	}
 </script>
