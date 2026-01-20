@@ -62,7 +62,9 @@ input[type="password"]::-ms-clear {
     background-color: #7ca8e5;
     color: black;
 }
-
+#btnImportCalendar {
+    padding-bottom: 5px;
+}
 /*====驗證信====*/
 #btn_next_step {
     height: 48px;
@@ -894,7 +896,6 @@ input:is(:-webkit-autofill, :autofill) {
     /* 只鎖登入 / 註冊頁 */
     .auth-page {
         height: 100vh;
-        overflow: hidden;
     }
     .titleWrap.titleH4 {
         font-size: var(--f_h4);

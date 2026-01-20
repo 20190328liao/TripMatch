@@ -321,78 +321,49 @@ header {
 
 
 
-
-/* Fix: footer 固定且不受 transform/hover 等影響 */
-.footer {
-	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	width: 100%;
-	height: 60px; /* 設定固定高度 */
-	background-color: #fff; /* 建議加上背景色，避免透出後方內容 */
-	z-index: 1000;
-	/* 強制取消位移，防止某些 JS 插件（如滾動偵測）修改它 */
-	transform: translate(0, 0) !important;
-	top: auto !important;
-	/* 基本樣式佈局 */
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-top: 1px solid #eee;
-}
-
-/* 為 main 留出 footer 高度，避免內容被遮擋 */
-main, .main-content {
-	min-height: calc(100vh - var(--site-footer-height));
-	padding-bottom: var(--site-footer-height); /* 留出空間給 Footer */
-	box-sizing: border-box;
-}
+/* 把 site footer height 提前定義，確保變數在使用前已存在 */
 :root {
-	--site-footer-height: 60px;
-	--site-header-height: 0px; /* 如果有頂部導航欄，請填寫高度（如 56px） */
+    --site-footer-height: 60px;
+    --site-header-height: 0px;
+    /* 其餘變數保留 */
 }
 
-/* 確保全螢幕高度基礎 */
+/* 讓 body 使用 Flexbox 產生 sticky footer（內容高時 footer 跟著往下，內容不足時 footer 貼底） */
 html, body {
-	height: 100%;
-	margin: 0;
-	padding: 0;
-}
-
-/* 輪播圖容器：計算剩餘高度 */
-.signContent.s1,
-.signContent.s1 .carousel,
-.signContent.s1 .carousel-inner,
-.signContent.s1 .carousel-item {
-	/* 核心：100vh 減去頁首與頁尾 */
-	height: calc(100vh - var(--site-footer-height) - var(--site-header-height)) !important;
-}
-
-	/* 圖片處理：確保不變形且填滿 */
-	.signContent.s1 .carousel-item img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover; /* 關鍵：裁切填滿不拉伸 */
-		object-position: center;
-	}
-
-/* 若 carousel 放在 .container 等會有內距的父元素，避免上下 padding 導致看起來沒滿版 */
-.signContent.s1 .container,
-.signContent.s1 .formWrap {
     height: 100%;
-    padding: 0;
     margin: 0;
-    max-width: 100%;
-    box-sizing: border-box;
+    padding: 0;
+}
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 手機微調：避免過高導致遮蔽重要按鈕 */
-@media (max-width: 767.98px) {
-    .signContent.s1,
-    .signContent.s1 .carousel,
-    .signContent.s1 .carousel-inner,
-    .signContent.s1 .carousel-item {
-        height: calc(100vh - var(--site-footer-height) - var(--site-header-height) - 56px) !important;
-    }
+/* 主內容佔滿剩餘空間 */
+main, .main-content {
+    flex: 1 0 auto;
+    box-sizing: border-box;
+    /* 若希望在 footer 為 fixed 時避免覆蓋，可保留 padding-bottom */
+    padding-bottom: 0;
 }
+
+/* Footer 改為在文流中（sticky footer），不使用 fixed（避免覆蓋內容） */
+.footer {
+    position: relative; /* 或 static */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: var(--site-footer-height);
+    background-color: #fff;
+    z-index: 1000;
+    display: flex;
+    font-size: 16pt;
+	height:20px;
+	padding:10px;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid #eee;
+}
+
