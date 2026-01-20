@@ -562,7 +562,7 @@ namespace TripMatch.Services
                     Title = tm.Trip.Title,
                     StartDate = tm.Trip.StartDate,
                     EndDate = tm.Trip.EndDate,
-                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400" : tm.Trip.CoverImageUrl,
+                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/800/400?{tm.Trip.Id}" : tm.Trip.CoverImageUrl,
                     IsOwner = (tm.RoleType == 1),
                     DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
