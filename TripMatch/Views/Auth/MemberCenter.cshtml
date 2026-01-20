@@ -12,7 +12,6 @@
     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
 }
 @section Styles{
-    <link href="~/css/AuthApi/Calendar.css" rel="stylesheet" />
     <link href="~/css/AuthApi/member.css" rel="stylesheet" />
     <style>
         body {
@@ -163,9 +162,9 @@
 
                     <div class="days mt-2"></div>
 
-                    <div class="display-selected mt-3">
+                    @* <div class="display-selected mt-3">
                         <p class="selected"></p>
-                    </div>
+                    </div> *@
                 </div>
 
                 <!-- 右：清單（草稿 + 已提交） -->
@@ -184,13 +183,13 @@
             @* 共用按鈕放在底部一列，手機會縮滿寬度 *@
             <div class="row mt-3">
                 <div class="col-12 d-flex gap-2 flex-wrap">
-                    <button class="confirm btn btn-primary">提交</button>
-                    <button class="edit btn btn-secondary">開始編輯</button>
-                    <button class="btn-delete btn btn-outline-danger">刪除</button>
+                    <button class="confirm btn btn-confirm">提交</button>
+                    <button class="edit btn btn-edit">開始編輯</button>
+                    <button class="btn-delete btn btn-danger1">刪除</button>
 
                     <!-- 匯入 JSON 日曆 -->
                     <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                    <button type="button" id="btnImportCalendar" class="btn btn-outline-primary">匯入 JSON 日曆</button>
+                    <button type="button" id="btnImportCalendar" class="btn btn-primary2">匯入 JSON 日曆</button>
                 </div>
 
                 <div class="col-12">

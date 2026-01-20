@@ -179,7 +179,7 @@ header {
 	width: 100%;
 /*	background: var(--color_nav);*/
 	text-align: center;
-	margin-top: auto;
+/*	margin-top: auto;*/
 /*	height:10px;*/
 }
 /*主要版面配置（header, nav, footer）會放class*/

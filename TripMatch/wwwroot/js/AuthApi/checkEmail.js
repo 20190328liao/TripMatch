@@ -1,110 +1,224 @@
-﻿// 檢查短期驗證 token，若已驗證則啟用「下一步」或自動跳轉到 ForgotEmail Step2
-(async function () {
-    async function getBackupResult() {
+﻿(async function () {
+    'use strict';
+
+    const ROUTES = window.Routes && window.Routes.AuthApi ? window.Routes.AuthApi : {
+        GetBackupLookupResult: '/api/auth/GetBackupLookupResult',
+        CheckDbStatus: '/api/auth/CheckDbStatus',
+        CheckEmailStatus: '/api/auth/CheckEmailStatus',
+        SendConfirmation: '/api/auth/SendConfirmation'
+    };
+
+    function qs(sel) { return document.querySelector(sel); }
+
+    async function fetchJson(url, opts = {}) {
         try {
-            const res = await fetch('/api/auth/GetBackupLookupResult', { credentials: 'include' });
-            if (!res.ok) return null;
-            return await res.json();
-        } catch {
-            return null;
+            const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), Object.assign({ credentials: 'include' }, opts));
+            if (!res.ok) return { ok: false, status: res.status, json: null };
+            const json = await res.json().catch(() => null);
+            return { ok: true, status: res.status, json };
+        } catch (ex) {
+            console.debug('fetchJson error:', ex);
+            return { ok: false, status: 0, json: null };
         }
     }
 
-    function markLocalVerified(email, minutes = 30) {
-        try {
-            const payload = { email: email || null, expiresAt: Date.now() + minutes * 60 * 1000 };
-            localStorage.setItem('BackupLookupVerified', JSON.stringify(payload));
-        } catch { /* ignore storage errors */ }
+    function setStatusMessage(msg, isSuccess) {
+        const el = qs('#verifyStatus');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.color = isSuccess ? '#28a745' : '#dc3545';
     }
 
-    function isLocalVerifiedValid() {
-        try {
-            const raw = localStorage.getItem('BackupLookupVerified');
-            if (!raw) return false;
-            const obj = JSON.parse(raw);
-            return obj && obj.expiresAt && Date.now() < obj.expiresAt;
-        } catch {
-            return false;
-        }
-    }
+    function enableNextButton(email) {
+        const btn = qs('#btn_next_step') || qs('#btn_next') || qs('a#btn_next_step');
+        if (!btn) return;
+        // replace to remove prior handlers, then re-query
+        const cloned = btn.cloneNode(true);
+        btn.parentNode.replaceChild(cloned, btn);
 
-    function openForgotStep2() {
-        // 導到 ForgotEmail 的 Step2（前端會以 backupVerified 讀取狀態）
-        window.location.href = '/Auth/ForgotEmail?backupVerified=1';
-    }
+        const newBtn = qs('#btn_next_step') || qs('#btn_next') || qs('a#btn_next_step');
+        if (!newBtn) return;
 
-    function enableNextButton(btnNext) {
-        if (!btnNext) return;
-        btnNext.removeAttribute('disabled');
-        btnNext.classList.remove('btn_Gray');
-        // 綁定一次性的事件處理器，避免多次綁定
-        btnNext.addEventListener('click', () => {
-            openForgotStep2();
+        newBtn.removeAttribute('disabled');
+        newBtn.classList.remove('btn_Gray');
+        newBtn.classList.add('btn_light');
+
+        const signupUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Signup) ? window.Routes.Auth.Signup : '/Auth/Signup';
+        newBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            let url = signupUrl;
+            if (email) url += '?email=' + encodeURIComponent(email);
+            window.location.href = url;
         }, { once: true });
     }
 
-    function disableNextButton(btnNext) {
-        if (!btnNext) return;
-        btnNext.setAttribute('disabled', 'disabled');
-        btnNext.classList.add('btn_Gray');
-        // 不移除事件，因為我們使用 { once: true } 綁定
+    function disableNextButton() {
+        const btn = qs('#btn_next_step') || qs('#btn_next') || qs('a#btn_next_step');
+        if (!btn) return;
+        btn.setAttribute('disabled', 'disabled');
+        btn.classList.add('btn_Gray');
     }
 
-    // 小型 UI 更新（若頁面有對應元素則顯示）
-    function setStatusMessage(msg, isSuccess) {
+    // 用 email 查 DB 的 EmailConfirmed（POST body: "email" 字串）
+    async function checkEmailByAddress(email) {
+        if (!email) return { exists: false, verified: false };
         try {
-            const el = document.querySelector('#verifyStatus');
-            if (!el) return;
-            el.textContent = msg || '';
-            el.classList.toggle('text-success', !!isSuccess);
-            el.classList.toggle('text-danger', !isSuccess);
-        } catch { /* ignore */ }
+            const res = await fetch(ROUTES.CheckEmailStatus || '/api/auth/CheckEmailStatus', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(email)
+            });
+            if (!res.ok) return { exists: null, verified: false };
+            const json = await res.json().catch(() => null);
+            // 現行 CheckEmailStatus 回傳 { verified: true/false }
+            return { exists: json !== null, verified: !!(json && json.verified), raw: json };
+        } catch (ex) {
+            console.debug('checkEmailByAddress error', ex);
+            return { exists: null, verified: false };
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        const btnNext = document.querySelector('#btn_next_step') || document.querySelector('#btn_next'); // 根據頁面 id 調整
-        const autoProceed = new URLSearchParams(window.location.search).get('auto') === '1'
-            || new URLSearchParams(window.location.search).get('backupVerified') === '1';
+    // 寄驗證信（若頁面有可讀的 email）
+    async function handleSendVerificationClick() {
+        const params = new URLSearchParams(window.location.search);
+        const qEmail = params.get('email');
+        const input = qs('#email') || qs('#inputEmail') || qs('#input_email') || qs('input[name="email"]');
+        const email = (qEmail || (input && input.value) || '').trim();
+        if (!email) {
+            setStatusMessage('找不到 email，請至註冊頁重新輸入寄驗證信', false);
+            return;
+        }
 
-        // 1) localStorage 優先（使用者在 CheckEmail 成功驗證後關閉可恢復）
-        if (isLocalVerifiedValid()) {
-            enableNextButton(btnNext);
-            setStatusMessage('已驗證，可進行下一步', true);
-            if (autoProceed) {
-                // 小延遲讓使用者看到狀態
-                setTimeout(openForgotStep2, 300);
+        try {
+            const res = await fetch(ROUTES.SendConfirmation || '/api/auth/SendConfirmation', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(email)
+            });
+            const json = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (json && json.verified) {
+                    setStatusMessage('此信箱已驗證，請直接設定密碼或登入', true);
+                    enableNextButton(email);
+                    return;
+                }
+                setStatusMessage(json.message || '驗證信已發送，請檢查信箱', true);
+                try { localStorage.setItem('PendingEmailLocal', JSON.stringify({ email, expiresAt: Date.now() + 30 * 60 * 1000 })); } catch { }
+            } else {
+                // 處理後端回傳 action（例如 redirect_login）
+                if (json && json.action === 'redirect_login') {
+                    setStatusMessage(json.message || '此信箱已註冊，請登入', false);
+                    setTimeout(() => { window.location.href = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login + '?email=' + encodeURIComponent(email) : '/Auth/Login?email=' + encodeURIComponent(email); }, 900);
+                    return;
+                }
+                setStatusMessage(json.message || '寄信失敗，請稍候再試', false);
+            }
+        } catch (ex) {
+            console.error('SendConfirmation error', ex);
+            setStatusMessage('系統忙碌，請稍後再試', false);
+        }
+    }
+
+    // 綁定寄信按鈕（若頁面提供）
+    function bindSendButton() {
+        const btn = qs('#btn_send_verification') || qs('#btn_send_reset') || qs('#btn_send');
+        if (!btn) return;
+        try { btn.replaceWith(btn.cloneNode(true)); } catch { }
+        const newBtn = qs('#btn_send_verification') || qs('#btn_send_reset') || qs('#btn_send');
+        if (!newBtn) return;
+        newBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleSendVerificationClick();
+        });
+        // 顯示並啟用按鈕（讓使用者可手動重寄）
+        newBtn.removeAttribute('disabled');
+        newBtn.classList.remove('btn_Gray');
+    }
+
+    // 主檢查流程：備援 lookup -> pending cookie -> direct email check（若有）
+    async function checkStatus() {
+        setStatusMessage('正在檢查驗證狀態...', true);
+
+        // 1) 備援查詢（如果此頁為備援驗證流程）
+        const backup = await fetchJson(ROUTES.GetBackupLookupResult || '/api/auth/GetBackupLookupResult');
+        if (backup.ok && backup.json) {
+            const j = backup.json;
+            if (j.found) {
+                const accountEmail = j.accountEmail || j.lookupEmail || j.email || null;
+                setStatusMessage('驗證成功，找到帳號：' + (accountEmail || ''), true);
+                enableNextButton(accountEmail);
                 return;
             }
         }
 
-        // 2) 向後端確認（cookie-based token）
-        const result = await getBackupResult();
-        if (result && result.found) {
-            // 儲存 localStorage 作為 fallback（30 分鐘）
-            markLocalVerified(result.lookupEmail || result.email || null, 30);
-
-            enableNextButton(btnNext);
-            setStatusMessage('驗證成功，請按下一步繼續', true);
-
-            if (autoProceed) {
-                setTimeout(openForgotStep2, 300);
+        // 2) 透過 PendingEmail cookie 檢查（後端使用 cookie 判斷）
+        const db = await fetchJson(ROUTES.CheckDbStatus || '/api/auth/CheckDbStatus');
+        if (db.ok && db.json) {
+            if (db.json.verified) {
+                setStatusMessage('驗證成功，請按下一步繼續', true);
+                enableNextButton(db.json.email || null);
+                return;
             }
-        } else {
-            // 未找到或過期
-            disableNextButton(btnNext);
-            setStatusMessage('尚未完成驗證或驗證已過期', false);
+            // 如果沒驗證，再嘗試以顯式 email 檢查（querystring or local fallback）
         }
+
+        // 3) 若頁面可取得 email（querystring 或 localStorage），以 email 直接向 DB 查 EmailConfirmed
+        const params = new URLSearchParams(window.location.search);
+        const explicitEmail = params.get('email') || (function () {
+            try {
+                const raw = localStorage.getItem('PendingEmailLocal');
+                if (!raw) return null;
+                const obj = JSON.parse(raw);
+                return (obj && obj.email) ? obj.email : null;
+            } catch { return null; }
+        })();
+
+        if (explicitEmail) {
+            const r = await checkEmailByAddress(explicitEmail);
+            // r.exists === null 表示 API call error； === false 表示查無帳號； === true exist
+            if (r.exists === true && r.verified === true) {
+                setStatusMessage('驗證成功，系統已確認 email 已驗證，請按下一步', true);
+                enableNextButton(explicitEmail);
+                return;
+            }
+            // 若 r.exists true && verified false => 可以重寄驗證信
+            if (r.exists === true && r.verified === false) {
+                setStatusMessage('此信箱尚未驗證，您可以重新寄驗證信', false);
+                bindSendButton(); // 顯示與綁定寄信按鈕
+                disableNextButton();
+                return;
+            }
+            // 如果查無帳號或 API 錯誤
+            if (r.exists === false) {
+                setStatusMessage('此信箱尚未註冊，請重新註冊或先寄驗證信', false);
+                bindSendButton();
+                disableNextButton();
+                return;
+            }
+            if (r.exists === null) {
+                // API 錯誤 fallback
+                setStatusMessage('伺服器無回應，請稍後再試', false);
+                bindSendButton();
+                disableNextButton();
+                return;
+            }
+        }
+
+        // 4) 皆無法判定時：允許使用者手動重寄或回註冊
+        setStatusMessage('驗證連結已失效或帳號不存在，請重新註冊或重新寄驗證信', false);
+        bindSendButton();
+        disableNextButton();
+    }
+
+    // init
+    document.addEventListener('DOMContentLoaded', function () {
+        bindSendButton();
+        setTimeout(checkStatus, 120);
     });
 
-    // 當視窗獲得焦點時再次檢查（使用者可能在郵件分頁完成驗證後回來）
-    window.addEventListener('focus', async () => {
-        if (isLocalVerifiedValid()) return;
-        const result = await getBackupResult();
-        if (result && result.found) {
-            markLocalVerified(result.lookupEmail || result.email || null, 30);
-            const btnNext = document.querySelector('#btn_next_step') || document.querySelector('#btn_next');
-            enableNextButton(btnNext);
-            setStatusMessage('驗證成功，請按下一步繼續', true);
-        }
-    });
+    // 當使用者回到分頁時重新檢查
+    window.addEventListener('focus', () => setTimeout(checkStatus, 150));
+
 })();

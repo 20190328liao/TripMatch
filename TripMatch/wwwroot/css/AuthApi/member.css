@@ -1,40 +1,82 @@
-﻿.member_center_wrap {
-    position: relative;
-    left: 200px;
-}
-.profile_info_section {
-    position: relative;
-    padding: 30px;
-    background-color: var(--color_bk);
-    border-radius: 18px;
-    border: 1px var(--color_Gray);
-    width: 50rem;
-    height: 35rem;
-    white-space: nowrap;
-    font-size: 18pt;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    left: 30px;
-}
-.main-content {
-    overflow-y: auto;
-    overflow-x: hidden;
+﻿/* =============================
+   Browser Default Override
+   ⚠ 不可刪除
+============================= */
+
+.inputLine,
+.inputNone,
+.backIndex,
+.back-home-link,
+.back-home-link a {
+    text-decoration: none;
 }
 
-.profile_avatar_section {
-    background-color: var(--color_bk);
-    border-radius: 18px;
-    border: 1px var(--color_Gray);
-    width: 30rem;
-    height: 35rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+input,
+button,
+select,
+textarea {
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
 }
 
-.btn {
+/* IE/Edge 舊版密碼框按鈕 */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none !important;
+}
+
+/* ================================
+   Button
+================================ */
+
+.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, #btnResetEmail {
+    padding-bottom: 10px;
     height: 48px;
     font-size: 18pt;
     margin: 10px;
     white-space: nowrap;
 }
+.btn-confirm {
+    background-color: var(--color_Light) ;
+    color: black;
+}
+.btn-edit {
+    background-color: var(--color_Gray) ;
+    color: black;
+}
+.btn-danger1 {
+    background-color: var(--color_nav);
+    color: black;
+}
+.btn-primary2 {
+    background-color: #7ca8e5;
+    color: black;
+}
+
+/*====驗證信====*/
+#btn_next_step {
+    height: 48px;
+    width: 30rem;
+    justify-content: center;
+}
+
+.logoContent {
+    font-weight: normal;
+    font-size: 1.1rem;
+    margin-left: 10px;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 18pt;
+    padding-top: 25px;
+}
+
+.logoImg {
+    width: 20rem;
+}
+/*====驗證信====*/
+
+
+
 
 /*文字前框*/
 .current-title {
@@ -61,608 +103,13 @@
     width: 25px;
     height: 25px;
 }
-.info_value input,
-.info_value span {
-    white-space: nowrap;
-    width: 60rem;
-}
-.info_value span {
-padding-left:34px;
-}
+
 #displayEmail {
     margin-top: 15px;
     margin-bottom: 40px;
 }
 
-.container {
-    display: inline-block;
-    border-radius: 18px;
-    padding: 1em;
-    margin-top: 2em;
-}
 
-
-
-.two-column {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-}
-
-.months-panel {
-    width: 36%;
-    padding: 10px;
-}
-
-.month-panel {
-    width: 60%;
-    padding: 10px 6px;
-}
-
-/* header styles adjusted for two panels */
-.year-header,
-.month-header {
-    background-color: var(--color_Calendar);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 10px;
-    margin-bottom: 8px;
-}
-    .year-header .year-display,
-    .month-header .month-display {
-        color: var(--color_DarkGray);
-        font-size: 1.2rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .year-header button,
-    .month-header button {
-        background: transparent;
-        border: none;
-        font-size: 1.1rem;
-        cursor: pointer;
-        padding: 6px 10px;
-        color: var(--accent);
-    }
-
-.days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 56px;
-    gap: 0.5rem;
-    justify-items: center;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-    .week div,
-    .days div {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 3rem;
-        width: 3em;
-        border-radius: 100%;
-    }
-
-        .days div:hover {
-            background: var(--accent-2);
-            color: rgb(25, 25, 201);
-            cursor: pointer;
-        }
-
-.week div {
-    opacity: 0.5;
-}
-
-.current-date {
-    background-color: var(--accent);
-    color: var(--white);
-}
-
-.display-selected {
-    margin-bottom: 10px;
-    padding: 20px 20px;
-    text-align: center;
-}
-
-/* months grid on left */
-.months-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 8px;
-}
-
-.month-btn {
-    background: #fff;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.14);
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 6px 0 rgba(0,128,96,0.04);
-}
-
-    .month-btn .mn {
-        font-weight: 700;
-        color: #333;
-    }
-
-    .month-btn .en {
-        font-size: 0.85rem;
-        color: #777;
-    }
-
-    .month-btn.active {
-        outline: 3px solid rgba(0,128,128,0.12);
-        background: linear-gradient(180deg, #f5fffb, #fff);
-    }
-
-.months-panel .year-header {
-    margin-bottom: 12px;
-}
-
-/* 統一使用 .day-cell.locked（避免全域 .locked 影響其他元素） */
-.day-cell.locked {
-    opacity: 0.5;
-    pointer-events: none;
-    background-color: #e9ecef;
-    color: #adb5bd;
-    cursor: not-allowed;
-}
-
-/* saved/submitted 統一為 .day-cell.submitted */
-.day-cell.submitted {
-    background-color: #2DA78B;
-    color: white;
-}
-
-/* selected-single：將樣式套到 .day-label，避免與 cell 背景規則衝突 */
-.day-cell.selected-single .day-label {
-    background: linear-gradient(180deg,#36c5a9,#1fa08a);
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-}
-
-/* 範圍內 (淡綠色背景) */
-.day-cell.selected-range {
-    background: linear-gradient(90deg, rgba(210,249,231,0.5), rgba(237,252,229,0.5));
-    border-radius: 8px;
-}
-
-/* 範圍起點 (粉藍) */
-.day-cell.range-start .day-label {
-    background: linear-gradient(180deg,#bfe8ff,#a7ddff);
-    color: #04253a;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-}
-
-/* 範圍終點 (橘色) */
-.day-cell.range-end .day-label {
-    background: linear-gradient(180deg,#ffb86b,#ff974d);
-    color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-}
-
-/* 今天 (藍色圈) */
-.day-cell.today .day-label {
-    background: linear-gradient(180deg,#3b82f6,#2563eb);
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-}
-
-/* 鎖定 (灰色圈，不可選) */
-.day-cell.locked .day-label {
-    background: linear-gradient(180deg,#9ca3af,#6b7280);
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    opacity: 0.85;
-}
-
-/* 日曆格樣式 */
-.day-cell {
-    width: 100%;
-    max-width: 56px;
-    height: 100%;
-    max-height: 56px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    box-sizing: border-box;
-    position: relative;
-    cursor: pointer;
-}
-
-.cell-delete {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 18px;
-    height: 18px;
-    border: none;
-    border-radius: 50%;
-    background: #e74c3c;
-    color: #fff;
-    font-size: 14px;
-    line-height: 18px;
-    cursor: pointer;
-}
-
-.day-cell .day-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    font-size: 0.95rem;
-    user-select: none;
-}
-
-/* 編輯模式右上 X */
-.cell-close {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 18px;
-    height: 18px;
-    border: none;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    border-radius: 50%;
-    font-size: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-/* Legend 樣式（加入至 Calendar.css）*/
-.calendar_legend {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-    font-size: 0.95rem;
-    color: #333;
-}
-
-    .calendar_legend .legend-item {
-        display: inline-flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .calendar_legend .dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    }
-
-        /* 顏色對照（與 Calendar.js class 對應） */
-        .calendar_legend .dot.today {
-            background: #0d6efd;
-        }
-        /* 藍色：今天 */
-        .calendar_legend .dot.locked {
-            background: #6c757d;
-        }
-        /* 灰色：已有行程 */
-        .calendar_legend .dot.single {
-            background: linear-gradient(180deg,#36c5a9,#1fa08a);
-        }
-        /* 藍綠色：單日 */
-        .calendar_legend .dot.range {
-            background: linear-gradient(90deg,#dff7ea,#eaf9d6);
-        }
-        /* 淡綠：範圍整區 */
-        .calendar_legend .dot.range-start {
-            background: #bfe8ff;
-        }
-        /* 粉藍：範圍開始 */
-        .calendar_legend .dot.range-end {
-            background: #ffb86b;
-        }
-        /* 橘色：範圍結束 */
-        .calendar_legend .dot.ok {
-            background: linear-gradient(0deg, #3EB392, #94EBB8);
-        }
-
-        .calendar_legend .dot.ok2 {
-            background: linear-gradient(180deg, #2D92A7, #1C3B87);
-        }
-
-/* 新增：強烈標示「待刪除」日期（加入於現有 Calendar.css） */
-.day-cell.to-unregister {
-    background: linear-gradient(90deg, rgba(255,235,238,0.95), rgba(255,243,244,0.6));
-    border: 1px solid rgba(244,67,54,0.22);
-    color: #b71c1c;
-    position: relative;
-    box-shadow: inset 0 -3px 0 rgba(183,28,28,0.06);
-}
-
-/* 小標籤顯示「刪除」文字 */
-.day-cell .to-unregister-mark {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: #b71c1c;
-    color: #fff;
-    font-size: 10px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    line-height: 1;
-    opacity: 0.95;
-    pointer-events: none;
-}
-
-/* 可選：在待刪除上增加刪除圖示或刪除線（條件式） */
-.day-cell.to-unregister .day-label {
-    text-decoration: line-through;
-    opacity: 0.95;
-}
-
-body.calendar-editing .day-cell {
-    cursor: pointer;
-}
-
-body:not(.calendar-editing) .day-cell {
-    cursor: default;
-}
-
-/* calendarRange 清單樣式 */
-#calendarRange {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px 12px;
-    border-left: 1px solid rgba(0,0,0,0.06);
-    color: var(--color_DarkGray);
-    font-size: 0.95rem;
-}
-
-.calendar-range-item {
-    padding: 6px 8px;
-    background: linear-gradient(90deg, rgba(245,255,250,0.6), rgba(255,255,255,0.6));
-    border-radius: 8px;
-}
-
-/* Bootstrap grid 已處理欄位，補強 list 與面板樣式 */
-.months-panel,
-.month-panel,
-.list-panel {
-    background: var(--white);
-    border-radius: 12px;
-    padding: 0.75rem;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-}
-
-/* 右側清單樣式 */
-.calendar-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 56vh;
-    overflow: auto;
-    padding: 0.4rem;
-}
-
-    /* 單項條目 */
-    .calendar-list .calendar-range-item {
-        padding: 8px 10px;
-        border-radius: 8px;
-        background: linear-gradient(180deg, #f6fffb, #fff);
-        color: var(--color_DarkGray);
-        font-size: 0.95rem;
-        box-shadow: 0 1px 0 rgba(0,0,0,0.02) inset;
-    }
-
-    /* 已提交標示 */
-    .calendar-list .submitted {
-        background: linear-gradient(180deg,#2DA78B,#1F8B6F);
-        color: #fff;
-    }
-
-/* 修正：範圍終點橘色（原本 typo #ffb86l -> 改為 #ffb86b） */
-.day-cell.range-end .day-label {
-    background: linear-gradient(180deg,#ffb86b,#ff974d);
-    color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-}
-
-/* 新舊提交樣式（如果尚未加入） */
-.day-cell.submitted-old {
-    background: linear-gradient(0deg, #3EB392, #94EBB8);
-    color: #fff;
-}
-
-.day-cell.submitted-new {
-    background: linear-gradient(180deg, #2D92A7, #1C3B87);
-    color: #fff;
-}
-
-.calendar-list .submitted-old,
-#calendarRange .submitted-old {
-    background: linear-gradient(0deg, #3EB392, #94EBB8);
-    color: #fff;
-}
-
-.calendar-list .submitted-new,
-#calendarRange .submitted-new {
-    background: linear-gradient(180deg, #2D92A7, #1C3B87);
-    color: #fff;
-}
-
-/* 在小螢幕收窄高度 */
-@media (max-width: 576px) {
-    .calendar-list {
-        max-height: 36vh;
-    }
-}
-
-/* 輕微微調：使 days 區塊置中並自適應 */
-.month-panel .days {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-/* 確保 header 按鈕不顯得太大 */
-.year-header .btn,
-.month-header .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9rem;
-}
-
-/* 確保 days 為 7 列 grid，保持格數穩定 */
-.days {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 56px; /* 每格高度，必要時調整 */
-    gap: 0.5rem;
-    justify-items: center;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* 保持每格外觀一致（已有規則也會作用），適當限制大小 */
-.day-cell {
-    width: 100%;
-    max-width: 56px;
-    height: 100%;
-    max-height: 56px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    box-sizing: border-box;
-}
-
-    /* 空白占位格：保留格位但不可見/不可互動 */
-    .day-cell.empty {
-        visibility: hidden;
-        pointer-events: none;
-        background: transparent;
-        box-shadow: none;
-    }
-
-/* 被 focus/flash 的標示（可選） */
-.flash-highlight {
-    box-shadow: 0 0 0 6px rgba(0,45,167,139,0.12);
-    transition: box-shadow 0.25s ease;
-}
-
-/* 限定於會員頁面內還原 container 行為（避免覆寫 Bootstrap 全域 .container） */
-.member_center_wrap > .container {
-    display: block !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-/* 强制會員頁面日曆區塊在桌面三欄同排 */
-.member_center_wrap #calendar_section > .container > .row {
-    /* 以 flex 排列，桌面不換行 */
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 1rem;
-}
-
-/* 桌面：左側月份、主日曆、右側清單 */
-@media (min-width: 992px) {
-    .member_center_wrap #calendar_section .months-panel {
-        flex: 0 0 280px; /* 左側固定寬 */
-        max-width: 280px;
-        width: 280px;
-        box-sizing: border-box;
-    }
-
-    .member_center_wrap #calendar_section .month-panel {
-        flex: 1 1 auto; /* 中間撐滿 */
-        min-width: 0; /* 防止內容撐破 */
-    }
-
-    .member_center_wrap #calendar_section .list-panel {
-        flex: 0 0 280px; /* 右側固定寬 */
-        max-width: 280px;
-        width: 280px;
-        box-sizing: border-box;
-        align-self: flex-start; /* 確保和中間頂端對齊 */
-    }
-
-        /* 若有 Bootstrap col-* 干擾，覆寫為不使用寬度百分比 */
-        .member_center_wrap #calendar_section .months-panel[class*="col-"],
-        .member_center_wrap #calendar_section .month-panel[class*="col-"],
-        .member_center_wrap #calendar_section .list-panel[class*="col-"] {
-            width: auto !important;
-        }
-
-    /* 右側清單外框內文垂直頂端對齊 */
-    .member_center_wrap #calendar_section .calendar-list {
-        max-height: 56vh;
-        overflow: auto;
-    }
-}
-
-/* 平板與手機維持原本 Bootstrap 行為（自動換行） */
-@media (max-width: 991.98px) {
-    .member_center_wrap #calendar_section > .container > .row {
-        display: block;
-    }
-
-    .member_center_wrap #calendar_section .months-panel,
-    .member_center_wrap #calendar_section .month-panel,
-    .member_center_wrap #calendar_section .list-panel {
-        width: 100% !important;
-        max-width: none !important;
-        box-sizing: border-box;
-    }
-}
-
-
-
-/* =============================
-   Browser Default Override
-   ⚠ 不可刪除
-============================= */
-
-.inputLine,
-.inputNone,
-.backIndex,
-.back-home-link,
-.back-home-link a {
-    text-decoration: none;
-}
-
-input,
-button,
-select,
-textarea {
-    appearance: none;
-    -webkit-appearance: none;
-    outline: none;
-}
 
 
 
@@ -813,13 +260,92 @@ margin:0;
     white-space: normal;
 }
 
+
+
 /*手機*/
 @media (max-width: 992px) {
-    .profile_info_section, .profile_avatar_section {
-        position: relative;
-        left: 0;
-        align-content:center;
+    /*===通知====*/
+    .policy-modal {
+        max-width: 94%;
+        max-height: 88vh;
+        border-radius: 10px;
     }
+
+    .policy-modal__title {
+        font-size: 1rem;
+    }
+
+    .policy-modal__body {
+        font-size: 0.98rem;
+    }
+    /*===通知====*/
+    /*===會員====*/
+    .info_value,
+    .info_value span,
+    .info_value input,
+    .display-selected,
+    .calendar-range-item,
+    .calendar-list,
+    .calendar_legend,
+    .titleWrap,
+    .card-title,
+    .card-text {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        max-width: 100% !important;
+        white-space: nowrap;
+    }
+    .member_center_wrap,
+    .profile_container,
+    .mc-card,
+    .mc-inner {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        max-width: 100% !important;
+        padding: 40px;
+        box-sizing: border-box;
+    }
+    .profile_info_section {
+        background-color: white;
+        flex: 1 1 auto;
+        min-width: 0; /* 關鍵：避免內容撐破容器 */
+        min-height: 35rem; /* 保留視覺高度（可改為 auto） */
+        height: auto;
+        padding: 30px;
+        box-sizing: border-box;
+        white-space: normal;
+    }
+
+    /* 每一行資訊的容器 */
+    .info_item {
+        display:block;
+        justify-content: space-between; /* 標題在左，內容在右 */
+        align-items: center;
+        padding: 10px 0;
+/*        width: 100%;*/
+        box-sizing: border-box;
+    
+    }
+    .profile_container {
+        display: flex;
+        gap: 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .profile_avatar_section {
+        background-color: white;
+        flex: 0 0 260px;
+        max-width: 260px;
+        min-width: 220px;
+        min-height: 40rem; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-radius: 18px;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
     .signContent.s2 .formWrap {
         max-width: 420px; /* 與 Login 行動版一致 */
     }
@@ -935,11 +461,7 @@ margin:0;
         object-fit: contain;
     }
 
-/* IE/Edge 舊版密碼框按鈕 */
-input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-    display: none !important;
-}
+
 
 /* 輸入提示與 hint（合併） */
 .inputHint,
@@ -1312,6 +834,9 @@ input:is(:-webkit-autofill, :autofill) {
     display: block;
     box-sizing: border-box;
 }
+.name_hint {
+    display: block;
+}
 #emailHint {
     margin-top: 0.5rem;
 }
@@ -1322,6 +847,47 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* RWD: desktop */
 @media (min-width: 992px) {
+
+    /*==個人資料===*/
+    .profile_container {
+        width: 100%;
+    }
+    .member_center_wrap {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        margin-left: 200px;
+        padding: 40px;
+    }
+
+    .profile_info_section {
+        flex: 1;
+        position: relative;
+        padding: 30px;
+        background-color: var(--color_bk);
+        border-radius: 18px;
+        border: 1px var(--color_Gray);
+        min-width:10px;
+        height: 35rem;
+        white-space: nowrap;
+        font-size: 18pt;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        left: 30px;
+    }
+
+    .main-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .profile_avatar_section {
+        background-color: var(--color_bk);
+        border-radius: 18px;
+        border: 1px var(--color_Gray);
+        width: 35%;
+        height: 35rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
     /* 只鎖登入 / 註冊頁 */
     .auth-page {
         height: 100vh;
@@ -1680,12 +1246,6 @@ input:is(:-webkit-autofill, :autofill) {
     }
 
 
-
-body {
-    overflow-y: auto;
-    background-color: white;
-}
-
 .GoogleWrap {
     width: 100%;
     display: flex;
@@ -1784,22 +1344,7 @@ body {
     font-weight: 600;
 }
 
-/* 手機優化 */
-@media (max-width: 600px) {
-    .policy-modal {
-        max-width: 94%;
-        max-height: 88vh;
-        border-radius: 10px;
-    }
 
-    .policy-modal__title {
-        font-size: 1rem;
-    }
-
-    .policy-modal__body {
-        font-size: 0.98rem;
-    }
-}
 /* Restore policy modal header color & contrast */
 .policy-modal__header {
     background: white; /* 可改為你想要的主色 */
@@ -1857,29 +1402,51 @@ body {
     color: #111;
 }
 
-/* 新增：讓 footer 滿版（不受上層 container 限制） */
-.footer-fullwidth {
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
-    text-align: center;
-    background-color: white;
-    width: 100vw;
-    box-sizing: border-box; /* 確保 padding 不會超出視窗 */
-    background: inherit; /* 如需背景色可改寫 */
-    z-index: 1;
-    overflow-x:hidden;
-    overflow-y:hidden;
-}
+/* ================
+   Responsive profile
+   手機：垂直、寬度對齊
+   桌機：並排（保留原本卡片感）
+   放置位置：檔案末端以覆寫先前設定
+   ================ */
 
-    /* 內部內容仍需置中且有最大寬度 */
-    .footer-fullwidth .footer-inner {
-        max-width: 1200px; /* 或配合 site container 寬度 */
-        margin: 0 auto;
-        padding: 16px; /* 視設計調整 */
-        overflow-x: hidden;
-        overflow-y: hidden;
+/* 手機 / 小螢幕：垂直排列、卡片撐滿寬度 */
+@media (max-width: 991.98px) {
+    .member_center_wrap {
+        display: block !important;
+        margin-left: 0 !important;
+        padding: 16px !important;
+        box-sizing: border-box;
     }
+
+    .profile_container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .profile_avatar_section,
+    .profile_info_section {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+    .profile_avatar_section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile_info_section {
+        white-space: normal !important;
+        font-size: 14pt;
+    }
+}
 

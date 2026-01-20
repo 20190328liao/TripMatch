@@ -178,36 +178,62 @@ namespace TripMatch.Controllers
                     return BadRequest(new { success = false, message = "用戶不存在。" });
 
                 ViewData["Status"] = "Error";
-                ViewData["Message"] = "用戶不存在。";
+                ViewData["Message"] = "用戶不存在或已被移除，請重新發送驗證信。";
                 return View("CheckEmail");
             }
 
-            var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-            var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
-
-            if (result.Succeeded)
+            try
             {
-                // 寫入站域 cookie，供前端 polling/register 流程使用
-                _authService.SetPendingCookie(HttpContext, user.Email);
+                var decodedCode = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+                var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
 
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                if (result.Succeeded)
                 {
-                    return Ok(new { success = true, message = "Email 驗證成功！" });
-                }
+                    // 重新從資料庫讀取並再次確認 state（防止有人在 DB 直接移除或異動造成不一致）
+                    var refreshed = await _userManager.FindByIdAsync(userId);
+                    if (refreshed == null || !await _userManager.IsEmailConfirmedAsync(refreshed))
+                    {
+                        // 若重新檢查失敗，視為驗證未完成或資料遺失
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                        {
+                            return BadRequest(new { success = false, message = "驗證未完成或資料已變更，請重新發送驗證信。" });
+                        }
 
-                // 原本直接導到 Signup，改為先顯示 CheckEmail 頁面（前端會導回註冊或顯示後續操作）
-                ViewData["Status"] = "Success";
-                ViewData["Message"] = "Email 驗證成功，請回到註冊頁完成帳號設定。";
-                return View("CheckEmail");
+                        ViewData["Status"] = "Error";
+                        ViewData["Message"] = "驗證未完成或資料已變更，請重新發送驗證信。";
+                        return View("CheckEmail");
+                    }
+
+                    // 寫入站域 cookie，供前端 polling/register 流程使用
+                    _authService.SetPendingCookie(HttpContext, refreshed.Email);
+
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                    {
+                        return Ok(new { success = true, message = "Email 驗證成功！" });
+                    }
+
+                    ViewData["Status"] = "Success";
+                    ViewData["Message"] = "Email 驗證成功，請回到註冊頁完成帳號設定。";
+                    return View("CheckEmail");
+                }
+                else
+                {
+                    var err = string.Join(", ", result.Errors.Select(e => e.Description));
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
+                        return BadRequest(new { success = false, message = "Email 驗證失敗：" + err });
+
+                    ViewData["Status"] = "Error";
+                    ViewData["Message"] = "Email 驗證失敗：" + err;
+                    return View("CheckEmail");
+                }
             }
-            else
+            catch
             {
-                var err = string.Join(", ", result.Errors.Select(e => e.Description));
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
-                    return BadRequest(new { success = false, message = "Email 驗證失敗：" + err });
+                    return BadRequest(new { success = false, message = "驗證碼無效" });
 
                 ViewData["Status"] = "Error";
-                ViewData["Message"] = "Email 驗證失敗：" + err;
+                ViewData["Message"] = "驗證碼無效或已過期。";
                 return View("CheckEmail");
             }
         }

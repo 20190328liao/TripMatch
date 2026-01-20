@@ -1,18 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OAuth.Claims;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using System.Collections.Concurrent;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TripMatch.Data;
@@ -265,6 +259,32 @@ namespace TripMatch.Services
                 return handler.WriteToken(token);
             }
 
+            // 新增於 AuthService 類別內
+            public string? GetPendingEmail(HttpContext? context)
+            {
+                if (context == null) return null;
+                try
+                {
+                    if (context.Request?.Cookies != null && context.Request.Cookies.TryGetValue("PendingEmail", out var email) && !string.IsNullOrWhiteSpace(email))
+                    {
+                        return email;
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+                return null;
+            }
+
+            public void ClearPendingCookie(HttpContext? context)
+            {
+                if (context == null) return;
+                try { context.Response.Cookies.Delete("PendingEmail"); } catch { /* ignore */ }
+            }
+
+
+
             public void SetPendingCookie(HttpContext context, string? email)
             {
                 if (string.IsNullOrEmpty(email)) return;
@@ -392,5 +412,8 @@ namespace TripMatch.Services
                 throw new NotSupportedException("The email sender does not support sending custom emails.");
             }
         }
+
+
+       
     }
 }
