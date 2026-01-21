@@ -12,15 +12,8 @@
     align-items: flex-start;
 }
 
-.months-panel {
-    width: 36%;
-    padding: 10px;
-}
 
-.month-panel {
-    width: 60%;
-    padding: 10px 6px;
-}
+
 
 /* header styles adjusted for two panels */
 .year-header,
@@ -516,8 +509,7 @@ body:not(.calendar-editing) .day-cell {
 @media (min-width: 992px) {
     .member_center_wrap #calendar_section .months-panel {
         flex: 0 0 280px; /* 左側固定寬 */
-        max-width: 280px;
-        width: 280px;
+        min-width: 350px;
         box-sizing: border-box;
     }
 
@@ -528,8 +520,7 @@ body:not(.calendar-editing) .day-cell {
 
     .member_center_wrap #calendar_section .list-panel {
         flex: 0 0 280px; /* 右側固定寬 */
-        max-width: 280px;
-        width: 280px;
+        min-width: 280px;
         box-sizing: border-box;
         align-self: flex-start; /* 確保和中間頂端對齊 */
     }

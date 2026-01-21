@@ -245,8 +245,7 @@
                                 <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
                                     @* 移除收藏按鈕 (愛心) *@
                                 <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
-                                            title="從清單移除"
-                                            style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:32px; height:32px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
+                                            title="從清單移除">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
                                         <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
                                     </svg>
@@ -259,18 +258,24 @@
                                         <h5 class="card-title">@item.Name</h5>
                                         <p class="card-text text-truncate">@item.Address</p>
 
-                                    @* --- --- *@
-                                    @if (!string.IsNullOrEmpty(googleId))
-                                    {
-                                        <a href="/Spot?placeId=@googleId" class="btnSpot w-100">
-                                            View More
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-secondary w-100" disabled>無地點資料</button>
-                                    }
-                                    @* -------------- *@
+
+                         
+                                    <div class="card-footer bg-transparent border-0 pb-2">
+                                        @if (!string.IsNullOrEmpty(googleId))
+                                        {
+                                            @* 這裡改用 div，並加上 class="btn-view-more" *@
+                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
+                                                View More
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            @* 即使沒資料也給它 class，讓 JS 之後補上 ID 後可以啟用 *@
+                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
+                                                View More
+                                            </div>
+                                        }
+                                    </div>
                                     </div>
                                 </div>
                             </div>

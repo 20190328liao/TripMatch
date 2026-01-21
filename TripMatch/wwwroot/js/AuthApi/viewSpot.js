@@ -25,9 +25,10 @@
 
     function buildWishlistCardHtml(item) {
         const currentSpotId = item.spotId ?? item.SpotId ?? '';
-        const currentSpotTitle = item.name_ZH ?? item.Name_ZH ?? item.spotTitle ?? item.spot?.nameZh ?? '未知地點';
+        const currentSpotTitle = item.name_ZH ?? item.Name_ZH ?? item.spotTitle ?? '未知地點';
         const extId = item.externalPlaceId ?? item.ExternalPlaceId ?? item.googlePlaceId ?? '';
         const snapshot = item.PhotosSnapshot ?? item.photosSnapshot ?? item.spot?.photosSnapshot;
+        const detailUrl = extId ? `/Spot?placeId=${encodeURIComponent(extId)}` : 'javascript:void(0);';
         const parsed = (() => { try { return snapshot ? JSON.parse(snapshot) : null; } catch { return null; } })();
         let img = '/img/placeholder.png';
         if (item.imageUrl) img = item.imageUrl;
@@ -38,15 +39,17 @@
         }
 
         return `
-<div class="card pcard w-100 h-auto shadow-sm border-0 mb-3 wishlist-inserted" data-spot-col="${escapeHtml(currentSpotId)}" data-place-id="${escapeHtml(extId)}" style="border-radius:8px; overflow:hidden;">
-  <a href="/Spot?placeId=${encodeURIComponent(extId)}" class="d-block wishlist-link">
+<div class="card pcard w-100 h-auto shadow-sm border-0 mb-3 wishlist-inserted"
+     data-spot-col="${escapeHtml(currentSpotId)}" 
+     data-place-id="${escapeHtml(extId)}">
+  <a href="${detailUrl}" class="d-block wishlist-link">
     <img src="${escapeHtml(img)}" alt="${escapeHtml(currentSpotTitle)}" class="wishlist-img" style="width:100%; height:200px; object-fit:cover;">
   </a>
   <div class="card-body">
     <h6 class="card-title fw-bold mb-0">${escapeHtml(currentSpotTitle)}</h6>
   </div>
   <div class="card-footer bg-transparent border-0 pb-2">
-    <a href="/Spot?placeId=${encodeURIComponent(extId)}" class="btnSpot w-100 wishlist-link" style="text-decoration:none; display:inline-block; text-align:center;">View More</a>
+    <a href="${detailUrl}" class="btnSpot w-100 wishlist-link" style="text-decoration:none; display:inline-block; text-align:center;">View More</a>
   </div>
 </div>`;
     }
@@ -93,11 +96,19 @@
     // 把插入的 card 更新 extId 與 href（若後端回傳 extId）
     function updateCardExtId(cardEl, extId) {
         if (!cardEl || !extId) return;
+
+        // 1. 更新卡片本身的 Data 屬性
         cardEl.setAttribute('data-place-id', extId);
-        cardEl.querySelectorAll('a.wishlist-link').forEach(a => {
-            try {
-                a.href = `/Spot?placeId=${encodeURIComponent(extId)}`;
-            } catch { }
+
+        // 2. 構造正確的連結
+        const finalUrl = `/Spot?placeId=${encodeURIComponent(extId)}`;
+
+        // 3. 找出卡片內所有帶有 .wishlist-link 的 <a> 標籤 (包含圖片跟按鈕)
+        const links = cardEl.querySelectorAll('a.wishlist-link');
+        links.forEach(link => {
+            link.href = finalUrl;
+            // 同步更新它們的 data-place-id 以防萬一
+            link.setAttribute('data-place-id', extId);
         });
     }
 
@@ -307,13 +318,17 @@
                     } catch { /* ignore */ }
                 }
 
+                // 改為（保留 debug log，優先使用 anchor 原始 href；若找到 ext 則使用 ext）：
+                const originalHref = a.getAttribute('href') || a.href || '/Spot';
                 if (ext) {
-                    // update and navigate
                     const final = `/Spot?placeId=${encodeURIComponent(ext)}`;
+                    console.debug('[wishlist] navigate with extId', final, { spotId, ext });
                     window.location.href = final;
                 } else {
-                    // fallback: navigate to Spot page without placeId
-                    window.location.href = '/Spot';
+                    console.debug('[wishlist] extId not found, navigating to anchor href', originalHref, { spotId });
+                    // 使用 anchor 本身的 href（可能是 '/Spot?placeId=' 或 javascript:void(0)）
+                    // 若你不想 navigate 到 empty query，也可以在此顯示提示並 return
+                    window.location.href = originalHref;
                 }
             } catch (ex) {
                 console.warn('wishlist link interceptor error', ex);
@@ -326,56 +341,71 @@
         const pid = getPlaceIdFromQuery();
         if (!pid) return;
 
-        console.log("偵測到 placeId，準備自動觸發開啟面板:", pid);
+        // 1) 先用後端快照快取圖（非阻斷，但我們 await 一次短時間嘗試，讓圖片先顯示）
+        fastFillHeroFromSnapshot(pid, null);
 
-        let retry = 0;
-        const maxRetry = 20;
+        // 2) 優先呼叫 Spot.js 提供的開啟方法（若有）
+        if (typeof window.openPlaceByPlaceId === 'function') {
+            // 若 openPlaceByPlaceId 可立即使用，直接呼叫並 return
+            try {
+                window.openPlaceByPlaceId(pid);
+                return;
+            } catch (e) {
+                console.warn('openPlaceByPlaceId failed', e);
+            }
+        }
 
-        const timer = setInterval(() => {
-            // 監控 Spot.js 是否已經初始化完成
-            if (window.placesService && typeof window.placesService.getDetails === 'function') {
+        // 3) 若 Spot.js 還沒準備好，短輪詢更快（減少重試次數與間隔以加速）
+        let attempts = 0;
+        const maxAttempts = 8; // 減少重試次數
+        const intervalMs = 250; // 縮短間隔
+        const timer = setInterval(async () => {
+            attempts++;
+            if (typeof window.openPlaceByPlaceId === 'function' && window.placesService) {
                 clearInterval(timer);
-
-                window.placesService.getDetails({
-                    placeId: pid,
-                    fields: ['name', 'rating', 'formatted_address', 'opening_hours', 'formatted_phone_number', 'photos', 'geometry', 'reviews']
-                }, (place, status) => {
-                    if (status === 'OK' && place) {
-                        // 1. 手動填充 Spot.js 的 DOM (因為同事沒寫全域 function)
-                        if (document.getElementById('pName')) document.getElementById('pName').innerText = place.name || '';
-                        if (document.getElementById('pAddress')) document.getElementById('pAddress').innerText = place.formatted_address || '';
-                        if (document.getElementById('pRating')) document.getElementById('pRating').innerText = place.rating ? `⭐ ${place.rating}` : '';
-
-                        // 2. 處理圖片 (pHero)
-                        const pHero = document.getElementById('pHero');
-                        if (pHero && place.photos && place.photos.length > 0) {
-                            pHero.style.backgroundImage = `url(${place.photos[0].getUrl({ maxWidth: 800 })})`;
-                        }
-
-                        // 3. 顯示面板
-                        const panel = document.getElementById('panel');
-                        if (panel) {
-                            panel.classList.add('active'); // Spot.css 通常用的 class
-                            panel.style.display = 'block'; // 強制顯示保險
-                        }
-
-                        // 4. 地圖中心點對齊
-                        if (window.map && place.geometry && place.geometry.location) {
-                            window.map.setCenter(place.geometry.location);
-                            window.map.setZoom(16);
-                        }
-
-                        console.log("自動開啟面板成功");
-                    }
-                });
-            } else {
-                retry++;
-                if (retry >= maxRetry) {
-                    clearInterval(timer);
-                    console.warn("自動觸發失敗：等待 window.placesService 超時");
+                try {
+                    window.openPlaceByPlaceId(pid);
+                    return;
+                } catch (e) {
+                    console.warn('openPlaceByPlaceId failed on retry', e);
                 }
             }
-        }, 500);
+            if (attempts >= maxAttempts) {
+                clearInterval(timer);
+                // 4) fallback：用 client-side placesService 直接抓簡單資料並開 panel（若有）
+                try {
+                    const svc = window.placesService || (window.google && window.google.maps && window.google.maps.places ? new window.google.maps.places.PlacesService(document.createElement('div')) : null);
+                    if (svc && typeof svc.getDetails === 'function') {
+                        svc.getDetails({
+                            placeId: pid,
+                            fields: ['name', 'photos', 'formatted_address', 'geometry', 'rating']
+                        }, (place, status) => {
+                            const okStatus = window.google && window.google.maps && window.google.maps.places && window.google.maps.places.PlacesServiceStatus
+                                ? window.google.maps.places.PlacesServiceStatus.OK
+                                : 'OK';
+                            if (status === okStatus && place) {
+                                if (typeof window.fillPanelFromPlaceDetails === 'function') {
+                                    try { window.fillPanelFromPlaceDetails(place); }
+                                    catch (ex) { console.warn('fillPanelFromPlaceDetails failed', ex); }
+                                } else {
+                                    // 最低限度填充 panel
+                                    const pName = document.getElementById('pName'); if (pName) pName.textContent = place.name || '';
+                                    const pHero = document.getElementById('pHero'); if (pHero && place.photos && place.photos.length) pHero.style.backgroundImage = `url(${place.photos[0].getUrl({ maxWidth: 800 })})`;
+                                    const panel = document.getElementById('panel'); if (panel) panel.classList.add('open');
+                                    if (window.map && place.geometry && place.geometry.location) { try { window.map.setCenter(place.geometry.location); window.map.setZoom(16); } catch { } }
+                                }
+                            }
+                        });
+                    } else {
+                        // 最後 fallback: 模擬搜尋
+                        simulateInputClick(pid);
+                    }
+                } catch (e) {
+                    console.warn('placesService fallback failed', e);
+                    simulateInputClick(pid);
+                }
+            }
+        }, intervalMs);
     }
 
     // 啟動觸發器
@@ -497,5 +527,130 @@
         simulateSearchOrOpenByPlaceId();
     } else {
         document.addEventListener('DOMContentLoaded', simulateSearchOrOpenByPlaceId);
+    }
+})();
+
+// 快速用後端快照填充 hero（若有）
+async function fastFillHeroFromSnapshot(placeId, spotId) {
+    if (!placeId) return;
+    try {
+        // 1) 先向後端快取 API 取 imageUrl（MemberCenterApiController.GetSpotPhoto 已實作）
+        const url = `/api/MemberCenterApi/GetSpotPhoto?placeId=${encodeURIComponent(placeId)}${spotId ? `&spotId=${encodeURIComponent(spotId)}` : ''}`;
+        const res = await fetch(url, { credentials: 'include' });
+        if (res.ok) {
+            const j = await res.json().catch(() => ({}));
+            if (j && j.imageUrl) {
+                const pHero = document.getElementById('pHero');
+                if (pHero) {
+                    // 先顯示快取圖片，讓使用者感覺快速
+                    pHero.style.backgroundImage = `url("${j.imageUrl}")`;
+                    pHero.textContent = "";
+                }
+            }
+        }
+    } catch (ex) {
+        // 不阻塞主流程
+        console.warn('fastFillHeroFromSnapshot failed', ex);
+    }
+}
+
+// 新增：當 View More href 沒有 placeId 時，使用同卡片內 img[data-place-id] 作為 fallback 導向
+function attachBtnViewMoreFallback() {
+    document.addEventListener('click', function (e) {
+        try {
+            const a = e.target.closest && e.target.closest('a.btn-view-more, a.btn_view_more');
+            if (!a) return;
+
+            // 若 href 已有有效 placeId，則不處理
+            const href = a.getAttribute('href') || a.href || '';
+            try {
+                const parsed = new URL(href, window.location.origin);
+                const q = parsed.searchParams.get('placeId') || '';
+                if (q && q.trim()) return; // 已包含 placeId，正常導向
+            } catch { /* ignore URL parse error and fallthrough */ }
+
+            // 嘗試從 <img data-place-id> 取得 placeId（先找 a 內的 img，沒找到再往上找同卡片）
+            const img = a.querySelector && a.querySelector('img[data-place-id]') ||
+                        a.closest && a.closest('.col') && a.closest('.col').querySelector('img[data-place-id]');
+            const placeId = img && img.getAttribute && img.getAttribute('data-place-id') || '';
+
+            if (placeId && placeId !== 'null' && placeId.trim()) {
+                // 攔截並導向正確的 placeId
+                e.preventDefault();
+                const final = `/Spot?placeId=${encodeURIComponent(placeId)}`;
+                try { a.setAttribute('href', final); } catch { /* ignore */ }
+                window.location.href = final;
+            }
+            // 若無 placeId，保留原本行為（可能是 javascript:void(0) 或 /Spot?placeId=）
+        } catch (ex) {
+            console.warn('attachBtnViewMoreFallback error', ex);
+        }
+    }, true); // capture phase 以便先攔截
+}
+
+// 註冊
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachBtnViewMoreFallback);
+} else {
+    attachBtnViewMoreFallback();
+}
+
+// 新增：同步 View More 與圖片的 placeId（若圖片一開始就有 data-place-id）
+(function () {
+    'use strict';
+
+    function syncViewMoreToImage() {
+        try {
+            // 支援你專案中常見的 card 容器選取器
+            const cards = document.querySelectorAll('.wishlist-inserted, .col, .pcard, .wishlist-item');
+            cards.forEach(card => {
+                if (!card) return;
+                // 優先找卡片內的 img[data-place-id]
+                const img = card.querySelector && card.querySelector('img[data-place-id]');
+                if (!img) return;
+                const pid = (img.getAttribute('data-place-id') || img.dataset?.placeId || '').trim();
+                if (!pid || pid === 'null') return;
+
+                // 找到同卡片中所有應該同步的連結並設定 href 與 data-place-id
+                const linkSelectors = [
+                    'a.btn-view-more',
+                    'a.btn_view_more',
+                    'a.wishlist-link',
+                    'a.btnSpot',
+                    'a.wishlist-link'
+                ].join(',');
+                const links = card.querySelectorAll(linkSelectors);
+                links.forEach(a => {
+                    try {
+                        a.setAttribute('href', `/Spot?placeId=${encodeURIComponent(pid)}`);
+                        a.setAttribute('data-place-id', pid);
+                    } catch (ex) { /* ignore */ }
+                });
+            });
+        } catch (e) {
+            console.warn('syncViewMoreToImage error', e);
+        }
+    }
+
+    // 初始同步（頁面載入後）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncViewMoreToImage);
+    } else {
+        // 已載入的情況立即執行一次
+        syncViewMoreToImage();
+    }
+
+    // 若 cardsRow 存在，監聽 childList 變動（新增卡片時自動同步）
+    const cardsRowEl = document.getElementById('cardsRow');
+    if (cardsRowEl) {
+        const obs = new MutationObserver((mutations) => {
+            // 簡單且保守：每次 childList 變動時做一次全域同步
+            let changed = false;
+            for (const m of mutations) {
+                if (m.addedNodes && m.addedNodes.length) { changed = true; break; }
+            }
+            if (changed) syncViewMoreToImage();
+        });
+        obs.observe(cardsRowEl, { childList: true, subtree: true });
     }
 })();

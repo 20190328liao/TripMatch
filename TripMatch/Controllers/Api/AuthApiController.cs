@@ -826,6 +826,7 @@ namespace TripMatch.Controllers.Api
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
                 return NotFound(new { success = false, message = "找不到使用者" });
 
+            // 一次查出需要的欄位（包含 BackupEmailConfirmed）
             var userRecord = await _dbContext.AspNetUsers
                 .AsNoTracking()
                 .Where(u => u.UserId == intUserId)
@@ -833,6 +834,7 @@ namespace TripMatch.Controllers.Api
                 {
                     u.Email,
                     u.BackupEmail,
+                    u.BackupEmailConfirmed,
                     Avatar = u.Avatar,
                     FullName = u.FullName
                 })
@@ -867,11 +869,17 @@ namespace TripMatch.Controllers.Api
                 fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
             }
 
+            // 判斷備援信箱狀態
+            var backupEmailFilled = !string.IsNullOrWhiteSpace(userRecord.BackupEmail);
+            var backupVerified = userRecord.BackupEmailConfirmed == true; // 若為 1 (或 true) 表示已驗證
+
             return Ok(new
             {
                 success = true,
                 email = userRecord.Email,
                 backupEmail = userRecord.BackupEmail,
+                backupEmailFilled,
+                backupVerified,
                 avatar = userRecord.Avatar,
                 fullName = fullNameToReturn
             });

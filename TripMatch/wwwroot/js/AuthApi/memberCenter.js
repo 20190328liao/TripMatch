@@ -197,7 +197,7 @@
         // 自訂名稱：若無 FullName，預設為 Email @ 前字符
         const defaultName = data.fullName || (data.email ? data.email.split('@')[0] : '未設定');
         $('#displayName').text(defaultName);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        // 禁止在 UI 上編輯主信箱：隱藏/移除相關編輯按鈕與輸入框，避免誤用
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        // 禁止在 UI 上編輯主信箱：隱藏/移除相關編輯按鈕與輸入框，避免誤用
         $('#btnEditEmail, #btnSaveEmail, #btnCancelEmail, #inputEmail').addClass('d-none');
     },
 
@@ -627,4 +627,68 @@ $(function () {
     if (hasMemberCenterDom) {
         MemberProfile.init();
     }
+
+    // === 新增：處理 URL query 的 backupVerified 參數，顯示 popup 提示 ===
+    async function handleBackupVerifiedQuery() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has('backupVerified')) return;
+
+            const raw = params.get('backupVerified') || '';
+            // 判斷：'1' 或數字 userId (>0) 視為成功；'0' 或 空字串 視為失敗
+            let success = false;
+            if (raw === '1') success = true;
+            else {
+                const n = parseInt(raw, 10);
+                if (!isNaN(n) && n > 0) success = true;
+            }
+
+            let message = success ? '備援信箱驗證成功' : '備援信箱驗證失敗或連結無效';
+
+            // 嘗試呼叫後端以取得更詳細資訊（例如 accountEmail / lookupEmail）
+            try {
+                const api = window.Routes?.AuthApi?.GetBackupLookupResult ?? '/api/auth/GetBackupLookupResult';
+                const res = await fetch(api, { credentials: 'include' });
+                if (res.ok) {
+                    const j = await res.json().catch(() => null);
+                    if (j && j.found) {
+                        if (j.accountEmail) {
+                            message = success ? `備援信箱已驗證，主帳號：${j.accountEmail}` : (j.message || message);
+                        } else if (j.lookupEmail) {
+                            message = success ? `備援信箱 ${j.lookupEmail} 已驗證` : message;
+                        }
+                    }
+                }
+            } catch (e) {
+                // 不阻塞主流程，保留預設訊息
+                console.warn('GetBackupLookupResult failed', e);
+            }
+
+            if (typeof window.showPopup === 'function') {
+                await window.showPopup({
+                    title: success ? '驗證成功' : '驗證失敗',
+                    message,
+                    type: success ? 'success' : 'error',
+                    autoClose: true,
+                    seconds: 4
+                });
+            } else {
+                alert(message);
+            }
+
+            // 移除 URL 中的參數以避免刷新後重複提示
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('backupVerified');
+                window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+            } catch (e) {
+                // ignore
+            }
+        } catch (ex) {
+            console.warn('handleBackupVerifiedQuery error', ex);
+        }
+    }
+
+    // 立即執行一次（只在 MemberCenter 頁面有意義）
+    handleBackupVerifiedQuery();
 }); // end DOMReady
