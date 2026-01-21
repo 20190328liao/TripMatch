@@ -22,7 +22,7 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     DateStrings = tripSimpleInfo.dateStrings || [];   
 
 
-    recModal = new RecommendationModal(); // [新增] 初始化 Modal
+    recModal = new RecommendationModal(DateStrings); 
 
     itineraryNavigator = new ItineraryNavigator(
         'itinerary-nav-container',
@@ -44,6 +44,13 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
         // 假設有全域變數 currentUserId，或從 hidden input 抓
         // const userId = document.getElementById('current-user-id').value;
         recModal.open(tripSimpleInfo.tripRegions[0], 'favorites');
+    });
+
+    document.body.addEventListener('add-spot-to-trip', (e) => {
+        const { placeId, spotId, dayNum } = e.detail;
+        console.log(`準備加入行程: PlaceID=${placeId}, Day=${dayNum}`);
+
+        handleAddSpotFromModal(placeId, dayNum);
     });
 
 
@@ -73,6 +80,59 @@ export function refreshItineraryList() {
 
 export function GetDateStrings() {
     return DateStrings;
+}
+
+function handleAddSpotFromModal(googlePlaceId, dayNum) {
+
+    // 1. 這裡需要一個方法：依據 PlaceID 取得 Place Details 並存入 DB
+    // 我們可以重複利用 savePlaceToDatabase，但它需要 Place Result 物件
+    // 所以我們需要先用 Places Service 查一次詳情 (因為列表 API 給的資料可能不夠詳細存 DB)
+
+    if (!window.currentMapInstance) return;
+
+    const service = new google.maps.places.PlacesService(window.currentMapInstance);
+    service.getDetails({ placeId: googlePlaceId }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+
+            // 2. 存入 DB 取得 SpotId
+            savePlaceToDatabase(place).then(spotId => {
+                if (!spotId) {
+                    alert("儲存景點失敗");
+                    return;
+                }
+
+                // 3. 呼叫加入行程 API
+                const dto = {
+                    TripId: parseInt(document.getElementById('current-trip-id').value),
+                    SpotId: parseInt(spotId),
+                    DayNumber: parseInt(dayNum),
+                    StartTime: "08:00:00", // 預設時間
+                    EndTime: "09:00:00",
+                    SortOrder: 99
+                };
+
+                $.ajax({
+                    url: '/api/TripApi/AddSpotToTrip',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dto),
+                    success: function () {
+                        // 成功！
+                        // 1. 顯示成功提示 (Toast)
+                        // 2. 重新整理列表
+                        loadTripData();
+                        alert(`已成功加入 Day ${dayNum}！`);
+                    },
+                    error: function () {
+                        alert("加入行程失敗");
+                    }
+                });
+            });
+
+        } else {
+            alert("無法取得景點詳情，加入失敗");
+        }
+    });
 }
 
 
@@ -564,6 +624,7 @@ function renderItinerary(items, dates, accommodations, flights) {
     });
 
     itineraryNavigator.updateDays(dates);
+    recModal.updateDays(dates);
     bindItemEvents();
 }
 

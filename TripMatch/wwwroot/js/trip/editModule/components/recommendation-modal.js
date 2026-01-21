@@ -1,15 +1,16 @@
 ﻿import { savePlaceToDatabase, showPlaceByGoogleId } from '../edit-map-manager.js';
 
 export class RecommendationModal {
-    constructor() {
+    constructor(tripDates) {
         this.modalId = 'recommendationModal';
+        this.tripDates = tripDates || [];
         this.initModal();
     }
 
     initModal() {
         const html = `
         <div class="modal fade" id="${this.modalId}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
                 <div class="modal-content">
                     <div class="modal-header bg-light py-2">
                         <h6 class="modal-title fw-bold" id="rec-modal-title">
@@ -27,6 +28,10 @@ export class RecommendationModal {
         </div>`;
         document.body.insertAdjacentHTML('beforeend', html);
         this.bsModal = new bootstrap.Modal(document.getElementById(this.modalId));
+    }
+
+    updateDays(newDates) {
+        this.tripDates = newDates || [];
     }
 
     open(geo, type) {
@@ -65,7 +70,7 @@ export class RecommendationModal {
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(dto),
-            success: (data) => this.renderList(data.popularSpots, type),
+            success: (data) => this.renderList(data.spots, type),
             error: () => {
                 listContainer.innerHTML = `<div class="p-4 text-center text-danger">載入失敗，請稍後再試。</div>`;
             }
@@ -85,6 +90,21 @@ export class RecommendationModal {
 
 
         let html = '';
+
+        // 1. 預先生成日期下拉選單的 HTML (因為每個項目都一樣，先組好字串比較快)
+        let dropdownItemsHtml = '';
+        this.tripDates.forEach((date, idx) => {
+            const dayNum = idx + 1;
+            const dateShort = new Date(date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+            dropdownItemsHtml += `
+                <li><button class="dropdown-item js-add-to-day" type="button" data-day="${dayNum}">
+                    <span class="badge bg-light text-dark border me-2">Day ${dayNum}</span> ${dateShort}
+                </button></li>
+            `;
+        });
+
+
+
         items.forEach(item => {
             console.log("u景點探索項目", item);
 
@@ -101,7 +121,7 @@ export class RecommendationModal {
                 : '';
 
             html += `
-           <div class="list-group-item list-group-item-action p-3 p-md-4 d-flex gap-4 align-items-start rec-item" 
+         <div class="list-group-item list-group-item-action p-3 p-md-4 d-flex gap-4 align-items-start rec-item" 
                 data-place-id="${item.externalPlaceId}" data-spot-id="${item.externalPlaceId}"
                 style="cursor: pointer; transition: background-color 0.2s;">
                
@@ -128,39 +148,77 @@ export class RecommendationModal {
 
                    <!-- (選用) 類型標籤或其他資訊 -->
                    <!-- <div class="mt-auto pt-2"><span class="badge bg-light text-secondary border">景點</span></div> -->
+
+
                </div>
 
-               <!-- 3. 按鈕區塊 (垂直置中) -->
-               <div class="align-self-center">
-                   <button class="btn btn-outline-primary rounded-pill btn-add-rec px-3 py-2 shadow-sm" title="加入行程">
-                       <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline small fw-bold">加入</span>
+              
+               <div class="align-self-center dropdown">
+                  <button class="btn btn-outline-primary rounded-pill btn-add-rec px-3 py-2 shadow-sm"
+                           type="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false"
+                           title="加入行程">
+                       <i class="bi bi-plus-lg me-1"></i>
+                       <span class="d-none d-sm-inline small fw-bold">加入</span>
                    </button>
-               </div>
-           </div>
+
+                   <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="z-index: 1060;">
+                       <li><h6 class="dropdown-header">選擇日期</h6></li>
+                       ${dropdownItemsHtml}
+                   </ul>
+              </div>
+         </div>
        `;
         });
         container.innerHTML = html;
 
         // 綁定事件
+        container.querySelectorAll('.js-add-to-day').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止冒泡，避免觸發卡片點擊 (地圖預覽)
+
+                // 找到父層卡片的資料
+                const card = e.target.closest('.rec-item');
+                const placeId = card.dataset.placeId;
+                const spotId = card.dataset.spotId; // 注意：這裡可能需要確認是後端 DB 的 ID 還是 Google Place ID
+                const dayNum = btn.dataset.day;
+
+                // 觸發加入事件
+                this.triggerAddEvent(placeId, spotId, dayNum);
+
+                // 關閉 Modal (或是顯示一個 Toast 提示加入成功，保持 Modal 開啟更好)
+                // this.bsModal.hide(); 
+            });
+        });
+
+        // 2. 綁定 Dropdown Toggle (防止冒泡觸發卡片預覽)
+        container.querySelectorAll('.dropdown-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => e.stopPropagation());
+        });
+
+        // 3. 綁定卡片點擊預覽 (保持不變)
         container.querySelectorAll('.rec-item').forEach(el => {
             el.addEventListener('click', (e) => {
-                // 如果點到按鈕，不觸發地圖預覽
-                if (e.target.closest('.btn-add-rec')) {
-                    this.handleAddSpot(el.dataset.placeId, el.dataset.spotId);
-                    return;
-                }
-                // 點擊卡片本體 -> 在地圖上預覽 (如果有地圖實體)
-                // 這邊可以呼叫 showPlaceByGoogleId
+                // 如果點到 dropdown 相關元素，不動作
+                if (e.target.closest('.dropdown') || e.target.closest('.js-add-to-day')) return;
+
                 if (window.showPlaceByGoogleId) {
-                    window.showPlaceByGoogleId(el.dataset.placeId, el.dataset.spotId);
+                    // 關閉 Modal 以便看地圖? 還是保持開啟? 
+                    // 通常會保持開啟，但因為遮住地圖，或許可以先縮小或透明化
+                    // 這裡暫時保持原樣
+                    window.showPlaceByGoogleId(el.dataset.placeId);
                 }
             });
         });
-    }
+    } 
 
-    handleAddSpot(placeId, spotId) {
-        // 這裡可以呼叫原本的加入行程邏輯
-        // 或者簡單一點：關閉彈窗，並觸發地圖上的「加入行程」行為
-        alert("功能開發中：請先在地圖預覽後加入行程");
+    triggerAddEvent(placeId, spotId, dayNum) {
+        // 發送自定義事件給主程式監聽
+        const event = new CustomEvent('add-spot-to-trip', {
+            detail: { placeId, spotId, dayNum },
+            bubbles: true
+        });
+        document.getElementById(this.modalId).dispatchEvent(event);
     }
 }

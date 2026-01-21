@@ -262,7 +262,7 @@ namespace TripMatch.Controllers.Api
             {
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
-        }   
+        }
 
         #endregion
 
@@ -318,6 +318,18 @@ namespace TripMatch.Controllers.Api
             return Ok(new { AddToWishlist = reuslt });
         }
 
+        [HttpPost("MyFavorites")] // 改用 POST 以便接收 JSON body
+        public async Task<IActionResult> GetMyFavoritesNearLocation([FromBody] GeoDto geo)
+        {
+            var spots = await _tripServices.GetUserFavoritesNearLocationAsync(_tagUserId.UserId, geo);
+
+            return Ok(new
+            {
+                Spots = spots
+
+            });
+        }
+
 
         [HttpPost("Explore")]
         public async Task<IActionResult> Explore([FromBody] GeoDto geo)
@@ -346,13 +358,13 @@ namespace TripMatch.Controllers.Api
                     // 回傳 200 OK 但給空陣列，並附帶訊息讓前端知道沒找到東西
                     return Ok(new
                     {
-                        PopularSpots = new List<PlaceSnapshotDto>(),
+                        Spots = new List<PlaceSnapshotDto>(),
                         Message = "該地區目前沒有推薦的熱門景點。"
                     });
                 }
 
                 // 5. 成功回傳資料
-                return Ok(new { PopularSpots = spots });
+                return Ok(new { Spots = spots });
             }
             catch (Exception ex)
             {
