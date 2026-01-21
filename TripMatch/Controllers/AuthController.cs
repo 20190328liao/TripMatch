@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -8,11 +9,11 @@ using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using TripMatch.Data;
 using TripMatch.Models;
 using TripMatch.Models.Settings;
 using TripMatch.Services;
 using static TripMatch.Services.AuthServicesExtensions;
-using TripMatch.Data;
 
 namespace TripMatch.Controllers
 {
@@ -47,6 +48,7 @@ namespace TripMatch.Controllers
 
         // Login (GET)
         [HttpGet]
+        [RedirectIfAuthenticated]
         public IActionResult Login(string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
@@ -86,6 +88,7 @@ namespace TripMatch.Controllers
         }
 
         [HttpGet]
+        [RedirectIfAuthenticated]
         public IActionResult Signup()
         {
             return View();
@@ -98,6 +101,7 @@ namespace TripMatch.Controllers
         }
 
         [HttpGet]
+        [RedirectIfAuthenticated]
         public IActionResult ForgotPassword()
         {
             return View("ForgotPassword");
@@ -444,6 +448,21 @@ namespace TripMatch.Controllers
             if (missing.Count == 0) return (true, "密碼格式符合規則", Array.Empty<string>());
             return (false, "需包含：" + string.Join("、", missing), missing.ToArray());
         }
+
+        public class RedirectIfAuthenticatedAttribute : ActionFilterAttribute
+        {
+            public override void OnActionExecuting(ActionExecutingContext context)
+            {
+                if (context.HttpContext.User.Identity.IsAuthenticated)
+                {
+                    // 已登入就導回首頁
+                    context.Result = new RedirectToActionResult("Index", "Home", null);
+                }
+                base.OnActionExecuting(context);
+            }
+        }
         #endregion
+
+
     }
 }

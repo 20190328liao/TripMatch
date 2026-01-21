@@ -884,7 +884,18 @@ namespace TripMatch.Controllers.Api
                 fullName = fullNameToReturn
             });
         }
+        // 新增：處理 FullName 編碼/解碼（目前實作為直接回傳，可按需求改為編碼）
+        private static string EncodeFullNameIfNeeded(string? fullName)
+        {
+            // 若未來需要處理特殊字元或 URL encode，可在此實作；目前直接回傳原始字串
+            return fullName ?? string.Empty;
+        }
 
+        private static string DecodeFullNameIfNeeded(string? fullName)
+        {
+            // 若資料庫以某種編碼儲存，於此處解碼；目前直接回傳原始字串
+            return fullName ?? string.Empty;
+        }
         // 上傳頭像 API
         [HttpPost("UploadAvatar")]
         [Authorize]
@@ -988,11 +999,6 @@ namespace TripMatch.Controllers.Api
             }
         }
 
-
-
-
-
-
         public class SaveLeavesModel
         {
             public string[]? Added { get; set; } = Array.Empty<string>();
@@ -1036,6 +1042,7 @@ namespace TripMatch.Controllers.Api
 
                 // 3. 執行新增 (聯集邏輯：排除已存在的日期避免重複 Insert)
                 var existingDates = await _dbContext.LeaveDates
+                    // .FromSqlRaw("SELECT * FROM LeaveDates WHERE UserId = {0} AND LeaveDate1 IS NOT NULL AND LeaveDate1 IN ({1})", userId, string.Join(',', added))
                     .Where(l => l.UserId == userId && l.LeaveDate1.HasValue && added.Contains(l.LeaveDate1.Value))
                     .Select(l => l.LeaveDate1!.Value)
                     .ToListAsync();
@@ -1099,13 +1106,13 @@ namespace TripMatch.Controllers.Api
                     {
                         var s = first.GetString();
                         if (!string.IsNullOrEmpty(s)) return s;
-                    }
-                    else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
-                    {
-                        if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                            return urlProp.GetString();
-                        // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
-                    }
+                      }
+                      else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
+                      {
+                          if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                              return urlProp.GetString();
+                          // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
+                      }
                 }
                 else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
@@ -1326,6 +1333,20 @@ namespace TripMatch.Controllers.Api
                 return BadRequest("驗證連結已過期或無效。");
             }
         }
+
+        // 新增 helper（放在類別內合適位置）
+        private static string MaskEmailLocal(string? email)
+        {
+            if (string.IsNullOrEmpty(email)) return string.Empty;
+            var idx = email.IndexOf('@');
+            if (idx <= 0) return email;
+            var local = email.Substring(0, idx);
+            var domain = email.Substring(idx); // 包含 '@'
+            if (local.Length <= 4) return local + domain;
+            return local.Substring(0, 4) + new string('*', local.Length - 4) + domain;
+        }
+
+        // Replace GetBackupLookupResult 方法
         [HttpGet("GetBackupLookupResult")]
         public async Task<IActionResult> GetBackupLookupResult()
         {
@@ -1364,14 +1385,13 @@ namespace TripMatch.Controllers.Api
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                // 取得 email
+                // 取得 email 與 expiresAt（容錯）
                 string? email = null;
                 if (root.TryGetProperty("email", out var emailProp) && emailProp.ValueKind == JsonValueKind.String)
                 {
                     email = emailProp.GetString();
                 }
 
-                // 取得 expiresAt（容錯解析）
                 DateTime expiresAtUtc = DateTime.MinValue;
                 bool hasValidExpiry = false;
                 if (root.TryGetProperty("expiresAt", out var expiresProp))
@@ -1390,28 +1410,12 @@ namespace TripMatch.Controllers.Api
                         }
                         else if (expiresProp.ValueKind == JsonValueKind.Number)
                         {
-                            // 如果前端/其它流程以 ticks 或 unix seconds 儲存，可在此擴充解析
-                            // 目前不預設處理數字型態，但嘗試使用 GetDateTime 以兼容性解析
                             try
                             {
                                 expiresAtUtc = expiresProp.GetDateTime().ToUniversalTime();
                                 hasValidExpiry = true;
                             }
-                            catch { /* ignore */ }
-                        }
-                        else if (expiresProp.ValueKind == JsonValueKind.Object)
-                        {
-                            // 可能是複雜物件，嘗試讀取 string 欄位
-                            if (expiresProp.TryGetProperty("DateTime", out var dtProp) && dtProp.ValueKind == JsonValueKind.String)
-                            {
-                                var s = dtProp.GetString();
-                                if (!string.IsNullOrEmpty(s) &&
-                                    DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed2))
-                                {
-                                    expiresAtUtc = parsed2.ToUniversalTime();
-                                    hasValidExpiry = true;
-                                }
-                            }
+                            catch { }
                         }
                     }
                     catch (Exception ex)
@@ -1422,34 +1426,59 @@ namespace TripMatch.Controllers.Api
 
                 if (string.IsNullOrEmpty(email) || !hasValidExpiry || expiresAtUtc < DateTime.UtcNow)
                 {
-                    _logger?.LogInformation("GetBackupLookupResult: cookie invalid or expired. emailPresent={EmailPresent} hasValidExpiry={HasExpiry} expiresAt={ExpiresAt}",
-                        !string.IsNullOrEmpty(email), hasValidExpiry, hasValidExpiry ? expiresAtUtc.ToString("o") : "(invalid)");
-
                     Response.Cookies.Delete("BackupLookupPending");
                     return Ok(new { found = false });
                 }
 
                 var lower = email.ToLowerInvariant();
 
-                // 先檢查是否為其他帳號的備援信箱（此情況回傳該帳號的主信箱）
-                var userByBackup = await _userManager.Users
-                    .FirstOrDefaultAsync(u => u.BackupEmail != null && u.BackupEmail.ToLower() == lower);
+                // 查詢所有使用相同備援信箱的帳號
+                var usersByBackup = await _userManager.Users
+                    .Where(u => u.BackupEmail != null && u.BackupEmail.ToLower() == lower)
+                    .Select(u => new
+                    {
+                        Email = u.Email,
+                        EmailConfirmed = u.EmailConfirmed,
+                        UserId = u.Id
+                    })
+                    .ToListAsync();
 
-                if (userByBackup != null)
+                if (usersByBackup.Count > 1)
                 {
+                    // 多個主帳號：回傳 accounts 陣列供前端選擇
+                    var accounts = usersByBackup.Select(u => new
+                    {
+                        email = u.Email,
+                        masked = MaskEmailLocal(u.Email),
+                        emailConfirmed = u.EmailConfirmed,
+                        userId = u.UserId
+                    }).ToArray();
+
                     return Ok(new
                     {
                         found = true,
                         lookupEmail = email,
-                        accountEmail = userByBackup.Email,
-                        primaryEmailConfirmed = userByBackup.EmailConfirmed,
-                        note = userByBackup.Email == null
-                            ? "此備援信箱已綁定，但對應之主信箱不存在。"
-                            : (userByBackup.EmailConfirmed ? "已找到主信箱。" : "找到主信箱，但主信箱尚未完成驗證。")
+                        lookupEmailMasked = MaskEmailLocal(email),
+                        accounts
                     });
                 }
 
-                // 若不是任何人的備援信箱，再檢查是否為已驗證的主信箱
+                if (usersByBackup.Count == 1)
+                {
+                    var u = usersByBackup[0];
+                    return Ok(new
+                    {
+                        found = true,
+                        lookupEmail = email,
+                        lookupEmailMasked = MaskEmailLocal(email),
+                        accountEmail = u.Email,
+                        accountEmailMasked = MaskEmailLocal(u.Email),
+                        primaryEmailConfirmed = u.EmailConfirmed,
+                        note = u.EmailConfirmed ? "已找到主信箱。" : "找到主信箱，但主信箱尚未完成驗證。"
+                    });
+                }
+
+                // 檢查是否為已驗證的主信箱
                 var userByPrimaryConfirmed = await _userManager.Users
                     .FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == lower && u.EmailConfirmed);
 
@@ -1459,13 +1488,14 @@ namespace TripMatch.Controllers.Api
                     {
                         found = true,
                         lookupEmail = email,
+                        lookupEmailMasked = MaskEmailLocal(email),
                         accountEmail = userByPrimaryConfirmed.Email,
+                        accountEmailMasked = MaskEmailLocal(userByPrimaryConfirmed.Email),
                         primaryEmailConfirmed = true,
                         note = "此信箱為已驗證的主信箱。"
                     });
                 }
 
-                // 非備援且非已驗證主信箱 -> 視為未綁定/未註冊
                 Response.Cookies.Delete("BackupLookupPending");
                 return Ok(new { found = false, message = "此信箱未綁定任何已註冊且驗證過的帳號。" });
             }
@@ -1476,178 +1506,5 @@ namespace TripMatch.Controllers.Api
                 return Ok(new { found = false });
             }
         }
-
-        private static string EncodeFullNameIfNeeded(string fullName)
-        {
-            // 資料庫使用 nvarchar，直接回傳原始字串即可
-            return fullName;
-        }
-
-        private static string DecodeFullNameIfNeeded(string fullName)
-        {
-            return fullName;
-        }
-        // UpdateFullName 節錄（在 Controller 類別內）
-        [HttpPost("UpdateFullName")]
-        [Authorize]
-        public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel? model)
-        {
-            if (model == null || string.IsNullOrWhiteSpace(model.FullName))
-                return BadRequest(new { success = false, message = "名稱不可為空" });
-
-            var name = model.FullName!.Trim();
-            if (name.Length > 25)
-                return BadRequest(new { success = false, message = "名稱長度不能超過25字" });
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Unauthorized(new { success = false, message = "未授權或找不到使用者" });
-
-            // 直接儲存原始 Unicode 字串（不再 URL encode）
-            user.FullName = name;
-
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-            {
-                _logger?.LogWarning("UpdateFullName failed for user {UserId}: {Errors}",
-                    user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
-
-                var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "更新失敗";
-                return BadRequest(new { success = false, message = errorMsg, errors = result.Errors });
-            }
-
-            try
-            {
-                var token = _authService.GenerateJwtToken(user);
-                _authService.SetAuthCookie(HttpContext, token);
-            }
-            catch { }
-
-            return Ok(new { success = true, message = "自訂名稱已更新", fullName = user.FullName });
-        }
-
-        // 新增於 AuthApiController 類別內
-        [HttpPost("CreatePasswordResetSessionForUser")]
-        public async Task<IActionResult> CreatePasswordResetSessionForUser([FromBody] string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new { message = "請提供信箱" });
-
-            var user = await _userManager.FindByEmailAsync(email.Trim());
-            if (user == null)
-                return NotFound(new { message = "找不到對應使用者" });
-
-            try
-            {
-                // 產生原始 token，並進行 Base64Url 編碼（與 SendPasswordReset 相同）
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-                // 將重設資訊寫入 Session（24 小時內有效）
-                HttpContext.Session.SetString("PasswordResetUserId", user.Id.ToString());
-                HttpContext.Session.SetString("PasswordResetCode", encoded);
-                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
-
-                var redirect = Url.Action("ForgotPassword", "Auth");
-                return Ok(new { redirect });
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "CreatePasswordResetSessionForUser failed for {Email}", email);
-                return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
-            }
-        }
-
-        [HttpGet("GetWish")]
-        [Authorize]
-        public async Task<IActionResult> GetWish()
-        {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-                return Unauthorized(new { message = "請先登入" });
-
-            var items = await _dbContext.Wishlists
-                .AsNoTracking()
-                .Where(w => w.UserId == userId)
-                .OrderByDescending(w => w.CreatedAt)
-                .Select(w => new {
-                    SpotId = w.SpotId,
-                    Name_ZH = w.Spot != null ? w.Spot.NameZh : "未知地點",
-                    ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : "",
-                    PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
-                    Address = w.Spot != null ? w.Spot.AddressSnapshot : "",
-                    Rating = w.Spot != null ? w.Spot.Rating : 0
-                })
-                .ToListAsync();
-
-            return Ok(items);
-        }
-        [HttpGet("GetExternalPlaceId/{spotId}")]
-        public async Task<IActionResult> GetExternalPlaceId(int spotId)
-        {
-            var spot = await _dbContext.PlacesSnapshots
-                .FirstOrDefaultAsync(p => p.SpotId == spotId);
-
-            if (spot == null) return NotFound();
-
-            return Ok(new { externalPlaceId = spot.ExternalPlaceId });
-        }
-        [HttpPost("StoreSpotPhoto")]
-        [Authorize]
-        public async Task<IActionResult> StoreSpotPhoto([FromBody] StoreSpotPhotoModel? model)
-        {
-            if (model == null) return BadRequest(new { saved = false, message = "Invalid payload" });
-            if (string.IsNullOrEmpty(model.PlaceId) && model.SpotId <= 0)
-                return BadRequest(new { saved = false, message = "PlaceId or SpotId required" });
-
-            try
-            {
-                // 1) 若前端直接傳 ImageUrl（Client-side 已取得），優先儲存
-                if (!string.IsNullOrEmpty(model.ImageUrl))
-                {
-                    // PlacesPhotoHelper 為專案既有 helper（MemberCenterApiController 也使用過）
-                    await PlacesPhotoHelper.SavePhotoUrlToSnapshotAsync(_dbContext, model.SpotId, model.PlaceId ?? string.Empty, model.ImageUrl, _logger);
-                }
-                else
-                {
-                    // 2) 若沒 imageUrl，讓 service 去抓並填充 snapshot（會抓 photo_reference 並存入 PhotosSnapshot）
-                    if (!string.IsNullOrEmpty(model.PlaceId))
-                    {
-                        // FillPlacesSnapshotImagesAsync 會向 Google 查詢並儲存 photos 到 PlacesSnapshots
-                        await _placesImageService.FillPlacesSnapshotImagesAsync(model.PlaceId);
-                    }
-                }
-
-                // 3) 從 DB 讀回快照並回傳可載入的 imageUrl（如果有）
-                var snapshot = await _dbContext.PlacesSnapshots
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.ExternalPlaceId == (model.PlaceId ?? string.Empty));
-
-                // 取 apiKey（相容設定名）
-                var apiKey = _configuration["GoogleMaps:ApiKey"] ?? _configuration["GooglePlacesApiKey"];
-
-                string? imageUrl = null;
-                if (snapshot != null)
-                {
-                    imageUrl = PlacesPhotoHelper.BuildImageUrlFromPhotosSnapshot(snapshot.PhotosSnapshot, apiKey);
-                }
-
-                return Ok(new { saved = true, imageUrl });
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "StoreSpotPhoto failed: PlaceId={PlaceId}, SpotId={SpotId}", model.PlaceId, model.SpotId);
-                return StatusCode(500, new { saved = false, message = "Server error" });
-            }
-        }
-        // 新增：StoreSpotPhoto request model & API
-        public class StoreSpotPhotoModel
-        {
-            public int SpotId { get; set; } = 0;
-            public string? PlaceId { get; set; }
-            public string? ImageUrl { get; set; }
-        }
-
-
     }
 }

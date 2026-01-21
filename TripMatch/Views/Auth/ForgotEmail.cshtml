@@ -54,8 +54,8 @@
                 <button type="button" class="btn_next_step mt-4" id="btn_next_step" disabled>下一步</button>
             </div> <!-- ★ 補上這個缺失的 div (結束 forgot_form) -->
         </div> <!-- 結束 step1_content -->
-        <div><a href="@Url.Action("Login", "Auth")">回到登入</a></div>
-        <div><a href="@Url.Action("ForgotPassword", "Auth")">忘記密碼</a></div>
+        <div><a href="@Url.Action("Login", "Auth")" class="forgotEmailDisplay">回到登入</a></div>
+        <div><a href="@Url.Action("ForgotPassword", "Auth")" class="forgotEmailDisplay">忘記密碼</a></div>
         <!-- Step 2: 完成 -->
         <div id="step3_content" class="d-none text-center">
             <div class="mb-5">
