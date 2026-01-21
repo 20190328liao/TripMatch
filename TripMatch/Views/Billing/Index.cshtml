@@ -1,21 +1,15 @@
 ﻿@using System.Linq
 @model IEnumerable<TripMatch.Models.Trip>
 @{
-    Layout = null;
+    // Layout = null;
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
+    ViewData["Title"] = "旅程記帳列表";
 }
 
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的旅程 - 記帳分帳</title>
+@section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <link rel="stylesheet" href="~/css/Billing/accounting.css">
-</head>
-
-<body>
+    <link rel="stylesheet" href="~/css/Billing/accounting.css" asp-append-version="true">
+}
 
     <div class="container">
         <header class="page-header">
@@ -103,6 +97,6 @@
         </div>
     </div>
 
-    <script src="~/js/Billing/accounting.js"></script>
-</body>
-</html>
+    @section Scripts {
+        <script src="~/js/Billing/accounting.js" asp-append-version="true"></script>
+    }

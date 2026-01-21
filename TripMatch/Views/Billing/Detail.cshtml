@@ -1,31 +1,26 @@
 ﻿@model TripMatch.Models.Trip
 @{
-    Layout = null;
+    // Layout = null;
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
+    ViewData["Title"] = "旅程收支詳情";
 }
 
-<!DOCTYPE html>
-<html lang="zh-Hant">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅程收支詳情 </title>
+    
+@section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/Billing/Detail.css" asp-append-version="true">
+}
 
-    <link rel="stylesheet" href="~/css/Billing/Detail.css">
-</head>
 
-<body>
-
-    <nav class="navbar">
+    @* <nav class="navbar">
         <span style="color:#ddd; border:1px dashed #ddd; padding:5px 10px; border-radius:4px;">[全站導覽列預留區]</span>
-    </nav>
+    </nav> *@
 
     <header class="page-header">
         <div class="header-left">
             @* <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='/Home/index'" title="返回列表"></i> *@
             @* <h1 class="page-title">台南兩日遊美食行程</h1> *@
-            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Home")'" title="返回列表"></i>
+            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Billing")'" title="返回列表"></i>
             <h1 class="page-title">@Model.Title</h1>
         </div>
 
@@ -265,8 +260,12 @@
             </div>
         </div>
     </div>
+
+    @section Scripts {
+    <script src="~/js/Billing/Detail.js" asp-append-version="true"></script>
+
     <script>
-    // 1. 成員資料
+        // 1. 成員資料
     window.dbMembers = @Html.Raw(Json.Serialize(Model.TripMembers.Select(m => new { 
         id = m.Id, 
         // 邏輯：優先抓 FullName，如果沒有就抓 UserName，再沒有就顯示 "未知"
@@ -278,7 +277,5 @@
         start: '@Model.StartDate.ToString("yyyy-MM-dd")',
         end: '@Model.EndDate.ToString("yyyy-MM-dd")'
     };
-</script>
-    <script src="~/js/Billing/Detail.js"></script>
-</body>
-</html>
+    </script>
+}
