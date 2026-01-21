@@ -363,10 +363,17 @@ namespace TripMatch.Services
                     var htmlContent = $"<h3>歡迎註冊！</h3><p>請點擊以下連結驗證您的信箱：</p><a href='{confirmationLink}'>立即驗證</a>";
 
                     var msg = MailHelper.CreateSingleEmail(from, to, subject, "", htmlContent);
+
+                    // 關閉 SendGrid 的 click-tracking（避免 link 轉為 sendgrid.net 的追蹤網址）
+                    msg.TrackingSettings = new TrackingSettings
+                    {
+                        ClickTracking = new ClickTracking { Enable = false, EnableText = false }
+                    };
+
                     await client.SendEmailAsync(msg);
                 }
 
-                // 實作重設密碼信件發送
+                // 修改 EmailSender.SendPasswordResetLinkAsync：關閉 SendGrid click-tracking
                 public async Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
                 {
                     var client = new SendGridClient(_settings.SendGridKey);
@@ -381,6 +388,13 @@ namespace TripMatch.Services
                         <p>若您未提出此請求，請忽略此信件。</p>";
 
                     var msg = MailHelper.CreateSingleEmail(from, to, subject, "", htmlContent);
+
+                    // 關閉 click-tracking
+                    msg.TrackingSettings = new TrackingSettings
+                    {
+                        ClickTracking = new ClickTracking { Enable = false, EnableText = false }
+                    };
+
                     await client.SendEmailAsync(msg);
                 }
 

@@ -97,11 +97,15 @@
         newBtn.classList.remove('btn_Gray');
         newBtn.classList.add('btn_light');
 
-        const signupUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Signup) ? window.Routes.Auth.Signup : '/Auth/Signup';
+        // 改為導向 ForgotEmail 的 Step2（帶上 email）
+        const forgotEmailUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.ForgotEmail)
+            ? window.Routes.Auth.ForgotEmail
+            : '/Auth/ForgotEmail';
+
         newBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            let url = signupUrl;
-            if (email) url += '?email=' + encodeURIComponent(email);
+            let url = forgotEmailUrl + '?goStep=2';
+            if (email) url += '&email=' + encodeURIComponent(email);
             window.location.href = url;
         }, { once: true });
     }
