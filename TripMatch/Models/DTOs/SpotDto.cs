@@ -65,5 +65,13 @@ namespace TripMatch.Models.DTOs
             public PlaceDto Place { get; set; } = new();
         }
     }
+
+    public class SearchTripDaysDto
+    {
+        public int TripId { get; set; }
+        public string Title { get; set; } = "";
+        public int DayCount { get; set; }
+    }
+
 }
 
