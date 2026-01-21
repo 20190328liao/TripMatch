@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SendGrid.Helpers.Mail;
 using System;
 using System.Globalization;
 using System.Security.Claims;
@@ -31,6 +32,9 @@ namespace TripMatch.Controllers.Api
         private readonly ITagUserId _tagUserId;
         private readonly ILogger<AuthApiController> _logger;
         private readonly IDataProtector _dataProtector;
+        private readonly TravelDbContext _travelDbContext;
+        private readonly IConfiguration _configuration;
+        private readonly PlacesImageService _placesImageService;
 
         private static readonly Dictionary<string, byte[][]> _imageSignatures = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -49,7 +53,10 @@ namespace TripMatch.Controllers.Api
      TravelDbContext dbContext,
      ITagUserId tagUserId,
      ILogger<AuthApiController> logger,
-     IDataProtectionProvider dataProtectionProvider
+     IDataProtectionProvider dataProtectionProvider,
+     TravelDbContext travelDbContext,
+    IConfiguration configuration,
+    PlacesImageService placesImageService
      )
         {
             _signInManager = signInManager;
@@ -60,6 +67,9 @@ namespace TripMatch.Controllers.Api
             _tagUserId = tagUserId;
             _logger = logger;
             _dataProtector = dataProtectionProvider.CreateProtector("TripMatch.PendingBackupEmail");
+            _travelDbContext = travelDbContext;
+            _configuration = configuration;
+            _placesImageService = placesImageService;
         }
 
 
@@ -372,19 +382,134 @@ namespace TripMatch.Controllers.Api
         [HttpGet("CheckDbStatus")]
         public async Task<IActionResult> CheckDbStatus()
         {
-            if (!Request.Cookies.TryGetValue("PendingEmail", out var email))
+            try
             {
-                return Ok(new { verified = false });
+                // 1) 先處理正常 PendingEmail（註冊 / 主信箱流程）
+                if (Request.Cookies.TryGetValue("PendingEmail", out var pendingEmail) && !string.IsNullOrEmpty(pendingEmail))
+                {
+                    var user = await _userManager.FindByEmailAsync(pendingEmail);
+                    if (user != null)
+                    {
+                        // 回傳主信箱驗證狀態，同時也回傳備援狀態（如果有）
+                        return Ok(new
+                        {
+                            verified = user.EmailConfirmed,
+                            backupVerified = user.BackupEmailConfirmed,
+                            email = pendingEmail
+                        });
+                    }
+
+                    // 如果 cookie 存但找不到使用者，清除 cookie 並回傳 false
+                    Response.Cookies.Delete("PendingEmail");
+                    return Ok(new { verified = false, backupVerified = false });
+                }
+
+                // 2) 再處理備援信箱流程：BackupLookupPending cookie（由 ConfirmBackupLookup 設置）
+                if (Request.Cookies.TryGetValue("BackupLookupPending", out var backupCookie) && !string.IsNullOrEmpty(backupCookie))
+                {
+                    try
+                    {
+                        // 嘗試 Base64Url decode 成 protected payload（與 GetBackupLookupResult 一致）
+                        string protectedPayload;
+                        try
+                        {
+                            var decoded = WebEncoders.Base64UrlDecode(backupCookie);
+                            protectedPayload = Encoding.UTF8.GetString(decoded);
+                        }
+                        catch
+                        {
+                            // 如果 decode 失敗，當作 raw protected payload
+                            protectedPayload = backupCookie;
+                        }
+
+                        // Unprotect 得到原始 JSON
+                        string json = _dataProtector.Unprotect(protectedPayload);
+
+                        using var doc = JsonDocument.Parse(json);
+                        var root = doc.RootElement;
+
+                        // 取 email 與 expiresAt（容錯）
+                        string? lookupEmail = null;
+                        if (root.TryGetProperty("email", out var emailProp) && emailProp.ValueKind == JsonValueKind.String)
+                        {
+                            lookupEmail = emailProp.GetString();
+                        }
+
+                        DateTime expiresAtUtc = DateTime.MinValue;
+                        bool hasExpiry = false;
+                        if (root.TryGetProperty("expiresAt", out var expiresProp))
+                        {
+                            try
+                            {
+                                expiresAtUtc = expiresProp.GetDateTime().ToUniversalTime();
+                                hasExpiry = true;
+                            }
+                            catch
+                            {
+                                if (expiresProp.ValueKind == JsonValueKind.String &&
+                                    DateTime.TryParse(expiresProp.GetString(), out var parsed))
+                                {
+                                    expiresAtUtc = parsed.ToUniversalTime();
+                                    hasExpiry = true;
+                                }
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(lookupEmail) || !hasExpiry || expiresAtUtc < DateTime.UtcNow)
+                        {
+                            Response.Cookies.Delete("BackupLookupPending");
+                            return Ok(new { verified = false, backupVerified = false });
+                        }
+
+                        var lower = lookupEmail.ToLowerInvariant();
+
+                        // 先查是否為別人的備援信箱（回傳對應主帳號 email）
+                        var userByBackup = await _userManager.Users.FirstOrDefaultAsync(u => u.BackupEmail != null && u.BackupEmail.ToLower() == lower);
+                        if (userByBackup != null)
+                        {
+                            // 備援驗證已完成（ConfirmBackupLookup 寫入時才會到這裡）
+                            return Ok(new
+                            {
+                                verified = false,
+                                backupVerified = true,
+                                lookupEmail = lookupEmail,
+                                email = userByBackup.Email
+                            });
+                        }
+
+                        // 若不是別人的備援信箱，再檢查是否為已驗證的主信箱
+                        var userByPrimaryConfirmed = await _userManager.Users.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == lower && u.EmailConfirmed);
+                        if (userByPrimaryConfirmed != null)
+                        {
+                            return Ok(new
+                            {
+                                verified = false,
+                                backupVerified = true,
+                                lookupEmail = lookupEmail,
+                                email = userByPrimaryConfirmed.Email
+                            });
+                        }
+
+                        // 無對應帳號或未驗證情況
+                        Response.Cookies.Delete("BackupLookupPending");
+                        return Ok(new { verified = false, backupVerified = false });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "CheckDbStatus: processing BackupLookupPending failed");
+                        Response.Cookies.Delete("BackupLookupPending");
+                        return Ok(new { verified = false, backupVerified = false });
+                    }
+                }
+
+                // 3) 都沒有 cookie：回傳未驗證
+                return Ok(new { verified = false, backupVerified = false });
             }
-
-            var user = await _userManager.FindByEmailAsync(email!);
-
-            if (user != null && user.EmailConfirmed)
+            catch (Exception ex)
             {
-                return Ok(new { verified = true, email });
+                _logger?.LogError(ex, "CheckDbStatus unexpected error");
+                return StatusCode(500, new { verified = false, backupVerified = false });
             }
-
-            return Ok(new { verified = false });
         }
 
 
@@ -701,6 +826,7 @@ namespace TripMatch.Controllers.Api
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var intUserId))
                 return NotFound(new { success = false, message = "找不到使用者" });
 
+            // 一次查出需要的欄位（包含 BackupEmailConfirmed）
             var userRecord = await _dbContext.AspNetUsers
                 .AsNoTracking()
                 .Where(u => u.UserId == intUserId)
@@ -708,6 +834,7 @@ namespace TripMatch.Controllers.Api
                 {
                     u.Email,
                     u.BackupEmail,
+                    u.BackupEmailConfirmed,
                     Avatar = u.Avatar,
                     FullName = u.FullName
                 })
@@ -742,11 +869,17 @@ namespace TripMatch.Controllers.Api
                 fullNameToReturn = DecodeFullNameIfNeeded(userRecord.FullName);
             }
 
+            // 判斷備援信箱狀態
+            var backupEmailFilled = !string.IsNullOrWhiteSpace(userRecord.BackupEmail);
+            var backupVerified = userRecord.BackupEmailConfirmed == true; // 若為 1 (或 true) 表示已驗證
+
             return Ok(new
             {
                 success = true,
                 email = userRecord.Email,
                 backupEmail = userRecord.BackupEmail,
+                backupEmailFilled,
+                backupVerified,
                 avatar = userRecord.Avatar,
                 fullName = fullNameToReturn
             });
@@ -1425,44 +1558,96 @@ namespace TripMatch.Controllers.Api
             }
         }
 
-        [ApiController]
-        [Route("api/[controller]")]
-        public partial class MemberCenterApiController : ControllerBase
+        [HttpGet("GetWish")]
+        [Authorize]
+        public async Task<IActionResult> GetWish()
         {
-            private readonly TravelDbContext _dbContext;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { message = "請先登入" });
 
-            public MemberCenterApiController(TravelDbContext dbContext)
+            var items = await _dbContext.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .OrderByDescending(w => w.CreatedAt)
+                .Select(w => new {
+                    SpotId = w.SpotId,
+                    Name_ZH = w.Spot != null ? w.Spot.NameZh : "未知地點",
+                    ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : "",
+                    PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
+                    Address = w.Spot != null ? w.Spot.AddressSnapshot : "",
+                    Rating = w.Spot != null ? w.Spot.Rating : 0
+                })
+                .ToListAsync();
+
+            return Ok(items);
+        }
+        [HttpGet("GetExternalPlaceId/{spotId}")]
+        public async Task<IActionResult> GetExternalPlaceId(int spotId)
+        {
+            var spot = await _dbContext.PlacesSnapshots
+                .FirstOrDefaultAsync(p => p.SpotId == spotId);
+
+            if (spot == null) return NotFound();
+
+            return Ok(new { externalPlaceId = spot.ExternalPlaceId });
+        }
+        [HttpPost("StoreSpotPhoto")]
+        [Authorize]
+        public async Task<IActionResult> StoreSpotPhoto([FromBody] StoreSpotPhotoModel? model)
+        {
+            if (model == null) return BadRequest(new { saved = false, message = "Invalid payload" });
+            if (string.IsNullOrEmpty(model.PlaceId) && model.SpotId <= 0)
+                return BadRequest(new { saved = false, message = "PlaceId or SpotId required" });
+
+            try
             {
-                _dbContext = dbContext;
-            }
-
-            [HttpGet("GetWish")]
-            [Authorize]
-            public async Task<IActionResult> GetWish()
-            {
-                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
-
-                var items = await _dbContext.Wishlists
-                    .AsNoTracking()
-                    .Where(w => w.UserId == userId)
-                    .Select(w => new WishlistCard
+                // 1) 若前端直接傳 ImageUrl（Client-side 已取得），優先儲存
+                if (!string.IsNullOrEmpty(model.ImageUrl))
+                {
+                    // PlacesPhotoHelper 為專案既有 helper（MemberCenterApiController 也使用過）
+                    await PlacesPhotoHelper.SavePhotoUrlToSnapshotAsync(_dbContext, model.SpotId, model.PlaceId ?? string.Empty, model.ImageUrl, _logger);
+                }
+                else
+                {
+                    // 2) 若沒 imageUrl，讓 service 去抓並填充 snapshot（會抓 photo_reference 並存入 PhotosSnapshot）
+                    if (!string.IsNullOrEmpty(model.PlaceId))
                     {
-                        SpotId = w.SpotId,
-                        // 若有關聯 Spot（PlacesSnapshot），投影其欄位；若無則 null
-                        Name_ZH = w.Spot != null ? w.Spot.NameZh : null,
-                        Name = w.Spot != null ? w.Spot.NameZh : null,
-                        Address = w.Spot != null ? w.Spot.AddressSnapshot : null,
-                        ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : null,
-                        PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
-                        // Frontend 可用 PhotosSnapshot 或 ImageUrl 決定顯示圖
-                        FirstImageUrl = null,
-                        ImageUrl = null
-                    })
-                    .ToListAsync();
+                        // FillPlacesSnapshotImagesAsync 會向 Google 查詢並儲存 photos 到 PlacesSnapshots
+                        await _placesImageService.FillPlacesSnapshotImagesAsync(model.PlaceId);
+                    }
+                }
 
-                return Ok(items);
+                // 3) 從 DB 讀回快照並回傳可載入的 imageUrl（如果有）
+                var snapshot = await _dbContext.PlacesSnapshots
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.ExternalPlaceId == (model.PlaceId ?? string.Empty));
+
+                // 取 apiKey（相容設定名）
+                var apiKey = _configuration["GoogleMaps:ApiKey"] ?? _configuration["GooglePlacesApiKey"];
+
+                string? imageUrl = null;
+                if (snapshot != null)
+                {
+                    imageUrl = PlacesPhotoHelper.BuildImageUrlFromPhotosSnapshot(snapshot.PhotosSnapshot, apiKey);
+                }
+
+                return Ok(new { saved = true, imageUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "StoreSpotPhoto failed: PlaceId={PlaceId}, SpotId={SpotId}", model.PlaceId, model.SpotId);
+                return StatusCode(500, new { saved = false, message = "Server error" });
             }
         }
+        // 新增：StoreSpotPhoto request model & API
+        public class StoreSpotPhotoModel
+        {
+            public int SpotId { get; set; } = 0;
+            public string? PlaceId { get; set; }
+            public string? ImageUrl { get; set; }
+        }
+
+
     }
 }

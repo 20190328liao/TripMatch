@@ -9,7 +9,6 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/trip/trip.css" />
 }
-
 <div class="container">
     <div class="mytrip-header">
         <h1 class="mytrip-title">我的行程</h1>
@@ -23,6 +22,15 @@
         共 @(Model?.Trips?.Count ?? -1) 個行程
         <p>Current tagged UserId: <strong>@taggedUserId.Value</strong></p>
     </div>
+    <!-- 測試圖片url -->
+    @foreach (var t in Model.Trips)
+    {
+        <div style="font-size:12px;color:red">
+            @t.CoverImageUrl
+        </div>
+    }
+    
+
 
     <div class="grid">
         @foreach(var t in Model.Trips)
@@ -34,7 +42,7 @@
                      data-is-owner="@(t.IsOwner ? "1" : "0")">
 
                 <div class="card-cover"
-                     style="background-image:url('https://picsum.photos/seed/trip-{tm.Trip.Id}/800/400');">
+                     style="background-image:url(@t.CoverImageUrl);">
 
                 </div>
 

@@ -301,6 +301,7 @@ namespace TripMatch.Services
                         Name_ZH = placesSnapshot.NameEn ?? "",
                         Address = placesSnapshot.AddressSnapshot ?? "",
                         PhotoUrl = firstPhotoUrl,
+                        LocationCategoryId = placesSnapshot.LocationCategoryId ?? 2, // 預設為 2: 觀光景點
                         Lat = placesSnapshot.Lat,
                         Lng = placesSnapshot.Lng,
                         Rating = placesSnapshot.Rating ?? 0
@@ -341,8 +342,7 @@ namespace TripMatch.Services
             return tripDetailDto;
 
         }
-
-
+        // 新增住宿
         public async Task<bool> AddAccommodation(AccommodationDto dto)
         {
              Accommodation accommodation = new()
@@ -367,9 +367,7 @@ namespace TripMatch.Services
                 return false;
             }
         }
-
-
-        // 嘗試新增景點到行程
+        // 新增景點
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
         {
             // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)int? userId, ItineraryItemDto dto
@@ -405,8 +403,7 @@ namespace TripMatch.Services
                 return false;
             }
         }
-
-        // 將景點自行程中刪除
+        // 刪除景點
         public async Task<bool> DeleteSpotFromTrip(int Id)
         {
             var existing = await _context.ItineraryItems
@@ -422,7 +419,7 @@ namespace TripMatch.Services
                 return false;
             }
         }
-
+        // 更新景點時間
         public async Task<bool> UpdateSpotTime(SpotTimeDto Dto)
         {
             if (Dto.Id <= 0)
@@ -440,7 +437,16 @@ namespace TripMatch.Services
             }
             return false;
         }
-
+        // 新增一天(往後)
+        public async Task<bool> AddTripDay(int tripId)
+        {
+            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.Id == tripId);
+            if (trip == null)
+                return false;
+            trip.EndDate = trip.EndDate.AddDays(1);
+            await _context.SaveChangesAsync();
+            return true;
+        }
 
         #endregion
 
@@ -562,7 +568,8 @@ namespace TripMatch.Services
                     Title = tm.Trip.Title,
                     StartDate = tm.Trip.StartDate,
                     EndDate = tm.Trip.EndDate,
-                    CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/800/400?{tm.Trip.Id}" : tm.Trip.CoverImageUrl,
+                    CoverImageUrl = $"https://picsum.photos/seed/DEBUG-{tm.Trip.Id}/800/400",
+                    //CoverImageUrl = string.IsNullOrWhiteSpace(tm.Trip.CoverImageUrl) ? $"https://picsum.photos/800/400?{tm.Trip.Id}" : tm.Trip.CoverImageUrl,
                     IsOwner = (tm.RoleType == 1),
                     DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",

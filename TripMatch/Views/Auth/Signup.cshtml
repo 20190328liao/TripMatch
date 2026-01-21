@@ -63,7 +63,7 @@
                             <div id="pwdHint" class="inputHint"></div>
                         </div>
 
-                        <label class="titleWrap titleH3 d-block mt-3">確認密碼 *</label>
+                        <label class="account titleWrap titleH4 d-block mt-3">確認密碼 *</label>
                         <div class="input_group_custom">
                             <input type="password" id="confirmPassword" class="input1 psw" placeholder="請再次輸入密碼" aria-label="confirmPassword">
                             <span class="btn-toggle-pwd" data-target="#confirmPassword" role="button" tabindex="0">
@@ -94,6 +94,11 @@
 
 @section Scripts {
 <script>
+    // 在 Signup 頁面加入 body class，僅影響本頁的 footer 行為
+    document.addEventListener('DOMContentLoaded', function () {
+        document.body.classList.add('auth-footer-sticky');
+    });
+
     window.csrfToken = "@tokens.RequestToken";
 
     $(function () {

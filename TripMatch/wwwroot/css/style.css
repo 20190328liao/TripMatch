@@ -7,6 +7,7 @@
 	color: var(--color_DarkGray) !important; /* 使用您 style.css 定義的變數 */
 	padding: 10px 15px !important; /* 增加按鈕間距 */
 }
+
 .navbar-toggler:focus {
 	outline: none;
 	box-shadow: none;
@@ -319,18 +320,20 @@ header {
 		color: var(--color_font);
 	}
 
-
-
+	.btn.color_nav {
+		background: var(--color_nav);
+		color: var(--color_Dark);
+	}
 /* 把 site footer height 提前定義，確保變數在使用前已存在 */
 :root {
-    --site-footer-height: 60px;
-    --site-header-height: 0px;
-    /* 其餘變數保留 */
+	--site-footer-height: 60px;
+	--site-header-height: 0px;
+	/* 其餘變數保留 */
 }
 
 /* 讓 body 使用 Flexbox 產生 sticky footer（內容高時 footer 跟著往下，內容不足時 footer 貼底） */
 html, body {
-    height: 100%;
+    min-height: 100vh;
     margin: 0;
     padding: 0;
 }

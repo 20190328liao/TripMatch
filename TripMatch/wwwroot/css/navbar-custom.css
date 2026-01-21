@@ -22,7 +22,7 @@
 /* 讓整個 navbar 位於較高 z-index，避免被其他 fixed/absolute 元素蓋住 */
 nav.navbar {
   position: relative;
-  z-index: 2200;
+  z-index: 9999;
 }
 
 /* navbar toggler 保持可點擊（碰到 overlay 要優先） */
@@ -288,6 +288,7 @@ nav.navbar .dropdown-menu {
         content: "▾";
         font-size: 2rem;
         color: var(--color_Gray);
+        border:none;
     }
 
 

@@ -1,26 +1,64 @@
 ﻿import { TripApi } from './api/trip-api.js';
+import { ItineraryNavigator } from './components/itinerary-navigator.js';
 import { AddFlightModal } from './components/add-flight-modal.js';
 import { FlightRenderer } from './components/flight-renderer.js';
+import { RestaurantRenderer } from './components/restaurant-renderer.js';
 import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
 
+
 const currentTripId = document.getElementById('current-trip-id').value;
-let currentTripDates = [];
+let DateStrings = [];
+let itineraryNavigator;
 let addFlightModal;
 let flightRenderer;
+let restaurantRenderer;
 
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
     //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
     window.currentMapInstance = mapInstance;
-    currentTripDates = tripSimpleInfo.dateStrings || [];
+    DateStrings = tripSimpleInfo.dateStrings || [];    
+ 
+    itineraryNavigator = new ItineraryNavigator(
+        'itinerary-nav-container',
+        'place-list',
+        handleAddDay // 下面定義
+    );
     addFlightModal = new AddFlightModal();
-    flightRenderer = new FlightRenderer('flight-wrapper'); // 指定要渲染到哪個 ID
-
+    flightRenderer = new FlightRenderer('flight-wrapper'); 
+    restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
     initTimeEditModal();
     initHotelEditModal();
     initHeader();
     loadTripData();
 }
+
+export function refreshItineraryList() {
+    loadTripData();
+}
+
+export function GetDateStrings() {
+    return DateStrings;
+}
+
+
+// [新增] 處理新增天數
+function handleAddDay() {
+    if (!confirm("確定要增加一天行程嗎？")) return;
+
+    // 假設後端 API 路徑
+    $.ajax({
+        url: `/api/TripApi/AddTripDay/${currentTripId}`, // 請確認後端 API
+        type: 'POST',
+        success: function (newDate) {   
+            loadTripData();    
+        },
+        error: function (err) {
+            alert("新增天數失敗");
+        }
+    });
+}
+
 
 
 
@@ -180,12 +218,15 @@ function loadTripData() {
         success: function (data) {
             console.log("行程詳細資料:", data);
             const items = data.itineraryItems || [];
+            DateStrings = data.tripInfo.dateStrings || [];
             const accommodations = data.accomadations || [];
             const flights = data.flights || []; 
 
             TripApi.getDetail(currentTripId).then(data => {
-                // [修改] 傳入 flights 資料
-                renderItinerary(items, currentTripDates, accommodations, flights);
+
+                console.log("行程詳細資料:", data);
+
+                renderItinerary(items, DateStrings, accommodations, flights);
             });
         
         },
@@ -229,12 +270,16 @@ function renderItinerary(items, dates, accommodations, flights) {
             }
         });
     });
+
+
+
   
 
     // ==========================================
     // 【新增】 渲染頂部「住宿資訊」區塊
     // ==========================================
     const hotelSection = document.createElement('div');
+    hotelSection.id = 'accommodation-wrapper'; 
     hotelSection.className = 'hotel-section mb-4 p-3 bg-white rounded shadow-sm border';
 
     // 住宿區塊 Header
@@ -316,16 +361,14 @@ function renderItinerary(items, dates, accommodations, flights) {
 
 
 
-
-
-
-
-
-
-
-
-
-
+    // 餐廳匯總區塊
+    const restaurantWrapper = document.createElement('div');
+    restaurantWrapper.id = 'restaurant-wrapper';
+    container.appendChild(restaurantWrapper);
+    restaurantRenderer.render(items || [], dates); 
+    restaurantRenderer.bindEvents((data) => {
+        handleSpotClick(data);
+    })
 
 
 
@@ -365,6 +408,7 @@ function renderItinerary(items, dates, accommodations, flights) {
         // 建立 Day Block
         const daySection = document.createElement('div');
         daySection.className = 'day-block mb-4'; // 增加一點底部間距
+        daySection.id = `day-${dayNum}`; // [新增] 加上 ID: day-1, day-2...
         daySection.setAttribute('data-day', dayNum);
 
         // Header + Timeline + 【新增】快速新增區塊
@@ -489,9 +533,10 @@ function renderItinerary(items, dates, accommodations, flights) {
         }
 
         container.appendChild(daySection);
-        console.log("完成渲染 Day ", container);
+  
     });
 
+    itineraryNavigator.updateDays(dates);
     bindItemEvents();
 }
 
@@ -818,7 +863,20 @@ function deleteHotel(accommodationId) {
     });
 }
 
+// 抽離出一個共用的處理函式 (給餐廳卡片用，也可以給行程卡片用)
+function handleSpotClick(data) {
+    const { lat, lng, googlePlaceId, spotId } = data;
 
-export function refreshItineraryList() {
-    loadTripData();
+    if (googlePlaceId) {
+        // 1. 如果有 Google Place ID，查詳細資料並開彈窗
+        showPlaceByGoogleId(googlePlaceId, spotId);
+    } else if (lat && lng && window.currentMapInstance) {
+        // 2. 如果只有經緯度 (舊資料)，只移動地圖
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        if (!isNaN(latNum) && !isNaN(lngNum)) {
+            window.currentMapInstance.panTo({ lat: latNum, lng: lngNum });
+            window.currentMapInstance.setZoom(17);
+        }
+    }
 }

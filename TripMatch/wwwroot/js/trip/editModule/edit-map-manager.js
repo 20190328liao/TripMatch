@@ -1,4 +1,5 @@
-﻿
+﻿import { GetDateStrings } from './edit-trip-manager.js';
+
 // 模組內的變數，外部無法直接存取，保持全域乾淨
 let map;
 let autocomplete;
@@ -54,7 +55,6 @@ export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
     // 回傳地圖實體，方便外部使用
     return map;
 }
-
 // 【新增】匯出給外部使用的函式：透過 Google Place ID 顯示地點
 export function showPlaceByGoogleId(googlePlaceId, spotId) {
     if (!googlePlaceId) return;
@@ -74,7 +74,39 @@ export function showPlaceByGoogleId(googlePlaceId, spotId) {
         }
     });
 }
+export function savePlaceToDatabase(place) {
+    return new Promise((resolve, reject) => {
 
+        let dto = {
+            externalPlaceId: place.place_id,
+            nameZh: place.name,
+            nameEn: place.name,
+            locationCategory: place.types,
+            address: place.formatted_address,
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            rating: place.rating || 0,
+            userRatingsTotal: place.user_ratings_total || 0,
+            photosSnapshot: place.photos ? place.photos.map(p => p.getUrl({ maxWidth: 400 })) : []
+        };
+
+        $.ajax({
+            url: '/api/TripApi/AddSnapshot',
+            type: 'post',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function (res) {
+                console.log("景點快照 Id:" + res.id);
+                resolve(res.id);
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON ? xhr.responseJSON.message : "景點快照增加失敗";
+                console.log(msg);
+                resolve(null); // 失敗回傳 null，避免卡死
+            }
+        });
+    });
+}
 // 內部私有函式：設定自動完成 (不需匯出)
 function setupAutocomplete() {
 
@@ -110,7 +142,6 @@ function setupAutocomplete() {
         renderPlaceOnMap(place, null);
     }); 
 }
-
 // existingSpotId: 如果是從左側列表點擊，會傳入已知的 DB ID；如果是搜尋，則為 null
 function renderPlaceOnMap(place, existingSpotId) {
 
@@ -163,30 +194,35 @@ function renderPlaceOnMap(place, existingSpotId) {
     const dayMenuItems = getDayMenuItems(); // 記得把 getDayMenuItems 搬到這裡能存取的地方，或是放在下面
 
     const contentString = `
-        <div class="info-window-content" style="width: ${targetWidth}px;">
-            ${imageHtml}
-            <div class="p-3">           
-                <div class="d-flex justify-content-between align-items-start mb-3">               
-                    <div style="max-width: 85%;">
-                        <h6 class="fw-bold mb-1 text-truncate" title="${place.name}">${place.name}</h6>
-                        <p class="text-muted small mb-0 info-window-address">${place.formatted_address || ''}</p>
-                    </div>
-                    <div id="add-to-wishlist-btn" class="wishlist-heart text-danger ms-2" style="cursor:pointer; font-size: 1.2rem;">
-                        <i class="bi bi-heart"></i> 
-                    </div>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-primary btn-sm w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-plus-lg me-1"></i>加入行程
-                    </button>
-                    <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
-                        ${dayMenuItems}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    `;
+     <div class="info-window-content" style="width: ${targetWidth}px;">
+         ${imageHtml}
+         
+  
+         <div class="p-3"> 
+             <div class="d-flex justify-content-between align-items-start">               
+                 <div style="max-width: 85%;">
+                     <h6 class="fw-bold mb-1 text-truncate" title="${place.name}">${place.name}</h6>
+                     <p class="text-muted small mb-0 info-window-address">${place.formatted_address || ''}</p>
+                 </div>
+                 <div id="add-to-wishlist-btn" class="wishlist-heart text-danger ms-2" style="cursor:pointer; font-size: 1.2rem;">
+                     <i class="bi bi-heart"></i> 
+                 </div>
+             </div>
+         </div> 
+       
 
+        <div class="dropdown">
+            <button class="btn btn_light btn-sm w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-lg"></i> 加入行程
+            </button>
+             <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
+                 ${dayMenuItems}
+             </ul>
+         </div>
+     </div>
+ `;
+
+    infoWindow.setContent(contentString);
     infoWindow.setContent(contentString);
     infoWindow.open(map, currentSearchMarker);
     currentSearchMarker.addListener("click", () => { infoWindow.open(map, currentSearchMarker) });
@@ -234,8 +270,10 @@ function renderPlaceOnMap(place, existingSpotId) {
         });
     });
 }
-
 function getDayMenuItems() {
+
+    tripDates = GetDateStrings();
+    console.log("行程日期陣列:", tripDates);
     // 若無日期資料的預設處理
     if (!tripDates || tripDates.length === 0) {
         return '<li><a class="dropdown-item add-trip-item" href="#" data-day="1">第一天</a></li>';
@@ -247,7 +285,6 @@ function getDayMenuItems() {
         return `<li><a class="dropdown-item add-trip-item" href="#" data-day="${index + 1}">第 ${index + 1} 天 (${date})</a></li>`;
     }).join('');
 }
-
 function handleAddPlaceToItinerary(spotId, place, day) {
     // 1. 取得當前的行程 ID (這通常放在頁面的隱藏欄位中)
     const tripId = $('#current-trip-id').val();
@@ -286,47 +323,8 @@ function handleAddPlaceToItinerary(spotId, place, day) {
         }
     });
 }
-
 //將搜尋到的景點儲存到景點快照資料庫
 // 儲存景點快照 (回傳 Promise)
-export function savePlaceToDatabase(place) {
-    return new Promise((resolve, reject) => {
-
-        let significantType = '';
-        if (place.types != null)
-            significantType = place.types.find(t => t !== 'establishment' && t !== 'point_of_interest') || place.types[0];
-
-        let dto = {
-            externalPlaceId: place.place_id,
-            nameZh: place.name,
-            nameEn: place.name,
-            locationCategory: significantType,
-            address: place.formatted_address,
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-            rating: place.rating || 0,
-            userRatingsTotal: place.user_ratings_total || 0,
-            photosSnapshot: place.photos ? place.photos.map(p => p.getUrl({ maxWidth: 400 })) : []
-        };
-
-        $.ajax({
-            url: '/api/TripApi/AddSnapshot',
-            type: 'post',
-            contentType: 'application/json',
-            data: JSON.stringify(dto),
-            success: function (res) {
-                console.log("景點快照 Id:" + res.id);
-                resolve(res.id);
-            },
-            error: function (xhr) {
-                const msg = xhr.responseJSON ? xhr.responseJSON.message : "景點快照增加失敗";
-                console.log(msg);
-                resolve(null); // 失敗回傳 null，避免卡死
-            }
-        });
-    });
-}
-
 function handleAddPlaceToWishlist(btnElement, spotId) {
 
     console.log("願望清單 spotID:" + spotId)
@@ -365,7 +363,6 @@ function handleAddPlaceToWishlist(btnElement, spotId) {
         }
     });
 }
-
 function checkIsWishlist(spotId) {
     // 1. 必須回傳一個 Promise 物件
     return new Promise((resolve, reject) => {

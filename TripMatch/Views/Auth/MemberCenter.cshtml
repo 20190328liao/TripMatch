@@ -13,10 +13,11 @@
 }
 @section Styles{
     <link href="~/css/AuthApi/member.css" rel="stylesheet" />
+    <link href="~/css/AuthApi/memberwishlist.css" rel="stylesheet" />
+   
+
     <style>
-        body {
-            background-color: var(--light) !important;/*單獨*/
-        }
+
     </style>
 }
 
@@ -31,7 +32,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             
-            <h1 class="mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h1>
+            <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
 
         </div>
 
@@ -124,7 +125,7 @@
          區塊二：個人行事曆
          ============================================= -->
     <section class="member_section" id="calendar_section">
-        <h2 class="titleWrap titleH2">個人行事曆</h2>
+        <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>個人行事曆</h2>
 
         <div class="calendar_legend mb-3">
             <span class="legend-item"><span class="dot today"></span>藍色圈：今天</span>
@@ -195,7 +196,7 @@
 
                     <!-- 匯入 JSON 日曆 -->
                     <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                    <button type="button" id="btnImportCalendar" class="btn btn-primary2">匯入 JSON 日曆</button>
+                    <button type="button" id="btnImportCalendar" class="btn1 btn-primary2">匯入 JSON 日曆</button>
                 </div>
 
                 <div class="col-12">
@@ -220,7 +221,7 @@
 
         <section class="member_section" id="wishlist_section">
             <div class="section_header d-flex align-items-center justify-content-between">
-                <h2 class="titleWrap titleH2">願望清單</h2>
+            <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>願望清單</h2>
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>
@@ -244,8 +245,7 @@
                                 <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
                                     @* 移除收藏按鈕 (愛心) *@
                                 <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
-                                            title="從清單移除"
-                                            style="position:absolute; top:10px; right:10px; z-index:10; border:none; background:rgba(255,255,255,0.8); border-radius:50%; width:32px; height:32px; color:#dc3545; display:flex; align-items:center; justify-content:center;">
+                                            title="從清單移除">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
                                         <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
                                     </svg>
@@ -258,13 +258,24 @@
                                         <h5 class="card-title">@item.Name</h5>
                                         <p class="card-text text-truncate">@item.Address</p>
 
-                                        @* View More 按鈕：帶站內 SpotID 與（若有）Google Place ID *@
-                                        <button type="button"
-                                                class="btn btn-primary w-100 btn-view-more mt-auto"
-                                                data-spot-id="@item.SpotId"
-                                                @(string.IsNullOrEmpty(googleId) ? "" : $"data-google-place-id=\"{googleId}\"")>
-                                            View More
-                                        </button>
+
+                         
+                                    <div class="card-footer bg-transparent border-0 pb-2">
+                                        @if (!string.IsNullOrEmpty(googleId))
+                                        {
+                                            @* 這裡改用 div，並加上 class="btn-view-more" *@
+                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
+                                                View More
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            @* 即使沒資料也給它 class，讓 JS 之後補上 ID 後可以啟用 *@
+                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
+                                                View More
+                                            </div>
+                                        }
+                                    </div>
                                     </div>
                                 </div>
                             </div>

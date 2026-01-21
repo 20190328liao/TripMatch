@@ -73,6 +73,9 @@
     // 記錄剛提交（latest）的一組日期，用作本次提交的樣式標記
     let lastSubmittedSet = new Set();
 
+    // 顯示於 .list-header .text-muted 的提示 timer
+    let _listHeaderTimer = null;
+
     //============月曆===============
     const SESSION_KEY = 'calendar_draft';
     function saveDraftToSession() {
@@ -99,6 +102,27 @@
 
     function clearDraftSession() {
         sessionStorage.removeItem(SESSION_KEY);
+    }
+
+    // 設定 .list-header .text-muted 的提示文字（會自動清除）
+    function setListHeaderMessage(message, seconds = 3) {
+        try {
+            const $el = $('.list-header .text-muted');
+            if ($el.length === 0) return;
+            $el.text(message);
+            if (_listHeaderTimer) {
+                clearTimeout(_listHeaderTimer);
+                _listHeaderTimer = null;
+            }
+            if (seconds > 0) {
+                _listHeaderTimer = setTimeout(() => {
+                    $el.text(''); // 清除提示
+                    _listHeaderTimer = null;
+                }, seconds * 1000);
+            }
+        } catch (e) {
+            console.warn('setListHeaderMessage error', e);
+        }
     }
 
     // 判斷是否需要提醒
@@ -316,9 +340,29 @@
                     }
                 });
             });
+
+            // 顯示簡單文字提示於 .list-header .text-muted
+            if (ok) {
+                const addedCount = Array.isArray(addedDates) ? addedDates.length : 0;
+                const removedCount = Array.isArray(removedDates) ? removedDates.length : 0;
+
+                if (addedCount > 0 && removedCount === 0) {
+                    setListHeaderMessage('完成編輯', 3);
+                } else if (removedCount > 0 && addedCount === 0) {
+                    setListHeaderMessage('完成刪除', 3);
+                } else if (addedCount > 0 && removedCount > 0) {
+                    setListHeaderMessage(`完成：新增 ${addedCount} 天、刪除 ${removedCount} 天`, 3);
+                } else {
+                    setListHeaderMessage('提交完成', 3);
+                }
+            } else {
+                setListHeaderMessage('同步失敗，請稍後重試', 4);
+            }
+
             return ok;
         } catch (e) {
             console.error('syncLeaves error', e);
+            setListHeaderMessage('系統錯誤，儲存失敗', 4);
             return false;
         }
     }
@@ -470,7 +514,7 @@
 
                 const ok = await syncLeaves(toAdd, []);
                 if (!ok) {
-                    alert('儲存到伺服器失敗，請稍後重試。');
+                    setListHeaderMessage('提交失敗，請稍後重試', 4);
                     fetchSubmittedDatesFromServer();
                 }
             })
@@ -612,7 +656,7 @@
         if (existedInSubmitted) {
             const ok = await syncLeaves([], [iso]);
             if (!ok) {
-                alert('刪除資料時與伺服器同步失敗，請稍後重試。');
+                setListHeaderMessage('刪除失敗，請稍後重試', 4);
                 fetchSubmittedDatesFromServer();
             }
         }

@@ -1,11 +1,10 @@
-﻿//Api helper
-const DEMO_USER_ID = 1; // 暫時用假登入
-
+﻿// Api helper（正式登入版）
 async function apiFetch(url, options = {}) {
     const opt = {
+        method: options.method || "GET",
+        credentials: "same-origin", // ★ 必加：帶 Cookie 給 [Authorize]
         headers: {
             "Content-Type": "application/json",
-            "X-Demo-UserId": String(DEMO_USER_ID),
             ...(options.headers || {})
         },
         ...options
@@ -13,21 +12,23 @@ async function apiFetch(url, options = {}) {
 
     const res = await fetch(url, opt);
 
-    // 統一處理非 2xx
     if (!res.ok) {
+        if (res.status === 401) {
+            throw new Error("尚未登入或登入已失效");
+        }
+
         let msg = `${res.status} ${res.statusText}`;
         try {
             const data = await res.json();
-            msg = data?.message || data?.error || msg;
-        }
-        catch { }
 
-        const err = new Error(msg);
-        err.status = res.status;
-        throw err;
+            console.error("API error payload:", data);
+
+            msg = data?.message || msg;
+        } catch { }
+
+        throw new Error(msg);
     }
 
-    // Api 可能回空
     const text = await res.text();
     return text ? JSON.parse(text) : null;
 }

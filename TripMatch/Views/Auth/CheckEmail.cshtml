@@ -26,6 +26,10 @@
         titleColor = "color: #FF6B6B;";
     }
 }
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/AuthApi/checkemail.css" asp-append-version="true" />
+}
 
 <div class="check-container text-center" style="padding-top: 50px;">
     <div class="logo-header mb-4">
@@ -45,7 +49,7 @@
         <div id="verifyStatus" class="mb-3"></div>
 
         <!-- 下一步由前端控制（checkEmail.js 會啟用或自動導向） -->
-        <a id="btn_next_step" class="btn btn_light" href="javascript:void(0);" role="button">@btnText</a>
+        <a id="btn_next_step" class="checkEmailBtn btn btn_light" href="javascript:void(0);" role="button">@btnText</a>
     </div>
 </div>
 

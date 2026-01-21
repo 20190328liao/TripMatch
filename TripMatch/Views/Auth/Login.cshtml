@@ -4,7 +4,6 @@
     ViewData["Title"] = "登入";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
-<body class="auth-page">
 
 <div class="signWrap">
     <div class="container-fluid p-0">
@@ -96,6 +95,11 @@
 
 @section Scripts {
     <script>
+        // 在 Login 頁面加入 body class，僅影響本頁的 footer 行為
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('auth-footer-sticky');
+        });
+
         window.csrfToken = "@tokens.RequestToken";
     </script>
 
@@ -126,5 +130,4 @@
         </script>
     }
 }
-</body>
 

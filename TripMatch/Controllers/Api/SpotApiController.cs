@@ -11,12 +11,16 @@ namespace TripMatch.Controllers.Api
     public class SpotApiController : ControllerBase
     {
         private readonly SpotServices _spotServices;
+        private readonly TripServices _tripServices;
         private readonly ITagUserId _tagUserId;
+        private readonly ILogger _logger;
 
-        public SpotApiController(SpotServices spotServices, ITagUserId tagUserId)
+        public SpotApiController(SpotServices spotServices, ITagUserId tagUserId, TripServices tripServices, ILogger<SpotApiController> logger)
         {
             _spotServices = spotServices;
             _tagUserId = tagUserId;
+            _tripServices = tripServices;
+            _logger = logger;
         }
 
         public record AddWishlistRequest(
@@ -45,6 +49,9 @@ namespace TripMatch.Controllers.Api
         [HttpPost("wishlist")]
         public async Task<IActionResult> AddToWishlist([FromBody] AddWishlistRequest req)
         {
+            var p = req?.photoJson;
+            _logger.LogInformation("PhotoUrl = {PhotoUrl}", p);
+
             var userId = _tagUserId.UserId;
             if (userId is null) return Unauthorized(new { ok = false, message = "Unauthorized" });
 
@@ -59,7 +66,7 @@ namespace TripMatch.Controllers.Api
                     Lng = req.lng,
                     Rating = req.rating,
                     Phone = req.phone,
-                    // 目前 DTO 用 PhotoUrl 先承接你的 photoJson（不改前端 payload）
+                    // 目前 DTO 用 PhotoUrl 先承接 photoJson（不改前端 payload）
                     PhotoUrl = req.photoJson
                 }
             };
@@ -78,10 +85,10 @@ namespace TripMatch.Controllers.Api
         }
 
         [HttpPost("itinerary")]
+        [Authorize]
         public async Task<IActionResult> AddToItinerary([FromBody] AddItineraryRequest req)
         {
-            var userId = _tagUserId.UserId;
-            if (userId is null) return Unauthorized(new { ok = false, message = "Unauthorized" });
+            if (_tagUserId.UserId is null) return Unauthorized();
 
             var mapped = new SpotDto.AddItineraryRequest
             {
@@ -100,7 +107,7 @@ namespace TripMatch.Controllers.Api
             };
 
             var (ok, message, itineraryItemId, spotId) =
-                await _spotServices.AddToItineraryAsync(userId.Value, mapped);
+                await _spotServices.AddToItineraryAsync(_tagUserId.UserId.Value, mapped);
 
             if (!ok)
             {
@@ -112,6 +119,15 @@ namespace TripMatch.Controllers.Api
             }
 
             return Ok(new { ok = true, itineraryItemId, spotId });
+        }
+
+
+        [HttpGet("mine")]
+        [Authorize]
+        public async Task<IActionResult> GetTrips()
+        {
+            List<Models.DTOs.SearchTripDaysDto> trips = await _spotServices.GetTrips(_tagUserId.UserId);
+            return Ok(trips);
         }
     }
 }
