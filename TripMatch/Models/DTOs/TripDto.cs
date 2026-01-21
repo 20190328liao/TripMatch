@@ -101,6 +101,7 @@ namespace TripMatch.Models.DTOs
         public string Name_ZH { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string PhotoUrl { get; set; } = string.Empty;
+        public int LocationCategoryId { get; set; }   // 1:美食, 2:景點, 3:購物, 4:住宿, 5:交通, 6:自然
         public decimal Lat { get; set; }
         public decimal Lng { get; set; }
         public decimal Rating { get; set; }
@@ -127,7 +128,7 @@ namespace TripMatch.Models.DTOs
         public string ExternalPlaceId { get; set; } = String.Empty;
         public string NameZh { get; set; } = String.Empty;
         public string NameEn { get; set; } = String.Empty;
-        public string LocationCategory { get; set; } = String.Empty;
+        public List<string> LocationCategory { get; set; } = [];
         public string Address { get; set; } = String.Empty;
         public decimal Lat { get; set; }
         public decimal Lng { get; set; }

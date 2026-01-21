@@ -1,35 +1,35 @@
-/* =========================================
-   1. ª©­±­«¸m»P°òÂ¦ Layout ³]©w
+ï»¿/* =========================================
+   1. ç‰ˆé¢é‡ç½®èˆ‡åŸºç¤ Layout è¨­å®š
    ========================================= */
 
-/* °w¹ï¾ÉÄı¦C (Navbar) - ²¾°£¤U¤è¶¡¶Z */
+/* é‡å°å°è¦½åˆ— (Navbar) - ç§»é™¤ä¸‹æ–¹é–“è· */
 header, nav, .navbar {
     margin-bottom: 0 !important;
     z-index: 1030;
     position: relative;
 }
 
-/* ¡i­×§ï³o¸Ì¡j²¾°£ .container ©M .container-fluid */
-/* ¥u°w¹ï body, main ©M .body-content °µ­«¸m */
+/* ã€ä¿®æ”¹é€™è£¡ã€‘ç§»é™¤ .container å’Œ .container-fluid */
+/* åªé‡å° body, main å’Œ .body-content åšé‡ç½® */
 body, main, .body-content {
     padding: 0 !important;
     margin: 0 !important;
-    max-width: 100% !important;
-    overflow: hidden; /* ÁôÂÃ¥~¼h±²¶b */
+/*    max-width: 100% !important;*/
+    overflow: hidden; /* éš±è—å¤–å±¤æ²è»¸ */
 }
 
-/* ÁôÂÃ­¶§À */
+/* éš±è—é å°¾ */
 footer {
     display: none !important;
 }
 
 /* =========================================
-   2. ½s¿è­¶­±¥D®Ø¬[ (Itinerary Wrapper)
+   2. ç·¨è¼¯é é¢ä¸»æ¡†æ¶ (Itinerary Wrapper)
    ========================================= */
 
 .itinerary-wrapper {
-    /* ¡i­×§ï¡j­ì¥»¬O 56px¡A«ØÄ³§ï¬° 60px ©Î 62px */
-    /* ­ì¦]¡G¾ÉÄı¦C¥i¯à¦³Ãä®Ø©Î³±¼v¦û¥ÎªÅ¶¡¡Aµy·L¦©¦h¤@ÂI½T«O©³³¡¤£·|³Q¤Á±¼ */
+    /* ã€ä¿®æ”¹ã€‘åŸæœ¬æ˜¯ 56pxï¼Œå»ºè­°æ”¹ç‚º 60px æˆ– 62px */
+    /* åŸå› ï¼šå°è¦½åˆ—å¯èƒ½æœ‰é‚Šæ¡†æˆ–é™°å½±ä½”ç”¨ç©ºé–“ï¼Œç¨å¾®æ‰£å¤šä¸€é»ç¢ºä¿åº•éƒ¨ä¸æœƒè¢«åˆ‡æ‰ */
     height: calc(100vh - 60px);
     display: flex;
     width: 100vw;
@@ -37,7 +37,7 @@ footer {
     margin-top: -1px;
 }
 
-/* ¥ª°¼­±ªO - ¦æµ{¦Cªí */
+/* å·¦å´é¢æ¿ - è¡Œç¨‹åˆ—è¡¨ */
 .left-panel {
     width: 45vw;
     min-width: 320px;
@@ -46,13 +46,13 @@ footer {
     display: flex;
     flex-direction: column;
     z-index: 10;
-    /* ¡i·s¼W¡j³o¨â¦æ«D±`­«­n¡I */
-    /* ½T«O¥ª°¼­±ªO°ª«×µ´¹ï¤£·|¶W¹L wrapper¡A¨Ã±j¨î¤l¤¸¯À·¸¥X®É¥Ñ¤l¤¸¯À¦Û¤v³B²z */
+    /* ã€æ–°å¢ã€‘é€™å…©è¡Œéå¸¸é‡è¦ï¼ */
+    /* ç¢ºä¿å·¦å´é¢æ¿é«˜åº¦çµ•å°ä¸æœƒè¶…é wrapperï¼Œä¸¦å¼·åˆ¶å­å…ƒç´ æº¢å‡ºæ™‚ç”±å­å…ƒç´ è‡ªå·±è™•ç† */
     height: 100%;
     overflow: hidden;
 }
 
-/* ¥k°¼­±ªO - ¦a¹Ï */
+/* å³å´é¢æ¿ - åœ°åœ– */
 .right-panel {
     flex-grow: 1;
     position: relative;
@@ -65,28 +65,28 @@ footer {
 }
 
 /* =========================================
-   3. ¥ª°¼­±ªO¸Ô²Ó¼Ë¦¡ (·s¾ã¦X³¡¤À)
+   3. å·¦å´é¢æ¿è©³ç´°æ¨£å¼ (æ–°æ•´åˆéƒ¨åˆ†)
    ========================================= */
 
-/* ¾ÉÄı»P¼ĞÃD°Ï¶ô */
+/* å°è¦½èˆ‡æ¨™é¡Œå€å¡Š */
 .itinerary-nav {
-    flex-shrink: 0; /* ¨¾¤î³QÀ£ÁY */
+    flex-shrink: 0; /* é˜²æ­¢è¢«å£“ç¸® */
     z-index: 20;
     position: relative;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* ¦æµ{¤º®e±²°Ê°Ï¶ô */
+/* è¡Œç¨‹å…§å®¹æ²å‹•å€å¡Š */
 .itinerary-content {
     flex-grow: 1;
     overflow-y: auto;
     background-color: #f8f9fa;
-    /* ¡i½T»{¡j³o¸Ìºû«ù±z­ì¥»¥[¤jªº padding */
-    /* ³o·|Åı³Ì«á¤@­Ó¦æµ{¤U­±¦h¥X¤@¤j¶ôªÅ¥Õ¡A½T«O¤£·|³Q¾B¦í */
+    /* ã€ç¢ºèªã€‘é€™è£¡ç¶­æŒæ‚¨åŸæœ¬åŠ å¤§çš„ padding */
+    /* é€™æœƒè®“æœ€å¾Œä¸€å€‹è¡Œç¨‹ä¸‹é¢å¤šå‡ºä¸€å¤§å¡Šç©ºç™½ï¼Œç¢ºä¿ä¸æœƒè¢«é®ä½ */
     padding-bottom: 120px !important;
 }
 
-/* --- ¨C¤@¤Ñªº°Ï¶ô (Day Section) --- */
+/* --- æ¯ä¸€å¤©çš„å€å¡Š (Day Section) --- */
 .day-section {
     background: #fff;
     margin-bottom: 15px;
@@ -94,11 +94,11 @@ footer {
     box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
-/* --- ¤Ñ¼Æ¼ĞÃD --- */
+/* --- å¤©æ•¸æ¨™é¡Œ --- */
 .day-header {
     background-color: #e9ecef;
-    /* ¡i­×§ï 3¡j¥[¤j¥ª¥k¤º¶Z¡G­ì¥»¬O 10px 20px */
-    /* §ï¦¨ 10px 30px (©Î§ó¦h)¡AÅı¤å¦r©¹¥k²¾ */
+    /* ã€ä¿®æ”¹ 3ã€‘åŠ å¤§å·¦å³å…§è·ï¼šåŸæœ¬æ˜¯ 10px 20px */
+    /* æ”¹æˆ 10px 30px (æˆ–æ›´å¤š)ï¼Œè®“æ–‡å­—å¾€å³ç§» */
     padding: 10px 30px;
     font-weight: 700;
     color: #495057;
@@ -112,15 +112,15 @@ footer {
 }
 
 
-/* --- ¦æµ{¶µ¥Ø¦Cªí®e¾¹ --- */
+/* --- è¡Œç¨‹é …ç›®åˆ—è¡¨å®¹å™¨ --- */
 .day-items-container {
     padding: 0;
 }
 
-/* --- ³æ¤@¦æµ{¥d¤ù (Item) --- */
+/* --- å–®ä¸€è¡Œç¨‹å¡ç‰‡ (Item) --- */
 .itinerary-item {
-    /* ¡i­×§ï 4¡j¥[¤j¥ª¥k¤º¶Z¡G­ì¥»¬O 15px 20px */
-    /* §ï¦¨ 15px 30px¡A³o¸Ì­n¸ò¤W­±ªº header «O«ù¤@­P¡AµøÄ±¤~·|¾ã»ô */
+    /* ã€ä¿®æ”¹ 4ã€‘åŠ å¤§å·¦å³å…§è·ï¼šåŸæœ¬æ˜¯ 15px 20px */
+    /* æ”¹æˆ 15px 30pxï¼Œé€™è£¡è¦è·Ÿä¸Šé¢çš„ header ä¿æŒä¸€è‡´ï¼Œè¦–è¦ºæ‰æœƒæ•´é½Š */
     padding: 15px 30px;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
@@ -132,15 +132,15 @@ footer {
 }
 
     .itinerary-item:hover {
-        background-color: #f8f9fa; /* Äa°±®ÄªG */
+        background-color: #f8f9fa; /* æ‡¸åœæ•ˆæœ */
     }
 
     .itinerary-item:last-child {
         border-bottom: none;
     }
 
-/* --- ·s¼W¡G®É¶¡¶b¶êÂI¼Ë¦¡ --- */
-/* ³o¬O¬°¤FÅı JS ¤¤ªº <div class="timeline-dot"> ±Æª©¦n¬İ¤@ÂI */
+/* --- æ–°å¢ï¼šæ™‚é–“è»¸åœ“é»æ¨£å¼ --- */
+/* é€™æ˜¯ç‚ºäº†è®“ JS ä¸­çš„ <div class="timeline-dot"> æ’ç‰ˆå¥½çœ‹ä¸€é» */
 .timeline-dot {
     width: 24px;
     height: 24px;
@@ -152,21 +152,21 @@ footer {
     font-size: 0.75rem;
     font-weight: bold;
     color: #6c757d;
-    flex-shrink: 0; /* ¨¾¤î³QÀ£ÁY */
+    flex-shrink: 0; /* é˜²æ­¢è¢«å£“ç¸® */
 }
 
-/* ©ì¦²§â¤â */
+/* æ‹–æ›³æŠŠæ‰‹ */
 .drag-handle {
     color: #adb5bd;
     cursor: grab;
-    padding-top: 4px; /* ¹ï»ôµøÄ±¤¤¤ß */
+    padding-top: 4px; /* å°é½Šè¦–è¦ºä¸­å¿ƒ */
 }
 
     .drag-handle:hover {
         color: #6c757d;
     }
 
-/* ®É¶¡Åã¥ÜÄæ */
+/* æ™‚é–“é¡¯ç¤ºæ¬„ */
 .place-time {
     min-width: 45px;
     font-size: 0.85rem;
@@ -179,10 +179,10 @@ footer {
     padding-top: 2px;
 }
 
-/* ´ºÂI¸ê°TÄæ */
+/* æ™¯é»è³‡è¨Šæ¬„ */
 .place-info {
     flex-grow: 1;
-    min-width: 0; /* Åı text-truncate ¥Í®ÄªºÃöÁä */
+    min-width: 0; /* è®“ text-truncate ç”Ÿæ•ˆçš„é—œéµ */
 }
 
 .place-title {
@@ -190,7 +190,7 @@ footer {
     font-size: 1rem;
     color: #212529;
     margin-bottom: 4px;
-    /* ¤å¦r¹Lªø¬Ù²¤ */
+    /* æ–‡å­—éé•·çœç•¥ */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -203,7 +203,7 @@ footer {
     align-items: center;
 }
 
-    /* ­­¨î¦a§}³Ì¦hÅã¥Ü¤@¦æ */
+    /* é™åˆ¶åœ°å€æœ€å¤šé¡¯ç¤ºä¸€è¡Œ */
     .place-address span {
         display: inline-block;
         max-width: 100%;
@@ -213,15 +213,15 @@ footer {
     }
 
 /* =========================================
-   4. ¥k°¼¦a¹Ï¯B°Ê¤¸¥ó
+   4. å³å´åœ°åœ–æµ®å‹•å…ƒä»¶
    ========================================= */
 
-/* ·j´M®Ø®e¾¹ */
+/* æœå°‹æ¡†å®¹å™¨ */
 .search-container {
     position: absolute;
     top: 15px;
     left: 15px;
-    z-index: 5; /* ½T«O¦b Google Map ¹Ï¼h¤§¤W */
+    z-index: 5; /* ç¢ºä¿åœ¨ Google Map åœ–å±¤ä¹‹ä¸Š */
     width: 320px;
     max-width: 90%;
 }
@@ -242,11 +242,11 @@ footer {
 
 #place-search-input {
     border: none;
-    box-shadow: none; /* ²¾°£¹w³]³±¼v */
-    height: 45px; /* ¼W¥[ÂIÀ»°ª«× */
+    box-shadow: none; /* ç§»é™¤é è¨­é™°å½± */
+    height: 45px; /* å¢åŠ é»æ“Šé«˜åº¦ */
 }
 
-/* ·j´M®Ø Focus ®ÄªG */
+/* æœå°‹æ¡† Focus æ•ˆæœ */
 .search-box:focus-within {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
@@ -256,7 +256,7 @@ footer {
     }
 
 /* =========================================
-   5. Google Maps InfoWindow ¦Û©w¸q¼Ë¦¡
+   5. Google Maps InfoWindow è‡ªå®šç¾©æ¨£å¼
    ========================================= */
 
 .info-window-content {
@@ -266,7 +266,7 @@ footer {
 
 .info-window-img {
     width: 100%;
-    height: 180px; /* µy·LÁY¤p°ª«×¥H¾A°t¤p¿Ã¹õ */
+    height: 180px; /* ç¨å¾®ç¸®å°é«˜åº¦ä»¥é©é…å°è¢å¹• */
     object-fit: cover;
     display: block;
 }
@@ -278,14 +278,54 @@ footer {
     line-height: 1.4;
 }
 
-/* ¥[¤J¦æµ{¤U©Ô¿ï³æ«ö¶s */
-.dropdown-menu {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: none;
-    border-radius: 8px;
+.info-window-content .dropdown {
+    /* ç¢ºä¿æŒ‰éˆ•ä¸Šæ–¹æœ‰ä¸€é»é»é–“éš”ç·šï¼Œè¦–è¦ºä¸Šæ¯”è¼ƒåˆ†æ˜ */
+    border-top: 1px solid rgba(0,0,0,0.08);
 }
 
-/* ·R¤ß¦¬ÂÃ«ö¶s (­×¥¿ª©) */
+/* é‡å°åº•éƒ¨æŒ‰éˆ•çš„ç‰¹åˆ¥è¨­å®š */
+.info-window-content .dropdown .btn {
+    border-radius: 5px; /* å»é™¤åœ“è§’ï¼Œè®“å®ƒè²¼é½Šè¦–çª—åº•éƒ¨ */
+    width: 100%; /* å¼·åˆ¶æ»¿ç‰ˆ */
+    border: none; /* ç§»é™¤é‚Šæ¡† */
+    /* [è§£æ±ºæ–‡å­—å¤ªé é‚Š]ï¼šå¢åŠ ä¸Šä¸‹ paddingï¼Œè®“æŒ‰éˆ•è®Šé«˜ï¼Œæ–‡å­—ç½®ä¸­æ›´èˆ’æœ */
+    padding-top: 14px;
+    padding-bottom: 14px;
+    /* å­—é«”æ’ç‰ˆå„ªåŒ– */
+    display: flex; /* ä½¿ç”¨ flex è®“åœ–ç¤ºèˆ‡æ–‡å­—å‚ç›´ç½®ä¸­ */
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* åœ–ç¤ºè·Ÿæ–‡å­—ä¹‹é–“çš„è·é›¢ */
+    font-size: 1rem; /* å­—é«”å¤§å°é©ä¸­ */
+    font-weight: 500; /* ç¨å¾®åŠ ç²— */
+    /* [è§£æ±ºé™°å½±å•é¡Œ]ï¼šé è¨­ç‹€æ…‹ç§»é™¤æ‰€æœ‰é™°å½± */
+    box-shadow: none !important;
+    outline: none !important;
+    transition: background-color 0.2s, box-shadow 0.1s; /* åŠ å…¥éæ¸¡å‹•ç•« */
+}
+
+/* 3. é»æ“Šç‹€æ…‹ (Active) - æŒ‰ä¸‹å»æ™‚æ‰å‡ºç¾é™°å½± */
+.info-window-content .dropdown .btn:active,
+.info-window-content .dropdown .btn.show { /* Dropdown æ‰“é–‹æ™‚ä¹Ÿç®— active */
+    
+    /* é€™è£¡è¨­å®šã€Œå…§é™°å½±ã€æˆ–æ˜¯ã€Œå¤–éƒ¨é™°å½±ã€ï¼Œè®“å®ƒæœ‰æŒ‰ä¸‹å»çš„æ„Ÿè¦º */
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ç§»é™¤ Bootstrap é è¨­çš„ Focus å…‰æšˆ (è—è‰²å¤–æ¡†) */
+/*.info-window-content .dropdown .btn:focus {
+    box-shadow: none !important;
+}*/
+
+
+/* ä¿®æ­£ä¸‹æ‹‰é¸å–®çš„ä½ç½®ï¼Œé¿å…æ“‹ä½æŒ‰éˆ• */
+.info-window-content .dropdown-menu {
+    border-radius: 4px; /* é¸å–®åœ“è§’ */
+    margin-top: 2px !important; /* è®“é¸å–®è·ŸæŒ‰éˆ•ç¨å¾®æœ‰é»è·é›¢ */
+}
+
+
+/* æ„›å¿ƒæ”¶è—æŒ‰éˆ• (ä¿®æ­£ç‰ˆ) */
 .wishlist-heart {
     display: flex;
     align-items: center;
@@ -300,114 +340,114 @@ footer {
     margin-left: 8px;
 }
 
-    .wishlist-heart:hover {
-        background-color: rgba(220, 53, 69, 0.1);
-        transform: scale(1.1);
-    }
-
-    .wishlist-heart:active {
-        transform: scale(0.9);
-    }
-
-    /* ·R¤ß¿ï¤¤ª¬ºA */
-    .wishlist-heart.active i {
-        color: #dc3545; /* Bootstrap Danger Red */
-        /* ³o¸Ì¥Ñ JS ¤Á´« class ¬° bi-heart-fill¡A¤£»İ­n font-weight */
-    }
-
-
-/* 1. ¹w³]±N§R°£«ö¶sÁôÂÃ */
-.itinerary-item .delete-btn {
-    opacity: 0; /* §¹¥ş³z©ú */
-    visibility: hidden; /* ¤£¦û¾Ú¤¬°ÊªÅ¶¡ (Á×§K»~Ä²) */
-    transition: all 0.2s; /* ¥[¤J¤@ÂIº¥ÅÜ°Êµe¡A¬İ°_¨Ó¤ñ¸û¶¶ºZ */
+.wishlist-heart:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+    transform: scale(1.1);
 }
 
-/* 2. ·í·Æ¹«²¾¨ì¥d¤ù (.itinerary-item) ¤W®É¡AÅã¥Ü«ö¶s */
+.wishlist-heart:active {
+    transform: scale(0.9);
+}
+
+/* æ„›å¿ƒé¸ä¸­ç‹€æ…‹ */
+.wishlist-heart.active i {
+    color: #dc3545; /* Bootstrap Danger Red */
+    /* é€™è£¡ç”± JS åˆ‡æ› class ç‚º bi-heart-fillï¼Œä¸éœ€è¦ font-weight */
+}
+
+
+/* 1. é è¨­å°‡åˆªé™¤æŒ‰éˆ•éš±è— */
+.itinerary-item .delete-btn {
+    opacity: 0; /* å®Œå…¨é€æ˜ */
+    visibility: hidden; /* ä¸ä½”æ“šäº’å‹•ç©ºé–“ (é¿å…èª¤è§¸) */
+    transition: all 0.2s; /* åŠ å…¥ä¸€é»æ¼¸è®Šå‹•ç•«ï¼Œçœ‹èµ·ä¾†æ¯”è¼ƒé †æš¢ */
+}
+
+/* 2. ç•¶æ»‘é¼ ç§»åˆ°å¡ç‰‡ (.itinerary-item) ä¸Šæ™‚ï¼Œé¡¯ç¤ºæŒ‰éˆ• */
 .itinerary-item:hover .delete-btn {
-    opacity: 1; /* ÅÜ¬°¤£³z©ú */
-    visibility: visible; /* ¥i¨£¨Ã¥iÂIÀ» */
+    opacity: 1; /* è®Šç‚ºä¸é€æ˜ */
+    visibility: visible; /* å¯è¦‹ä¸¦å¯é»æ“Š */
 }
 
 .delete-btn {
-    /* ²¾°£ÂIÀ»®ÉªºÂÅ¦â¥~®Ø */
+    /* ç§»é™¤é»æ“Šæ™‚çš„è—è‰²å¤–æ¡† */
     box-shadow: none !important;
     border: none !important;
     outline: none !important;
-    /* ½T«O¤å¦rÃC¦â¥¿½T (Bootstrap ¹w³] btn-link ·|¬OÂÅ¦â¡A³o¸Ì±j¨î¬° danger ¬õ¦â) */
+    /* ç¢ºä¿æ–‡å­—é¡è‰²æ­£ç¢º (Bootstrap é è¨­ btn-link æœƒæ˜¯è—è‰²ï¼Œé€™è£¡å¼·åˆ¶ç‚º danger ç´…è‰²) */
     text-decoration: none;
 }
 
-/* ½T«O Focus ª¬ºA¤U¤]¤£­n¦³®Ø */
+/* ç¢ºä¿ Focus ç‹€æ…‹ä¸‹ä¹Ÿä¸è¦æœ‰æ¡† */
 .delete-btn:focus, .delete-btn:active {
     box-shadow: none !important;
     outline: none !important;
 }
 
-/* ®É¶¡°Ï¶ô Hover ®ÄªG */
+/* æ™‚é–“å€å¡Š Hover æ•ˆæœ */
 .edit-time-trigger:hover {
     background-color: #f0f2f5;
     border-radius: 4px;
 }
 
-/* ±j¨îÅı Google Autocomplete ¤U©Ô¿ï³æÅã¥Ü¦b Bootstrap Modal ¤§¤W */
+/* å¼·åˆ¶è®“ Google Autocomplete ä¸‹æ‹‰é¸å–®é¡¯ç¤ºåœ¨ Bootstrap Modal ä¹‹ä¸Š */
 .pac-container {
-    z-index: 1060 !important; /* Bootstrap Modal ¹w³]¬O 1055¡A©Ò¥H­n¤ñ¥¦¤j */
+    z-index: 1060 !important; /* Bootstrap Modal é è¨­æ˜¯ 1055ï¼Œæ‰€ä»¥è¦æ¯”å®ƒå¤§ */
 }
 
 /* =========================================
-   ¯è¯Z¥d¤ù¼Ë¦¡ (Flight Card Styles)
+   èˆªç­å¡ç‰‡æ¨£å¼ (Flight Card Styles)
    ========================================= */
 
-/* ¥d¤ù®e¾¹¡G³]©w³±¼v¡B¶ê¨¤»P¥Õ¦â­I´º */
+/* å¡ç‰‡å®¹å™¨ï¼šè¨­å®šé™°å½±ã€åœ“è§’èˆ‡ç™½è‰²èƒŒæ™¯ */
 .flight-card {
     background-color: #fff;
-    border: 1px solid #e0e0e0; /* ²L¦Ç¦âÃä®Ø */
-    border-radius: 12px; /* ¶ê¼íÃä¨¤ */
-    padding: 1.25rem; /* ¤º³¡¯d¥Õ */
-    margin-bottom: 1rem; /* ¥d¤ù¶¡¶Z */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* »´·L¯B°_®ÄªG */
-    position: relative; /* ¬°¤FÅı§R°£«ö¶sµ´¹ï©w¦ì */
+    border: 1px solid #e0e0e0; /* æ·ºç°è‰²é‚Šæ¡† */
+    border-radius: 12px; /* åœ“æ½¤é‚Šè§’ */
+    padding: 1.25rem; /* å…§éƒ¨ç•™ç™½ */
+    margin-bottom: 1rem; /* å¡ç‰‡é–“è· */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* è¼•å¾®æµ®èµ·æ•ˆæœ */
+    position: relative; /* ç‚ºäº†è®“åˆªé™¤æŒ‰éˆ•çµ•å°å®šä½ */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ·Æ¹«Äa°±®Éªº®ÄªG */
+/* æ»‘é¼ æ‡¸åœæ™‚çš„æ•ˆæœ */
 .flight-card:hover {
-    transform: translateY(-2px); /* »´·L¤W¯B */
+    transform: translateY(-2px); /* è¼•å¾®ä¸Šæµ® */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* ·s¼W¤é´Á¼ĞÃD¼Ë¦¡ */
+/* æ–°å¢æ—¥æœŸæ¨™é¡Œæ¨£å¼ */
 .flight-date-header {
     font-size: 0.9rem;
     color: #6c757d;
-    background-color: #f8f9fa; /* ²L¦Ç­I´º */
+    background-color: #f8f9fa; /* æ·ºç°èƒŒæ™¯ */
     padding: 4px 12px;
     border-radius: 20px;
-    display: inline-block; /* Åı­I´º¥u¥]¦í¤å¦r */
-    margin-bottom: 12px; /* »P¤U¤è¤º®e¹j¶} */
+    display: inline-block; /* è®“èƒŒæ™¯åªåŒ…ä½æ–‡å­— */
+    margin-bottom: 12px; /* èˆ‡ä¸‹æ–¹å…§å®¹éš”é–‹ */
     font-weight: 600;
 }
 
-/* --- ¥ª°¼¡G¯èªÅ¤½¥q --- */
+/* --- å·¦å´ï¼šèˆªç©ºå…¬å¸ --- */
 .flight-airline-box {
     min-width: 80px;
     text-align: center;
     margin-right: 1.5rem;
 }
 
-/* ¯èªÅ¤½¥q¦WºÙ (¼Ò¥é¹Ï¤ùªº¤â¼g/²ÊÅé·P) */
+/* èˆªç©ºå…¬å¸åç¨± (æ¨¡ä»¿åœ–ç‰‡çš„æ‰‹å¯«/ç²—é«”æ„Ÿ) */
 .flight-airline-name {
-    /*font-family: 'Arial Narrow', sans-serif;*/ /* ¸û¯¶ªº¦rÅé */
+    /*font-family: 'Arial Narrow', sans-serif;*/ /* è¼ƒçª„çš„å­—é«” */
     font-weight: 800;
-    font-size: 1.25rem;
+    font-size: 1rem;
     color: #212529;
     letter-spacing: -0.5px;
     line-height: 1;
-    margin-bottom: 4px;
+    margin-bottom: 10px;
 }
 
-/* ¯è¯Z½s¸¹¼ĞÅÒ */
+/* èˆªç­ç·¨è™Ÿæ¨™ç±¤ */
 .flight-number-badge {
     font-size: 0.8rem;
     color: #6c757d;
@@ -417,82 +457,82 @@ footer {
     border-radius: 4px;
 }
 
-/* --- ¤¤¶¡¡G®É¶¡»P¦aÂI --- */
+/* --- ä¸­é–“ï¼šæ™‚é–“èˆ‡åœ°é» --- */
 .flight-time-group {
     text-align: center;
     min-width: 80px;
 }
 
-/* ®É¶¡¤j¦r (¨Ò¦p 17:00) */
+/* æ™‚é–“å¤§å­— (ä¾‹å¦‚ 17:00) */
 .flight-time-large {
-    font-size: 1.25rem; /* ¤j¤Ø¤o */
+    font-size: 1.25rem; /* å¤§å°ºå¯¸ */
     font-weight: 700;
     line-height: 1;
     color: #212529;
     margin-bottom: 0.25rem;
 }
 
-/* ¾÷³õ¥N½X (¨Ò¦p RMQ) */
+/* æ©Ÿå ´ä»£ç¢¼ (ä¾‹å¦‚ RMQ) */
 .flight-airport-code {
     font-size: 1.25rem;
     font-weight: 600;
     color: #212529;
 }
 
-/* --- ¤¤¥¡¸Ë¹¢°Ï¶ô (­¸¦æ®É¶¡¡B½u±ø¡Bª½­¸) --- */
+/* --- ä¸­å¤®è£é£¾å€å¡Š (é£›è¡Œæ™‚é–“ã€ç·šæ¢ã€ç›´é£›) --- */
 .flight-route-info {
     display: flex;
     flex-direction: column;
     align-items: center;
     flex-grow: 1;
-    max-width: 200px; /* ­­¨î³Ì¤j¼e«×¡AÁ×§K½u±ø©Ô¤Óªø */
+    max-width: 200px; /* é™åˆ¶æœ€å¤§å¯¬åº¦ï¼Œé¿å…ç·šæ¢æ‹‰å¤ªé•· */
     padding: 0 1rem;
 }
 
-/* ­¸¦æÁ`®É¼Æ (¨Ò¦p 1¤p®É30¤ÀÄÁ) */
+/* é£›è¡Œç¸½æ™‚æ•¸ (ä¾‹å¦‚ 1å°æ™‚30åˆ†é˜) */
 .flight-duration-text {
     font-size: 0.85rem;
     color: #6c757d;
     margin-bottom: 4px;
 }
 
-/* ¸Ë¹¢½u±ø®e¾¹ */
+/* è£é£¾ç·šæ¢å®¹å™¨ */
 .flight-line-container {
     position: relative;
     width: 100%;
-    height: 20px; /* µ¹¤©°ª«×Åı­¸¾÷««ª½¸m¤¤ */
+    height: 20px; /* çµ¦äºˆé«˜åº¦è®“é£›æ©Ÿå‚ç›´ç½®ä¸­ */
     display: flex;
     align-items: center;
 }
 
-/* ¦Ç¦â¾î½u */
+/* ç°è‰²æ©«ç·š */
 .flight-line-bar {
     width: 100%;
     height: 2px;
-    background-color: #adb5bd; /* ²`¦Ç¦â½u±ø */
+    background-color: #adb5bd; /* æ·±ç°è‰²ç·šæ¢ */
 }
 
-/* ­¸¾÷¹Ï¥Ü (µ´¹ï©w¦ì¦b½u±ø¥k°¼) */
+/* é£›æ©Ÿåœ–ç¤º (çµ•å°å®šä½åœ¨ç·šæ¢å³å´) */
 .flight-icon-plane {
     position: absolute;
     right: 0;
     top: 50%;
-    transform: translateY(-50%) rotate(90deg); /* ««ª½¸m¤¤¨Ã±ÛÂà¦V¥k */
+    transform: translateY(-50%) rotate(90deg); /* å‚ç›´ç½®ä¸­ä¸¦æ—‹è½‰å‘å³ */
     color: #6c757d;
     font-size: 1.2rem;
-    background-color: #fff; /* ­I´º¥Õ¦â¾B¾×½u±ø */
+    background-color: #fff; /* èƒŒæ™¯ç™½è‰²é®æ“‹ç·šæ¢ */
     padding-left: 4px;
 }
 
-/* ª½­¸¤å¦r */
+/* ç›´é£›æ–‡å­— */
 .flight-direct-text {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #198754; /* ºñ¦â */
+    color: #198754; /* ç¶ è‰² */
     margin-top: 4px;
 }
 
-/* --- ¥k¤W¨¤§R°£«ö¶s --- */
+/* --- å³ä¸Šè§’åˆªé™¤æŒ‰éˆ• --- */
 .flight-delete-btn {
     position: absolute;
     top: 10px;
@@ -506,53 +546,111 @@ footer {
 }
 
 .flight-delete-btn:hover {
-    color: #dc3545; /* Äa°±ÅÜ¬õ¦â */
+    color: #dc3545; /* æ‡¸åœè®Šç´…è‰² */
 }
 
 
 
-/* 1. ¹w³]±N§R°£«ö¶sÁôÂÃ */
+/* 1. é è¨­å°‡åˆªé™¤æŒ‰éˆ•éš±è— */
 .flight-delete-btn {
-    opacity: 0; /* §¹¥ş³z©ú */
-    visibility: hidden; /* ¤£¦û¾Ú¤¬°ÊªÅ¶¡ (Á×§K»~Ä²) */
-    transition: all 0.2s; /* ¥[¤J¤@ÂIº¥ÅÜ°Êµe¡A¬İ°_¨Ó¤ñ¸û¶¶ºZ */
+    opacity: 0; /* å®Œå…¨é€æ˜ */
+    visibility: hidden; /* ä¸ä½”æ“šäº’å‹•ç©ºé–“ (é¿å…èª¤è§¸) */
+    transition: all 0.2s; /* åŠ å…¥ä¸€é»æ¼¸è®Šå‹•ç•«ï¼Œçœ‹èµ·ä¾†æ¯”è¼ƒé †æš¢ */
 }
 
-/* 2. ·í·Æ¹«²¾¨ì¥d¤ù ¤W®É¡AÅã¥Ü«ö¶s */
+/* 2. ç•¶æ»‘é¼ ç§»åˆ°å¡ç‰‡ ä¸Šæ™‚ï¼Œé¡¯ç¤ºæŒ‰éˆ• */
 .flight-card:hover .flight-delete-btn {
-    opacity: 1; /* ÅÜ¬°¤£³z©ú */
-    visibility: visible; /* ¥i¨£¨Ã¥iÂIÀ» */
+    opacity: 1; /* è®Šç‚ºä¸é€æ˜ */
+    visibility: visible; /* å¯è¦‹ä¸¦å¯é»æ“Š */
 }
 
 .flight-delete-btn {
-    /* ²¾°£ÂIÀ»®ÉªºÂÅ¦â¥~®Ø */
+    /* ç§»é™¤é»æ“Šæ™‚çš„è—è‰²å¤–æ¡† */
     box-shadow: none !important;
     border: none !important;
     outline: none !important;
-    /* ½T«O¤å¦rÃC¦â¥¿½T (Bootstrap ¹w³] btn-link ·|¬OÂÅ¦â¡A³o¸Ì±j¨î¬° danger ¬õ¦â) */
+    /* ç¢ºä¿æ–‡å­—é¡è‰²æ­£ç¢º (Bootstrap é è¨­ btn-link æœƒæ˜¯è—è‰²ï¼Œé€™è£¡å¼·åˆ¶ç‚º danger ç´…è‰²) */
     text-decoration: none;
 }
 
 
+/* é¤å»³åˆ—è¡¨é …ç›®æ¨£å¼ */
+.restaurant-item {
+    transition: all 0.2s ease-in-out;
+}
+
+    .restaurant-item:hover {
+        background-color: #fff5f5 !important; /* æ‡¸åœæ™‚è®Šæ·¡ç²‰ç´…è‰² */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* æµ®èµ·é™°å½± */
+        transform: translateY(-2px); /* å¾®å¾®ä¸Šæµ® */
+    }
+
+/* ç¢ºä¿é€šç”¨æ¨£å¼ */
+.object-fit-cover {
+    object-fit: cover;
+}
+
+/* è®“æ–‡å­—æˆªæ–·æ›´è‡ªç„¶ */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 
 
-
-
-
-
-
-
-
-/* RWD: ¦b¤â¾÷ª©®É½Õ¾ã¶¡¶Z */
+/* RWD: åœ¨æ‰‹æ©Ÿç‰ˆæ™‚èª¿æ•´é–“è· */
 @media (max-width: 576px) {
     .flight-time-large {
-        font-size: 1.8rem; /* ¤â¾÷ª©¦rÅéÁY¤p */
+        font-size: 1.8rem; /* æ‰‹æ©Ÿç‰ˆå­—é«”ç¸®å° */
     }
 
     .flight-airline-box {
         margin-right: 0;
         margin-bottom: 1rem;
-        width: 100%; /* ¯èªÅ¤½¥q¿W¦û¤@¦æ */
+        width: 100%; /* èˆªç©ºå…¬å¸ç¨ä½”ä¸€è¡Œ */
     }
 }
+
+
+/* å°è¦½åˆ—ç›¸é—œæ¨£å¼ */
+.itinerary-nav {
+    z-index: 1040; /* ç¢ºä¿åœ¨æœ€ä¸Šå±¤ */
+    background-color: #fff;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+    /* ä¿®æ­£ä¸‹æ‹‰é¸å–®åœ¨ nav å…§çš„æ¨£å¼ */
+    .itinerary-nav .dropdown-menu {
+        font-size: 0.9rem;
+        margin-top: 8px !important; /* èˆ‡æŒ‰éˆ•çš„è·é›¢ */
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .itinerary-nav .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+        background-color: #f8f9fa;
+    }
+
+        .itinerary-nav .btn-outline-secondary:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+            color: #212529;
+        }
+
+    /* è®“ dropdown-item æ›´æœ‰è³ªæ„Ÿ */
+    .itinerary-nav .dropdown-item {
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin: 2px 4px;
+        width: auto; /* é¿å…ä½”æ»¿å°è‡´ margin å¤±æ•ˆ */
+    }
+
+        .itinerary-nav .dropdown-item:active {
+            background-color: #e9ecef;
+            color: #000;
+        }
+
+

@@ -33,6 +33,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         mapInstance = initGoogleMap('map', 'place-search-input', []);
 
         // 錯誤時也要傳入 map
-        initEditPage(tripId, mapInstance);
+        initEditPage(mapInstance, tripSimpleInfo);
     }
 });

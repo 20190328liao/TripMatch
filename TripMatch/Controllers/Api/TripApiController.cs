@@ -77,7 +77,7 @@ namespace TripMatch.Controllers.Api
                     inviteCode = code.ToString() // Guid -> String
                 });
             }
-            catch(UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
@@ -238,6 +238,31 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
+
+        [HttpPost("AddTripDay/{id}")]
+        public async Task<IActionResult> AddTripDay(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest("無效的行程天數資料");
+                }
+                bool success = await _tripServices.AddTripDay(id);
+                if (success)
+                {
+                    return Ok(new { message = "行程天數已新增" });
+                }
+                else
+                {
+                    return NotFound("找不到指定的行程");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
+            }
+        }   
 
         #endregion
 
