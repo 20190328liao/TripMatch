@@ -169,11 +169,11 @@ const api = {
 const tripApi = {
     async listTrips() {
         // GET /api/trips/mine -> return [{ tripId, name, daysCount }]
-        const trips = await apiFetch("/api/trips/mine");
+        const trips = await apiFetch("/api/Spot/mine");
         // 統一 openTripPicker 欄位
         return (trips || []).map(t => ({
             tripId: t.tripId,
-            name: t.name,
+            title: t.Title ?? t.title,
             daysCount: t.dayCount,
         }));
     },
@@ -196,7 +196,7 @@ const tripApi = {
             lat: place.lat,
             lng: place.lng,
             rating: place.rating,
-            photosJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
+            photoJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
         };
 
         await apiFetch("/api/spot/wishlist", {
@@ -210,18 +210,20 @@ const tripApi = {
 
     async addToTripDay({ tripId, dayNo, place }) {
         const payload = {
-            tripId,
-            dayNo,
-            placeId: place.placeId,
-            nameZh: place.name,
-            address: place.address,
-            lat: place.lat,
-            lng: place.lng,
-            rating: place.rating,
-            //phone: place.phone,
-            photosJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
+            tripId: Number(tripId),
+            dayNo: Number(dayNo),
+            placeId: String(place.placeId),   // 根層 PlaceId
+            nameZh: String(place.name),       // 根層 NameZh
+            address: place.address ?? null,
+            lat: place.lat != null ? Number(place.lat) : null,
+            lng: place.lng != null ? Number(place.lng) : null,
+            rating: place.rating != null ? Number(place.rating) : null,
+            photoJson: JSON.stringify({ photoUrl: place.photoUrl || null })
         };
-        await apiFetch("/api/spot/itinerary", { method: "POST", body: payload });
+
+        // 1) 先確認這行印出來是正常物件，不是 undefined
+        console.log("itinerary payload obj:", payload);
+        await apiFetch("/api/spot/itinerary", { method: "POST", body: JSON.stringify(payload) });
         return { ok: true };
     }
 };
@@ -592,7 +594,7 @@ async function openTripPicker(mode) {
 
     // 有行程
     const items = trips.map(t => ({
-        text: t.name,
+        text: t.title,
         chip: mode === "wishlist" ? "LIST" : null,
         onClick: async () => {
             if (!currentPlace) return showToast("請先選擇景點");
@@ -633,19 +635,24 @@ async function openDayPicker(trip) {
         onClick: async () => {
             if (!currentPlace) return showToast("請先選擇景點");
 
-            const r = await tripApi.addToTripDay({
-                tripId: trip.tripId,
-                dayNo: d.dayNo,
-                place: currentPlace
-            });
+            try {
+                const r = await tripApi.addToTripDay({
+                    tripId: trip.tripId,
+                    dayNo: d.dayNo,
+                    place: currentPlace
+                });
 
-            if (r?.ok) showToast(`已將「${currentPlace.name}」加入 ${trip.name} / ${d.label}`);
-            else showToast('加入失敗');
+                if (r?.ok) showToast(`已將「${currentPlace.name}」加入 ${trip.title} / ${d.label}`);
+                else showToast(r?.message || "加入失敗");
+            } catch(err) {
+                showToast(err?.message || "操作失敗")
+            }
+            
 
             closeModal();
         }
     }));
-    openModal(`選擇天數 - ${trip.name}`, items);
+    openModal(`選擇天數 - ${trip.title}`, items);
 }
 
 // 打開彈出視窗
@@ -717,6 +724,8 @@ function wireUI() {
     // });
 
     btnWishlist.addEventListener('click', async () => {
+        //console.log("currentPlace", currentPlace);
+
         if (!currentPlace) return;
         try {
             const r = await tripApi.addToWishlist({ place: currentPlace });

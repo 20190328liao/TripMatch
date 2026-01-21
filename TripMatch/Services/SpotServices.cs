@@ -123,7 +123,7 @@ namespace TripMatch.Services
             return (true, null, item.Id, spotId);
         }
 
-        // ===== PlacesSnapshot Upsert (對齊你的 PlacesSnapshot Entity 欄位) =====
+        // ===== PlacesSnapshot Upsert (對齊 PlacesSnapshot Entity 欄位) =====
         private async Task<int> GetOrCreateSpotIdAsync(
             string externalPlaceId,
             string nameZh,
@@ -176,6 +176,27 @@ namespace TripMatch.Services
 
                 return spotId;
             }
+        }
+
+        public async Task<List<SearchTripDaysDto>> GetTrips(int? userId)
+        {
+            List<SearchTripDaysDto> tripDtos = [];
+
+            List<Trip> trips = await _context.Trips.Where(t => t.TripMembers.Any(tm => tm.UserId == userId)).ToListAsync();
+
+            foreach (var trip in trips)
+            {
+                SearchTripDaysDto tripDto = new()
+                {
+                    TripId = trip.Id,
+                    Title = trip.Title,
+                    DayCount = (trip.EndDate.ToDateTime(TimeOnly.MinValue)
+                    - trip.StartDate.ToDateTime(TimeOnly.MinValue))
+                    .Days + 1,
+                };
+                tripDtos.Add(tripDto);
+            }
+            return tripDtos;
         }
     }
 }
