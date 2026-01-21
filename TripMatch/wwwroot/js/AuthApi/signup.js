@@ -19,7 +19,7 @@
         cooldownTime = seconds;
         const $btn = $("#checkEmail");
 
-        $btn.prop("disabled", true).addClass("btn_Gray");
+        $btn.prop("disabled", true).addClass("color_nav");
 
         if (cooldownTimer) clearInterval(cooldownTimer);
 
@@ -27,7 +27,7 @@
             cooldownTime--;
             if (cooldownTime <= 0) {
                 clearInterval(cooldownTimer);
-                $btn.prop("disabled", false).removeClass("btn_Gray").text("寄驗證信");
+                $btn.prop("disabled", false).removeClass("color_nav").text("寄驗證信");
                 setFieldHint("email", "☑ Email 格式正確，可重新發送驗證信", "success");
             } else {
                 $btn.text(`重送(${cooldownTime}s)`);
@@ -43,7 +43,7 @@
                 isEmailVerified = true;
                 $("#email").val(data.email).prop("readonly", true);
                 setFieldHint("email", `☑ 偵測到信箱 ${data.email} 已驗證成功！`, "success");
-                $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
+                $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("color_nav");
                 validateForm();
             }
         }
@@ -149,7 +149,7 @@
                 if (res.verified) {
                     isEmailVerified = true;
                     $("#email").val(email).prop("readonly", true);
-                    $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
+                    $("#checkEmail").prop("disabled", true).text("已完成驗證").addClass("color_nav");
                     setFieldHint("email", "☑ 此信箱已驗證成功！請直接設定密碼。", "success");
                     validateForm();
                     showPopup({ title: "提示", message: "您先前已完成驗證，請直接設定密碼即可。", type: "success" });
@@ -209,7 +209,7 @@
                     // 已經驗證過了 (後端回傳 verified: true)
                     isEmailVerified = true;
                     $("#email").val(email).prop("readonly", true);
-                    $btn.prop("disabled", true).text("已完成驗證").addClass("btn_Gray");
+                    $btn.prop("disabled", true).text("已完成驗證").addClass("color_nav");
                     setFieldHint("email", "☑ 此信箱已驗證成功！請直接設定密碼。", "success");
                     validateForm();
                     showPopup({ title: "提示", message: "您先前已完成驗證，請直接設定密碼即可。", type: "success" });
@@ -290,7 +290,7 @@
                 setFieldHint("confirmPassword");
 
                 // 重置按鈕狀態
-                $("#checkEmail").prop("disabled", false).text("寄驗證信").removeClass("btn_Gray");
+                $("#checkEmail").prop("disabled", false).text("寄驗證信").removeClass("color_nav");
                 $("#btnRegister").prop("disabled", true).addClass("btn_Gray").removeClass("btn_light");
                 $("#incompleteMessage").addClass("d-none");
 

@@ -22,11 +22,65 @@
         }
     }
 
-    function setStatusMessage(msg, isSuccess) {
+    // 更新主圖（若檔案不存在，隱藏並在 console.warn）
+    function updateMainImage(isSuccess) {
+        const img = qs('.main-img');
+        if (!img) return;
+
+        const successSrc = (window.Routes && window.Routes.Img && window.Routes.Img.CheckEmail)
+            ? window.Routes.Img.CheckEmail
+            : '/img/checkEmailimg.png';
+        const failSrc = (window.Routes && window.Routes.Img && window.Routes.Img.CheckEmailFail)
+            ? window.Routes.Img.CheckEmailFail
+            : '/img/checkEmailimg_2.png';
+
+        // 避免快取造成錯誤顯示，附加版本號（僅前端測試用）
+        const targetBase = isSuccess ? successSrc : failSrc;
+        const cacheBuster = '?v=' + Date.now();
+        const target = targetBase + cacheBuster;
+
+        // debug：印出實際將要設定的圖（有助於排查是路徑或邏輯問題）
+        console.debug('checkEmail: set main image ->', { isSuccess, targetBase, target });
+
+        // 先移除前一次的 onerror，然後設定 src
+        img.onerror = null;
+        img.src = target;
+        img.style.display = ''; // 顯示圖片區域
+
+        // 若圖片無法載入，隱藏 element 並在 console 顯示詳細資訊
+        img.onerror = function () {
+            console.warn(`checkEmail: image not found -> ${targetBase} (with cache-buster ${cacheBuster})`);
+            img.style.display = 'none';
+        };
+    }
+
+    // 更新標題（server 預設的 titleWrap 也會被覆寫）
+    function updateTitleText(isSuccess, shortText) {
+        const title = qs('#displayArea .titleWrap.titleH5');
+        if (!title) return;
+        if (shortText) title.textContent = shortText;
+        title.style.color = isSuccess ? '' : '#FF6B6B';
+    }
+
+    // 簡潔的 UI 顯示，詳細內容寫到 console；同時會同步更新主圖與標題
+    function setStatusMessage(msg, isSuccess, detailForConsole, titleShort) {
         const el = qs('#verifyStatus');
-        if (!el) return;
-        el.textContent = msg || '';
-        el.style.color = isSuccess ? '#28a745' : '#dc3545';
+
+        // 始終隱藏小字（不在頁面顯示），避免重複或冗長訊息
+        if (el) {
+            el.textContent = '';
+            el.style.display = 'none';
+        }
+
+        // 更新主圖與大標題
+        updateMainImage(!!isSuccess);
+        updateTitleText(!!isSuccess, titleShort);
+
+        // 詳細訊息仍輸出到 console 供除錯
+        if (detailForConsole) {
+            if (isSuccess) console.debug('CheckEmail detail:', detailForConsole);
+            else console.warn('CheckEmail detail:', detailForConsole);
+        }
     }
 
     function enableNextButton(email) {
@@ -59,7 +113,6 @@
         btn.classList.add('btn_Gray');
     }
 
-    // 用 email 查 DB 的 EmailConfirmed（POST body: "email" 字串）
     async function checkEmailByAddress(email) {
         if (!email) return { exists: false, verified: false };
         try {
@@ -71,7 +124,6 @@
             });
             if (!res.ok) return { exists: null, verified: false };
             const json = await res.json().catch(() => null);
-            // 現行 CheckEmailStatus 回傳 { verified: true/false }
             return { exists: json !== null, verified: !!(json && json.verified), raw: json };
         } catch (ex) {
             console.debug('checkEmailByAddress error', ex);
@@ -79,14 +131,13 @@
         }
     }
 
-    // 寄驗證信（若頁面有可讀的 email）
     async function handleSendVerificationClick() {
         const params = new URLSearchParams(window.location.search);
         const qEmail = params.get('email');
         const input = qs('#email') || qs('#inputEmail') || qs('#input_email') || qs('input[name="email"]');
         const email = (qEmail || (input && input.value) || '').trim();
         if (!email) {
-            setStatusMessage('找不到 email，請至註冊頁重新輸入寄驗證信', false);
+            setStatusMessage('找不到 email', false, '找不到 email，請至註冊頁重新輸入寄驗證信', '找不到 email');
             return;
         }
 
@@ -100,28 +151,26 @@
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
                 if (json && json.verified) {
-                    setStatusMessage('此信箱已驗證，請直接設定密碼或登入', true);
+                    setStatusMessage('恭喜您，信箱驗證成功！', true, json.message || 'server returned verified', '恭喜您，驗證成功');
                     enableNextButton(email);
                     return;
                 }
-                setStatusMessage(json.message || '驗證信已發送，請檢查信箱', true);
+                setStatusMessage(json.message || '驗證信已發送，請檢查信箱', true, json.message, '驗證信已發送');
                 try { localStorage.setItem('PendingEmailLocal', JSON.stringify({ email, expiresAt: Date.now() + 30 * 60 * 1000 })); } catch { }
             } else {
-                // 處理後端回傳 action（例如 redirect_login）
                 if (json && json.action === 'redirect_login') {
-                    setStatusMessage(json.message || '此信箱已註冊，請登入', false);
+                    setStatusMessage('此信箱已註冊，請登入', false, json.message, '此信箱已註冊');
                     setTimeout(() => { window.location.href = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login + '?email=' + encodeURIComponent(email) : '/Auth/Login?email=' + encodeURIComponent(email); }, 900);
                     return;
                 }
-                setStatusMessage(json.message || '寄信失敗，請稍候再試', false);
+                setStatusMessage(json.message || '寄信失敗', false, json.message || '寄信失敗，請稍候再試', '寄信失敗');
             }
         } catch (ex) {
             console.error('SendConfirmation error', ex);
-            setStatusMessage('系統忙碌，請稍後再試', false);
+            setStatusMessage('系統忙碌，請稍後再試', false, ex.toString(), '系統忙碌');
         }
     }
 
-    // 綁定寄信按鈕（若頁面提供）
     function bindSendButton() {
         const btn = qs('#btn_send_verification') || qs('#btn_send_reset') || qs('#btn_send');
         if (!btn) return;
@@ -132,39 +181,55 @@
             e.preventDefault();
             handleSendVerificationClick();
         });
-        // 顯示並啟用按鈕（讓使用者可手動重寄）
         newBtn.removeAttribute('disabled');
         newBtn.classList.remove('btn_Gray');
     }
 
-    // 主檢查流程：備援 lookup -> pending cookie -> direct email check（若有）
-    async function checkStatus() {
-        setStatusMessage('正在檢查驗證狀態...', true);
+    function handleBackupVerifiedQuery() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('backupVerified')) return false;
 
-        // 1) 備援查詢（如果此頁為備援驗證流程）
+        const email = params.get('email') || null;
+        setStatusMessage('恭喜您，信箱驗證成功！', true, `backupVerified param present. email=${email}`, '恭喜您，驗證成功');
+        try {
+            if (email) {
+                localStorage.setItem('PendingEmailLocal', JSON.stringify({ email, expiresAt: Date.now() + 30 * 60 * 1000 }));
+            }
+        } catch { /* ignore */ }
+
+        enableNextButton(email);
+        return true;
+    }
+
+    async function checkStatus() {
+        setStatusMessage('正在檢查驗證狀態...', true, '開始 checkStatus', '檢查中');
+
         const backup = await fetchJson(ROUTES.GetBackupLookupResult || '/api/auth/GetBackupLookupResult');
         if (backup.ok && backup.json) {
             const j = backup.json;
             if (j.found) {
                 const accountEmail = j.accountEmail || j.lookupEmail || j.email || null;
-                setStatusMessage('驗證成功，找到帳號：' + (accountEmail || ''), true);
+                setStatusMessage('恭喜您，信箱驗證成功！', true, 'GetBackupLookupResult found: ' + JSON.stringify(j), '恭喜您，驗證成功');
                 enableNextButton(accountEmail);
                 return;
             }
         }
 
-        // 2) 透過 PendingEmail cookie 檢查（後端使用 cookie 判斷）
         const db = await fetchJson(ROUTES.CheckDbStatus || '/api/auth/CheckDbStatus');
         if (db.ok && db.json) {
-            if (db.json.verified) {
-                setStatusMessage('驗證成功，請按下一步繼續', true);
+            if (db.json.backupVerified === true) {
+                setStatusMessage('恭喜您，信箱驗證成功！', true, 'CheckDbStatus backupVerified', '恭喜您，驗證成功');
                 enableNextButton(db.json.email || null);
                 return;
             }
-            // 如果沒驗證，再嘗試以顯式 email 檢查（querystring or local fallback）
+
+            if (db.json.verified) {
+                setStatusMessage('恭喜您，信箱驗證成功！', true, 'CheckDbStatus verified', '恭喜您，驗證成功');
+                enableNextButton(db.json.email || null);
+                return;
+            }
         }
 
-        // 3) 若頁面可取得 email（querystring 或 localStorage），以 email 直接向 DB 查 EmailConfirmed
         const params = new URLSearchParams(window.location.search);
         const explicitEmail = params.get('email') || (function () {
             try {
@@ -177,48 +242,46 @@
 
         if (explicitEmail) {
             const r = await checkEmailByAddress(explicitEmail);
-            // r.exists === null 表示 API call error； === false 表示查無帳號； === true exist
             if (r.exists === true && r.verified === true) {
-                setStatusMessage('驗證成功，系統已確認 email 已驗證，請按下一步', true);
+                setStatusMessage('恭喜您，信箱驗證成功！', true, 'Email check verified', '恭喜您，驗證成功');
                 enableNextButton(explicitEmail);
                 return;
             }
-            // 若 r.exists true && verified false => 可以重寄驗證信
             if (r.exists === true && r.verified === false) {
-                setStatusMessage('此信箱尚未驗證，您可以重新寄驗證信', false);
-                bindSendButton(); // 顯示與綁定寄信按鈕
+                setStatusMessage('此信箱尚未驗證', false, `email ${explicitEmail} exists but not verified`, '尚未驗證');
+                bindSendButton();
                 disableNextButton();
                 return;
             }
-            // 如果查無帳號或 API 錯誤
             if (r.exists === false) {
-                setStatusMessage('此信箱尚未註冊，請重新註冊或先寄驗證信', false);
+                setStatusMessage('此信箱尚未註冊', false, `email ${explicitEmail} not registered`, '尚未註冊');
                 bindSendButton();
                 disableNextButton();
                 return;
             }
             if (r.exists === null) {
-                // API 錯誤 fallback
-                setStatusMessage('伺服器無回應，請稍後再試', false);
+                setStatusMessage('伺服器無回應', false, 'CheckEmailStatus API error', '伺服器無回應');
                 bindSendButton();
                 disableNextButton();
                 return;
             }
         }
 
-        // 4) 皆無法判定時：允許使用者手動重寄或回註冊
-        setStatusMessage('驗證連結已失效或帳號不存在，請重新註冊或重新寄驗證信', false);
+        // 簡短失敗顯示，詳細寫入 console；並切換到失敗圖與標題
+        setStatusMessage('驗證失敗', false, '驗證連結已失效或帳號不存在，請重新註冊或重新寄驗證信', '驗證失敗，請重新寄送驗證信，或連繫平台');
         bindSendButton();
         disableNextButton();
     }
 
-    // init
     document.addEventListener('DOMContentLoaded', function () {
         bindSendButton();
-        setTimeout(checkStatus, 120);
+
+        const handled = handleBackupVerifiedQuery();
+        if (!handled) {
+            setTimeout(checkStatus, 120);
+        }
     });
 
-    // 當使用者回到分頁時重新檢查
     window.addEventListener('focus', () => setTimeout(checkStatus, 150));
 
 })();

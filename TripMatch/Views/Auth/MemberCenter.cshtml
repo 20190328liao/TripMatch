@@ -13,10 +13,11 @@
 }
 @section Styles{
     <link href="~/css/AuthApi/member.css" rel="stylesheet" />
+    <link href="~/css/AuthApi/memberwishlist.css" rel="stylesheet" />
+   
+
     <style>
-        body {
-            background-color: var(--light) !important;/*單獨*/
-        }
+
     </style>
 }
 
@@ -31,7 +32,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             
-            <h1 class="mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h1>
+            <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
 
         </div>
 
@@ -124,7 +125,7 @@
          區塊二：個人行事曆
          ============================================= -->
     <section class="member_section" id="calendar_section">
-        <h2 class="titleWrap titleH2">個人行事曆</h2>
+        <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>個人行事曆</h2>
 
         <div class="calendar_legend mb-3">
             <span class="legend-item"><span class="dot today"></span>藍色圈：今天</span>
@@ -195,7 +196,7 @@
 
                     <!-- 匯入 JSON 日曆 -->
                     <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                    <button type="button" id="btnImportCalendar" class="btn btn-primary2">匯入 JSON 日曆</button>
+                    <button type="button" id="btnImportCalendar" class="btn1 btn-primary2">匯入 JSON 日曆</button>
                 </div>
 
                 <div class="col-12">
@@ -220,7 +221,7 @@
 
         <section class="member_section" id="wishlist_section">
             <div class="section_header d-flex align-items-center justify-content-between">
-                <h2 class="titleWrap titleH2">願望清單</h2>
+            <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>願望清單</h2>
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>
@@ -258,13 +259,18 @@
                                         <h5 class="card-title">@item.Name</h5>
                                         <p class="card-text text-truncate">@item.Address</p>
 
-                                        @* View More 按鈕：帶站內 SpotID 與（若有）Google Place ID *@
-                                        <button type="button"
-                                                class="btn btn-primary w-100 btn-view-more mt-auto"
-                                                data-spot-id="@item.SpotId"
-                                                @(string.IsNullOrEmpty(googleId) ? "" : $"data-google-place-id=\"{googleId}\"")>
+                                    @* --- --- *@
+                                    @if (!string.IsNullOrEmpty(googleId))
+                                    {
+                                        <a href="/Spot?placeId=@googleId" class="btnSpot w-100">
                                             View More
-                                        </button>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-secondary w-100" disabled>無地點資料</button>
+                                    }
+                                    @* -------------- *@
                                     </div>
                                 </div>
                             </div>

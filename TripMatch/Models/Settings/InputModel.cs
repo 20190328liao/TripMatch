@@ -19,7 +19,12 @@ namespace TripMatch.Models.Settings
         [Compare("Password", ErrorMessage = "密碼和確認密碼不符。")]
         public string? confirmPassword { get; set; }
     }
-
+    public class StoreSpotPhotoModel
+    {
+        public int? SpotId { get; set; }
+        public string? PlaceId { get; set; }
+        public string? ImageUrl { get; set; }
+    }
     public class ResetPasswordModel
     {
         public string? UserId { get; set; } = string.Empty;

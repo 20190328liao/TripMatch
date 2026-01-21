@@ -1,4 +1,5 @@
-/* Chip ¼ĞÅÒ¼Ë¦¡ - °t¦X Bootstrap ªºÃC¦â */
+ï»¿
+/* Chip æ¨™ç±¤æ¨£å¼ - é…åˆ Bootstrap çš„é¡è‰² */
 .chip {
     display: flex;
     align-items: center;
@@ -36,7 +37,7 @@
     }
 }
 
-/* ¤U©Ô¿ï³æ¶µ¥Ø¼Ë¦¡ */
+/* ä¸‹æ‹‰é¸å–®é …ç›®æ¨£å¼ */
 .suggestion-item {
     cursor: pointer;
     padding: 10px 15px;

@@ -1,0 +1,120 @@
+﻿/* =============================================
+   Forgot Password - Step 1: Check Email
+   對齊原圖 P1 風格：高留白、無連線、橘色 active
+   ============================================= */
+
+/* 沿用整合後的容器 */
+.forgot_wrap {
+    max-width: 700px;
+    margin: 3.5rem auto;
+    padding: 3rem 4rem;
+    background: var(--color_bk); /* */
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+    /* 標題：靠左對齊 [對齊原圖] */
+    .forgot_wrap .titleH1 {
+        font-size: var(--font_H1); /* */
+        color: var(--color_font); /* */
+        font-weight: 700;
+        text-align: left;
+        margin-bottom: 3rem;
+    }
+
+/* 步驟指示器：去除連線，使用大間距 */
+.step_indicators {
+    display: flex;
+    justify-content: center;
+    gap: 4.5rem;
+    margin-bottom: 4rem;
+}
+
+.step_item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--color_Gray); /* */
+}
+
+/* 步驟圓圈：Step 1 為 Active (橘色勾勾) */
+.step_badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color_Gray); /* */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+}
+
+/* 第一步 Active 狀態 (驗證帳號) [對齊原圖橘色勾勾] */
+.step_item.step_active .step_badge {
+    background-color: var(--color_Contrast); /* */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60%;
+}
+
+.step_item.step_active span {
+    color: var(--color_font); /* */
+    font-weight: 700;
+}
+
+/* 表單內容：置中 */
+.formWrap {
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* 帶有 Icon 的 Label [對齊原圖] */
+.forgot_form label {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color_DarkGray); /* */
+}
+
+/* 輸入框容器：引用 ChangePassword 的高度感 */
+.forgot_form .input_group_custom {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid var(--color_Border); /* */
+    border-radius: 12px;
+    padding: 0 1.2rem;
+    height: 56px;
+    transition: all 0.2s ease;
+}
+
+/* 發送按鈕 (內嵌在輸入框旁) */
+.btn_send_verify {
+    background: var(--color_nav); /* */
+    color: var(--color_Dark); /* */
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* 主要按鈕：下一步 (薄荷綠) */
+#btn_next_step {
+/*    width: 100%;*/
+    height: 56px;
+    margin-top: 2rem;
+    background: var(--color_Light);
+    color: var(--color_font); 
+    border: none;
+    border-radius: 12px;
+    font-size: 18pt;
+    cursor: pointer;
+    transition: transform .12s ease;
+}
+

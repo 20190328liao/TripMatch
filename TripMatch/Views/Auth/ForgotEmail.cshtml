@@ -2,6 +2,9 @@
     ViewData["Title"] = "忘記帳號";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
+@section Styles {
+    <link rel="stylesheet" href="~/css/AuthApi/forgotemail.css" asp-append-version="true" />
+}
 
 <div class="forgot_wrap">
     <h1 class="titleH1 mb-4">忘記帳號</h1>
@@ -65,8 +68,6 @@
     </div>
 </div>
 
-@section Styles {
-}
 
 @section Scripts {
     <script src="~/js/AuthApi/forgotEmail.js" asp-append-version="true"></script>

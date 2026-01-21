@@ -28,6 +28,7 @@ namespace TripMatch.Controllers.Api
         // 新增私有欄位：ApplicationDbContext
         private readonly ApplicationDbContext _appDbContext;
 
+
         public MemberCenterApiController(
     TravelDbContext dbContext,
     IConfiguration configuration,
@@ -265,41 +266,52 @@ namespace TripMatch.Controllers.Api
         // 將 helper 改成 static 並接收 apiKey，確保不會捕捉到 controller instance
         private static string? BuildImageUrlFromPhotosSnapshot(string? photosSnapshot, string? apiKey)
         {
-            if (string.IsNullOrEmpty(photosSnapshot)) return GetPlaceholderImageUrl(); // 如果沒有照片快照，回傳假圖片 URL
+            if (string.IsNullOrEmpty(photosSnapshot)) return GetPlaceholderImageUrl();
+
             try
             {
-                var photos = JsonSerializer.Deserialize<List<string>>(photosSnapshot);
-                if (photos != null && photos.Count > 0)
+                var photoList = JsonSerializer.Deserialize<List<string>>(photosSnapshot);
+                if (photoList != null && photoList.Count > 0)
                 {
-                    var first = photos[0];
-                    if (string.IsNullOrEmpty(first)) return GetPlaceholderImageUrl(); // 如果第一筆是空的，回傳假圖片
+                    var first = photoList[0]?.Trim();
+                    if (string.IsNullOrEmpty(first)) return GetPlaceholderImageUrl();
 
+                    // 1) 如果已經是完整 URL，直接回傳
                     if (first.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                         first.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                     {
-                        // 如果是完整 URL，但可能是假的（例如 example.com），檢查是否有效（簡單檢查）
-                        if (first.Contains("example.com")) return GetPlaceholderImageUrl(); // 假資料，替換為真實假圖片
+                        // 避免已知假的 host
+                        if (first.Contains("example.com")) return GetPlaceholderImageUrl();
                         return first;
                     }
 
+                    // 2) placeholder shorthand (e.g. "400x300?text=No+Image+Available")
+                    if (System.Text.RegularExpressions.Regex.IsMatch(first, @"^\d+x\d+\?text=", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    {
+                        return $"https://via.placeholder.com/{first}";
+                    }
+
+                    // 3) 否則視為 Google photo_reference，需 API key
                     if (!string.IsNullOrEmpty(apiKey))
                     {
-                        return $"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={first}&key={apiKey}";
+                        var encoded = Uri.EscapeDataString(first);
+                        return $"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={encoded}&key={apiKey}";
                     }
                 }
             }
             catch
             {
+                // 解析錯誤 fallback
             }
-            return GetPlaceholderImageUrl(); // 解析失敗，回傳假圖片
+
+            return GetPlaceholderImageUrl();
         }
 
         // 新增靜態方法：回傳假圖片 URL（可替換為本地圖片或 placeholder 服務）
         private static string GetPlaceholderImageUrl()
         {
-            // 使用 placeholder 服務（例如 via.placeholder.com）或本地圖片
-            return "https://via.placeholder.com/400x300?text=No+Image+Available"; // 假圖片 URL
-            // 或使用本地圖片：return "/img/placeholder.jpg";
+            // 使用本地靜態圖片，避免外部 DNS 失效導致資源載入失敗
+            return "/img/placeholder.png";
         }
 
         [HttpGet("GetWish")]
@@ -342,7 +354,7 @@ namespace TripMatch.Controllers.Api
                     spotTitle = item.SpotName,
                     item.Note,
                     createdAt = item.CreatedAt,
-                    imageUrl = BuildImageUrlFromPhotosSnapshot(item.PhotosSnapshot, apiKey)
+                    imageUrl = PlacesPhotoHelper.BuildImageUrlFromPhotosSnapshot(item.PhotosSnapshot, apiKey)
                 }).ToList();
 
                 return new ContentResult
@@ -581,5 +593,68 @@ namespace TripMatch.Controllers.Api
         {
             public int SpotId { get; set; }
         }
+        // 在 namespace TripMatch.Controllers.Api 裡，最好放在檔案底部（controller 類別之後）
+        [HttpGet("GetSpotPhoto")]
+        public async Task<IActionResult> GetSpotPhoto(string placeId, int spotId)
+        {
+            if (string.IsNullOrEmpty(placeId)) return BadRequest("缺少 PlaceID");
+
+            // 讀取 ApiKey（嘗試兩種設定鍵名）
+            string? apiKey = _configuration["GoogleMaps:ApiKey"] ?? _configuration["GooglePlacesApiKey"];
+            if (string.IsNullOrEmpty(apiKey)) return StatusCode(500, "API Key 未設定");
+
+            try
+            {
+                using var client = new HttpClient();
+
+                string detailsUrl = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}&fields=photos&key={Uri.EscapeDataString(apiKey)}";
+                var response = await client.GetStringAsync(detailsUrl);
+                using var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusProp) &&
+                    statusProp.ValueKind == JsonValueKind.String &&
+                    !string.Equals(statusProp.GetString(), "OK", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger?.LogInformation("GetSpotPhoto: Google Details returned status={Status}", statusProp.GetString());
+                    return Ok(new { imageUrl = (string?)null });
+                }
+
+                if (root.TryGetProperty("result", out var result) &&
+                    result.TryGetProperty("photos", out var photosEl) &&
+                    photosEl.ValueKind == JsonValueKind.Array &&
+                    photosEl.GetArrayLength() > 0)
+                {
+                    var first = photosEl[0];
+                    if (first.ValueKind == JsonValueKind.Object &&
+                        first.TryGetProperty("photo_reference", out var pr) &&
+                        pr.ValueKind == JsonValueKind.String)
+                    {
+                        var photoRef = pr.GetString() ?? string.Empty;
+                        var photoUrl = $"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={Uri.EscapeDataString(photoRef)}&key={Uri.EscapeDataString(apiKey)}";
+
+                        // 非阻斷地寫回 DB（使用 controller 的 _dbContext）
+                        try
+                        {
+                            await PlacesPhotoHelper.SavePhotoUrlToSnapshotAsync(_dbContext, spotId, placeId, photoUrl, _logger);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogWarning(ex, "GetSpotPhoto: failed to save photoUrl back to DB for placeId={PlaceId}", placeId);
+                        }
+
+                        return Ok(new { imageUrl = photoUrl });
+                    }
+                }
+
+                return Ok(new { imageUrl = (string?)null, message = "Google 查無圖片" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "GetSpotPhoto 發生錯誤: {PlaceId}", placeId);
+                return StatusCode(500, new { message = "伺服器錯誤" });
+            }
+        }
+
     }
 }
