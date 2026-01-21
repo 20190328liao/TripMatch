@@ -190,14 +190,17 @@ const tripApi = {
     // POST /api/wishlist
     async addToWishlist({ place }) {
         const payload = {
-            externalPlaceId: place.placeId,
-            nameZh: place.name,
-            address: place.address,
-            lat: place.lat,
-            lng: place.lng,
-            rating: place.rating,
-            photoJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
-         };
+            place: {
+                placeId: place.placeId,
+                name: place.name,
+                address: place.address,
+                lat: place.lat,
+                lng: place.lng,
+                rating: place.rating,
+                photoUrl: place.photoUrl ?? null
+            }
+        };
+
 
         await apiFetch("/api/spot/wishlist", {
             method: "POST",
@@ -212,13 +215,17 @@ const tripApi = {
         const payload = {
             tripId: Number(tripId),
             dayNo: Number(dayNo),
-            placeId: String(place.placeId),   // 根層 PlaceId
-            nameZh: String(place.name),       // 根層 NameZh
-            address: place.address ?? null,
-            lat: place.lat != null ? Number(place.lat) : null,
-            lng: place.lng != null ? Number(place.lng) : null,
-            rating: place.rating != null ? Number(place.rating) : null,
-            photoJson: JSON.stringify({ photoUrl: place.photoUrl || null })
+            startTime: "08:00",
+            endTime: "09:00",
+            place: {
+                placeId: place.placeId,
+                name: place.name,
+                address: place.address,
+                lat: place.lat,
+                lng: place.lng,
+                rating: place.rating,
+                photoUrl: place.photoUrl ?? null
+            }
         };
 
         // 1) 先確認這行印出來是正常物件，不是 undefined
@@ -724,7 +731,7 @@ function wireUI() {
     // });
 
     btnWishlist.addEventListener('click', async () => {
-        //console.log("currentPlace", currentPlace);
+        console.log("currentPlace", currentPlace);
 
         if (!currentPlace) return;
         try {

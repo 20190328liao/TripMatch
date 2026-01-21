@@ -493,11 +493,12 @@ body {
 /* ========== Popular reopen button (when hidden) ========== */
 .popularReopen {
     position: absolute;
-    left: var(--gutter);
+    left: calc(var(--gutter) + 12px);
     bottom: var(--gutter);
+    top: calc(var(--layoutNavH) + var(--gutter) + 62px);
     z-index: 3300;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, .10);
     background: #fff;
