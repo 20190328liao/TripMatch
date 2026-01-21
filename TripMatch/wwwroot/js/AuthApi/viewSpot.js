@@ -571,7 +571,7 @@ function attachBtnViewMoreFallback() {
 
             // 嘗試從 <img data-place-id> 取得 placeId（先找 a 內的 img，沒找到再往上找同卡片）
             const img = a.querySelector && a.querySelector('img[data-place-id]') ||
-                        a.closest && a.closest('.col') && a.closest('.col').querySelector('img[data-place-id]');
+                a.closest && a.closest('.col') && a.closest('.col').querySelector('img[data-place-id]');
             const placeId = img && img.getAttribute && img.getAttribute('data-place-id') || '';
 
             if (placeId && placeId !== 'null' && placeId.trim()) {

@@ -1106,13 +1106,13 @@ namespace TripMatch.Controllers.Api
                     {
                         var s = first.GetString();
                         if (!string.IsNullOrEmpty(s)) return s;
-                      }
-                      else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
-                      {
-                          if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                              return urlProp.GetString();
-                          // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
-                      }
+                    }
+                    else if (first.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        if (first.TryGetProperty("url", out var urlProp) && urlProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            return urlProp.GetString();
+                        // 若物件只有 photo_reference，無法直接構成 URL，回傳 null 讓前端使用 fallback
+                    }
                 }
                 else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
@@ -1505,6 +1505,173 @@ namespace TripMatch.Controllers.Api
                 Response.Cookies.Delete("BackupLookupPending");
                 return Ok(new { found = false });
             }
+
         }
+
+
+
+        // UpdateFullName 節錄（在 Controller 類別內）
+        [HttpPost("UpdateFullName")]
+        [Authorize]
+        public async Task<IActionResult> UpdateFullName([FromBody] UpdateFullNameModel? model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.FullName))
+                return BadRequest(new { success = false, message = "名稱不可為空" });
+
+            var name = model.FullName!.Trim();
+            if (name.Length > 25)
+                return BadRequest(new { success = false, message = "名稱長度不能超過25字" });
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized(new { success = false, message = "未授權或找不到使用者" });
+
+            // 直接儲存原始 Unicode 字串（不再 URL encode）
+            user.FullName = name;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                _logger?.LogWarning("UpdateFullName failed for user {UserId}: {Errors}",
+                    user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
+
+                var errorMsg = result.Errors.FirstOrDefault()?.Description ?? "更新失敗";
+                return BadRequest(new { success = false, message = errorMsg, errors = result.Errors });
+            }
+
+            try
+            {
+                var token = _authService.GenerateJwtToken(user);
+                _authService.SetAuthCookie(HttpContext, token);
+            }
+            catch { }
+
+            return Ok(new { success = true, message = "自訂名稱已更新", fullName = user.FullName });
+        }
+
+        // 新增於 AuthApiController 類別內
+        [HttpPost("CreatePasswordResetSessionForUser")]
+        public async Task<IActionResult> CreatePasswordResetSessionForUser([FromBody] string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "請提供信箱" });
+
+            var user = await _userManager.FindByEmailAsync(email.Trim());
+            if (user == null)
+                return NotFound(new { message = "找不到對應使用者" });
+
+            try
+            {
+                // 產生原始 token，並進行 Base64Url 編碼（與 SendPasswordReset 相同）
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+                // 將重設資訊寫入 Session（24 小時內有效）
+                HttpContext.Session.SetString("PasswordResetUserId", user.Id.ToString());
+                HttpContext.Session.SetString("PasswordResetCode", encoded);
+                HttpContext.Session.SetString("PasswordResetTime", DateTime.UtcNow.ToString("O"));
+
+                var redirect = Url.Action("ForgotPassword", "Auth");
+                return Ok(new { redirect });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "CreatePasswordResetSessionForUser failed for {Email}", email);
+                return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
+            }
+        }
+
+        [HttpGet("GetWish")]
+        [Authorize]
+        public async Task<IActionResult> GetWish()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { message = "請先登入" });
+
+            var items = await _dbContext.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .OrderByDescending(w => w.CreatedAt)
+                .Select(w => new
+                {
+                    SpotId = w.SpotId,
+                    Name_ZH = w.Spot != null ? w.Spot.NameZh : "未知地點",
+                    ExternalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : "",
+                    PhotosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
+                    Address = w.Spot != null ? w.Spot.AddressSnapshot : "",
+                    Rating = w.Spot != null ? w.Spot.Rating : 0
+                })
+                .ToListAsync();
+
+            return Ok(items);
+        }
+        [HttpGet("GetExternalPlaceId/{spotId}")]
+        public async Task<IActionResult> GetExternalPlaceId(int spotId)
+        {
+            var spot = await _dbContext.PlacesSnapshots
+                .FirstOrDefaultAsync(p => p.SpotId == spotId);
+
+            if (spot == null) return NotFound();
+
+            return Ok(new { externalPlaceId = spot.ExternalPlaceId });
+        }
+        [HttpPost("StoreSpotPhoto")]
+        [Authorize]
+        public async Task<IActionResult> StoreSpotPhoto([FromBody] StoreSpotPhotoModel? model)
+        {
+            if (model == null) return BadRequest(new { saved = false, message = "Invalid payload" });
+            if (string.IsNullOrEmpty(model.PlaceId) && model.SpotId <= 0)
+                return BadRequest(new { saved = false, message = "PlaceId or SpotId required" });
+
+            try
+            {
+                // 1) 若前端直接傳 ImageUrl（Client-side 已取得），優先儲存
+                if (!string.IsNullOrEmpty(model.ImageUrl))
+                {
+                    // PlacesPhotoHelper 為專案既有 helper（MemberCenterApiController 也使用過）
+                    await PlacesPhotoHelper.SavePhotoUrlToSnapshotAsync(_dbContext, model.SpotId, model.PlaceId ?? string.Empty, model.ImageUrl, _logger);
+                }
+                else
+                {
+                    // 2) 若沒 imageUrl，讓 service 去抓並填充 snapshot（會抓 photo_reference 並存入 PhotosSnapshot）
+                    if (!string.IsNullOrEmpty(model.PlaceId))
+                    {
+                        // FillPlacesSnapshotImagesAsync 會向 Google 查詢並儲存 photos 到 PlacesSnapshots
+                        await _placesImageService.FillPlacesSnapshotImagesAsync(model.PlaceId);
+                    }
+                }
+
+                // 3) 從 DB 讀回快照並回傳可載入的 imageUrl（如果有）
+                var snapshot = await _dbContext.PlacesSnapshots
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.ExternalPlaceId == (model.PlaceId ?? string.Empty));
+
+                // 取 apiKey（相容設定名）
+                var apiKey = _configuration["GoogleMaps:ApiKey"] ?? _configuration["GooglePlacesApiKey"];
+
+                string? imageUrl = null;
+                if (snapshot != null)
+                {
+                    imageUrl = PlacesPhotoHelper.BuildImageUrlFromPhotosSnapshot(snapshot.PhotosSnapshot, apiKey);
+                }
+
+                return Ok(new { saved = true, imageUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "StoreSpotPhoto failed: PlaceId={PlaceId}, SpotId={SpotId}", model.PlaceId, model.SpotId);
+                return StatusCode(500, new { saved = false, message = "Server error" });
+            }
+        }
+        // 新增：StoreSpotPhoto request model & API
+        public class StoreSpotPhotoModel
+        {
+            public int SpotId { get; set; } = 0;
+            public string? PlaceId { get; set; }
+            public string? ImageUrl { get; set; }
+        }
+
     }
+
 }
