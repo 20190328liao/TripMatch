@@ -13,7 +13,7 @@ function goToTrip(tripId) {
     }
 
     // 這裡一定要有 ?id=
-    window.location.href = '/Home/Detail?id=' + tripId;
+    window.location.href = '/Billing/Detail?id=' + tripId;
 }
 
 function createNewTrip() {
