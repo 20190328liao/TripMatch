@@ -9,7 +9,7 @@ export class RecommendationModal {
     initModal() {
         const html = `
         <div class="modal fade" id="${this.modalId}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
                 <div class="modal-content">
                     <div class="modal-header bg-light py-2">
                         <h6 class="modal-title fw-bold" id="rec-modal-title">
@@ -86,38 +86,58 @@ export class RecommendationModal {
 
         let html = '';
         items.forEach(item => {
+            console.log("u景點探索項目", item);
 
-            console.log("我進來了1");
+            const imgUrl = item.photosSnapshot && item.photosSnapshot[0]
+                ? item.photosSnapshot[0]
+                : '/images/default-placeholder.png';
 
-
-
-
-            const imgUrl = item.photoUrl || '/images/default-placeholder.png';
             const ratingHtml = item.rating
-                ? `<span class="text-warning small"><i class="bi bi-star-fill"></i> ${item.rating}</span>`
+                ? `<div class="d-flex align-items-center text-warning small mt-1">
+                <i class="bi bi-star-fill me-1"></i>
+                <span class="fw-bold text-dark">${item.rating}</span>
+                <span class="text-muted ms-1" style="font-size: 0.8rem;">(${item.userRatingsTotal || 0} 則評論)</span>
+              </div>`
                 : '';
 
             html += `
-                <div class="list-group-item list-group-item-action p-3 d-flex gap-3 align-items-center rec-item" 
-                     data-place-id="${item.placeId}" data-spot-id="${item.id}">
-                    
-                    <div style="width: 60px; height: 60px; flex-shrink: 0;">
-                        <img src="${imgUrl}" class="w-100 h-100 rounded object-fit-cover" alt="${item.name}">
-                    </div>
-                    
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <h6 class="mb-0 fw-bold text-truncate" title="${item.name}">${item.name}</h6>
-                            ${ratingHtml}
-                        </div>
-                        <small class="text-muted d-block text-truncate">${item.address || "無地址資訊"}</small>
-                    </div>
+           <div class="list-group-item list-group-item-action p-3 p-md-4 d-flex gap-4 align-items-start rec-item" 
+                data-place-id="${item.externalPlaceId}" data-spot-id="${item.externalPlaceId}"
+                style="cursor: pointer; transition: background-color 0.2s;">
+               
+               <!-- 1. 圖片區塊  -->
+               <div style="width: 300px; height: 200px; flex-shrink: 0;" class="shadow-sm rounded overflow-hidden">
+                   <img src="${imgUrl}" class="w-100 h-100 object-fit-cover transition-transform" alt="${item.nameZh}">
+               </div>
+               
+               <!-- 2. 內容區塊 -->
+               <div class="flex-grow-1 overflow-hidden d-flex flex-column justify-content-center" style="min-height: 110px;">
+                   
+                   <!-- 標題 -->
+                   <h5 class="mb-1 fw-bold text-dark text-truncate" title="${item.nameZh}" style="font-size: 1.1rem;">
+                       ${item.nameZh}
+                   </h5>
+                   
+                   <!-- 評分 -->
+                   ${ratingHtml}
 
-                    <button class="btn btn-sm btn-outline-primary rounded-pill flex-shrink-0 btn-add-rec">
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                </div>
-            `;
+                   <!-- 地址 -->
+                   <div class="text-secondary mt-2 small text-truncate">
+                       <i class="bi bi-geo-alt-fill me-1 text-muted"></i>${item.address || "無地址資訊"}
+                   </div>
+
+                   <!-- (選用) 類型標籤或其他資訊 -->
+                   <!-- <div class="mt-auto pt-2"><span class="badge bg-light text-secondary border">景點</span></div> -->
+               </div>
+
+               <!-- 3. 按鈕區塊 (垂直置中) -->
+               <div class="align-self-center">
+                   <button class="btn btn-outline-primary rounded-pill btn-add-rec px-3 py-2 shadow-sm" title="加入行程">
+                       <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline small fw-bold">加入</span>
+                   </button>
+               </div>
+           </div>
+       `;
         });
         container.innerHTML = html;
 
