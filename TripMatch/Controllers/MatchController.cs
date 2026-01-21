@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using TripMatch.Models;
 using TripMatch.Models.DTOs.TimeWindow;
+using TripMatch.Services;
 
 namespace TripMatch.Controllers
 {
@@ -12,10 +13,12 @@ namespace TripMatch.Controllers
     public class MatchController : Controller
     {
         private readonly TravelDbContext _context;
+        private readonly TimeWindowService _timeWindowService;
 
-        public MatchController(TravelDbContext context)
+        public MatchController(TravelDbContext context, TimeWindowService timeWindowService)
         {
             _context = context;
+            _timeWindowService = timeWindowService;
         }
 
         public IActionResult Index()
@@ -39,22 +42,18 @@ namespace TripMatch.Controllers
         [HttpGet("/Match/CalendarCheck/{groupId}")]
         public async Task<IActionResult> CalendarCheck(int groupId)
         {
-            ViewBag.GroupId = groupId;
-
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(userIdStr, out int userId))
-            {
-                bool hasCalendarData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
+            int.TryParse(userIdStr, out int userId);
 
-                // 傳遞給前端：true = 有資料(不用跳窗)，false = 沒資料(要跳窗)
-                ViewBag.HasCalendarData = hasCalendarData;
-            }
-            else
-            {
-                ViewBag.HasCalendarData = false;
-            }
+            bool hasData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
 
-            return View();
+            var viewModel = new CalendarCheckViewModel
+            {
+                GroupId = groupId,
+                HasSelectedTimeRange = hasData
+            };
+
+            return View(viewModel);
         }
 
         [HttpGet("/Match/Join/{inviteCode}")]
@@ -206,37 +205,6 @@ namespace TripMatch.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "偏好已儲存" });
-        }
-
-        [HttpGet("api/timewindow/{groupId}/status")]
-        public async Task<IActionResult> GetGroupStatus(int groupId)
-        {
-            // 錯誤修正：DbSet 名稱推測為 GroupMembers (請確認 ApplicationDbContext)
-            // 錯誤修正：欄位是 GroupId
-            var members = await _context.GroupMembers
-                .Where(m => m.GroupId == groupId)
-                .ToListAsync();
-
-            if (!members.Any()) return NotFound(new { message = "找不到群組成員" });
-
-            int totalCount = members.Count;
-
-            // 錯誤修正：使用 SubmittedAt.HasValue 來判斷是否已提交
-            int submittedCount = members.Count(m => m.SubmittedAt.HasValue);
-
-            string status = "WAITING";
-            // 邏輯：所有人都有提交時間 (SubmittedAt != null) 才算完成
-            if (totalCount > 0 && submittedCount == totalCount)
-            {
-                status = "COMPLETED";
-            }
-
-            return Ok(new
-            {
-                status = status,
-                memberCount = totalCount,
-                submittedCount = submittedCount,
-            });
         }
     }
 }

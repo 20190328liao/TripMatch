@@ -28,7 +28,6 @@ namespace TripMatch
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<TravelDbContext>(x => x.UseSqlServer(connectionString));
             builder.Services.AddScoped<TimeWindowService>();
-
             // 註冊基礎服務
             builder.Services.AddScoped<SharedService>();
 

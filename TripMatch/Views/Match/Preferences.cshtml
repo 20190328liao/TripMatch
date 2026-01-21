@@ -485,7 +485,7 @@
 
 					<div class="form-group">
 						<label class="form-label">轉機偏好 <span class="required">*</span></label>
-						<select id="layover" name="layover" class="form-select" required>
+						<select id="transfer" name="transfer" class="form-select" required>
 							<option value="" disabled selected>請選擇轉機偏好</option>
 							<option value="true">可接受轉機</option>
 							<option value="false">不可轉機（直飛）</option>
@@ -570,42 +570,38 @@
 			createAndAppendCard(cityName);
 		}
 
-		async function savePreferences(event) {
+				async function savePreferences(event) {
 			event.preventDefault();
 
+			// 1. 取得 DOM 元素值
 			const budgetVal = document.getElementById('budget').value;
-			const layoverVal = document.getElementById('layover').value;
+			const transferVal = document.getElementById('transfer').value;
 			const starsVal = document.getElementById('stars').value;
 			const totalBudgetVal = document.getElementById('totalBudget').value;
 
-			if (!budgetVal || !layoverVal || !starsVal || !totalBudgetVal) {
+			// 2. 必填檢查
+			if (!budgetVal || !transferVal || !starsVal || !totalBudgetVal) {
 				alert("請完成所有必填選項！");
 				return;
 			}
 
-			// 資料轉換邏輯
-			let budgetMax = null;
-			let budgetMin = null;
-
-			if (budgetVal === "5000") {
-				 budgetMin = 5000;
-			} else {
-				 budgetMax = parseInt(budgetVal);
-			}
-
+			// 3. 資料轉換邏輯
+			const hotelBudget = parseInt(budgetVal);
+			const isTransfer = (transferVal === "true");
 			const hotelRating = (starsVal === "flex") ? null : parseInt(starsVal);
-			const transfer = (layoverVal === "true");
 			const placesString = Array.from(selectedLocationNames).join(",");
+			const totalBudget = totalBudgetVal ? parseInt(totalBudgetVal) : null;
 
+			// 4. 組裝 Payload
 			const payload = {
-				BudgetMin: budgetMin,
-				BudgetMax: budgetMax,
-				Transfer: transfer,
+				HotelBudget: hotelBudget,
+				Transfer: isTransfer,
 				HotelRating: hotelRating,
 				PlacesToGo: placesString,
-				TotalBudget: totalBudgetVal ? parseInt(totalBudgetVal) : null
+				TotalBudget: totalBudget
 			};
 
+			// 5. UI 鎖定與送出
 			const btn = document.getElementById('btnSubmit');
 			const originalText = btn.innerText;
 			btn.disabled = true;

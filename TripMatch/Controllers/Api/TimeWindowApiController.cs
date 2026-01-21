@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using TripMatch.Models.DTOs.TimeWindow;
 using TripMatch.Services;
+using Microsoft.EntityFrameworkCore;
+using TripMatch.Models;
 
 namespace TripMatch.Controllers.Api
 {
@@ -10,10 +12,12 @@ namespace TripMatch.Controllers.Api
     [Authorize]
     public class TimeWindowApiController : ControllerBase
     {
+        private readonly TravelDbContext _context;
         private readonly TimeWindowService _timeWindowService;
 
-        public TimeWindowApiController(TimeWindowService timeWindowService)
+        public TimeWindowApiController(TravelDbContext context, TimeWindowService timeWindowService)
         {
+            _context = context;
             _timeWindowService = timeWindowService;
         }
 
@@ -54,12 +58,26 @@ namespace TripMatch.Controllers.Api
         [HttpGet("{groupId}/status")]
         public async Task<IActionResult> GetGroupStatus(int groupId)
         {
-            var status = await _timeWindowService.GetGroupStatusAsync(groupId);
+            // 1. 查詢群組
+            var group = await _context.TravelGroups
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
 
-            if (status == null)
-                return NotFound(new { message = "找不到群組" });
+            if (group == null)
+            {
+                return NotFound(new { message = "找不到該群組" });
+            }
 
-            return Ok(status);
+            // 2. ★ 關鍵修正：只回傳前端需要的簡單資料 (匿名物件)
+            // 這樣可以避免 System.Text.Json 因為關聯屬性 (Members, Creator...) 而報錯
+            return Ok(new
+            {
+                dateStart = group.DateStart, // 確保這些屬性名稱對應前端 JS 的預期
+                dateEnd = group.DateEnd,
+
+                // 如果你的資料表有 TravelDays 欄位就直接用
+                // 如果沒有，也可以試著暫時回傳一個預設值 (例如 3) 或從日期計算
+                travelDays = group.TravelDays
+            });
         }
 
         // 補：取得群組詳細資訊
@@ -86,8 +104,8 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> UpsertPreferences(int groupId, [FromBody] UpsertPreferenceRequest request)
         {
             int userId = User.GetUserId();
-            var result = await _timeWindowService.UpsertPreferenceAsync(groupId, userId, request);
-            return Ok(result);
+            await _timeWindowService.UpsertPreferenceAsync(groupId, userId, request);
+            return Ok(new { message = "儲存成功", groupId = groupId });
         }
 
         // 5. 提交時間 (POST /api/timewindow/{groupId}/available)
