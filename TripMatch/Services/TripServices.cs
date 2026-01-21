@@ -52,11 +52,29 @@ namespace TripMatch.Services
         {
             TripSimpleDto tripSimpleDto = new();
 
+            List<GeoDto> tripRegions = [];
+
             var trip = await _context.Trips
                 .FirstOrDefaultAsync(t => t.Id == tripId);
 
             var tripRegionDetail = await _context.GlobalRegions
                 .Where(gr => gr.TripRegions.Any(tr => tr.TripId == tripId)).ToListAsync();
+
+
+            if(tripRegionDetail != null)
+            {
+                foreach (var tr in tripRegionDetail)
+                {
+                    GeoDto geo = new()
+                    {
+                        Lat = (double)(tr.Lat ?? 0),
+                        Lng = (double)(tr.Lng ?? 0)
+                    };
+                    tripRegions.Add(geo);
+                }
+            }
+
+
 
             if (trip != null)
             {
@@ -64,8 +82,7 @@ namespace TripMatch.Services
                 tripSimpleDto.Title = trip.Title;
                 tripSimpleDto.StartDate = trip.StartDate;
                 tripSimpleDto.EndDate = trip.EndDate;
-                tripSimpleDto.Lat = tripRegionDetail[0].Lat;
-                tripSimpleDto.Lng = tripRegionDetail[0].Lng;
+                tripSimpleDto.TripRegions = tripRegions;
             }
             return tripSimpleDto;
         }
@@ -165,8 +182,8 @@ namespace TripMatch.Services
                         Level = dto_zh.Result.Types.Contains("country") ? 1 : 2,
                         ParentId = null, // 先不處理父層關係    
                         PlaceId = placeID,
-                        Lat = dto_zh.Result.Geometry.Location.Lat,
-                        Lng = dto_zh.Result.Geometry.Location.Lng,
+                        Lat = (decimal)dto_zh.Result.Geometry.Location.Lat,
+                        Lng = (decimal)dto_zh.Result.Geometry.Location.Lng,
                         CountryCode = dto_zh.Result.AddressComponents?.FirstOrDefault(c => c.Types.Contains("country"))?.ShortName ?? "??",
                         IsHot = true,
                     };
@@ -302,8 +319,8 @@ namespace TripMatch.Services
                         Address = placesSnapshot.AddressSnapshot ?? "",
                         PhotoUrl = firstPhotoUrl,
                         LocationCategoryId = placesSnapshot.LocationCategoryId ?? 2, // 預設為 2: 觀光景點
-                        Lat = placesSnapshot.Lat,
-                        Lng = placesSnapshot.Lng,
+                        Lat = (double)placesSnapshot.Lat,
+                        Lng = (double)placesSnapshot.Lng,
                         Rating = placesSnapshot.Rating ?? 0
                     };
                 }
@@ -472,8 +489,8 @@ namespace TripMatch.Services
                 NameEn = Dto.NameEn,
                 LocationCategoryId = _sharedService.GetLocationCategoryId(Dto.LocationCategory),
                 AddressSnapshot = Dto.Address,
-                Lat = Dto.Lat,
-                Lng = Dto.Lng,
+                Lat = (decimal)Dto.Lat,
+                Lng = (decimal)Dto.Lng,
                 Rating = Dto.Rating,
                 UserRatingsTotal = Dto.UserRatingsTotal,
                 PhotosSnapshot = JsonSerializer.Serialize(Dto.PhotosSnapshot),
@@ -549,6 +566,38 @@ namespace TripMatch.Services
                 }
                 return true;
             }
+        }
+
+        //取得附近熱門景點
+        public async Task<List<PlaceSnapshotDto>> GetNearbyPopularSpots(GeoDto geo, int radius = 5000, int maxResults = 15)
+        {
+            var placesResponse = await _googlePlacesClient.GetNearbyAttractionsAsync(geo.Lat, geo.Lng, radius);
+            List<PlaceSnapshotDto> popularSpots = [];
+
+            //設定結果數量
+            maxResults = Math.Min(maxResults, placesResponse.Count);
+
+            for(int i = 0; i < maxResults; i++)
+            {
+                var placeDetail = await _googlePlacesClient.GetPlaceDetailsAsync(placesResponse[i], "zh-TW");
+                if (placeDetail != null)
+                {
+                    PlaceSnapshotDto spotDto = new PlaceSnapshotDto
+                    {
+                        ExternalPlaceId = placesResponse[i],
+                        NameZh = placeDetail.Result.Name,
+                        Address = placeDetail.Result.FormattedAddress,
+                        Lat = placeDetail.Result.Geometry.Location.Lat,
+                        Lng = placeDetail.Result.Geometry.Location.Lng,
+                        Rating = placeDetail.Result.Rating ?? 0,
+                        UserRatingsTotal = placeDetail.Result.UserRatingsTotal ?? 0,
+                        PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()
+                    };
+                    popularSpots.Add(spotDto);
+                }   
+            }
+       
+            return popularSpots;
         }
 
         #endregion

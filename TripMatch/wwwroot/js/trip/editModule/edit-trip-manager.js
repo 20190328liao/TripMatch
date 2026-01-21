@@ -4,11 +4,13 @@ import { AddFlightModal } from './components/add-flight-modal.js';
 import { FlightRenderer } from './components/flight-renderer.js';
 import { RestaurantRenderer } from './components/restaurant-renderer.js';
 import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
+import { RecommendationModal } from './components/recommendation-modal.js';
 
 
 const currentTripId = document.getElementById('current-trip-id').value;
 let DateStrings = [];
 let itineraryNavigator;
+let recModal;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
@@ -17,19 +19,51 @@ let restaurantRenderer;
 export function initEditPage(mapInstance, tripSimpleInfo) {
     //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
     window.currentMapInstance = mapInstance;
-    DateStrings = tripSimpleInfo.dateStrings || [];    
- 
+    DateStrings = tripSimpleInfo.dateStrings || [];   
+
+
+    recModal = new RecommendationModal(); // [新增] 初始化 Modal
+
     itineraryNavigator = new ItineraryNavigator(
         'itinerary-nav-container',
         'place-list',
-        handleAddDay // 下面定義
+        handleAddDay
     );
+
+
+  
+
+    // [新增] 監聽導覽列發出的事件
+    const navContainer = document.getElementById('itinerary-nav-container');
+
+    navContainer.addEventListener('explore-click', () => {
+        recModal.open(tripSimpleInfo.tripRegions[0], 'explore');
+    });
+
+    navContainer.addEventListener('favorites-click', () => {
+        // 假設有全域變數 currentUserId，或從 hidden input 抓
+        // const userId = document.getElementById('current-user-id').value;
+        recModal.open(tripSimpleInfo.tripRegions[0], 'favorites');
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     addFlightModal = new AddFlightModal();
     flightRenderer = new FlightRenderer('flight-wrapper'); 
     restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
     initTimeEditModal();
     initHotelEditModal();
-    initHeader();
     loadTripData();
 }
 
@@ -191,11 +225,6 @@ function initHotelAutocomplete(inputElement) {
         selectedHotelPlace = null;
         document.getElementById('hotel-selected-info').classList.add('d-none');
     });
-}
-function initHeader() {
-
-
-
 }
 
 // 載入行程資料
@@ -525,8 +554,6 @@ function renderItinerary(items, dates, accommodations, flights) {
                         </div>
                     </div>
                 `;
-
-                console.log("行程卡片 HTML:", itemHtml);
 
                 itemsContainer.insertAdjacentHTML('beforeend', itemHtml);
             });

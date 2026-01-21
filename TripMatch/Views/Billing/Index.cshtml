@@ -1,108 +1,108 @@
-﻿@using TripMatch.Models
-@model IEnumerable<Trip>
+﻿@using System.Linq
+@model IEnumerable<TripMatch.Models.Trip>
 @{
-    ViewData["Title"] = "記帳分帳";
-    Layout = "~/Views/Shared/_NoBootstrapLayout.cshtml";
+    Layout = null;
 }
-<link rel="stylesheet" href="~/css/Billing/accounting.css" />
-<div class="accounting-container">
-    @* <aside class="sidebar">
-        <h2 style="color: var(--dark-mint); margin-bottom: 25px; font-size: 22px;">旅程帳本</h2>
-        <div class="trip-group">
-            <h3><i class="fa-solid fa-map-location-dot"></i> 旅程一</h3>
-            <button class="nav-btn active" onclick="switchDay('trip1', 'day1', this)">第一天</button>
-            <button class="nav-btn" onclick="switchDay('trip1', 'day2', this)">第二天</button>
-        </div>
-        <div class="trip-group">
-            <h3><i class="fa-solid fa-map-location-dot"></i> 旅程二</h3>
-            <button class="nav-btn" onclick="switchDay('trip2', 'day1', this)">第一天</button>
-            <button class="nav-btn" onclick="switchDay('trip2', 'day2', this)">第二天</button>
-        </div>
-    </aside> *@
-    <aside class="sidebar">
-        <h2 style="color: var(--dark-mint); margin-bottom: 25px; font-size: 22px;">旅程帳本</h2>
 
-        @foreach (var trip in Model)
-        {
-            <div class="trip-group">
-                <h3><i class="fa-solid fa-map-location-dot"></i> @trip.Title</h3>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的旅程 - 記帳分帳</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                @{
-                    // 計算行程總天數
-                    var totalDays = (trip.EndDate.ToDateTime(TimeOnly.MinValue) -
-                    trip.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
-                }
+    <link rel="stylesheet" href="~/css/Billing/accounting.css">
+</head>
 
-                @for (int i = 1; i <= totalDays; i++)
-                {
-                    <button class="nav-btn"
-                            onclick="switchDay(@trip.Id, 'day' + @i, this)">
-                        第 @i 天
+<body>
 
-                    </button>
-                }
-            </div>
-        }
-    </aside>
-
-    <main class="main-content">
-        <header class="main-header">
-            @* <h2 id="current-title">旅程一 | 第一天</h2> *@
-            @{
-                // 取得清單中的第一個行程作為預設顯示
-                var defaultTrip = Model.FirstOrDefault();
-                var displayTitle = defaultTrip != null ? $"{defaultTrip.Title} | 第 1 天" : "尚無旅程";
-            }
-            <h2 id="current-title">@displayTitle</h2>
-
-            <div class="top-actions">
-                <button id="btn-members" class="action-btn" onclick="showPanel('members')">👥 成員</button>
-                <button id="btn-addExpense" class="action-btn" onclick="showPanel('addExpense')">＋ 新增支出</button>
-                <button id="btn-summary" class="action-btn" onclick="showPanel('summary')">📄 統整欠額</button>
-            </div>
+    <div class="container">
+        <header class="page-header">
+            <h1 class="page-title">旅程記帳分帳列表</h1>
+            <button class="btn-create" onclick="createNewTrip()">
+                <i class="fa-solid fa-plus"></i> 建立新旅程
+            </button>
         </header>
 
-        <section class="budget-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h4 style="margin:0; color: var(--text-dark);">個人預算追蹤 (全旅程)</h4>
-                <small style="color:#64748b;">點擊成員可自訂預算</small>
+        @* <div class="trip-grid" id="tripList">
+            <div class="trip-card" onclick="goToTrip('trip1')">
+                <div class="trip-info">
+                    <h3>台南兩日遊美食行程</h3>
+                    <div class="trip-meta">
+                        <span><i class="fa-regular fa-calendar"></i> 上次更新：2026/1/19 1:10 下午</span>
+                        <span><i class="fa-solid fa-user-group"></i> 3 人</span>
+                    </div>
+                </div>
+                <div class="trip-action">
+                    <span class="status-badge">進行中</span>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
             </div>
-            <div id="budget-list" class="budget-grid"></div>
-        </section>
 
-
-        <section class="stats-cards">
-            <div class="card">
-                <h4>今日支出總額</h4>
-                <p class="value highlight">NT$ <span id="total-amount">0</span></p>
+            <div class="trip-card" onclick="goToTrip('trip2')">
+                <div class="trip-info">
+                    <h3>日本東京五天四夜</h3>
+                    <div class="trip-meta">
+                        <span><i class="fa-regular fa-calendar"></i> 上次更新：2025/12/25</span>
+                        <span><i class="fa-solid fa-user-group"></i> 4 人</span>
+                    </div>
+                </div>
+                <div class="trip-action">
+                    <span class="status-badge">已結算</span>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
             </div>
-            <div class="card">
-                <h4>支出筆數</h4>
-                <p class="value"><span id="expense-count">0</span> 筆</p>
-            </div>
-            <div class="card">
-                <h4>成員人數</h4>
-                <p class="value">
-                    <span id="member-count">@(defaultTrip?.TripMembers?.Count ?? 0)</span> 人
-                </p>
-            </div>
-        </section>
+        </div> *@
 
-        <section class="list-card">
-            <h4 style="margin-bottom:15px; color: var(--text-dark);">支出清單 (單日)</h4>
-            <div id="expense-list"></div>
-        </section>
+        <div class="trip-grid" id="tripList">
 
-        <section class="list-card">
-            <h4 style="margin-bottom:15px; color: var(--text-dark);">成員收支狀態 (單日結算)</h4>
-            <div id="debt-list"></div>
-        </section>
-    </main>
+            @* --- 使用 foreach 迴圈讀取資料庫 --- *@
+            @foreach (var item in Model)
+            {
+                <div class="trip-card" onclick="goToTrip('@item.Id')">
+                    <div class="trip-info">
 
-    <aside class="right-panel">
-        <div id="panel-content"></div>
-    </aside>
-</div>
-@section Scripts {
-    <script src="~/js/Billing/accounting.js" asp-append-version="true"></script>
-}
+                        <h3>@item.Title</h3>
+
+                        <div class="trip-meta">
+                            <span>
+                                <i class="fa-regular fa-calendar"></i>
+                                @item.StartDate.ToString("yyyy/MM/dd") - @item.EndDate.ToString("yyyy/MM/dd")
+                            </span>
+
+                            <span>
+                                <i class="fa-solid fa-user-group"></i>
+                                @(item.TripMembers != null ? item.TripMembers.Count : 0) 人
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="trip-action">
+                        @if (item.EndDate < DateOnly.FromDateTime(DateTime.Now))
+                        {
+                            <span class="status-badge" style="background:#f1f5f9; color:#64748b; border-color:#e2e8f0;">已結束</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge">進行中</span>
+                        }
+                        <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                    </div>
+                </div>
+            }
+
+            @* 若資料庫完全沒資料，顯示提示 *@
+            @if (!Model.Any())
+            {
+                <div style="text-align:center; color:#999; margin-top:20px;">
+                    目前還沒有任何旅程，點擊右上角建立一個吧！
+                </div>
+            }
+
+        </div>
+    </div>
+
+    <script src="~/js/Billing/accounting.js"></script>
+</body>
+</html>
