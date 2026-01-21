@@ -24,9 +24,11 @@ namespace TripMatch.Services.ExternalClients
 
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
-            // 修改處：在 fields 中增加 geometry/location
+            var fields = "name,formatted_address,rating,user_ratings_total,photos,geometry/location";
+
             var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}" +
-                      $"&fields=name,address_components,types,photos,geometry/location&key={_apiKey}&language={lang}";
+                      $"&fields={fields}&key={_apiKey}&language={lang}";
+
 
             var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
@@ -51,6 +53,66 @@ namespace TripMatch.Services.ExternalClients
                     return pid.GetString();
             }
             return null;
+        }
+        
+        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 5000)
+        {
+            var placeIds = new List<string>();
+
+            // 定義 Nearby Search URL
+            // type=tourist_attraction: 鎖定景點類型
+            // rankby=prominence: 按熱門度/知名度排序（此模式下必須指定 radius）
+            var url = $"https://maps.googleapis.com/maps/api/place/nearbysearch/json?" +
+                      $"location={lat},{lng}" +
+                      $"&radius={radius}" +
+                      $"&type=tourist_attraction" +
+                      $"&rankby=prominence" +
+                      $"&key={_apiKey}" +
+                      $"&language=zh-TW";
+
+            try
+            {
+                var response = await _httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return placeIds;
+
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+                var root = doc.RootElement;
+
+                // 檢查 API 回傳狀態是否為 OK
+                if (root.TryGetProperty("status", out var status) && status.GetString() == "OK")
+                {
+                    if (root.TryGetProperty("results", out var results))
+                    {
+                        foreach (var item in results.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("place_id", out var pid))
+                            {
+                                var id = pid.GetString();
+                                if (!string.IsNullOrEmpty(id))
+                                {
+                                    placeIds.Add(id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 實際開發建議記錄 log
+                Console.WriteLine($"Nearby Search 發生錯誤: {ex.Message}");
+            }
+
+            return placeIds;
+        }
+
+        public string GetPhotoUrl(string photoReference, int maxWidth = 400)
+        {
+            if (string.IsNullOrEmpty(photoReference)) return string.Empty;
+
+            // 這是 Place Photo API 的標準格式
+            return $"https://maps.googleapis.com/maps/api/place/photo?maxwidth={maxWidth}&photo_reference={photoReference}&key={_apiKey}";
         }
     }
 

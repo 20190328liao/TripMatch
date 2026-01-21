@@ -18,8 +18,7 @@ namespace TripMatch.Models.DTOs
         public string Title { get; set; } = String.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
-        public decimal? Lat { get; set; }
-        public decimal? Lng { get; set; }
+        public List<GeoDto> TripRegions { get; set; } = [];
         public List<string> DateStrings
         {
             get
@@ -32,6 +31,12 @@ namespace TripMatch.Models.DTOs
                 return dateList;
             }
         }
+    }
+
+    public class GeoDto
+    {
+        public double? Lat { get; set; }
+        public double? Lng { get; set; }
     }
 
     public class FlightDto
@@ -102,8 +107,8 @@ namespace TripMatch.Models.DTOs
         public string Address { get; set; } = string.Empty;
         public string PhotoUrl { get; set; } = string.Empty;
         public int LocationCategoryId { get; set; }   // 1:美食, 2:景點, 3:購物, 4:住宿, 5:交通, 6:自然
-        public decimal Lat { get; set; }
-        public decimal Lng { get; set; }
+        public double Lat { get; set; }
+        public double Lng { get; set; }
         public decimal Rating { get; set; }
 
     }
@@ -130,8 +135,8 @@ namespace TripMatch.Models.DTOs
         public string NameEn { get; set; } = String.Empty;
         public List<string> LocationCategory { get; set; } = [];
         public string Address { get; set; } = String.Empty;
-        public decimal Lat { get; set; }
-        public decimal Lng { get; set; }
+        public double Lat { get; set; }
+        public double Lng { get; set; }
         public decimal Rating { get; set; }
         public int UserRatingsTotal { get; set; }
         public List<string> PhotosSnapshot { get; set; } = [];
@@ -176,7 +181,10 @@ namespace TripMatch.Models.DTOs
     public class PlaceResult
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("formatted_address")]
+        public string FormattedAddress { get; set; } = string.Empty;
 
         [JsonPropertyName("address_components")]
         public List<AddressComponent> AddressComponents { get; set; } = new List<AddressComponent>();
@@ -187,6 +195,15 @@ namespace TripMatch.Models.DTOs
         // --- 新增：地理資訊欄位 ---
         [JsonPropertyName("geometry")]
         public Geometry Geometry { get; set; } = new Geometry();
+
+        [JsonPropertyName("rating")]
+        public decimal? Rating { get; set; } 
+
+        [JsonPropertyName("user_ratings_total")]
+        public int? UserRatingsTotal { get; set; }
+
+        [JsonPropertyName("photos")]
+        public List<GooglePhoto> Photos { get; set; } = new List<GooglePhoto>();
     }
 
     // 1. 定義 Geometry 物件
@@ -200,10 +217,10 @@ namespace TripMatch.Models.DTOs
     public class Location
     {
         [JsonPropertyName("lat")]
-        public decimal Lat { get; set; }
+        public double Lat { get; set; }
 
         [JsonPropertyName("lng")]
-        public decimal Lng { get; set; }
+        public double Lng { get; set; }
     }
 
     public class AddressComponent
@@ -216,5 +233,17 @@ namespace TripMatch.Models.DTOs
 
         [JsonPropertyName("types")]
         public List<string> Types { get; set; }
+    }
+
+    public class GooglePhoto
+    {
+        [JsonPropertyName("photo_reference")]
+        public string PhotoReference { get; set; } = string.Empty;
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
     }
 }

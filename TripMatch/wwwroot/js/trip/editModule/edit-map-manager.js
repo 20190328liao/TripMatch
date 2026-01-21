@@ -27,11 +27,13 @@ export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
         console.warn(`找不到地圖容器: #${mapElementId}`);
         return;
     }
+
+    console.log("行程簡易AAAAAAAAAAAAAAAAAAAAAAAA資訊:", tripSimpleInfo);
     
     // 使用邏輯或運算子，同時處理 null, undefined, 0
     // 只要 latitude 是「虛值」(Falsy)，就採用後面的預設值
-    let latitude = tripSimpleInfo.lat || 25.033976;
-    let longitude = tripSimpleInfo.lng || 121.564421;
+    let latitude = tripSimpleInfo.tripRegions[0].lat || 25.033976;
+    let longitude = tripSimpleInfo.tripRegions[0].lng || 121.564421;
 
     // 檢查是否真的拿到了有效數字（防止字串或其他異常）
     if (isNaN(latitude) || isNaN(longitude)) {

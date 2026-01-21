@@ -317,6 +317,55 @@ namespace TripMatch.Controllers.Api
             bool reuslt = await _tripServices.IsInWishList(_tagUserId.UserId, spotId);
             return Ok(new { AddToWishlist = reuslt });
         }
+
+
+        [HttpPost("Explore")]
+        public async Task<IActionResult> Explore([FromBody] GeoDto geo)
+        {
+            // 1. 驗證輸入資料是否為空
+            if (geo == null)
+            {
+                return BadRequest(new { Message = "未提供地理座標資訊。" });
+            }
+
+            // 2. 驗證經緯度是否合法 (避免傳入 0, 0 或超出範圍的數值)
+            // 緯度範圍 -90~90, 經度範圍 -180~180
+            if (geo.Lat == 0 && geo.Lng == 0)
+            {
+                return BadRequest(new { Message = "無效的座標位置。" });
+            }
+
+            try
+            {
+                // 3. 呼叫 Service 取得資料
+                var spots = await _tripServices.GetNearbyPopularSpots(geo);
+
+                // 4. 檢查回傳結果
+                if (spots == null || !spots.Any())
+                {
+                    // 回傳 200 OK 但給空陣列，並附帶訊息讓前端知道沒找到東西
+                    return Ok(new
+                    {
+                        PopularSpots = new List<PlaceSnapshotDto>(),
+                        Message = "該地區目前沒有推薦的熱門景點。"
+                    });
+                }
+
+                // 5. 成功回傳資料
+                return Ok(new { PopularSpots = spots });
+            }
+            catch (Exception ex)
+            {
+                // 6. 異常處理 (Log 記錄後回傳 500)
+                // _logger.LogError(ex, "執行 Explore 發生錯誤");
+                return StatusCode(500, new { Message = "取得附近景點時發生伺服器錯誤。" });
+            }
+        }
+
+
+
+
+
         #endregion
 
         #region 航班資訊 Proxy
