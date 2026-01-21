@@ -620,37 +620,46 @@ footer {
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
-    /* 修正下拉選單在 nav 內的樣式 */
-    .itinerary-nav .dropdown-menu {
-        font-size: 0.9rem;
-        margin-top: 8px !important; /* 與按鈕的距離 */
-        max-height: 300px;
-        overflow-y: auto;
-    }
+/* 修正下拉選單在 nav 內的樣式 */
+.itinerary-nav .dropdown-menu {
+    font-size: 0.9rem;
+    margin-top: 8px !important; /* 與按鈕的距離 */
+    max-height: 300px;
+    overflow-y: auto;
+}
 
-    .itinerary-nav .btn-outline-secondary {
-        border-color: #dee2e6;
-        color: #495057;
-        background-color: #f8f9fa;
-    }
+.itinerary-nav .btn-outline-secondary {
+    border-color: #dee2e6;
+    color: #495057;
+    background-color: #f8f9fa;
+}
 
-        .itinerary-nav .btn-outline-secondary:hover {
-            background-color: #e9ecef;
-            border-color: #ced4da;
-            color: #212529;
-        }
+.itinerary-nav .btn-outline-secondary:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #212529;
+}
 
-    /* 讓 dropdown-item 更有質感 */
-    .itinerary-nav .dropdown-item {
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin: 2px 4px;
-        width: auto; /* 避免佔滿導致 margin 失效 */
-    }
+/* 讓 dropdown-item 更有質感 */
+.itinerary-nav .dropdown-item {
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin: 2px 4px;
+    width: auto; /* 避免佔滿導致 margin 失效 */
+}
 
-        .itinerary-nav .dropdown-item:active {
-            background-color: #e9ecef;
-            color: #000;
-        }
+.itinerary-nav .dropdown-item:active {
+    background-color: #e9ecef;
+    color: #000;
+}
 
 
+/* 讓列表項目懸停時圖片有微放大效果 */
+.rec-item:hover .object-fit-cover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+.rec-item:hover {
+    background-color: #f8f9fa; /* 淺灰背景 */
+}
