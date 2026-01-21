@@ -112,7 +112,8 @@
                         body: JSON.stringify(email)
                     });
 
-                    const json = await res.json().catch(() => ({}));
+                    const json = await res.json().catch(() => ({
+                    }));
                     if (res.ok) {
                         window.location.href = json.redirect || '/Auth/ForgotPassword';
                     } else {
@@ -201,7 +202,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(email)
                 });
-                const json = await res.json().catch(() => ({}));
+                const json = await res.json().catch(() => ({
+                }));
                 if (res.ok) {
                     const alertEl = document.getElementById('custom_alert');
                     if (alertEl) alertEl.classList.remove('d-none');
@@ -266,14 +268,14 @@
                     return;
                 }
                 markLocalVerified(apiRes.lookupEmail || apiRes.accountEmail || null, 30);
-                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證備援信箱，可繼續下一步', 'success'); } catch {}
+                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證備援信箱，可繼續下一步', 'success'); } catch { }
                 showStep2(maskedToShow, originalAccount);
                 return;
             }
 
             if (apiRes.primaryEmailConfirmed === true) {
                 markLocalVerified(apiRes.lookupEmail || apiRes.accountEmail || null, 30);
-                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證主信箱，可繼續下一步', 'success'); } catch {}
+                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證主信箱，可繼續下一步', 'success'); } catch { }
                 showStep2(maskedToShow, originalAccount);
                 return;
             }
@@ -303,7 +305,7 @@
                     await handleApiRes(apiRes);
                 } else if (localEmail) {
                     // 只有本地標記時仍顯示 Step2（非理想，但維持原 UX）
-                    try { window.setFieldHint && window.setFieldHint('email', '☑ 本地驗證成功', 'success'); } catch {}
+                    try { window.setFieldHint && window.setFieldHint('email', '☑ 本地驗證成功', 'success'); } catch { }
                     showStep2(maskEmailLocal(localEmail), localEmail);
                 }
             } else {
@@ -314,6 +316,39 @@
                 }
             }
         });
+
+        // 若來自其他頁面的導向：處理 goStep=2&email 直接顯示 Step2
+        (function handleGoStep2FromQuery() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('goStep') === '2' && params.get('email')) {
+                    const emailParam = decodeURIComponent(params.get('email') || '');
+                    const inputEl = document.getElementById('inputBackupemail');
+                    if (inputEl) {
+                        inputEl.value = emailParam;
+                        if (typeof window.setFieldHint === 'function') {
+                            window.setFieldHint('email', '已帶入備援信箱，請檢查信箱驗證狀態', 'success');
+                        }
+                    }
+
+                    // 標記 local verified 作為 UX 改善（實際安全判定仍以後端為準）
+                    markLocalVerified(emailParam, 30);
+
+                    // 直接顯示 Step2（使用遮罩顯示 email）
+                    try {
+                        showStep2(maskEmailLocal(emailParam), emailParam);
+                    } catch (ex) {
+                        console.warn('showStep2 failed', ex);
+                    }
+
+                    // 清除 querystring，避免重複觸發
+                    if (window.history && window.history.replaceState) {
+                        const cleanUrl = window.location.pathname + window.location.hash;
+                        window.history.replaceState({}, document.title, cleanUrl);
+                    }
+                }
+            } catch (ex) { console.warn('handleGoStep2FromQuery error', ex); }
+        })();
     });
 
     // 多帳號選擇顯示器（與之前版本一致）

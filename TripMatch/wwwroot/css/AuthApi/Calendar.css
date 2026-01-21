@@ -1,4 +1,4 @@
-﻿.file-container {
+﻿n.file-container {
     display: inline-block;
     background-color: var(--white);
     border-radius: 18px;
@@ -409,9 +409,11 @@ body:not(.calendar-editing) .day-cell {
     height: 38px;
     border-radius: 50%;
 }
-.day-cell.submitted-old, .submitted-new {
+.day-cell {
     max-width: 4rem;
-    max-height: 4rem;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+    /* 若需要內距或字型自適應，可在 .day-label 調整 */
 }
     /* 新舊提交樣式（如果尚未加入） */
     .day-cell.submitted-old {

@@ -791,7 +791,7 @@ if (document.readyState === 'loading') {
                 }
             }
             if (!place) {
-                notify('error', '錯誤', '找不到景點資料，請先開啟景點面板');
+                notify('error', '錯誤', '已儲存景點，如有刪除需求請到會員中心');
                 return;
             }
             await addToWishlistUsingCurrentPlace(place);
