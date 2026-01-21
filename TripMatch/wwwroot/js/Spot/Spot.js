@@ -197,7 +197,7 @@ const tripApi = {
             lng: place.lng,
             rating: place.rating,
             photoJson: JSON.stringify({ photoUrl: place.photoUrl || null }),
-        };
+         };
 
         await apiFetch("/api/spot/wishlist", {
             method: "POST",
