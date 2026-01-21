@@ -1,0 +1,284 @@
+﻿@model TripMatch.Models.Trip
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅程收支詳情 </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="~/css/Billing/Detail.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <span style="color:#ddd; border:1px dashed #ddd; padding:5px 10px; border-radius:4px;">[全站導覽列預留區]</span>
+    </nav>
+
+    <header class="page-header">
+        <div class="header-left">
+            @* <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='/Home/index'" title="返回列表"></i> *@
+            @* <h1 class="page-title">台南兩日遊美食行程</h1> *@
+            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Home")'" title="返回列表"></i>
+            <h1 class="page-title">@Model.Title</h1>
+        </div>
+
+        <button class="top-add-btn" onclick="openExpenseModal()">
+            <i class="fa-solid fa-plus"></i> 記一筆
+        </button>
+    </header>
+
+    <div class="tabs">
+        <div class="tab-btn active" onclick="switchTab('group')">群組花費</div>
+        <div class="tab-btn" onclick="switchTab('personal')">個人花費</div>
+        <div class="tab-btn" onclick="switchTab('balance')">待收付款項</div>
+    </div>
+
+    <div id="tab-group" class="content-area active">
+        <div class="content-wrapper" id="group-content">
+            @* --- 開始：花費列表迴圈 --- *@
+            @foreach (var item in Model.Expenses.OrderBy(e => e.Day))
+            {
+                var expenseDate = Model.StartDate.AddDays(item.Day - 1);
+
+                // --- C# 邏輯：處理付款人顯示文字 ---
+                string payerText = "未知";
+                if (item.ExpensePayers != null && item.ExpensePayers.Any())
+                {
+                    // 取得第一位付款人的名字
+                    var firstPayer = item.ExpensePayers.First().Member.User?.FullName ?? "未知";
+
+                    // 如果有多人付款，顯示「某某某 等人」
+                    if (item.ExpensePayers.Count > 1)
+                    {
+                        payerText = $"{firstPayer} 等人";
+                    }
+                    else
+                    {
+                        payerText = firstPayer;
+                    }
+                }
+                // ----------------------------------
+
+                <div class="expense-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; border-bottom:1px solid #eee; background:white; margin-bottom:10px; border-radius:8px;">
+                    <div class="expense-info">
+                        <div style="font-size:12px; color:#888; margin-bottom:4px;">
+                            <i class="fa-regular fa-calendar"></i> @expenseDate.ToString("MM/dd")
+                            <span style="margin-left:8px; background:#f0f9ff; color:#0369a1; padding:2px 6px; border-radius:4px; font-size:11px;">
+                                @(item.Category?.Name ?? "一般")
+                            </span>
+                        </div>
+
+                        <div style="font-weight:bold; font-size:16px;">@item.Title</div>
+
+                        <div style="font-size:12px; color:#666; margin-top:2px;">
+                            @payerText 付款
+                        </div>
+                    </div>
+
+                    
+                    <div class="exp-right">
+                        <span class="expense-amount" style="font-weight:bold; color:#059669; display:block; text-align:right;">
+                            $@item.Amount.ToString("N0")
+                        </span>
+
+                        <div class="exp-actions" style="margin-top:5px; display:flex; gap:10px; justify-content:flex-end;">
+                            @* --- 編輯按鈕：直接把資料傳進去 (注意日期轉換) --- *@
+                            <button class="action-icon-btn" style="border:none; background:none; cursor:pointer; color:#64748b;"
+                                    onclick="openEditModal('@item.ExpenseId', '@item.Title', '@item.Amount', '@item.CategoryId', '@expenseDate.ToString("yyyy-MM-dd")')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+
+                            @* --- 刪除按鈕：傳送 ID --- *@
+                            <button class="action-icon-btn delete" style="border:none; background:none; cursor:pointer; color:#ef4444;"
+                                    onclick="deleteExpense('@item.ExpenseId')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+           
+        </div>
+    </div>
+
+    <div id="tab-personal" class="content-area">
+        <div class="content-wrapper">
+            <div class="budget-box">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:bold; font-size:16px;">我的預算</span>
+                    <span id="budget-text" style="font-weight:bold; font-size:16px;"></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="budget-bar"></div>
+                </div>
+                <button onclick="editMyBudget()" style="margin-top:15px; border:1px solid #cbd5e1; background:white; padding:8px 15px; border-radius:8px; cursor:pointer; color:#475569; font-size:14px; width:100%; transition:0.2s;">
+                    <i class="fa-solid fa-pen"></i> 修改預算
+                </button>
+            </div>
+            <h4 style="margin-bottom:15px; color:#475569; padding-left:5px;">我的相關支出</h4>
+            <div id="personal-list"></div>
+        </div>
+    </div>
+
+    <div id="tab-balance" class="content-area">
+        <div class="content-wrapper">
+            <h4 style="margin-bottom:15px; color:#475569; padding-left:5px;">待結清債務 (點擊操作)</h4>
+            <div id="balance-list"></div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px dashed #cbd5e1;">
+
+            <h4 style="margin-bottom:15px; color:#94a3b8; padding-left:5px;">已結清紀錄 (點擊可取消)</h4>
+            <div id="settled-list"></div>
+        </div>
+    </div>
+
+    <div class="summary-header">
+        @* <div class="member-avatars">
+            <div class="avatar">蘇</div>
+            <div class="avatar">一</div>
+            <div class="avatar">二</div>
+            <div class="avatar add-member-btn">+</div>
+        </div> *@
+        <div class="member-avatars">
+            @* 1. 檢查是否有成員資料 *@
+            @if (Model.TripMembers != null && Model.TripMembers.Any())
+            {
+                @* 2. 跑迴圈列出每一位成員 *@
+                @foreach (var member in Model.TripMembers)
+                {
+                    var name = member.User?.FullName ?? "未知";
+
+                    // 2. 取頭像字首
+                    var avatarChar = !string.IsNullOrEmpty(name) ? name.Substring(0, 1) : "?";
+
+                    <div class="avatar" title="@name">@avatarChar</div>
+                }
+            }
+            else
+            {
+                <div class="avatar">無</div>
+            }
+
+        </div>
+        @* <div class="trip-total">
+            <span>旅程總支出</span>
+            <strong>NT$ <span id="header-total">0</span></strong>
+        </div> *@
+        <div class="trip-total">
+            <span>旅程總支出</span>
+            @* 使用 Linq 的 Sum() 方法計算總金額，並用 N0 格式化 (例如 1,234) *@
+            <strong>NT$ <span id="header-total">@Model.Expenses.Sum(e => e.Amount).ToString("N0")</span></strong>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title-text">新增支出</div>
+                <button class="close-modal" onclick="closeModal('expenseModal')">&times;</button>
+            </div>
+
+            @* <div class="form-group"><label>日期</label><input type="date" id="m-date" class="form-control"></div> *@
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" id="m-date" class="form-control"
+                    min="@Model.StartDate.ToString("yyyy-MM-dd")"
+                    max="@Model.EndDate.ToString("yyyy-MM-dd")">
+            </div>
+
+            <div class="form-group"><label>項目名稱</label><input type="text" id="m-name" class="form-control" placeholder="例如：晚餐"></div>
+            <div class="form-group">
+                <label>類別</label>
+                @* <select id="m-cat" class="form-control">
+                    <option value="食物">食物</option>
+                    <option value="住宿">住宿</option>
+                    <option value="交通">交通</option>
+                    <option value="娛樂">娛樂</option>
+                    <option value="購物">購物</option>
+                    <option value="轉帳/結清">轉帳/結清</option>
+                </select> *@
+
+                <select id="m-cat" class="form-control">
+                    @* 使用 C# 迴圈自動產生選項 *@
+                    @if (ViewBag.Categories != null)
+                    {
+                        foreach (var cat in ViewBag.Categories)
+                        {
+                            <option value="@cat.CategoryId">@cat.Name</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="1">一般</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group"><label>付款人 (實際出錢)</label><div id="m-payer-list"></div></div>
+            <div class="total-info"><span>付款總額</span><span>NT$ <span id="pay-total-val">0</span></span></div>
+            <div class="form-group">
+                <label>參與分攤成員</label>
+                <div class="mode-switch">
+                    <button id="mode-avg" class="mode-btn active" onclick="changeSplitMode('avg')">平均分攤</button>
+                    <button id="mode-custom" class="mode-btn" onclick="changeSplitMode('custom')">自定義金額</button>
+                </div>
+                <div id="m-split-list"></div>
+            </div>
+            <div class="total-info blue"><span>分攤總額</span><span>NT$ <span id="split-total-val">0</span></span></div>
+            <button class="submit-btn" id="modal-submit-btn" onclick="saveExpense()">確認新增</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settleModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <div class="modal-title">確認結清款項？</div>
+            </div>
+            <div style="font-size: 18px; margin-bottom: 25px; line-height: 1.6;">
+                <div id="settle-desc"></div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--primary-mint); margin-top: 10px;" id="settle-amount"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="closeModal('settleModal')">取消</button>
+                <button class="btn-settle" onclick="confirmSettle()">標示已收款</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="undoSettleModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <div class="modal-title" style="color:var(--danger)">取消結清？</div>
+            </div>
+            <div style="font-size: 16px; margin-bottom: 25px; color:#666;">
+                這筆還款紀錄將被刪除，債務將會恢復為「待結清」狀態。
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="closeModal('undoSettleModal')">保留</button>
+                <button class="btn-delete" onclick="confirmUndoSettle()">確認取消</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // 1. 成員資料
+    window.dbMembers = @Html.Raw(Json.Serialize(Model.TripMembers.Select(m => new { 
+        id = m.Id, 
+        // 邏輯：優先抓 FullName，如果沒有就抓 UserName，再沒有就顯示 "未知"
+        name = m.User?.FullName ?? m.User?.UserName ?? "未知成員" 
+    })));
+
+    // 2. 旅程日期範圍 (給 JS 用)
+    window.tripRange = {
+        start: '@Model.StartDate.ToString("yyyy-MM-dd")',
+        end: '@Model.EndDate.ToString("yyyy-MM-dd")'
+    };
+</script>
+    <script src="~/js/Billing/Detail.js"></script>
+</body>
+</html>
