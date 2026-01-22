@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TripMatch.Data;
 using TripMatch.Models;
 using TripMatch.Models.DTOs.TimeWindow;
 
@@ -163,32 +162,27 @@ namespace TripMatch.Services
         }
 
         // 5. 提交有空的時間 (Available Slots)
-        public async Task SetAvailableSlotsAsync(int groupId, int userId, List<AvailableSlotInput> slots)
+        public async Task SaveAvailabilityAsync(int groupId, int userId, List<AvailableSlotInput> slots)
         {
-            var member = await ValidateMemberAccessAsync(groupId, userId, requireNotSubmitted: true);
+            // 1. 刪除舊資料：改用 MemberTimeSlots
+            var oldRecords = _context.MemberTimeSlots
+                .Where(x => x.GroupId == groupId && x.UserId == userId);
 
-            var oldSlots = await _context.MemberTimeSlots
-                .Where(x => x.GroupId == groupId && x.UserId == userId)
-                .ToListAsync();
+            _context.MemberTimeSlots.RemoveRange(oldRecords);
 
-            if (oldSlots.Any())
-            {
-                _context.MemberTimeSlots.RemoveRange(oldSlots);
-            }
-
-            var newSlots = slots.Select(s => new MemberTimeSlot
+            // 2. 新增新資料：建立 MemberTimeSlot 物件
+            // 注意：這裡假設你的 MemberTimeSlot 屬性名稱如下 (若不同請自行調整)
+            var newRecords = slots.Select(slot => new MemberTimeSlot
             {
                 GroupId = groupId,
                 UserId = userId,
-                StartAt = s.StartAt,
-                EndAt = s.EndAt,
+                // 假設資料表欄位叫 StartTime/EndTime，如果是 StartAt/EndAt 請修改
+                StartAt = slot.StartAt,
+                EndAt = slot.EndAt,
                 CreatedAt = DateTime.Now
             });
 
-            await _context.MemberTimeSlots.AddRangeAsync(newSlots);
-
-            member.SubmittedAt = DateTime.Now;
-
+            await _context.MemberTimeSlots.AddRangeAsync(newRecords);
             await _context.SaveChangesAsync();
         }
 

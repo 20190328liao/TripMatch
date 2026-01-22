@@ -58,25 +58,32 @@ namespace TripMatch.Controllers.Api
         [HttpGet("{groupId}/status")]
         public async Task<IActionResult> GetGroupStatus(int groupId)
         {
-            // 1. 查詢群組
             var group = await _context.TravelGroups
                 .FirstOrDefaultAsync(g => g.GroupId == groupId);
 
-            if (group == null)
-            {
-                return NotFound(new { message = "找不到該群組" });
-            }
+            if (group == null) return NotFound(new { message = "找不到該群組" });
 
-            // 2. ★ 關鍵修正：只回傳前端需要的簡單資料 (匿名物件)
-            // 這樣可以避免 System.Text.Json 因為關聯屬性 (Members, Creator...) 而報錯
+            // 1. 計算總人數 (從 GroupMembers)
+            int totalMembers = await _context.GroupMembers
+                .CountAsync(gm => gm.GroupId == groupId);
+
+            if (totalMembers == 0) totalMembers = 1;
+
+            // 2. 計算已提交人數 (從 MemberTimeSlots)
+            int submittedMembersCount = await _context.MemberTimeSlots
+                .Where(m => m.GroupId == groupId)
+                .Select(m => m.UserId)
+                .Distinct()
+                .CountAsync();
+
             return Ok(new
             {
-                dateStart = group.DateStart, // 確保這些屬性名稱對應前端 JS 的預期
+                dateStart = group.DateStart,
                 dateEnd = group.DateEnd,
+                travelDays = group.TravelDays, // 假設有此欄位
 
-                // 如果你的資料表有 TravelDays 欄位就直接用
-                // 如果沒有，也可以試著暫時回傳一個預設值 (例如 3) 或從日期計算
-                travelDays = group.TravelDays
+                // 回傳是否完成
+                isComplete = (submittedMembersCount >= totalMembers)
             });
         }
 
@@ -112,9 +119,42 @@ namespace TripMatch.Controllers.Api
         [HttpPost("{groupId}/available")]
         public async Task<IActionResult> SubmitAvailability(int groupId, [FromBody] List<AvailableSlotInput> slots)
         {
-            int userId = User.GetUserId();
-            await _timeWindowService.SetAvailableSlotsAsync(groupId, userId, slots);
-            return Ok(new { message = "時間已成功送出" });
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            // 1. 存檔 (呼叫 Service)
+            await _timeWindowService.SaveAvailabilityAsync(groupId, userId, slots);
+
+            // ---------------------------------------------------------
+            // ★ 修正邏輯：使用 GroupMembers 計算總人數
+            // ---------------------------------------------------------
+
+            // A. 取得群組總人數
+            // 從 GroupMembers 表計算此群組有多少人
+            int totalMembers = await _context.GroupMembers
+                .CountAsync(gm => gm.GroupId == groupId);
+
+            // ★ 注意：
+            // 如果你的 "團主" 不在 GroupMembers 表裡面 (因為團主存在 TravelGroups.OwnerId)
+            // 但團主也需要投票的話，這裡的人數可能要 +1
+            // 這裡先假設 GroupMembers 包含所有要出遊的人 (含團主)
+            if (totalMembers == 0) totalMembers = 1;
+
+            // B. 取得已提交人數 (從 MemberTimeSlots 算)
+            var submittedMembersCount = await _context.MemberTimeSlots
+                .Where(m => m.GroupId == groupId)
+                .Select(m => m.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // C. 判斷是否全員完成
+            bool isComplete = (submittedMembersCount >= totalMembers);
+
+            return Ok(new
+            {
+                message = "提交成功",
+                isComplete = isComplete
+            });
         }
 
         // 6. 取得推薦時間區段 (GET /api/timewindow/{groupId}/common-options)
