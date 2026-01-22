@@ -119,7 +119,9 @@
                     if (res.status === 401) {
                         // 未登入，導向登入頁，並設定登入後跳回此頁
                         const returnUrl = encodeURIComponent(window.location.pathname);
-                        window.location.href = `/Auth?ReturnUrl=${returnUrl}`;
+                        window.location.href = `/Auth/Login?ReturnUrl=${returnUrl}`;
+
+                        console.log( "FFGHERTFF",window.location.href);
                         // 假設 Auth/Index 是登入頁
                         return;
                     }
