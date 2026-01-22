@@ -1,4 +1,6 @@
-﻿@{
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
     // 修改這裡：將轉型改為 int?
@@ -7,6 +9,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/Home/Home.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Home/CreateNewTrip.css" asp-append-version="true" />
     <style>
         body {
             background-color: #62DEB1; /* 對應 var(--primary-mint)*/
@@ -40,27 +43,39 @@
                     <label>旅遊名稱</label>
                     <div class="input-field-wrap">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <input type="text" placeholder="例如：我的暑假旅行">
+                        <input id="title" type="text" placeholder="例如：我的暑假旅行">
                     </div>
-                </div>
-                <div class="input-box">
+                </div>              
+
+                <div class="input-box" style="position: relative;">
                     <label>目的地</label>
-                    <div class="input-field-wrap">
-                        <i class="fa-solid fa-location-dot"></i>
-                        <input type="text" placeholder="例如：日本">
+                    <div id="input-wrapper" class="input-field-wrap d-flex align-items-center"
+                         style="min-height: 46px; cursor: text; padding: 0 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff;">
+
+                        @* <i class="fa-solid fa-location-dot me-2" style="color: #666; flex-shrink: 0;"></i> *@
+
+                        <div id="chip-container" class="d-flex flex-wrap gap-1 flex-grow-1 align-items-center">
+                            <input type="text" id="search-input" autocomplete="off"
+                                   style="border:none; outline:none; flex:1; min-width:100px; background: transparent;"
+                                   placeholder="例如：日本">
+                        </div>
                     </div>
-                </div>
+                    <div id="suggestions" class="list-group shadow-sm position-absolute w-100 mt-1"
+                         style="z-index: 1050; display: none; max-height: 300px; overflow-y: auto;"></div>
+                </div>  
+
+
                 <div class="input-row">
                     <div class="input-box">
                         <label>出發日</label>
                         <div class="input-field-wrap">
-                            <input type="date" value="2026-01-01">
+                            <input id="startDate" type="date" value="2026-01-01">
                         </div>
                     </div>
                     <div class="input-box">
                         <label>回程日</label>
                         <div class="input-field-wrap">
-                            <input type="date" value="2026-01-01">
+                            <input id="endDate"type="date" value="2026-01-01">
                         </div>
                     </div>
                 </div>
@@ -180,4 +195,8 @@
 
 @section Scripts {
     <script src="~/js/Home/Home.js" asp-append-version="true"></script>
+    <script src="~/js/Home/CreateNewTrip.js" asp-append-version="true"></script>
+    <!-- 使用官方 loader，透過 Razor 注入 Key-->
+    <script src="https://maps.googleapis.com/maps/api/js?key=@Configuration["GoogleMaps:ApiKey"]&libraries=places&callback=initMap" async defer></script>
+
 }

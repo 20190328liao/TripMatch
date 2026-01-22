@@ -1,0 +1,53 @@
+﻿.input-field-wrap {
+    position: relative; /* 方便未來擴充，不會影響排版 */
+}
+
+/* 容器用 flex，讓 chip 和 input 排一排 */
+#chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    /* 不要有 padding/gap */
+    gap: 0;
+}
+
+/* 每個 chip，只在兩個 chip 之間留4px空隙 */
+#chip-container .chip {
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
+    #chip-container .chip:last-child {
+        margin-right: 0;
+    }
+
+/* chip 樣式（可依你原設計調整） */
+.chip {
+    background: #e0f7fa;
+    color: #006064;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    margin: 2px 0;
+}
+
+/* 讓 input 游標緊貼 chip，預設可縮到最小夠打字即可 */
+#chip-container input[type="text"] {
+    min-width: 60px; /* 只要能看到輸入游標即可，可再依需求調大/小 */
+    flex: 1 0 60px; /* 優先最小，剩餘空間撐滿 */
+    width: auto;
+    padding-left: 0; /* 絕對不能有多餘縮排 */
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    margin: 2px 0; /* 與 chip 對齊 */
+}
+
+/* 下拉候選詞 hover 效果（你之前的即可） */
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}

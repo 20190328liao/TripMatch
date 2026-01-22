@@ -694,6 +694,7 @@ namespace TripMatch.Services
             return new MyTripsDto { Trips = trips };
         }
 
+
         // return 成員名單
         public async Task<List<TripMemberDto>> GetMembersAsync(int userId, int tripId)
         {
@@ -865,12 +866,33 @@ namespace TripMatch.Services
 
             if (trip == null) return null;
 
+
+
+            //取得tripRegions
+            var tripRegions = await _context.GlobalRegions
+                .Where(gr => gr.TripRegions.Any(tr => tr.TripId == trip.Id))
+                .ToListAsync();
+
+            // 透過place id 取得 cover image url    
+            string coverImageUrl = "";
+            _googlePlacesClient.GetPlaceDetailsAsync(
+                tripRegions.FirstOrDefault()?.PlaceId ?? "", "zh-TW").ContinueWith(task =>
+                {
+                    var dto = task.Result;
+                    if (dto != null && dto.Result.Photos != null && dto.Result.Photos.Count > 0)
+                    {
+                        coverImageUrl = _googlePlacesClient.GetPhotoUrl(dto.Result.Photos[0].PhotoReference);
+                    }
+                }).Wait();  
+
+
             return new TripSimpleDto
             {
                 Id = trip.Id,
                 Title = trip.Title,
                 StartDate = trip.StartDate,
                 EndDate = trip.EndDate,
+                PhotoUrl = coverImageUrl
                 // 這裡可以偷渡 CoverImageUrl 給前端顯示，雖然 Dto 原本沒有，
                 // 建議在 TripSimpleDto 或另建一個 TripInviteInfoDto 補上 CoverImageUrl
             };
