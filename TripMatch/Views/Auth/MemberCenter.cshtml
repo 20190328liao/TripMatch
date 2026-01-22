@@ -13,8 +13,7 @@
 }
 @section Styles{
     <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
-    <link href="~/css/AuthApi/memberwishlist.css" rel="stylesheet" asp-append-version="true" />
-
+  
     <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" />
 
     <style>
@@ -60,25 +59,25 @@
 
             <div class="profile_info_section col-12 col-md-6">
                 <div class="info_row">
-                    <div class="info_item mb-4">
+                    <div class="info_item">
                         <label class="info_label">
                             <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-person" viewBox="0 0 16 16">
                                 <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
                             </svg>帳號
                         </label>
-                        <div class="info_value d-flex align-items-center gap-2">
+                        <div class="info_value d-flex align-items-center gap-1">
                             <span id="displayEmail">example@gmail.com</span>
                             <input id="inputEmail" type="email" class="form-control d-none" />
 
                         </div>
-                      <div class="info_item mb-4">
+                      <div class="info_item">
                             <label class="info_label name_label">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-gear" viewBox="0 0 16 16">
                                     <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0" />
                                     <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z" />
                                 </svg>自訂名稱
                             </label>
-                        <div class="info_value d-flex align-items-center gap-2">
+                        <div class="info_value d-flex align-items-center gap-1">
                             <span id="displayName">example</span>
                             <input id="inputName" type="text" class="form-control d-none" />
                             <button id="btnEditName" class="btn btn_link edit_link p-0">編輯</button>
@@ -91,7 +90,7 @@
                 </div>
 
                 <div class="info_row">
-                    <div class="info_item mb-4">
+                    <div class="info_item">
                         <label class="info_label">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
                                 <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
@@ -108,13 +107,8 @@
                     </div>
                             <div id="emailHint" class="emailHint d-block "></div>
                     <div class="info_item">
-                        <div>
-                            <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link">修改密碼</a>
-                        </div>
-                        <div>
-                            <a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">
-                                重設帳戶
-                            </a>
+                        <div class="info_item2">
+                            <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link">修改密碼</a><span>｜</span><a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
                         </div>
                     </div>
                 </div>
@@ -127,15 +121,10 @@
          ============================================= -->
     <section class="member_section" id="calendar_section">
         <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>個人行事曆</h2>
-
         <div class="calendar_legend mb-3">
-            <span class="legend-item"><span class="dot today"></span>藍色圈：今天</span>
-            <span class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</span>
-            <span class="legend-item"><span class="dot range"></span>淡藜綠色圈（開始：粉藍；結束：橘）：範圍選擇</span>
-            <span class="legend-item"><span class="dot ok"></span>藍綠色：舊提交</span>
-            <span class="legend-item"><span class="dot ok2"></span>深藜色：新提交</span>
-            <span class="legend-item" id="CalendarHint">會員如果需要單日，則日期點兩下</span>
+      <div class="legend-hint w-100">* 會員如果需要單日，則日期點兩下：</div>
         </div>
+
 
         <div class="container">
             <div class="row g-3 align-items-start">
@@ -197,12 +186,23 @@
 
                     <!-- 匯入 JSON 日曆 -->
                     <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                    <button type="button" id="btnImportCalendar" class="btn1 btn-primary2">匯入 JSON 日曆</button>
+                    <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入 JSON 日曆</button>
                 </div>
-
+              
                 <div class="col-12">
                     <div id="importCalendarMessage" class="alert d-none mt-3" role="alert" style="max-width:600px;"></div>
                 </div>
+            </div>
+            <div class="calendar_legend mb-3">
+                <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
+                <div class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</div>
+                <div class="legend-item">
+                    <span class="dot range-start"></span>
+                    <span class="dot range-end"></span>
+                    開始：粉藍；結束：橘（範圍選擇）
+                </div>
+                <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
+                <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
             </div>
         </div>
     </section>

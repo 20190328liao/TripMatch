@@ -80,7 +80,7 @@
                 const border = rgba(bg, 0.12);
 
                 // data 屬性方便其他 script 使用
-                return `<button class="wishlist-cat-btn btn-transparent btn-sm" data-cat-id="${id}" data-cat-color="${escapeHtml(bg)}" data-cat-text="${escapeHtml(fg)}" style="background:${escapeHtml(bg)}; color:${escapeHtml(fg)}; border:1px solid ${border};">${imgTag}<span class="cat-name">${escapeHtml(c.nameZh)}</span> ${badge}</button>`;
+                return `<button class="wishlist-cat-btn btn-transparent btn-sm" data-cat-id="${id}" data-cat-color="${escapeHtml(bg)}" data-cat-text="${escapeHtml(fg)}" style="background: linear-gradient(180deg, #f5fffb, #fff); background-color: ${escapeHtml(bg)}; color: ${escapeHtml(fg)}; border:1px solid ${border};">${imgTag}<span class="cat-name">${escapeHtml(c.nameZh)}</span> ${badge}</button>`;
             }).join('');
             attachCatHandlers();
         } catch (ex) {
@@ -233,7 +233,7 @@
     </div>
 
     <div class="card-footer bg-transparent border-0 pb-3">
-      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:left;" data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
+      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:center;" data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
         View More
       </a>
     </div>
@@ -245,16 +245,19 @@
         fetchMissingPhotos(); // 渲染後立即啟動補圖
     }
 
+    // 替換原有 fetchMissingPhotos，移除 Google API 與 client-side photo sync 的 fallback
+    // 僅使用後端快照 (apiGetPhoto) 與已存在的 externalPlaceId 機制來取得圖片
     async function fetchMissingPhotos() {
         const images = document.querySelectorAll('img[data-spot-id]');
         for (let img of images) {
             const isPlaceholder = img.src && (img.src.endsWith('/img/placeholder.png') || img.src.includes('placeholder'));
             if (!isPlaceholder) continue;
 
-            const spotId = img.getAttribute('data-spot-id');
-            let placeId = img.getAttribute('data-place-id');
+            const spotId = img.getAttribute('data-spot-id') || img.dataset?.spotId || '';
+            let placeId = img.getAttribute('data-place-id') || img.dataset?.placeId || '';
 
             try {
+                // 1) 若沒有 placeId，先向後端查 spot -> externalPlaceId
                 if ((!placeId || placeId === 'null') && spotId) {
                     try {
                         const resExt = await fetch(`${apiGetExternalPlace}/${encodeURIComponent(spotId)}`, { credentials: 'include' });
@@ -263,79 +266,47 @@
                             placeId = json.externalPlaceId || placeId;
                             if (placeId) {
                                 img.setAttribute('data-place-id', placeId);
-                                updateCardLinks(spotId, placeId); // 新增這行
+                                updateCardLinks(spotId, placeId);
+                                // 同步更新卡片內所有連結
                                 const card = img.closest('.col');
                                 if (card) {
-                                    const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link');
+                                    const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link, a.btn_member_detail');
                                     const finalUrl = `/Spot?placeId=${encodeURIComponent(placeId)}`;
                                     aLinks.forEach(a => {
-                                        a.setAttribute('href', finalUrl);
-                                        a.setAttribute('data-place-id', placeId);
+                                        try { a.setAttribute('href', finalUrl); a.setAttribute('data-place-id', placeId); } catch { }
                                     });
                                     const cardWrapper = card.querySelector('.wishlist-item') || card;
                                     cardWrapper && cardWrapper.setAttribute('data-place-id', placeId);
                                 }
                             }
                         }
-                    } catch { /* ignore */ }
-                }
-
-                if (placeId && placeId !== 'null') {
-                    try {
-                        const photoRes = await fetch(`/api/auth/GetSpotPhoto?placeId=${encodeURIComponent(placeId)}&spotId=${encodeURIComponent(spotId || '')}`, { credentials: 'include' });
-                        if (photoRes.ok) {
-                            const j = await photoRes.json().catch(() => ({}));
-                            if (j.imageUrl) {
-                                img.src = j.imageUrl;
-                                continue;
-                            }
-                        }
-                    } catch (ex) {
-                        console.warn('fetchMissingPhotos GetSpotPhoto error', ex);
-                    }
-
-                    if (window.viewSpotPhotoSyncFetch && typeof window.viewSpotPhotoSyncFetch === 'function') {
-                        try {
-                            const url = await window.viewSpotPhotoSyncFetch(placeId);
-                            if (url) {
-                                img.src = url;
-                                continue;
-                            }
-                        } catch (e) { /* ignore */ }
-                    }
-                } else {
-                    // 最後嘗試用 client-side Google Places 以 title 搜尋
-                    const card = img.closest('.col');
-                    const title = card?.getAttribute('data-title') || img.getAttribute('alt') || '';
-                    if (title && window.google && window.google.maps && window.google.maps.places) {
-                        try {
-                            const svc = new window.google.maps.places.PlacesService(document.createElement('div'));
-                            svc.findPlaceFromQuery({ query: title, fields: ['place_id', 'photos'] }, (places, status) => {
-                                const okStatus = window.google.maps.places.PlacesServiceStatus.OK;
-                                if (status === okStatus && places && places.length) {
-                                    const p = places[0];
-                                    if (p.place_id) {
-                                        // 更新所有連結
-                                        const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link');
-                                        const finalUrl = `/Spot?placeId=${encodeURIComponent(p.place_id)}`;
-                                        aLinks.forEach(a => {
-                                            a.setAttribute('href', finalUrl);
-                                            a.setAttribute('data-place-id', p.place_id);
-                                        });
-                                        img.setAttribute('data-place-id', p.place_id);
-                                    }
-                                    if (p.photos && p.photos.length) {
-                                        try { img.src = p.photos[0].getUrl({ maxWidth: 800 }); } catch { }
-                                    }
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('client-side findPlaceFromQuery failed', e);
-                        }
+                    } catch (e) {
+                        // 不阻斷後續流程
+                        console.warn('fetchMissingPhotos: fetch externalPlaceId failed', e);
                     }
                 }
+
+                // 2) 使用後端快照 API 取得最終 imageUrl（若存在） — 不再呼叫 Google Places 或 client-side sync
+                try {
+                    // 優先使用在檔案頂部定義的 apiGetPhoto（若未定義再 fallback 到 known path）
+                    const getPhotoUrl = apiGetPhoto || '/api/MemberCenterApi/GetSpotPhoto';
+                    const url = `${getPhotoUrl}?${placeId ? `placeId=${encodeURIComponent(placeId)}&` : ''}${spotId ? `spotId=${encodeURIComponent(spotId)}` : ''}`;
+                    const photoRes = await fetch(url, { credentials: 'include' });
+                    if (photoRes.ok) {
+                        const j = await photoRes.json().catch(() => ({}));
+                        if (j && j.imageUrl) {
+                            img.src = j.imageUrl;
+                            continue; // 成功更新，處理下一張
+                        }
+                    }
+                } catch (ex) {
+                    console.warn('fetchMissingPhotos: apiGetPhoto failed', ex);
+                }
+
+                // 3) 如果後端也沒有，保留 placeholder（不再嘗試 Google API）
+                // 若將來需要可在此加入額外策略
             } catch (err) {
-                console.error("補撈圖片失敗:", err);
+                console.error('fetchMissingPhotos error', err);
             }
         }
     }
