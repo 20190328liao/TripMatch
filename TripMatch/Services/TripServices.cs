@@ -877,7 +877,7 @@ namespace TripMatch.Services
         }
 
         // [新增] 執行加入行程
-        public async Task<bool> JoinTripByInviteCode(int userId, string codeStr)
+        public async Task<bool> JoinTripByInviteCode(int? userId, string codeStr)
         {
             if (!Guid.TryParse(codeStr, out Guid inviteCode)) return false;
 
@@ -894,7 +894,7 @@ namespace TripMatch.Services
             var newMember = new TripMember
             {
                 TripId = trip.Id,
-                UserId = userId,
+                UserId = (int)userId,
                 RoleType = 2, // 2 = Editor/Member
                 JoinedAt = DateTimeOffset.Now
             };

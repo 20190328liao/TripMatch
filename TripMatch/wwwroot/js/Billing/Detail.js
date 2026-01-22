@@ -328,10 +328,19 @@ function renderBalanceTab() {
         }).join('');
     }
 }
-function openSettleModal(from, to, amount) {
-    appState.pendingSettle = { from, to, amount: Math.round(amount) };
-    document.getElementById('settle-desc').innerHTML = `<b>${from}</b> 需支付 <b>${to}</b>`;
+function openSettleModal(fromId, toId, amount) {
+    // 1. 儲存結清資訊 (這裡必須存 ID，因為等一下送給後端需要 ID)
+    appState.pendingSettle = { from: fromId, to: toId, amount: Math.round(amount) };
+
+    // 2. ★★★ 關鍵修改：利用 getMemberName 把 ID 轉成名字 ★★★
+    const fromName = getMemberName(fromId);
+    const toName = getMemberName(toId);
+
+    // 3. 更新畫面 (顯示名字，而不是數字 ID)
+    document.getElementById('settle-desc').innerHTML = `<b>${fromName}</b> 需支付 <b>${toName}</b>`;
     document.getElementById('settle-amount').innerText = `NT$${Math.round(amount)}`;
+
+    // 4. 顯示視窗
     const modal = document.getElementById('settleModal');
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('show'), 10);
@@ -355,7 +364,7 @@ function confirmSettle() {
     formData.append('amount', amount);
 
     // 發送請求給後端
-    fetch('/Home/CreateSettlement', {
+    fetch('/Billing/CreateSettlement', {
         method: 'POST',
         body: formData
     })
@@ -653,7 +662,7 @@ function editMyBudget() {
     formData.append('tripId', tripId);
     formData.append('newBudget', newBudget);
 
-    fetch('/Home/UpdateBudget', {
+    fetch('/Billing/UpdateBudget', {
         method: 'POST',
         body: formData
     })

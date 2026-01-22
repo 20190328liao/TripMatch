@@ -144,12 +144,13 @@
                 }
 
             const code = inviteData?.inviteCode ?? "";
-            inviteCodeText.textContent = code || "(無)";
+            const fullUrl = `${window.location.origin}/Trip/Join/${code}`;
+            inviteCodeText.textContent = fullUrl || "(無)";
             btnCopyIntive.disabled = !code;
 
             btnCopyIntive.onclick = async () => {
-                await copyTextToClipboard(code);
-                inviteHint.textContent = "已複製邀請碼";
+                await copyTextToClipboard(fullUrl);
+                inviteHint.textContent = "已複製邀請連結！";
                 setTimeout(() => { inviteHint.textContent = ""; }, 1500);
             }
         } catch (err) {

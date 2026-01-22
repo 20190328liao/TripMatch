@@ -373,11 +373,6 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, new { Message = "取得附近景點時發生伺服器錯誤。" });
             }
         }
-
-
-
-
-
         #endregion
 
         #region 航班資訊 Proxy
@@ -481,6 +476,37 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
+
+        #endregion
+
+        #region 行程邀請
+
+        // 取得邀請資訊 (公開 API，不一定要 Authorize，或者前端判斷未登入先跳轉)
+        [HttpGet("invite-info/{code}")]
+        public async Task<IActionResult> GetInviteInfo(string code)
+        {
+            var info = await _tripServices.GetTripInfoByInviteCode(code);
+            if (info == null) return NotFound(new { message = "無效的邀請碼" });
+
+            return Ok(info);
+        }
+
+        // 確認加入 (必須登入)
+        [HttpPost("join")]
+        [Authorize]
+        public async Task<IActionResult> JoinByCode([FromBody] JoinRequestDto req)
+        {
+            var userId = _tagUserId.UserId;
+            bool success = await _tripServices.JoinTripByInviteCode(userId, req.InviteCode);
+
+            if (success)
+                return Ok(new { message = "加入成功" });
+            else
+                return BadRequest(new { message = "加入失敗，邀請碼無效或發生錯誤" });
+        }
+
+        // DTO class 可以放下面或獨立檔案
+        public class JoinRequestDto { public string InviteCode { get; set; } }
 
         #endregion
     }

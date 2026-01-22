@@ -6,11 +6,10 @@ using System.Security.Claims;
 using System.Text.Json;
 using TripMatch.Models; // 改成專案原本的 Models 命名空間
 
-//using Microsoft.AspNetCore.Authorization;
 
 namespace TripMatch.Controllers
 {
-    //[Authorize]
+    [Authorize]  //沒登入的人會被踢去登入頁
     public class BillingController : Controller
     {
         private readonly ILogger<BillingController> _logger;
@@ -28,10 +27,31 @@ namespace TripMatch.Controllers
         public async Task<IActionResult> Index()
         {
             // 撈出所有旅程，並包含 TripMembers (為了計算人數)
-            var trips = await _context.Trips
-                                      .Include(t => t.TripMembers)
-                                      .ToListAsync();
+            //var trips = await _context.Trips
+            //                          .Include(t => t.TripMembers)
+            //                          .ToListAsync();
 
+            // 1. 抓取目前登入者 ID
+            int currentAspNetUserId = 0;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int parsedId))
+            {
+                currentAspNetUserId = parsedId;
+            }
+
+            // 如果抓不到 ID (例如 Cookie 過期或異常)，為了安全可以踢回登入頁
+            if (currentAspNetUserId == 0)
+            {
+                return RedirectToAction("Login", "Auth"); // 或您專案的登入路徑
+            }
+
+            // 2. 撈取旅程，並加入篩選條件
+            var trips = await _context.Trips
+                .Include(t => t.TripMembers)
+                // 只撈取 "TripMembers 裡包含我 (currentAspNetUserId)" 的旅程 
+                .Where(t => t.TripMembers.Any(tm => tm.UserId == currentAspNetUserId))
+                .OrderByDescending(t => t.StartDate) // 順便依日期降序排列 (新的在前面)
+                .ToListAsync();
             return View(trips);
         }
 
@@ -69,18 +89,18 @@ namespace TripMatch.Controllers
             // 撈取所有類別傳給 View (用於下拉選單)
             ViewBag.Categories = await _context.Categories.ToListAsync();
 
-            //// 動態抓取目前登入者的資料 
-            //int currentAspNetUserId = 0;
+            // 動態抓取目前登入者的資料 
+            int currentAspNetUserId = 0;
 
-            //// 從 Cookie 中讀取登入者的 UserId (字串轉整數)
-            //var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int parsedId))
-            //{
-            //    currentAspNetUserId = parsedId;
-            //}
+            // 從 Cookie 中讀取登入者的 UserId (字串轉整數)
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int parsedId))
+            {
+                currentAspNetUserId = parsedId;
+            }
 
             // ★★★ 測試用：暫時寫死成 2 (假設我是王小明) ★★★
-            int currentAspNetUserId = 2;
+            //int currentAspNetUserId = 2;
 
             // 在這趟旅程的成員名單中，尋找對應這個 UserId 的成員
             // 這樣我們才能知道他的 MemberId (記帳是用這個 ID) 和 Budget
