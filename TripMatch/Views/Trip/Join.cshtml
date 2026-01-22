@@ -63,9 +63,80 @@
 
 @section Scripts {
     <script>
-        // 這裡稍後會填寫呼叫 API 的邏輯
-        // 1. CheckLogin status
-        // 2. Get Trip Info by Code
-        // 3. Post Join
+        document.addEventListener("DOMContentLoaded", async () => {
+            const code = document.getElementById("inviteCode").value;
+            const loading = document.getElementById("loadingBlock");
+            const content = document.getElementById("contentBlock");
+            const error = document.getElementById("errorBlock");
+
+            // 1. 取得行程資訊
+            try {
+                const res = await fetch(`/api/TripApi/invite-info/${code}`);
+                if (!res.ok) throw new Error();
+
+                const trip = await res.json();
+
+                // 填入資料
+                document.getElementById("tripTitle").textContent = trip.title;
+                document.getElementById("tripDates").textContent =
+                    `${trip.startDate} - ${trip.endDate}`; // 注意日期格式化可能需要微調
+
+                if(trip.coverImageUrl) {
+                     document.getElementById("tripCover").src = trip.coverImageUrl;
+                } else {
+                     // 預設圖
+                     document.getElementById("tripCover").src = "https://placehold.co/600x400?text=Trip";
+                }
+
+                loading.style.display = "none";
+                content.style.display = "block";
+
+            } catch (err) {
+                loading.style.display = "none";
+                error.style.display = "block";
+            }
+
+            // 2. 綁定加入按鈕
+            document.getElementById("btnJoin").addEventListener("click", async () => {
+                const btn = document.getElementById("btnJoin");
+
+                // 檢查是否登入 (假設您有全域變數或 Cookie 判斷，若無則依賴 API 401)
+                // 這裡直接打 API，若 401 會由瀏覽器或全域 fetch 攔截處理(視您專案實作)
+                // 簡單作法：如果 API 回傳 401，跳轉去登入頁並帶上 ReturnUrl
+
+                try {
+                    btn.disabled = true;
+                    btn.textContent = "加入中...";
+
+                    const res = await fetch(`/api/TripApi/join`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ inviteCode: code })
+                    });
+
+                    if (res.status === 401) {
+                        // 未登入，導向登入頁，並設定登入後跳回此頁
+                        const returnUrl = encodeURIComponent(window.location.pathname);
+                        window.location.href = `/Auth?ReturnUrl=${returnUrl}`;
+                        // 假設 Auth/Index 是登入頁
+                        return;
+                    }
+
+                    if (!res.ok) throw new Error("加入失敗");
+
+                    // 加入成功，導向行程列表或該行程編輯頁
+                    alert("成功加入行程！");
+                    window.location.href = "/Trip"; // 或直接進編輯頁
+
+                } catch (err) {
+                    console.error(err);
+                    alert("加入失敗，請稍後再試。");
+                    btn.disabled = false;
+                    btn.textContent = "確認加入行程";
+                }
+            });
+        });
     </script>
 }
