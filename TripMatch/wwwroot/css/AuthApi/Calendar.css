@@ -6,11 +6,13 @@
     margin-top: 2em;
 }
 .list-header small {
-    font-size: 14pt;
+    font-size: 18pt;
     padding-top: 10px;
     color: #24a1f3;
 }
-
+.list-header h5 {
+    font-size: 20pt;
+}
 .file-two-column {
     display: flex;
     gap: 1rem;
@@ -37,7 +39,7 @@
 .year-header .year-display,
 .month-header .month-display {
     color: var(--color_DarkGray);
-    font-size: 1.2rem;
+    font-size: 18pt;
     font-weight: 600;
 }
 
@@ -45,7 +47,7 @@
 .month-header button {
     background: transparent;
     border: none;
-    font-size: 1.1rem;
+    font-size: 18pt;
     cursor: pointer;
     padding: 6px 10px;
     color: var(--accent);
@@ -101,13 +103,14 @@
     box-shadow: 0 6px 0 rgba(0,128,96,0.04);
 }
 
-.month-btn .mn {
-    font-weight: 700;
-    color: #333;
-}
+    .month-btn .mn {
+        font-size: 14pt;
+        font-weight: 600;
+        color: #333;
+    }
 
 .month-btn .en {
-    font-size: 0.85rem;
+    font-size: 12pt;
     color: #777;
 }
 
@@ -434,7 +437,7 @@ body:not(.calendar-editing) .day-cell {
         border-radius: 8px;
         background: linear-gradient(180deg, #f6fffb, #fff);
         color: var(--color_DarkGray);
-        font-size: 0.95rem;
+        font-size: 16pt;
         box-shadow: 0 1px 0 rgba(0,0,0,0.02) inset;
     }
 
