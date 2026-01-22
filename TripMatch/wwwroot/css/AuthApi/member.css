@@ -1,5 +1,10 @@
-﻿.main-content {
-    padding-left: 25px;
+﻿.main-content2 {
+    background-color: #f8fafc;
+     overflow-y: auto;
+        overflow-x: hidden;
+}
+.member_center_wrap {
+        padding-left: 25px;
     padding-right: 25px;
 }
 
@@ -56,7 +61,12 @@ margin-right:20px;
         flex: 0 0 140px; /* 可依需求改成 120 / 160 */
         min-width: 120px;
         box-sizing: border-box;
+        justify-content: center;
     }
+.info_value button {
+    justify-content: center;
+    margin-bottom:10px;
+}
 .info_value {
     position: static;
     left: auto;
@@ -100,9 +110,7 @@ margin-right:20px;
    Browser Default Override
    ⚠ 不可刪除
 ============================= */
-.main-content {
-    background-color: #f8fafc;
-}
+
 
 .signContent {
     background: white;
@@ -172,18 +180,30 @@ textarea {
 }
 
 .btn-confirm {
-    background: #ccf1fe;
+    background-color: #ccf1fe;
     border: 1px solid #82c1f6a6;
     color: black;
 }
+    .btn-confirm:focus {
+        background-color: #6be1f6;
+        border: 1px solid #82c1f6a6;
+        color: black;
+    }
 
 .btn-edit {
     background-color: var(--color_Gray);
     color: black;
 }
+    .btn-edit:focus {
+        background-color:#ffc083;
+    }
 
-.btn-danger1 {
-    background-color: var(--color_nav, #ff6b6b);
+    .btn-danger1 {
+        background-color: var(--color_nav, #ff6b6b);
+        color: black;
+    }
+.btn-danger1:focus {
+    background-color: #6dfbbe;
     color: black;
 }
 
@@ -327,7 +347,7 @@ textarea {
     .member_center_wrap {
         display: block;
         margin-left: 0;
-        padding: 16px;
+
         box-sizing: border-box;
     }
 
@@ -337,6 +357,7 @@ textarea {
         gap: 1rem;
         width: 100%;
         box-sizing: border-box;
+        padding-left: 25px;
     }
 
     .profile_avatar_section,
@@ -982,10 +1003,6 @@ input:is(:-webkit-autofill, :autofill) {
         left: 30px;
     }
 
-    .main-content {
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
 
     .profile_avatar_section {
         background-color: var(--color_bk);

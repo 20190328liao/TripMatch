@@ -1,6 +1,9 @@
 ﻿/* =============================================
    導覽列字體設定 (覆蓋 Bootstrap 預設值)
    ============================================= */
+.dropdown-item {
+	font-size: 18px;
+}
 .navbar .nav-link {
 	font-size: 18px !important; /* 字體大小 */
 	font-weight: 600 !important; /* 字體粗細 */
