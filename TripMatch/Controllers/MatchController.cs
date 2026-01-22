@@ -42,18 +42,30 @@ namespace TripMatch.Controllers
         [HttpGet("/Match/CalendarCheck/{groupId}")]
         public async Task<IActionResult> CalendarCheck(int groupId)
         {
+            // 改用 ViewData (配合前端修改)
+            ViewData["GroupId"] = groupId;
+
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            int.TryParse(userIdStr, out int userId);
-
-            bool hasData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
-
-            var viewModel = new CalendarCheckViewModel
+            if (int.TryParse(userIdStr, out int userId))
             {
-                GroupId = groupId,
-                HasSelectedTimeRange = hasData
-            };
+                bool hasCalendarData = await _context.LeaveDates.AnyAsync(l => l.UserId == userId);
+                ViewData["HasCalendarData"] = hasCalendarData;
 
-            return View(viewModel);
+                // ★★★ 補上這段邏輯 ★★★
+                var member = await _context.GroupMembers
+                    .FirstOrDefaultAsync(m => m.GroupId == groupId && m.UserId == userId);
+
+                // 檢查是否已提交 (SubmittedAt != null)
+                bool isSubmitted = member != null && member.SubmittedAt != null;
+                ViewData["IsSubmitted"] = isSubmitted;
+            }
+            else
+            {
+                ViewData["HasCalendarData"] = false;
+                ViewData["IsSubmitted"] = false;
+            }
+
+            return View();
         }
 
         [HttpGet("/Match/Join/{inviteCode}")]
