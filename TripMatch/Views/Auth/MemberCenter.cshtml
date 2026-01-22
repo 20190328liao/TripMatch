@@ -12,9 +12,10 @@
     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
 }
 @section Styles{
-    <link href="~/css/AuthApi/member.css" rel="stylesheet" />
-    <link href="~/css/AuthApi/memberwishlist.css" rel="stylesheet" />
-   
+    <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/AuthApi/memberwishlist.css" rel="stylesheet" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" />
 
     <style>
 
@@ -132,7 +133,7 @@
             <span class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</span>
             <span class="legend-item"><span class="dot range"></span>淡藜綠色圈（開始：粉藍；結束：橘）：範圍選擇</span>
             <span class="legend-item"><span class="dot ok"></span>藍綠色：舊提交</span>
-            <span class="legend-item"><span class="dot ok2"></span>深藍色：新提交</span>
+            <span class="legend-item"><span class="dot ok2"></span>深藜色：新提交</span>
             <span class="legend-item" id="CalendarHint">會員如果需要單日，則日期點兩下</span>
         </div>
 
@@ -227,62 +228,62 @@
                 </div>
             </div>
 
-            <div class="wishlist_cards_container container mt-4" id="wishlistCardsContainer">
-                @* 修正 ID 命名，確保與 JS 一致 *@
-                <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
-                    @if (!cards.Any())
-                    {
-                        <div class="col-12 text-center py-5">
-                            <p class="text-muted">目前沒有願望清單，快去探索景點吧！</p>
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var item in cards)
+        <!-- 分類按鈕群組 (左側面板將顯示此處) -->
+        <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">
+            <div class="row g-3">
+                <aside class="col-12 col-lg-3 wishlist-left-panel">
+                    <div id="wishlist_categories" class="wishlist_categories mb-3">
+                        <!-- 由 wishlist.js 動態填充 -->
+                    </div>
+                </aside>
+
+                <div class="col-12 col-lg-9 wishlist-right-panel">
+                    <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                        @if (!cards.Any())
                         {
-                            var googleId = item.GooglePlaceId ?? item.ExternalPlaceId ?? "";
-                            <div class="col">
-                                <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
-                                    @* 移除收藏按鈕 (愛心) *@
-                                <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
-                                            title="從清單移除">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
-                                        <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
-                                    </svg>
-                                    </button>
-
-                                    <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
-                                         style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title">@item.Name</h5>
-                                        <p class="card-text text-truncate">@item.Address</p>
-
-
-                         
-                                    <div class="card-footer bg-transparent border-0 pb-2">
-                                        @if (!string.IsNullOrEmpty(googleId))
-                                        {
-                                            @* 這裡改用 div，並加上 class="btn-view-more" *@
-                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
-                                                View More
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            @* 即使沒資料也給它 class，讓 JS 之後補上 ID 後可以啟用 *@
-                                            <div class="btnSpot btn-view-more w-100" style="cursor:pointer; text-align:center;">
-                                                View More
-                                            </div>
-                                        }
-                                    </div>
-                                    </div>
-                                </div>
+                            <div class="col-12 text-center py-5">
+                                <p class="text-muted">目前沒有願望清單，快去探索景點吧！</p>
                             </div>
                         }
-                    }
+                        else
+                        {
+                            @foreach (var item in cards)
+                            {
+                                var googleId = item.GooglePlaceId ?? item.ExternalPlaceId ?? "";
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
+                                        @* 移除收藏按鈕 (愛心) *@
+                                    <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
+                                                title="從清單移除">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
+                                            <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
+                                        </svg>
+                                        </button>
+
+                                        <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
+                                             style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title">@item.Name</h5>
+                                            <p class="card-text text-truncate">@item.Address</p>
+
+
+                             
+                                        <div class="card-footer bg-transparent border-0 pb-2">
+                                            @* 使用 text-start 讓文字靠左 *@
+                                            <div class="btnSpot btn-view-more w-100 text-start" style="cursor:pointer;">
+                                                View More
+                                            </div>
+                                        </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
             </div>
+        </div>
         </section>
         @* 全域的 View more 連結移除（每張卡片會由前端產生其 own View more） *@
 

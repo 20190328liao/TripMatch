@@ -80,6 +80,7 @@ body {
 /*中間白色卡片容器*/
 .main-card {
     background: white;
+    height:400px;
     max-width: 900px;
     margin: 0 auto;
     border-radius: 20px;
@@ -122,7 +123,7 @@ body {
 
     .input-box label {
         font-weight: bold;
-        font-size: 14px;
+        font-size: 18px;
         color: #555;
     }
 
@@ -262,19 +263,29 @@ body {
     color: var(--primary-mint);
 }
 */
+/* 調整：水平置中按鈕，改以 margin 控制位置，移除絕對 top */
 .btn-action-main {
-    width: 100%;
+    display: block;
+    margin: 1.5rem auto 0; /* 上方間距 3rem，左右 auto 使水平置中 */
+    width: auto;
+    max-width: 200px; /* 限制最大寬度，避免過大 */
     padding: 16px;
     background: var(--btn-blue);
+    text-decoration: none;
     color: white;
     border: none;
     border-radius: 10px;
     font-size: 18px;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 25px;
     transition: 0.3s;
+    text-align: center;
 }
+
+    .btn-action-main:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
 
     .btn-action-main:hover {
         filter: brightness(1.1);

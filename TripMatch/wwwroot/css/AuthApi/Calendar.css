@@ -172,8 +172,8 @@
 .day-cell.today .day-label {
     background: linear-gradient(180deg,#3b82f6,#2563eb);
     color: white;
-    width: 36px;
-    height: 36px;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
 }
 
@@ -419,12 +419,16 @@ body:not(.calendar-editing) .day-cell {
     .day-cell.submitted-old {
     background: linear-gradient(0deg, #3EB392, #94EBB8);
     color: #fff;
+    max-width:3rem;
+    align-items:center;
 }
 
-.day-cell.submitted-new {
-    background: linear-gradient(180deg, #2D92A7, #1C3B87);
-    color: #fff;
-}
+    .day-cell.submitted-new {
+        background: linear-gradient(180deg, #2D92A7, #1C3B87);
+        color: #fff;
+        max-width: 3rem;
+        align-items: center;
+    }
 
 .calendar-list .submitted-old,
 #calendarRange .submitted-old {

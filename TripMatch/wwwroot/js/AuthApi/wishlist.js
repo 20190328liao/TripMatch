@@ -4,17 +4,140 @@
     const apiToggle = window.Routes?.MemberCenterApi?.Toggle ?? '/api/MemberCenterApi/Toggle';
     const apiGetPhoto = window.Routes?.MemberCenterApi?.GetSpotPhoto ?? '/api/MemberCenterApi/GetSpotPhoto';
     const apiGetExternalPlace = window.Routes?.AuthApi?.GetExternalPlaceId ?? '/api/auth/GetExternalPlaceId';
+
+    // 新增：分類相關 API
+    const apiCategories = window.Routes?.MemberCenterApi?.GetWishlistCategories ?? '/api/MemberCenterApi/GetWishlistCategories';
+    const apiWishByCat = window.Routes?.MemberCenterApi?.GetWishByCategory ?? '/api/MemberCenterApi/GetWishByCategory';
+
     const undoTimers = {};
     if (!wishlistContainer) return;
 
-    loadWishlist();
+    // 初始化：先載入分類按鈕，再載入全部（categoryId = 0）
+    init();
 
-    async function loadWishlist() {
+    async function init() {
         try {
-            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            await renderCategories(); // 嘗試載入分類（失敗不阻塞）
+        } catch {
+            // ignore
+        }
+        await loadWishlist(0);
+    }
+
+    // 新增：載入並渲染分類按鈕 (支援縮圖 sampleImage / imageUrl)
+    async function renderCategories() {
+        try {
+            const res = await fetch(apiCategories, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const j = await res.json().catch(() => ({}));
+            const cats = j.categories || [];
+            const container = document.getElementById('wishlist_categories');
+            if (!container) return;
+
+            // helper: hex -> {r,g,b}，支援 #abc 與 #aabbcc
+            function hexToRgb(hex) {
+                if (!hex) return null;
+                let h = hex.replace('#', '').trim();
+                if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
+                if (h.length !== 6) return null;
+                const r = parseInt(h.substring(0, 2), 16);
+                const g = parseInt(h.substring(2, 4), 16);
+                const b = parseInt(h.substring(4, 6), 16);
+                if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
+                return { r, g, b };
+            }
+
+            function rgba(hex, a = 1) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return `rgba(0,0,0,${a})`;
+                return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${a})`;
+            }
+
+            // helper: 決定白或深色文字（以相對亮度近似）
+            function readableTextColor(hex) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return '#0b1220'; // fallback 深色文字
+
+                // linearize sRGB then compute relative luminance (WCAG)
+                const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+                    const c = v / 255;
+                    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+                });
+                const l = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+
+                // 以亮度閾值選擇文字顏色：較亮背景用深色文字，較暗背景用白色文字
+                return l < 0.6 ? '#0b1220' : '#ffffff';
+            }
+
+            container.innerHTML = cats.map(c => {
+                const id = c.id ?? 0;
+                const badge = c.count ? `<span class="badge bg-secondary ms-2">${c.count}</span>` : '';
+                const imgSrc = c.sampleImage || c.imageUrl || '';
+                const imgTag = imgSrc ? `<img src="${escapeHtml(imgSrc)}" class="cat-thumb" alt="${escapeHtml(c.nameZh)}" />` : '';
+
+                const bg = (c.color || '#0EA5A4').trim();
+                const fg = readableTextColor(bg);
+                const border = rgba(bg, 0.12);
+
+                // data 屬性方便其他 script 使用
+                return `<button class="wishlist-cat-btn btn-transparent btn-sm" data-cat-id="${id}" data-cat-color="${escapeHtml(bg)}" data-cat-text="${escapeHtml(fg)}" style="background:${escapeHtml(bg)}; color:${escapeHtml(fg)}; border:1px solid ${border};">${imgTag}<span class="cat-name">${escapeHtml(c.nameZh)}</span> ${badge}</button>`;
+            }).join('');
+            attachCatHandlers();
+        } catch (ex) {
+            console.warn('載入分類失敗', ex);
+        }
+    }
+
+    function attachCatHandlers() {
+        const container = document.getElementById('wishlist_categories');
+        if (!container) return;
+        container.querySelectorAll('.wishlist-cat-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = Number(btn.getAttribute('data-cat-id') || '0');
+                // 樣式切換
+                container.querySelectorAll('.wishlist-cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                await loadWishlist(id);
+            });
+        });
+    }
+
+    // 修改：loadWishlist 支援 categoryId。若 categoryId 為 0 或 undefined 使用原本的 apiGet。
+    async function loadWishlist(categoryId) {
+        try {
+            let res;
+            if (categoryId && Number(categoryId) > 0) {
+                const url = `${apiWishByCat}?categoryId=${encodeURIComponent(categoryId)}`;
+                res = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            } else {
+                res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            }
+
             if (!res.ok) { renderEmpty(); return; }
-            const data = await res.json();
-            const items = (data && data.items) ? data.items : data;
+            const data = await res.json().catch(() => ({}));
+
+            // 若來自 GetWishByCategory API（通常回傳 { items: [...] }，items 物件屬性名可能不同），將其 map 成舊的 shape 以重用 render()
+            let items = (data && data.items) ? data.items : data;
+
+            // 若 items 的第一筆有 nameZh 或 photosSnapshot（表示是由 GetWishByCategory 回傳），則做 mapping
+            if (Array.isArray(items) && items.length > 0 && (items[0].nameZh !== undefined || items[0].photosSnapshot !== undefined)) {
+                items = items.map(it => ({
+                    spotId: it.spotId ?? it.SpotId ?? 0,
+                    SpotId: it.spotId ?? it.SpotId ?? 0,
+                    name_ZH: it.nameZh ?? it.name_ZH ?? it.spotTitle ?? null,
+                    Name_ZH: it.nameZh ?? it.Name_ZH ?? it.spotTitle ?? null,
+                    externalPlaceId: it.externalPlaceId ?? it.ExternalPlaceId ?? '',
+                    ExternalPlaceId: it.externalPlaceId ?? it.ExternalPlaceId ?? '',
+                    PhotosSnapshot: it.photosSnapshot ?? it.PhotosSnapshot ?? it.photosSnapshotJson ?? null,
+                    photosSnapshot: it.photosSnapshot ?? it.PhotosSnapshot ?? it.photosSnapshotJson ?? null,
+                    Address: it.address ?? it.Address ?? '',
+                    Rating: it.rating ?? it.Rating ?? null,
+                    imageUrl: it.imageUrl ?? null,
+                    spot: it.spot ?? null,
+                    locationCategoryId: it.locationCategoryId ?? it.locationCategoryId ?? null
+                }));
+            }
+
             render(items);
         } catch (ex) {
             console.error('載入願望清單失敗', ex);
@@ -57,6 +180,11 @@
                         needsGoogleFetch = true;
                         currentImageUrl = '/img/placeholder.png';
                     }
+                } else if (Array.isArray(parsedPhoto) && parsedPhoto.length) {
+                    const s = parsedPhoto[0] && parsedPhoto[0].trim ? parsedPhoto[0].trim() : '';
+                    if (s.toLowerCase().startsWith('http')) currentImageUrl = s;
+                    else if (/^\d+x\d+\?text=/.test(s)) currentImageUrl = `https://via.placeholder.com/${s}`;
+                    else needsGoogleFetch = true;
                 } else {
                     currentImageUrl = '/img/placeholder.png';
                 }
@@ -105,7 +233,7 @@
     </div>
 
     <div class="card-footer bg-transparent border-0 pb-3">
-      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:center;" data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
+      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:left;" data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
         View More
       </a>
     </div>
