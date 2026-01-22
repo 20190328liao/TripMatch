@@ -20,7 +20,7 @@
         <div class="header-left">
             @* <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='/Home/index'" title="返回列表"></i> *@
             @* <h1 class="page-title">台南兩日遊美食行程</h1> *@
-            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Home")'" title="返回列表"></i>
+            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Billing")'" title="返回列表"></i>
             <h1 class="page-title">@Model.Title</h1>
         </div>
 
@@ -252,7 +252,7 @@
                 <div class="modal-title" style="color:var(--danger)">取消結清？</div>
             </div>
             <div style="font-size: 16px; margin-bottom: 25px; color:#666;">
-                這筆還款紀錄將被刪除，債務將會恢復為「待結清」狀態。
+                這筆還款紀錄將被刪除，<br /> 債務將會恢復為「待結清」狀態。
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="closeModal('undoSettleModal')">保留</button>
