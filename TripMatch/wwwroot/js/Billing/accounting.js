@@ -12,14 +12,10 @@ function goToTrip(tripId) {
         return;
     }
 
-    // 這裡一定要有 ?id=
     window.location.href = '/Billing/Detail?id=' + tripId;
 }
 
 function createNewTrip() {
-    alert("建立新旅程功能開發中！");
-}
-
-function createNewTrip() {
-    alert("建立新旅程功能開發中！");
+    // 跳轉到建立頁面
+    window.location.href = '/Trip/Create';
 }
