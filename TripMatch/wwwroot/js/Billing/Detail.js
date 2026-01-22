@@ -383,7 +383,7 @@ function confirmUndoSettle() {
     if (!appState.pendingUndoId) return;
 
     // 呼叫後端 API 刪除資料庫紀錄
-    fetch('/Home/DeleteSettlement?id=' + appState.pendingUndoId, {
+    fetch('/Billing/DeleteSettlement?id=' + appState.pendingUndoId, {
         method: 'POST'
     })
         .then(res => res.json())
@@ -413,7 +413,7 @@ function deleteExpense(id) {
     if (!confirm("確定要刪除這筆支出嗎？（此操作無法復原）")) return;
 
     // 發送 POST 請求給後端
-    fetch('/Home/DeleteExpense?id=' + id, { method: 'POST' })
+    fetch('/Billing/DeleteExpense?id=' + id, { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -496,7 +496,7 @@ function saveExpense() {
     formData.append('partsJson', JSON.stringify(parts));
 
     // 6. 發送請求
-    fetch('/Home/SaveExpense', {
+    fetch('/Billing/SaveExpense', {
         method: 'POST',
         body: formData
     })
