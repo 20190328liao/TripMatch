@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "加入行程";
+    Layout = "~/Views/Shared/_Layout-copy.cshtml";
+}
+
+@section Styles {
+    <!-- 之後可以把樣式寫在 trip.css 或獨立檔案 -->
+    <style>
+        .join-card {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: white;
+            text-align: center;
+        }
+
+        .trip-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: #eee;
+        }
+    </style>
+}
+
+<div class="container">
+    <div class="join-card">
+        <div id="loadingBlock">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">正在讀取行程資訊...</p>
+        </div>
+
+        <div id="contentBlock" style="display:none;">
+            <img id="tripCover" class="trip-cover" src="" alt="Cover" />
+            <h2 id="tripTitle" class="mb-2"></h2>
+            <p class="text-muted mb-4">
+                <i class="bi bi-calendar-event"></i>
+                <span id="tripDates"></span>
+            </p>
+
+            <div class="d-grid gap-2">
+                <!-- 邀請碼藏在這裡 -->
+                <input type="hidden" id="inviteCode" value="@ViewBag.InviteCode" />
+
+                <button id="btnJoin" class="btn btn-primary btn-lg">
+                    確認加入行程
+                </button>
+                <a href="/" class="btn btn-link text-muted">回首頁</a>
+            </div>
+        </div>
+
+        <div id="errorBlock" style="display:none;" class="text-danger">
+            <h4><i class="bi bi-exclamation-circle"></i> 無效的連結</h4>
+            <p id="errorMsg">找不到此行程，連結可能已失效。</p>
+            <a href="/" class="btn btn-outline-secondary mt-3">回首頁</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 這裡稍後會填寫呼叫 API 的邏輯
+        // 1. CheckLogin status
+        // 2. Get Trip Info by Code
+        // 3. Post Join
+    </script>
+}

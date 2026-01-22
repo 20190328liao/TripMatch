@@ -38,5 +38,18 @@ namespace TripMatch.Controllers
         {
             return View(id);
         }
+
+        [HttpGet("Trip/Join/{inviteCode}")]
+        public IActionResult Join(string inviteCode)
+        {
+            if (string.IsNullOrEmpty(inviteCode))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            // 將邀請碼傳給 View，稍後前端 JS 會用這個碼去呼叫 API 抓資料
+            ViewBag.InviteCode = inviteCode;
+            return View();
+        }
     }
 }
