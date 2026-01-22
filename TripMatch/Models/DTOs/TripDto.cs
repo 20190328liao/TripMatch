@@ -19,6 +19,7 @@ namespace TripMatch.Models.DTOs
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public List<GeoDto> TripRegions { get; set; } = [];
+        public string PhotoUrl { get; set; } = string.Empty;
         public List<string> DateStrings
         {
             get
