@@ -61,7 +61,7 @@ namespace TripMatch.Services
                 .Where(gr => gr.TripRegions.Any(tr => tr.TripId == tripId)).ToListAsync();
 
 
-            if(tripRegionDetail != null)
+            if (tripRegionDetail != null)
             {
                 foreach (var tr in tripRegionDetail)
                 {
@@ -239,10 +239,10 @@ namespace TripMatch.Services
                     Carrier = flight.Carrier ?? "",
                     FlightNumber = flight.FlightNumber,
                     FromAirport = flight.FromAirport ?? "",
-                    ToAirport = flight.ToAirport ?? "",                   
+                    ToAirport = flight.ToAirport ?? "",
 
-                    DepTimeLocal = flight.DepartUtc.ToString("yyyy-MM-dd HH:mm"),           
-                    DepTimeUtc = flight.DepartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),                
+                    DepTimeLocal = flight.DepartUtc.ToString("yyyy-MM-dd HH:mm"),
+                    DepTimeUtc = flight.DepartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
                     ArrTimeLocal = flight.ArriveUtc.ToString("yyyy-MM-dd HH:mm"),
                     ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 };
@@ -315,7 +315,7 @@ namespace TripMatch.Services
                     spotProfile = new SpotProfileDto()
                     {
                         PlaceId = placesSnapshot.ExternalPlaceId ?? "",
-                        Name_ZH = placesSnapshot.NameEn ?? "",
+                        Name_ZH = placesSnapshot.NameZh ?? "",
                         Address = placesSnapshot.AddressSnapshot ?? "",
                         PhotoUrl = firstPhotoUrl,
                         LocationCategoryId = placesSnapshot.LocationCategoryId ?? 2, // 預設為 2: 觀光景點
@@ -362,11 +362,11 @@ namespace TripMatch.Services
         // 新增住宿
         public async Task<bool> AddAccommodation(AccommodationDto dto)
         {
-             Accommodation accommodation = new()
+            Accommodation accommodation = new()
             {
                 TripId = dto.TripId,
                 SpotId = dto.SpotId,
-                 HotelName = dto.HotelName,
+                HotelName = dto.HotelName,
                 Address = dto.Address,
                 CheckInDate = dto.CheckInDate,
                 CheckOutDate = dto.CheckOutDate,
@@ -644,7 +644,7 @@ namespace TripMatch.Services
             //設定結果數量
             maxResults = Math.Min(maxResults, placesResponse.Count);
 
-            for(int i = 0; i < maxResults; i++)
+            for (int i = 0; i < maxResults; i++)
             {
                 var placeDetail = await _googlePlacesClient.GetPlaceDetailsAsync(placesResponse[i], "zh-TW");
                 if (placeDetail != null)
@@ -661,9 +661,9 @@ namespace TripMatch.Services
                         PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()
                     };
                     popularSpots.Add(spotDto);
-                }   
+                }
             }
-       
+
             return popularSpots;
         }
 
@@ -852,5 +852,59 @@ namespace TripMatch.Services
             }
         }
         #endregion
+
+
+        #region 共同編輯
+        public async Task<TripSimpleDto?> GetTripInfoByInviteCode(string codeStr)
+        {
+            if (!Guid.TryParse(codeStr, out Guid inviteCode)) return null;
+
+            var trip = await _context.Trips
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.InviteCode == inviteCode);
+
+            if (trip == null) return null;
+
+            return new TripSimpleDto
+            {
+                Id = trip.Id,
+                Title = trip.Title,
+                StartDate = trip.StartDate,
+                EndDate = trip.EndDate,
+                // 這裡可以偷渡 CoverImageUrl 給前端顯示，雖然 Dto 原本沒有，
+                // 建議在 TripSimpleDto 或另建一個 TripInviteInfoDto 補上 CoverImageUrl
+            };
+        }
+
+        // [新增] 執行加入行程
+        public async Task<bool> JoinTripByInviteCode(int userId, string codeStr)
+        {
+            if (!Guid.TryParse(codeStr, out Guid inviteCode)) return false;
+
+            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.InviteCode == inviteCode);
+            if (trip == null) return false;
+
+            // 檢查是否已經是成員
+            bool isMember = await _context.TripMembers
+                .AnyAsync(tm => tm.TripId == trip.Id && tm.UserId == userId);
+
+            if (isMember) return true; // 已經是成員，視為成功直接導向
+
+            // 加入成員
+            var newMember = new TripMember
+            {
+                TripId = trip.Id,
+                UserId = userId,
+                RoleType = 2, // 2 = Editor/Member
+                JoinedAt = DateTimeOffset.Now
+            };
+
+            _context.TripMembers.Add(newMember);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        #endregion
+
     }
 }
