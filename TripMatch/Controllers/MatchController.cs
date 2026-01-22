@@ -244,7 +244,7 @@ namespace TripMatch.Controllers
             var timeRanges = await _timeWindowService.GetCommonTimeRangesAsync(id);
 
             // (B) 取得 DB 方案 (這裡必須用舊拼字 Recommandation 接 Service 回傳的資料)
-            List<Recommandation> dbEntities = await _timeWindowService.GenerateRecommendationsAsync(id);
+            List<Recommendation> dbEntities = await _timeWindowService.GenerateRecommendationsAsync(id);
 
             // 4. 建立 ViewModel (開始使用正確拼字)
             var viewModel = new RecommendationViewModel
