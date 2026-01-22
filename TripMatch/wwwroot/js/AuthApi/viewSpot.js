@@ -296,13 +296,15 @@
                 const a = e.target.closest && e.target.closest('a.wishlist-link');
                 if (!a) return;
                 const href = a.getAttribute('href') || '';
-                const url = new URL(href, window.location.origin);
-                const q = url.searchParams.get('placeId') || '';
-                if (q && q.trim()) return; // 已有 placeId，正常導向
+                try {
+                    const url = new URL(href, window.location.origin);
+                    const q = url.searchParams.get('placeId') || '';
+                    if (q && q.trim()) return; // 已有 placeId，正常導向
+                } catch { /* ignore URL parse error and fallthrough */ }
 
-                // 若無 placeId，嘗試從 card data-place-id 或 data-spot-col 取得
+                // 取得 card 與 data-place-id / data-spot-col
                 const card = a.closest('.wishlist-inserted');
-                if (!card) return; // 非我們插入的 card 不處理
+                if (!card) return;
 
                 e.preventDefault();
 
@@ -745,7 +747,7 @@ if (document.readyState === 'loading') {
                 const j = await res.json().catch(() => null);
                 notify('info', '提示', (j && j.message) ? j.message : '景點已在願望清單中', 2);
                 if (typeof window.updateWishlistButtonState === 'function') {
-                    try { window.updateWishlistButtonState({ place_id: place.placeId }); } catch { }
+                    try { window.updateWishlistButtonState({ place_id: place.PlaceId }); } catch { }
                 }
                 return;
             }
@@ -781,6 +783,18 @@ if (document.readyState === 'loading') {
 
     // 處理「加入願望清單」 click（可處理 infoWindow 的 #add-to-wishlist-btn 與頁面 #btnWishlist）
     async function handleAddWishlistClick(el) {
+        // local helper：使用 Spot.js 的黑色 toast（僅使用 showToast，移除 showPopup）
+        const showSpotToast = (msg) => {
+            try {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(msg);
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+            // fallback 只記 log（不再彈 showPopup）
+            console.debug('[toast fallback]', msg);
+        };
+
         try {
             // 若 Spot.js 已設 currentPlace，直接使用；否則看按鈕是否帶 data-place-id
             let place = window.currentPlace || null;
@@ -791,13 +805,15 @@ if (document.readyState === 'loading') {
                 }
             }
             if (!place) {
-                notify('error', '錯誤', '已儲存景點，如有刪除需求請到會員中心');
+                // 使用 Spot.js 的黑色 toast（不使用 showPopup）
+                showSpotToast('已儲存景點，如有刪除需求請到會員中心');
                 return;
             }
             await addToWishlistUsingCurrentPlace(place);
         } catch (ex) {
             console.error('handleAddWishlistClick error', ex);
-            notify('error', '錯誤', '操作失敗');
+            // 使用 Spot.js 的黑色 toast 顯示錯誤（取代原本 showPopup）
+            showSpotToast('操作失敗，請稍後再試');
         }
     }
 
@@ -829,38 +845,83 @@ if (document.readyState === 'loading') {
         }
     }
 
-    // 全域事件代理：攔截常見按鈕（infoWindow 與 FAB 與外部卡片）
-    document.addEventListener('click', function (e) {
-        try {
-            const t = e.target;
-
-            // infoWindow / FAB: 加入願望清單
-            const wishlistBtn = t.closest && (t.closest('#add-to-wishlist-btn') || t.closest('#btnWishlist') || t.closest('.btn_add_to_wishlist') || t.closest('.add-to-wishlist'));
-            if (wishlistBtn) {
+    // 全域事件代理（capture-phase），攔截 wishlist / trip 點擊並阻止後續 listener
+document.addEventListener('click', async function (e) {
+    try {
+        const t = e.target;
+        // infoWindow / FAB: 加入願望清單（常見 selector）
+        const wishlistBtn = t.closest && (t.closest('#add-to-wishlist-btn') || t.closest('#btnWishlist') || t.closest('.btn_add_to_wishlist') || t.closest('.add-to-wishlist'));
+        if (wishlistBtn) {
+            // 若已在處理中，略過
+            if (wishlistBtn.dataset.processing === '1') {
+                console.debug('[viewSpot] wishlist click ignored: processing');
                 e.preventDefault();
-                handleAddWishlistClick(wishlistBtn);
+                e.stopImmediatePropagation();
                 return;
             }
 
-            // 加入行程：常見 selector（Spot.js: btnTrip, add-trip-item, quick UI）
-            const tripBtn = t.closest && (t.closest('#btnTrip') || t.closest('.add-to-trip') || t.closest('.btn-add-trip') || t.closest('.add-trip-item') || t.closest('.btn_add_to_trip'));
-            if (tripBtn) {
-                e.preventDefault();
-                handleAddToTripClick(tripBtn);
-                return;
-            }
+            e.preventDefault();
+            // 停止後續 listener（例如 Spot.js）再處理，避免重複呼 API
+            e.stopImmediatePropagation();
 
-            // 支援 wishlist card 裡的自定按鈕 (data-action)
-            const actionEl = t.closest && t.closest('[data-action="add-wishlist"], [data-action="add-trip"]');
-            if (actionEl) {
-                e.preventDefault();
-                if (actionEl.dataset.action === 'add-wishlist') return handleAddWishlistClick(actionEl);
-                if (actionEl.dataset.action === 'add-trip') return handleAddToTripClick(actionEl);
+            // 標記為處理中（避免重複觸發）
+            wishlistBtn.dataset.processing = '1';
+            try {
+                await handleAddWishlistClick(wishlistBtn);
+            } finally {
+                // 恢復狀態
+                delete wishlistBtn.dataset.processing;
             }
-        } catch (ex) {
-            console.warn('viewSpot.plugin click handler error', ex);
+            return;
         }
-    }, true); // capture to catch early
+
+        // 加入行程：常見 selector（Spot.js: btnTrip, add-trip-item, quick UI）
+        const tripBtn = t.closest && (t.closest('#btnTrip') || t.closest('.add-to-trip') || t.closest('.btn-add-trip') || t.closest('.add-trip-item') || t.closest('.btn_add_to_trip'));
+        if (tripBtn) {
+            if (tripBtn.dataset.processing === '1') {
+                console.debug('[viewSpot] trip click ignored: processing');
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            tripBtn.dataset.processing = '1';
+            try {
+                await handleAddToTripClick(tripBtn);
+            } finally {
+                delete tripBtn.dataset.processing;
+            }
+            return;
+        }
+
+        // 支援 wishlist card 裡的自定按鈕 (data-action)
+        const actionEl = t.closest && t.closest('[data-action="add-wishlist"], [data-action="add-trip"]');
+        if (actionEl) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            if (actionEl.dataset.action === 'add-wishlist') {
+                if (actionEl.dataset.processing !== '1') {
+                    actionEl.dataset.processing = '1';
+                    try { await handleAddWishlistClick(actionEl); } finally { delete actionEl.dataset.processing; }
+                }
+                return;
+            }
+            if (actionEl.dataset.action === 'add-trip') {
+                if (actionEl.dataset.processing !== '1') {
+                    actionEl.dataset.processing = '1';
+                    try { await handleAddToTripClick(actionEl); } finally { delete actionEl.dataset.processing; }
+                }
+                return;
+            }
+        }
+    } catch (ex) {
+        console.warn('viewSpot.plugin click handler error', ex);
+    }
+}, true); // capture to catch early
 
     // 若頁面已載入，嘗試同步 UI（若 Spot.js 提供更新方法）
     setTimeout(() => {

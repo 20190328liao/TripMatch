@@ -553,3 +553,31 @@
         return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
     }
 });
+
+// 替換原 notify，Spot?placeId= 時 suppress popup
+function notify(type, title, message, seconds = 2) {
+    try {
+        const loc = window.location;
+        const isSpotWithPlaceId = loc && typeof loc.pathname === 'string'
+            && loc.pathname.toLowerCase().startsWith('/spot')
+            && new URLSearchParams(loc.search).has('placeId');
+
+        if (isSpotWithPlaceId) {
+            // 在 Spot?placeId= 頁面完全禁止 popup（改為寫入 console 以便除錯）
+            console.debug('[notify suppressed on Spot?placeId] ', { type, title, message });
+            return;
+        }
+
+        // 原有顯示邏輯（保留）
+        if (typeof window.showPopup === 'function') {
+            try { return window.showPopup({ title: title || '', message: message || '', type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'), autoClose: !!seconds, seconds }); } catch { /* ignore */ }
+        }
+        if (typeof window.showToast === 'function') {
+            try { window.showToast(message || title || ''); return; } catch { /* ignore */ }
+        }
+        alert((title ? title + '\n' : '') + (message || ''));
+    } catch (ex) {
+        // 防止 notify 本身拋錯影響主流程
+        console.warn('notify error', ex);
+    }
+}
