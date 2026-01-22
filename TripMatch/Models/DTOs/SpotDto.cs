@@ -61,6 +61,9 @@ namespace TripMatch.Models.DTOs
             [JsonPropertyName("dayNo")]
             public int DayNo { get; set; }
 
+            public string? StartTime { get; init; } // "HH:mm"
+            public string? EndTime { get; init; }   // "HH:mm"
+
             [JsonPropertyName("place")]
             public PlaceDto Place { get; set; } = new();
         }

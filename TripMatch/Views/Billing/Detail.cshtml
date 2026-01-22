@@ -16,11 +16,11 @@
         <span style="color:#ddd; border:1px dashed #ddd; padding:5px 10px; border-radius:4px;">[全站導覽列預留區]</span>
     </nav> *@
 
-    <header class="page-header">
+<header class="page-header">
         <div class="header-left">
             @* <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='/Home/index'" title="返回列表"></i> *@
             @* <h1 class="page-title">台南兩日遊美食行程</h1> *@
-            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Billing")'" title="返回列表"></i>
+            <i class="fa-solid fa-arrow-left back-btn" onclick="location.href='@Url.Action("Index", "Home")'" title="返回列表"></i>
             <h1 class="page-title">@Model.Title</h1>
         </div>
 
@@ -277,5 +277,34 @@
         start: '@Model.StartDate.ToString("yyyy-MM-dd")',
         end: '@Model.EndDate.ToString("yyyy-MM-dd")'
     };
+    // 3. 注入預算 (budget) 
+    window.currentUser = {
+        id: @ViewBag.CurrentMemberId,       // 成員 ID
+        name: '@Html.Raw(ViewBag.CurrentMemberName)', // 成員名字
+        budget: @(ViewBag.CurrentBudget)    // 個人預算 (從 TripMembers 表撈出)
+    };
+
+    // 4. 將所有支出轉成 JS 物件 (這就是 window.dbExpenses！) 
+    window.dbExpenses = @Html.Raw(Json.Serialize(Model.Expenses.Select(e => new {
+        id = e.ExpenseId,
+        date = Model.StartDate.AddDays(e.Day - 1).ToString("yyyy-MM-dd"), // 幫 JS 算好日期
+        name = e.Title,
+        cat = e.Category?.Name ?? "一般",
+        total = e.Amount,
+        // 轉換付款人: Key=MemberId, Value=Amount
+        payer = e.ExpensePayers.ToDictionary(p => p.MemberId.ToString(), p => p.Amount),
+        // 轉換分攤人: Key=UserId (TripMemberId), Value=ShareAmount
+        parts = e.ExpenseParticipants.ToDictionary(p => p.UserId.ToString(), p => p.ShareAmount)
+    })));
+
+    window.dbSettlements = @Html.Raw(Json.Serialize(Model.Settlements.Select(s => new {
+        id = s.SettlementId,     // 這裡要拿 SettlementId
+        payerId = s.FromUserId,  // 這裡拿 FromUserId (還錢的人)
+        payeeId = s.ToUserId,    // 這裡拿 ToUserId (收錢的人)
+        amount = s.Amount,
+        date = s.UpdatedAt.HasValue 
+               ? s.UpdatedAt.Value.ToString("yyyy-MM-dd") 
+               : "未知日期"
+    })));
     </script>
 }

@@ -54,57 +54,115 @@ namespace TripMatch.Services.ExternalClients
             }
             return null;
         }
-        
-        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 5000)
+        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 10000)
         {
-            var placeIds = new List<string>();
+            var allCandidateIds = new List<string>();
+            string? nextPageToken = null;
+            int pageCount = 0;
+            const int MaxPages = 2;
+                      
+            const int MinReviewCount = 100;
 
-            // 定義 Nearby Search URL
-            // type=tourist_attraction: 鎖定景點類型
-            // rankby=prominence: 按熱門度/知名度排序（此模式下必須指定 radius）
-            var url = $"https://maps.googleapis.com/maps/api/place/nearbysearch/json?" +
-                      $"location={lat},{lng}" +
-                      $"&radius={radius}" +
-                      $"&type=tourist_attraction" +
-                      $"&rankby=prominence" +
-                      $"&key={_apiKey}" +
-                      $"&language=zh-TW";
+            // 【設定門檻】最低評分要求 (可選)
+            const double MinRating = 4.0;
 
-            try
+            do
             {
-                var response = await _httpClient.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return placeIds;
+                var url = $"https://maps.googleapis.com/maps/api/place/nearbysearch/json?" +
+                          $"location={lat},{lng}" +
+                          $"&radius={radius}" +
+                          $"&type=tourist_attraction" +
+                          $"&rankby=prominence" +
+                          $"&key={_apiKey}" +
+                          $"&language=zh-TW";
 
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var doc = await JsonDocument.ParseAsync(stream);
-                var root = doc.RootElement;
-
-                // 檢查 API 回傳狀態是否為 OK
-                if (root.TryGetProperty("status", out var status) && status.GetString() == "OK")
+                if (!string.IsNullOrEmpty(nextPageToken))
                 {
-                    if (root.TryGetProperty("results", out var results))
+                    url += $"&pagetoken={nextPageToken}";
+                    await Task.Delay(2000);
+                }
+
+                try
+                {
+                    var response = await _httpClient.GetAsync(url);
+                    if (!response.IsSuccessStatusCode) break;
+
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var doc = await JsonDocument.ParseAsync(stream);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("status", out var status) &&
+                       (status.GetString() == "OK" || status.GetString() == "ZERO_RESULTS"))
                     {
-                        foreach (var item in results.EnumerateArray())
+                        if (root.TryGetProperty("results", out var results))
                         {
-                            if (item.TryGetProperty("place_id", out var pid))
+                            foreach (var item in results.EnumerateArray())
                             {
-                                var id = pid.GetString();
-                                if (!string.IsNullOrEmpty(id))
+                                // 1. 先取得評論數與評分
+                                int userRatingsTotal = 0;
+                                double rating = 0;
+
+                                if (item.TryGetProperty("user_ratings_total", out var ratingCountProp))
                                 {
-                                    placeIds.Add(id);
+                                    userRatingsTotal = ratingCountProp.GetInt32();
+                                }
+
+                                if (item.TryGetProperty("rating", out var ratingProp))
+                                {
+                                    // TryGetDouble 可能會失敗如果它是整數，用 GetDouble 比較保險但要小心 Json 格式
+                                    // 這裡簡單轉型
+                                    if (ratingProp.ValueKind == JsonValueKind.Number)
+                                        rating = ratingProp.GetDouble();
+                                }
+
+                                // 2. 【核心過濾邏輯】
+                                // 必須同時滿足：評論數 > 30 且 評分 > 3.5
+                                if (userRatingsTotal >= MinReviewCount && rating >= MinRating)
+                                {
+                                    if (item.TryGetProperty("place_id", out var pid))
+                                    {
+                                        var id = pid.GetString();
+                                        if (!string.IsNullOrEmpty(id))
+                                        {
+                                            allCandidateIds.Add(id);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                // 實際開發建議記錄 log
-                Console.WriteLine($"Nearby Search 發生錯誤: {ex.Message}");
-            }
+                    else
+                    {
+                        break;
+                    }
 
-            return placeIds;
+                    if (root.TryGetProperty("next_page_token", out var tokenProp))
+                    {
+                        nextPageToken = tokenProp.GetString();
+                        pageCount++;
+                    }
+                    else
+                    {
+                        nextPageToken = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Nearby Search 發生錯誤: {ex.Message}");
+                    break;
+                }
+
+            } while (!string.IsNullOrEmpty(nextPageToken) && pageCount < MaxPages);
+
+
+            // 3. 隨機洗牌並取前 10
+            var randomPlaceIds = allCandidateIds
+                .OrderBy(x => Guid.NewGuid())
+                .Distinct()
+                .Take(10)
+                .ToList();
+
+            return randomPlaceIds;
         }
 
         public string GetPhotoUrl(string photoReference, int maxWidth = 400)

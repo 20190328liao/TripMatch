@@ -23,91 +23,60 @@ namespace TripMatch.Controllers.Api
             _logger = logger;
         }
 
-        public record AddWishlistRequest(
-            string externalPlaceId,
-            string nameZh,
-            string? address,
-            decimal? lat,
-            decimal? lng,
-            decimal? rating,
-            string? phone,
-            string? photoJson
-        );
+        //public record AddWishlistRequest(
+        //    string externalPlaceId,
+        //    string nameZh,
+        //    string? address,
+        //    decimal? lat,
+        //    decimal? lng,
+        //    decimal? rating,
+        //    string? phone,
+        //    string? photoJson
+        //);
 
-        public record AddItineraryRequest(
-            int TripId,
-            int DayNo,
-            string PlaceId,
-            string NameZh,
-            string? Address,
-            decimal? Lat,
-            decimal? Lng,
-            decimal? Rating,
-            string? PhotoJson
-        );
+        //public record AddItineraryRequest(
+        //    int TripId,
+        //    int DayNo,
+        //    string PlaceId,
+        //    string NameZh,
+        //    string? Address,
+        //    decimal? Lat,
+        //    decimal? Lng,
+        //    decimal? Rating,
+        //    string? PhotoJson
+        //);
 
         [HttpPost("wishlist")]
-        public async Task<IActionResult> AddToWishlist([FromBody] AddWishlistRequest req)
+        public async Task<IActionResult> AddToWishlist([FromBody] SpotDto.AddWishlistRequest req)
         {
-            var p = req?.photoJson;
-            _logger.LogInformation("PhotoUrl = {PhotoUrl}", p);
-
             var userId = _tagUserId.UserId;
-            if (userId is null) return Unauthorized(new { ok = false, message = "Unauthorized" });
+            if (userId is null)
+                return Unauthorized(new { ok = false, message = "Unauthorized" });
 
-            var mapped = new SpotDto.AddWishlistRequest
-            {
-                Place = new SpotDto.PlaceDto
-                {
-                    PlaceId = req.externalPlaceId,
-                    Name = req.nameZh,
-                    Address = req.address,
-                    Lat = req.lat,
-                    Lng = req.lng,
-                    Rating = req.rating,
-                    Phone = req.phone,
-                    // 目前 DTO 用 PhotoUrl 先承接 photoJson（不改前端 payload）
-                    PhotoUrl = req.photoJson
-                }
-            };
-
-            var (ok, message, spotId) = await _spotServices.AddToWishlistAsync(userId.Value, mapped);
+            var (ok, message, spotId) = await _spotServices.AddToWishlistAsync(userId.Value, req);
 
             if (!ok)
-            {
-                if (message == "Already in wishlist.")
-                    return Conflict(new { ok = false, message });
-
-                return BadRequest(new { ok = false, message });
-            }
+                return message == "Already in wishlist."
+                    ? Conflict(new { ok = false, message })
+                    : BadRequest(new { ok = false, message });
 
             return Ok(new { ok = true, spotId });
         }
 
+
         [HttpPost("itinerary")]
         [Authorize]
-        public async Task<IActionResult> AddToItinerary([FromBody] AddItineraryRequest req)
+        public async Task<IActionResult> AddToItinerary([FromBody] SpotDto.AddItineraryRequest req)
         {
-            if (_tagUserId.UserId is null) return Unauthorized();
+            var userId = _tagUserId.UserId;
+            if (userId is null) return Unauthorized(new { ok = false, message = "Unauthorized" });
 
-            var mapped = new SpotDto.AddItineraryRequest
-            {
-                TripId = req.TripId,
-                DayNo = req.DayNo,
-                Place = new SpotDto.PlaceDto
-                {
-                    PlaceId = req.PlaceId,
-                    Name = req.NameZh,
-                    Address = req.Address,
-                    Lat = req.Lat,
-                    Lng = req.Lng,
-                    Rating = req.Rating,
-                    PhotoUrl = req.PhotoJson
-                }
-            };
+            // 這裡可以加一行 log，幫你快速定位 payload 是否正確
+            _logger.LogInformation("AddToItinerary tripId={TripId}, dayNo={DayNo}, placeId={PlaceId}, photoUrl={PhotoUrl}",
+                req?.TripId, req?.DayNo, req?.Place?.PlaceId, req?.Place?.PhotoUrl);
 
-            var (ok, message, itineraryItemId, spotId) =
-                await _spotServices.AddToItineraryAsync(_tagUserId.UserId.Value, mapped);
+            (bool ok, string? message, int itineraryItemId, int spotId) =
+                await _spotServices.AddToItineraryAsync(userId.Value, req);
 
             if (!ok)
             {

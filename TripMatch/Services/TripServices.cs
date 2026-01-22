@@ -177,13 +177,13 @@ namespace TripMatch.Services
                 {
                     GlobalRegion globalRegion = new GlobalRegion()
                     {
-                        Name = dto_zh.Result.Name,
-                        NameEn = dto_en != null ? dto_en.Result.Name : dto_zh.Result.Name,
-                        Level = dto_zh.Result.Types.Contains("country") ? 1 : 2,
+                        Name = dto_zh.Result?.Name ?? "Unknown",
+                        NameEn = dto_en != null ? dto_en.Result.Name : "Unknown",
+                        Level = dto_zh.Result?.Types?.Contains("country") == true ? 1 : 2,
                         ParentId = null, // 先不處理父層關係    
                         PlaceId = placeID,
-                        Lat = (decimal)dto_zh.Result.Geometry.Location.Lat,
-                        Lng = (decimal)dto_zh.Result.Geometry.Location.Lng,
+                        Lat = (decimal?)(dto_zh.Result?.Geometry?.Location?.Lat) ?? 0,
+                        Lng = (decimal?)(dto_zh.Result?.Geometry?.Location?.Lng) ?? 0,
                         CountryCode = dto_zh.Result.AddressComponents?.FirstOrDefault(c => c.Types.Contains("country"))?.ShortName ?? "??",
                         IsHot = true,
                     };
@@ -567,6 +567,73 @@ namespace TripMatch.Services
                 return true;
             }
         }
+
+        public async Task<List<PlaceSnapshotDto>> GetUserFavoritesNearLocationAsync(int? userId, GeoDto geo, double radiusKm = 50)
+        {
+            // 1. 先撈出該使用者的所有最愛景點
+            // 這裡假設有一個 Favorites 資料表或關聯
+            // 如果是多對多關係: _context.Spots.Where(s => s.Users.Any(u => u.Id == userId))
+            var query = _context.Wishlists
+                .Where(uf => uf.UserId == userId)
+                .Select(uf => uf.Spot); // 取得關聯的 Spot 實體
+
+            // 2. 在記憶體中過濾距離 (如果資料量不大，這是最簡單寫法)
+            // 注意：EF Core 有些版本不支援在 LINQ 裡直接算複雜的 Math.Cos
+            // 如果資料量很大 (上萬筆最愛)，建議用 SQL Geography 或是先用 Bounding Box 過濾
+
+            var allFavorites = await query.ToListAsync();
+
+            // 3. 計算距離並篩選
+            var nearFavorites = allFavorites
+                .Select(s => new
+                {
+                    Spot = s,
+                    Distance = CalculateDistance((double)geo.Lat, (double)geo.Lng, (double)s.Lat, (double)s.Lng)
+                })
+                .Where(x => x.Distance <= radiusKm) // 過濾半徑內
+                .OrderBy(x => x.Distance)           // 由近到遠排序
+                .Select(x => x.Spot)
+                .ToList();
+
+            // 4. 將結果轉為 DTO
+            List<PlaceSnapshotDto> placeSnapshotDtos = [];
+
+            foreach (var spot in nearFavorites)
+            {
+                PlaceSnapshotDto dto = new()
+                {
+                    ExternalPlaceId = spot.ExternalPlaceId ?? "",
+                    NameZh = spot.NameZh ?? "",
+                    Address = spot.AddressSnapshot ?? "",
+                    Lat = (double)spot.Lat,
+                    Lng = (double)spot.Lng,
+                    Rating = spot.Rating ?? 0,
+                    PhotosSnapshot = !string.IsNullOrWhiteSpace(spot.PhotosSnapshot)
+                        ? JsonSerializer.Deserialize<List<string>>(spot.PhotosSnapshot) ?? []
+                        : []
+                };
+                placeSnapshotDtos.Add(dto);
+            }
+
+            return placeSnapshotDtos;
+        }
+
+        // 輔助：Haversine 公式計算兩點間距離 (單位：公里)
+        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            var R = 6371; // 地球半徑 (km)
+            var dLat = ToRadians(lat2 - lat1);
+            var dLon = ToRadians(lon2 - lon1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+        private double ToRadians(double angle) => angle * Math.PI / 180.0;
+
+
 
         //取得附近熱門景點
         public async Task<List<PlaceSnapshotDto>> GetNearbyPopularSpots(GeoDto geo, int radius = 5000, int maxResults = 15)
