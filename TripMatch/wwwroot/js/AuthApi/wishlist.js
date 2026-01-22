@@ -501,7 +501,7 @@
         if (existing) existing.remove();
         const toast = document.createElement('div');
         toast.id = 'undo_toast_' + spotId;
-        toast.style = "position:fixed; bottom:20px; right:20px; z-index:2000; padding:10px 16px; background:#27354A; color:#fff; border-radius:8px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+        toast.style = "position:fixed; bottom:20px; z-index:2000; padding:10px 16px; background:#27354A; color:#fff; border-radius:8px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
         toast.innerHTML = `<span style="font-size:14px;">已從清單移除</span><button class="btn btn-sm btn-light" id="undo_btn_${spotId}" style="font-weight:bold;">還原</button>`;
         document.body.appendChild(toast);
         document.getElementById(`undo_btn_${spotId}`).onclick = onUndo;
