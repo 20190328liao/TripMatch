@@ -170,19 +170,33 @@ namespace TripMatch.Services
 
             _context.MemberTimeSlots.RemoveRange(oldRecords);
 
-            // 2. 新增新資料：建立 MemberTimeSlot 物件
-            // 注意：這裡假設你的 MemberTimeSlot 屬性名稱如下 (若不同請自行調整)
+            // 2. 新增新資料
             var newRecords = slots.Select(slot => new MemberTimeSlot
             {
                 GroupId = groupId,
                 UserId = userId,
-                // 假設資料表欄位叫 StartTime/EndTime，如果是 StartAt/EndAt 請修改
                 StartAt = slot.StartAt,
                 EndAt = slot.EndAt,
                 CreatedAt = DateTime.Now
             });
 
             await _context.MemberTimeSlots.AddRangeAsync(newRecords);
+
+            // ★★★ 關鍵修正：補上這段「更新提交狀態」的邏輯 ★★★
+            var member = await _context.GroupMembers
+                .FirstOrDefaultAsync(m => m.GroupId == groupId && m.UserId == userId);
+
+            if (member != null)
+            {
+                // 設定提交時間，這樣 Count(m => m.SubmittedAt != null) 才會抓到人
+                member.SubmittedAt = DateTime.Now;
+
+                // 如果你的系統允許重複修改，可以不鎖定；
+                // 但通常「提交」後為了讓其他人能媒合，會視為已確認。
+                _context.GroupMembers.Update(member);
+            }
+            // ★★★ 修正結束 ★★★
+
             await _context.SaveChangesAsync();
         }
 
@@ -290,23 +304,26 @@ namespace TripMatch.Services
             };
         }
 
-
-        // 8.生成推薦方案並存檔
-        // 回傳：已經存進資料庫的 Recommandation 清單
-        public async Task<List<Recommendation>> GenerateRecommandationsAsync(int groupId)
+        // 8. 方案卡
+        public async Task<List<Recommandation>> GenerateRecommendationsAsync(int groupId)
         {
-            var existingRecs = await _context.Recommendations
-                .Where(r => r.GroupId == groupId)
-                .ToListAsync();
+            // 1. 檢查是否已經有生成過的方案
+            var existingRecs = await _context.Recommandations
+        .Where(r => r.GroupId == groupId)
+        .ToListAsync();
 
+            // ★ 開發階段修改：如果有舊資料，先刪除，強制重新生成 ★
             if (existingRecs.Any())
             {
-                return existingRecs;
+                _context.Recommandations.RemoveRange(existingRecs);
+                await _context.SaveChangesAsync();
             }
 
+            // 2. 取得共同時間段
             var timeRanges = await GetCommonTimeRangesAsync(groupId);
-            if (!timeRanges.Any()) return new List<Recommendation>();
+            if (!timeRanges.Any()) return new List<Recommandation>();
 
+            // 3. 取得地點偏好 (邏輯不變)
             var rawPlaces = await _context.Preferences
                 .Where(p => p.GroupId == groupId && !string.IsNullOrEmpty(p.PlacesToGo))
                 .Select(p => p.PlacesToGo)
@@ -321,26 +338,47 @@ namespace TripMatch.Services
 
             if (!places.Any()) places.Add("未定地點");
 
-            var newRecommendations = new List<Recommendation>();
+            // ★★★ 修改重點：嚴格讀取資料庫設定，不寫死預設值 ★★★
+            var group = await _context.TravelGroups.FindAsync(groupId);
+            if (group == null) return new List<Recommandation>(); // 防呆
+
+            // 直接取用資料庫中的 TravelDays
+            int tripDays = group.TravelDays;
+
+            // 邏輯防呆：萬一資料庫異常存了 0 或負數，至少要算 1 天，否則日期計算會出錯
+            if (tripDays < 1) tripDays = 1;
+
+            var newRecommendations = new List<Recommandation>();
 
             foreach (var range in timeRanges)
             {
                 foreach (var place in places)
                 {
-                    var travelInfo = await _travelInfoService.GetTravelInfoAsync(place, range.StartDate, range.EndDate);
+                    // 計算估價用的取樣區間
+                    DateOnly priceCheckStart = range.StartDate;
+                    DateOnly priceCheckEnd = range.StartDate.AddDays(tripDays - 1);
 
-                    var rec = new Recommendation
+                    // 防呆：確保不超出可用範圍
+                    if (priceCheckEnd > range.EndDate)
+                    {
+                        priceCheckEnd = range.EndDate;
+                    }
+
+                    var travelInfo = await _travelInfoService.GetTravelInfoAsync(place, priceCheckStart, priceCheckEnd);
+
+                    var rec = new Recommandation
                     {
                         GroupId = groupId,
-                        StartDate = range.StartDate.ToDateTime(TimeOnly.MinValue), // 轉回 DateTime 存 DB
-                        EndDate = range.EndDate.ToDateTime(TimeOnly.MinValue),
-                        Location = place,
 
+                        // 存入符合「旅遊天數」的方案區間
+                        StartDate = priceCheckStart.ToDateTime(TimeOnly.MinValue),
+                        EndDate = priceCheckEnd.ToDateTime(TimeOnly.MinValue),
+
+                        Location = place,
                         DepartFlight = travelInfo.DepartFlight,
                         ReturnFlight = travelInfo.ReturnFlight,
                         Hotel = travelInfo.Hotel,
                         Price = travelInfo.Price,
-
                         Vote = 0,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
@@ -350,7 +388,7 @@ namespace TripMatch.Services
                 }
             }
 
-            await _context.Recommendations.AddRangeAsync(newRecommendations);
+            await _context.Recommandations.AddRangeAsync(newRecommendations);
             await _context.SaveChangesAsync();
 
             return newRecommendations;
@@ -409,7 +447,7 @@ namespace TripMatch.Services
 
             if (member == null) throw new Exception("非成員");
 
-            var targets = await _context.Recommendations
+            var targets = await _context.Recommandations
                 .Where(r => r.GroupId == groupId && recommendationIds.Contains(r.Index))
                 .ToListAsync();
 

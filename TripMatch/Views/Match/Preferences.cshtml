@@ -1,4 +1,6 @@
 ﻿@model TripMatch.Models.DTOs.TimeWindow.PreferencesViewModel
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @{
 	ViewData["Title"] = "團隊規劃";
 	Layout = "~/Views/Shared/_Layout-copy.cshtml";
@@ -444,7 +446,12 @@
 			</div>
 
 			<div class="input-group">
-				<input type="text" id="newLocationInput" class="input-field" placeholder="輸入城市（例如：東京、巴黎）">
+				<input type="text"
+					   id="newLocationInput"
+					   class="input-field"
+					   placeholder="輸入城市（例如：巴黎、紐約）"
+					   autocomplete="off">
+
 				<button type="button" class="btn btn-success" onclick="addCustomLocation()">
 					新增
 				</button>
@@ -456,8 +463,8 @@
 					foreach (var loc in Model.HotLocations)
 					{
 						<div class="location-card" onclick="toggleSelection('@loc.City', this)" data-val="@loc.City">
-							<div class="loc-city">@loc.City</div>
-							<div class="loc-country">@loc.Country</div>
+							<div class="loc-country">@loc.City</div>
+							<div class="loc-country">@loc.CountryCode</div>
 						</div>
 					}
 				}
@@ -516,6 +523,49 @@
 	</div>
 
 	<script>
+				// --- Google Places Autocomplete 相關變數 ---
+		let autocomplete;
+
+		// 這就是 Google API 載入完成後會呼叫的函式
+					function initAutocomplete() {
+			const input = document.getElementById("newLocationInput");
+			if (!input) return;
+
+			const options = {
+				types: ['(cities)'],
+				fields: ['name', 'geometry', 'address_components']
+			};
+
+			autocomplete = new google.maps.places.Autocomplete(input, options);
+
+			autocomplete.addListener("place_changed", function() {
+				const place = autocomplete.getPlace();
+				if (!place.geometry || !place.geometry.location) return;
+
+				// 1. 呼叫剛剛改好的函式抓國家名稱
+				const countryName = getCountryName(place);
+
+				input.value = place.name;
+
+				// 2. ★ 把國家名稱暫存到 dataset.country 裡
+				input.dataset.country = countryName;
+			});
+		}
+
+		// ★ 新增這個 Helper 函式來解析 Google 的複雜結構
+				// 修改這個 Helper 函式，改抓 long_name
+		function getCountryName(place) {
+			if (!place.address_components) return "";
+
+			for (const component of place.address_components) {
+				if (component.types.includes("country")) {
+					// ★ 關鍵：改成 return long_name (例如 "Japan")
+					return component.long_name;
+				}
+			}
+			return ""; // 真的找不到才回傳空字串
+		}
+
 		const groupId = '@Model.GroupId';
 		let selectedLocationNames = new Set();
 
@@ -559,15 +609,25 @@
 
 		function addCustomLocation() {
 			const input = document.getElementById('newLocationInput');
-			const val = input.value.trim();
-			if(!val) { alert("請輸入地點"); return; }
+			const cityName = input.value.trim();
 
-			createAndAppendCard(val);
+			// ★ 關鍵：從 dataset 拿出 Google 查到的國家 (上一回合教您的 initAutocomplete 裡存的)
+			// 如果 dataset 裡沒有 (例如使用者純手打沒選選單)，就維持 "自訂"
+			const countryName = input.dataset.country || "自訂";
+
+			if(!cityName) { alert("請輸入地點"); return; }
+
+			// 呼叫剛剛改好的函式，把國家傳進去
+			createAndAppendCard(cityName, countryName);
+
+			// 清空輸入框
 			input.value = "";
+			input.dataset.country = "";
 		}
 
-		function restoreCustomCard(cityName) {
-			createAndAppendCard(cityName);
+		function restoreCustomCard(val) {
+			// 直接呼叫 createAndAppendCard，它現在已經會自動處理 "City|Country" 的字串拆解了
+			createAndAppendCard(val);
 		}
 
 				async function savePreferences(event) {
@@ -634,29 +694,56 @@
 		}
 
 		// 共用的建立卡片邏輯
-		function createAndAppendCard(cityName) {
-			if (document.querySelector(`.location-card[data-val='${cityName}']`)) return;
+						// 修改後的 createAndAppendCard
+		function createAndAppendCard(cityName, countryName) {
+			// 1. 處理參數：如果 countryName 沒傳，就預設 "自訂"
+			// 如果 cityName 裡面包含 "|" (例如 "Tokyo|Japan")，就自動拆解
+			if (!countryName && cityName.includes('|')) {
+				const parts = cityName.split('|');
+				cityName = parts[0];
+				countryName = parts[1];
+			}
+
+			// 如果還是空的，就給預設值
+			countryName = countryName || "自訂";
+
+			// 2. 建立資料 Key (包含國家以防重複，例如 倫敦|英國 vs 倫敦|加拿大)
+			const dataVal = `${cityName}|${countryName}`;
+
+			// 檢查是否已存在 (避免重複新增)
+			// 這裡同時檢查 "City" 和 "City|Country" 兩種格式
+			if (document.querySelector(`.location-card[data-val='${cityName}']`) ||
+				document.querySelector(`.location-card[data-val='${dataVal}']`)) {
+				return;
+			}
 
 			const grid = document.getElementById('locationGrid');
 			const newCard = document.createElement('div');
 
+			// 加上 selected 樣式
 			newCard.className = "location-card selected";
-			newCard.setAttribute("data-val", cityName);
+			newCard.setAttribute("data-val", dataVal);
 
-			newCard.onclick = function() { toggleSelection(cityName, this); };
+			// 點擊事件 (取消選取)
+			newCard.onclick = function() { toggleSelection(dataVal, this); };
 
+			// ★ 這裡顯示動態的國家名稱，不再是 "自訂"
 			newCard.innerHTML = `
 				<div class="loc-city">${cityName}</div>
-				<div class="loc-country">自訂</div>
+				<div class="loc-country">${countryName}</div>
 			`;
 
+			// 插入到最前面
 			grid.insertBefore(newCard, grid.firstChild);
-			selectedLocationNames.add(cityName);
+
+			// 加入已選取清單
+			selectedLocationNames.add(dataVal);
 		}
 
 		function goToCalendar() {
 			 window.location.href = `/Match/CalendarCheck/${groupId}`;
 		}
 	</script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=@Configuration["GoogleMaps:ApiKey"]&libraries=places&callback=initAutocomplete" async defer></script>
 </body>
 </html>

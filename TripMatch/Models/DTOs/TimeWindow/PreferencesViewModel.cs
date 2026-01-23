@@ -6,7 +6,7 @@ namespace TripMatch.Models.DTOs.TimeWindow
     {
         public int GroupId { get; set; }
         public string InviteCode { get; set; }
-        public int TargetNumber { get; set; } 
+        public int TargetNumber { get; set; }
         public int JoinedCount { get; set; }
         public int SubmittedCount { get; set; }
 
@@ -19,5 +19,8 @@ namespace TripMatch.Models.DTOs.TimeWindow
         public int Id { get; set; }
         public string City { get; set; }
         public string Country { get; set; }
+
+        // ★★★ 新增這一行 ★★★
+        public string CountryCode { get; set; }
     }
 }
