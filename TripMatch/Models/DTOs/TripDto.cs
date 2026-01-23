@@ -88,6 +88,7 @@ namespace TripMatch.Models.DTOs
         public string Address { get; set; } = string.Empty;
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class ItineraryItemDto
@@ -100,6 +101,7 @@ namespace TripMatch.Models.DTOs
         public TimeOnly EndTime { get; set; }
         public int SortOrder { get; set; }
         public SpotProfileDto Profile { get; set; } = new SpotProfileDto();
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class SpotProfileDto
@@ -120,6 +122,7 @@ namespace TripMatch.Models.DTOs
         public int Id { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class TripCreateDto

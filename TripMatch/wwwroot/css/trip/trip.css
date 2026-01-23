@@ -431,3 +431,23 @@
         background: rgba(98,222,177,.14);
     }
 
+
+/* 強制修正 alert 內的關閉按鈕，避免被 trip.css 影響 */
+.alert .btn-close.custom-alert-close {
+    background-color: transparent !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: 1em !important;
+    border: none !important;
+    box-shadow: none !important;
+    /* 2. 隱藏可能出現的 XXX 文字 */
+    text-indent: -9999px !important;
+    overflow: hidden !important;
+    opacity: 0.5;
+}
+
+.alert .btn-close.custom-alert-close:hover {
+    opacity: 0.8;
+    background-color: rgba(0,0,0,0.05) !important;
+}

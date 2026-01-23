@@ -163,24 +163,42 @@ namespace TripMatch.Controllers.Api
 
 
         [HttpDelete("DeleteAccommodation/{id}")]
-        public async Task<IActionResult> DeleteAccommodation(int id)
+        public async Task<IActionResult> DeleteAccommodation(int id, [FromQuery] string rowVersion)
         {
             try
             {
+                // 1. 基本驗證
                 if (id <= 0)
                 {
-                    return BadRequest("無效的 ID");
+                    return BadRequest("無效的住宿 ID");
                 }
 
-                // 這裡執行刪除邏輯
-                bool success = await _tripServices.DeleteAccommodation(id);
+                if (string.IsNullOrEmpty(rowVersion))
+                {
+                    return BadRequest("缺少版本標記 (RowVersion)");
+                }
 
-                // 成功刪除通常回傳 204 No Content 或 200 OK
-                return Ok(new { message = $"已成功刪除景點, 住宿id = {id}" });
+                // 2. 呼叫服務層，傳入 id 與 rowVersion 進行衝突校驗
+                bool success = await _tripServices.DeleteAccommodation(id, rowVersion);
+
+                if (success)
+                {
+                    return Ok(new { message = $"已成功刪除住宿資訊, Id = {id}" });
+                }
+                else
+                {
+                    // 可能是資料已被其他人先刪除了
+                    return NotFound("找不到指定的住宿資訊，可能已被其他成員刪除。重新整理頁面，並取得最新狀態。");
+                }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 3. 捕捉衝突：代表這筆資料在你讀取後、刪除前，已被他人修改過
+                return Conflict(new { message = "該住宿資訊已被修改，請重新整理頁面取得最新狀態。" });
             }
             catch (Exception ex)
             {
-                // 伺服器錯誤
+                // 4. 其他伺服器錯誤
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
@@ -256,7 +274,9 @@ namespace TripMatch.Controllers.Api
                 {
                     return BadRequest("無效的行程細項資料");
                 }
+
                 bool success = await _tripServices.UpdateSpotTime(dto);
+
                 if (success)
                 {
                     return Ok(new { message = "行程細項已更新" });
@@ -265,6 +285,11 @@ namespace TripMatch.Controllers.Api
                 {
                     return NotFound("找不到指定的行程細項");
                 }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 關鍵：捕捉並行衝突錯誤 (409 Conflict)
+                return Conflict(new { message = "該行程資訊已被其他成員修改，請重新整理頁面取得最新狀態。" });
             }
             catch (Exception ex)
             {
@@ -537,7 +562,7 @@ namespace TripMatch.Controllers.Api
                 else
                 {
                     // 如果回傳 false，通常代表找不到資料（已被他人刪除）
-                    return NotFound("找不到指定的航班，可能已被其他成員刪除");
+                    return NotFound("找不到指定的住宿資訊，可能已被其他成員刪除。重新整理頁面，並得取最新狀態。");
                 }
             }
             catch (DbUpdateConcurrencyException)

@@ -9,6 +9,18 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/trip/trip.css" />
 }
+
+@if (TempData["UnauthorizedMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3 d-flex align-items-center justify-content-between" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span>@TempData["UnauthorizedMessage"]</span>
+        </div>
+        <button type="button" class="btn-close custom-alert-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <div class="container">
     <div class="mytrip-header">
         <h1 class="mytrip-title memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>我的行程</h1>
@@ -114,4 +126,22 @@
 
 @section Scripts {
     <script src="~/js/trip/trip.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 找到頁面上的 alert 元素
+            const alertElement = document.querySelector(".alert");
+
+            if (alertElement) {
+                // 設定 5000 毫秒 (5秒) 後執行
+                        setTimeout(() => {
+            const alert = document.querySelector(".alert");
+            if (alert) {
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = "0";
+                setTimeout(() => alert.remove(), 500); // 變透明後再從 DOM 移除
+            }
+        }, 10000);
+            }
+        });
+    </script>
 }

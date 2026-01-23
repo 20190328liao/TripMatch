@@ -247,7 +247,7 @@ namespace TripMatch.Services
                     ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
 
                     // 將 byte[] 轉換為 Base64 字串
-                    RowVersion = flight.RowVersion != null ? Convert.ToBase64String(flight.RowVersion) : null
+                    RowVersion = Convert.ToBase64String(flight.RowVersion!)
                 };
                 tripDetailDto.Flights.Add(flightDto);
             }
@@ -266,7 +266,8 @@ namespace TripMatch.Services
                     HotelName = accom.HotelName ?? "",
                     Address = accom.Address ?? "",
                     CheckInDate = accom.CheckInDate,
-                    CheckOutDate = accom.CheckOutDate
+                    CheckOutDate = accom.CheckOutDate,
+                    RowVersion = Convert.ToBase64String(accom.RowVersion!)
                 };
                 tripDetailDto.Accomadations.Add(accomDto);
             }
@@ -353,8 +354,8 @@ namespace TripMatch.Services
                     StartTime = item.StartTime ?? new TimeOnly(0, 0),
                     EndTime = item.EndTime ?? new TimeOnly(0, 0),
                     SortOrder = item.SortOrder,
-                    Profile = spotProfile
-
+                    Profile = spotProfile,
+                    RowVersion = Convert.ToBase64String(item.RowVersion!)
                 };
                 tripDetailDto.ItineraryItems.Add(itemDto);
             }
@@ -388,20 +389,17 @@ namespace TripMatch.Services
             }
         }
         // 刪除住宿
-        public async Task<bool> DeleteAccommodation(int Id)
+        public async Task<bool> DeleteAccommodation(int id, string rowVersion)
         {
-            var existing = await _context.Accommodations
-                    .FirstOrDefaultAsync(It => It.Id == Id);
-            if (existing != null)
-            {
-                _context.Accommodations.Remove(existing);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            var accommodation = await _context.Accommodations.FindAsync(id);
+            if (accommodation == null) return false;
+
+            // 使用泛型方法設定版本
+            ApplyRowVersion(accommodation, rowVersion);
+
+            _context.Accommodations.Remove(accommodation);
+            await _context.SaveChangesAsync();
+            return true;
         }
         // 新增景點
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
@@ -476,22 +474,22 @@ namespace TripMatch.Services
             }
         }
         // 更新景點時間
-        public async Task<bool> UpdateSpotTime(SpotTimeDto Dto)
+        public async Task<bool> UpdateSpotTime(SpotTimeDto dto)
         {
-            if (Dto.Id <= 0)
-                return false;
+            // 1. 抓取目前資料庫的實體
+            var spot = await _context.ItineraryItems.FindAsync(dto.Id);
+            if (spot == null) return false;
 
-            var existing = await _context.ItineraryItems
-                    .FirstOrDefaultAsync(It => It.Id == Dto.Id);
+            // 2. 套用版本檢查：告訴 EF 這一筆資料的「原始版本」是 dto 傳過來的那個
+            ApplyRowVersion(spot, dto.RowVersion);
 
-            if (existing != null)
-            {
-                existing.StartTime = Dto.StartTime;
-                existing.EndTime = Dto.EndTime;
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            return false;
+            // 3. 修改欄位
+            spot.StartTime = dto.StartTime;
+            spot.EndTime = dto.EndTime;
+
+            // 4. 存檔。如果此時資料庫版本與 dto.RowVersion 不符，會噴出 DbUpdateConcurrencyException
+            await _context.SaveChangesAsync();
+            return true;
         }
         // 新增一天(往後)
         public async Task<bool> AddTripDay(int tripId)
@@ -974,28 +972,17 @@ namespace TripMatch.Services
         }
 
 
-        public async Task<bool> DeleteFlight(int flightId, string rowVersionStr)
+        public async Task<bool> DeleteFlight(int id, string rowVersion)
         {
-            var flight = await _context.Flights.FindAsync(flightId);
+            var flight = await _context.Flights.FindAsync(id);
             if (flight == null) return false;
 
-            try
-            {
-                // 將前端傳回的印章轉回二進位
-                byte[] clientVersion = Convert.FromBase64String(rowVersionStr);
+            // 使用泛型方法設定版本
+            ApplyRowVersion(flight, rowVersion);
 
-                // 告訴 EF：比對這個版本號
-                _context.Entry(flight).Property("RowVersion").OriginalValue = clientVersion;
-
-                _context.Flights.Remove(flight);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // 抓到衝突：代表資料庫的版本號已經變了
-                return false;
-            }
+            _context.Flights.Remove(flight);
+            await _context.SaveChangesAsync();
+            return true;
         }
         #endregion
 
@@ -1072,6 +1059,31 @@ namespace TripMatch.Services
         }
 
         #endregion
+
+        /// <summary>
+        /// 統一處理樂觀並行控制的版本設定
+        /// </summary>
+        private void ApplyRowVersion<TEntity>(TEntity entity, string rowVersion) where TEntity : class
+        {
+            if (string.IsNullOrEmpty(rowVersion)) return;
+
+            // 將 Base64 字串轉回 byte[]
+            byte[] versionBytes = Convert.FromBase64String(rowVersion);
+
+            // 告訴 EF Core：這個實體的 RowVersion 原始值應該是 versionBytes
+            // EF 會在 SaveChangesAsync 時自動產生 WHERE RowVersion = ...
+            _context.Entry(entity).Property("RowVersion").OriginalValue = versionBytes;
+        }
+
+
+        public async Task<bool> IsUserTripMember(int? userId, int tripId)
+        {
+            if (userId == null) return false;
+
+            // 檢查該使用者是否在該行程的成員名單中
+            return await _context.TripMembers
+                .AnyAsync(tm => tm.TripId == tripId && tm.UserId == userId);
+        }
 
     }
 }

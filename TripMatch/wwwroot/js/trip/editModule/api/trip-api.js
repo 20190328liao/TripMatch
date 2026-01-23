@@ -82,10 +82,10 @@ export const TripApi = {
         return sendRequest('/api/TripApi/AddAccommodation', 'POST', dto);
     },    
 
-    // 刪除住宿
-    deleteAccommodation: (id) => {
-        return sendRequest(`/api/TripApi/DeleteAccommodation/${id}`, 'DELETE');
-    },  
+    deleteAccommodation: (id, rowVersion) => {
+        const url = `/api/TripApi/DeleteAccommodation/${id}?rowVersion=${encodeURIComponent(rowVersion)}`;
+        return sendRequest(url, 'DELETE');
+    },
 
     // 儲存快照
     addSnapshot: (dto) => {
