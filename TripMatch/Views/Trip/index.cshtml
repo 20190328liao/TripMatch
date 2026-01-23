@@ -12,8 +12,8 @@
 <div class="container">
     <div class="mytrip-header">
         <h1 class="mytrip-title memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>我的行程</h1>
-        <a asp-controller="Trip" asp-action="Create" class="btn btn_light">
-            + 建立新行程
+        <a asp-controller="Trip" asp-action="Create" class="create-btn">
+            + 建立新旅程
         </a>
     </div>
 
@@ -86,17 +86,20 @@
             <div class="invite-row">
                 <div class="invite-label">邀請碼</div>
 
-                <div class="">
-                    <code id="inviteCodetext" class="invite-code">載入中...</code>
-                    <button type="button" id="btnCopyInvite" class="btn btn_light btn-copy" disabled>copy</button>
+                <div class="invite-line">
+                    <div class="inviteCodeShell" aria-label="橫向捲動邀請連結">
+                        <code id="inviteCodetext" class="invite-code" title="">載入中...</code>
+                    </div>
+                    
+                    <button type="button" id="btnCopyInvite" class="invite-btn invite-btn-copy" disabled>copy</button>
                 </div>
                 <div id="inviteHint" class="invite-hint"></div>
             </div>
 
         </div>
-        <div class="modal-footer">
-            <button class="btn-close btn btn_light">關閉</button>
-        </div>
+        @* <div class="modal-footer">
+            <button type="button" class="invite-btn invite-btn-close">關閉</button>
+        </div> *@
     </div>
 </div>
 

@@ -732,7 +732,6 @@ function wireUI() {
 
     btnWishlist.addEventListener('click', async () => {
         console.log("currentPlace", currentPlace);
-
         if (!currentPlace) return;
         try {
             const r = await tripApi.addToWishlist({ place: currentPlace });

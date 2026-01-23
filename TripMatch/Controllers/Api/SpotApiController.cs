@@ -23,29 +23,6 @@ namespace TripMatch.Controllers.Api
             _logger = logger;
         }
 
-        //public record AddWishlistRequest(
-        //    string externalPlaceId,
-        //    string nameZh,
-        //    string? address,
-        //    decimal? lat,
-        //    decimal? lng,
-        //    decimal? rating,
-        //    string? phone,
-        //    string? photoJson
-        //);
-
-        //public record AddItineraryRequest(
-        //    int TripId,
-        //    int DayNo,
-        //    string PlaceId,
-        //    string NameZh,
-        //    string? Address,
-        //    decimal? Lat,
-        //    decimal? Lng,
-        //    decimal? Rating,
-        //    string? PhotoJson
-        //);
-
         [HttpPost("wishlist")]
         public async Task<IActionResult> AddToWishlist([FromBody] SpotDto.AddWishlistRequest req)
         {
