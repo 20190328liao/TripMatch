@@ -264,6 +264,33 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        [HttpDelete("DeleteDay/{tripId:int}/{dayNum:int}")]
+        [Authorize] // 建議加上權限檢查
+        public async Task<IActionResult> DeleteDay(int tripId, int dayNum)
+        {
+            try
+            {
+                // 建議在此加入權限檢查：確認目前的 UserId 是否有權限編輯此 TripId
+                // 例如：var userId = _tagUserId.UserId;
+                // if (!await _tripServices.IsUserTripMember(userId, tripId)) return Forbid();
+
+                bool success = await _tripServices.DeleteTripDay(tripId, dayNum);
+
+                if (success)
+                {
+                    return Ok(new { message = $"第 {dayNum} 天已刪除，後續行程已自動遞補" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "刪除失敗，請檢查行程編號或天數" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "伺服器內部錯誤：" + ex.Message });
+            }
+        }
+
         #endregion
 
         #region 景點探索相關
