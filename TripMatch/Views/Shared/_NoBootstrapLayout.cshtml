@@ -52,6 +52,8 @@
     <script>
         // 讓 helper.js 可以把 CSRF token 放進 AJAX header
         window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
+        // 將伺服器端登入狀態傳到前端（布林或字串都接受）
+        window.isAuthenticated = @(User?.Identity?.IsAuthenticated == true ? "true" : "false");
     </script>
 
     @* 不能刪的，網頁會沒有彈窗,登出和頭貼 *@
@@ -61,7 +63,8 @@
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
-
+    <script src="~/js/AuthApi/inviteLoginTrip.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/auth-returnurl.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

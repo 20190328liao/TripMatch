@@ -39,12 +39,14 @@
                 </div>
 
                 @* 將所有輸入欄包在 form 中，避免瀏覽器警告。使用 onsubmit preventDefault 保持現有 AJAX 行為 *@
-                <form id="signupForm" onsubmit="event.preventDefault();" autocomplete="off" novalidate>
+                <form id="signupForm" method="post" class="signupForm">
+                    <input type="hidden" id="returnUrl" name="returnUrl" value="@(ViewData["ReturnUrl"] ?? Context.Request.Query["ReturnUrl"].ToString())" />
+
                     <div class="formWrap">
                         <label class="account titleWrap titleH4 d-block">帳號 *</label>
 
                         <div class="input_row email_row">
-                            <input id="email" class="email2" type="email" placeholder="example@gmail.com" aria-label="email">
+                            <input id="email" name="email" class="email2" type="email" placeholder="example@gmail.com" aria-label="email">
                             <button class="btn btn_light eLabel" id="checkEmail" type="button">寄驗證信</button>
                         </div>
 
@@ -54,7 +56,7 @@
 
                         <label class="account titleWrap titleH4 d-block mt-3">密碼 *</label>
                         <div class="input_group_custom">
-                            <input type="password" id="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文" aria-label="password">
+                            <input type="password" id="password" name="password" class="input1 psw" placeholder="6 到 18 位數密碼和大小寫英文" aria-label="password">
                             <span class="btn-toggle-pwd" data-target="#password" role="button" tabindex="0">
                                 <img src="~/img/eye-closed.svg" alt="顯示密碼">
                             </span>

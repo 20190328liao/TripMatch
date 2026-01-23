@@ -5,6 +5,9 @@
     const code = urlParams.get('code');
     const error = urlParams.get('error');
 
+    // 取回可能的 ReturnUrl（優先 query string）
+    const returnUrlFromQs = urlParams.get('ReturnUrl') || urlParams.get('returnUrl') || '';
+
     let isSending = false; // 防止觸發多次
     let isEmailVerified = false; // 追蹤 Email 是否已驗證
     let lastSentEmail = ""; // 記錄上次發送的 Email
@@ -136,7 +139,12 @@
                             if (resp.ok && json.redirect) {
                                 window.location.href = json.redirect;
                             } else {
-                                window.location.href = '/Auth/ForgotPassword';
+                                // 使用 InviteReturn.safeRedirect 做安全導向
+                                if (window.InviteReturn && typeof window.InviteReturn.safeRedirect === 'function') {
+                                    window.InviteReturn.safeRedirect('/Auth/ForgotPassword');
+                                } else {
+                                    window.location.href = '/Auth/ForgotPassword';
+                                }
                             }
                         } catch {
                             window.location.href = '/Auth/ForgotPassword';
@@ -163,7 +171,11 @@
                 lastSentEmail = "";//重置
                 const data = err.responseJSON;
                 if (data && data.action === "redirect_login") {
-                    window.location.href = window.Routes.Auth.Login;
+                    if (window.InviteReturn && typeof window.InviteReturn.safeRedirect === 'function') {
+                        window.InviteReturn.safeRedirect(window.Routes.Auth.Login);
+                    } else {
+                        window.location.href = window.Routes.Auth.Login;
+                    }
                 }
             }
         });
@@ -225,9 +237,13 @@
 
                 const data = err.responseJSON;
                 if (data && data.action === "redirect_login") {
-                    showPopup({ title: "提示", message: data.message, type: "warning" }).then(() => {
-                        window.location.href = window.Routes.Auth.Login;
-                    });
+                    if (window.InviteReturn && typeof window.InviteReturn.safeRedirect === 'function') {
+                        window.InviteReturn.safeRedirect(window.Routes.Auth.Login);
+                    } else {
+                        showPopup({ title: "提示", message: data.message, type: "warning" }).then(() => {
+                            window.location.href = window.Routes.Auth.Login;
+                        });
+                    }
                 } else {
                     showPopup({ title: "發送失敗", message: data?.message || "請稍後再試", type: "error" });
                 }
@@ -252,14 +268,25 @@
             password: $('#password').val(),
             confirmPassword: $("#confirmPassword").val()
         };
+
+        // 取得 returnUrl：優先 hidden input，其次 query string
+        const returnInputVal = $('#returnUrl').length ? $('#returnUrl').val() : null;
+        const returnUrl = returnInputVal ? String(returnInputVal) : returnUrlFromQs;
+        const query = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
+
         $("#btnRegister").prop("disabled", true).text("處理中...");
         $.ajax({
             type: 'post',
-            url: window.Routes.AuthApi.Register,
+            url: window.Routes.AuthApi.Register + query,
             contentType: 'application/json',
             data: JSON.stringify(userData),
             success: function (res) {
                 try { localStorage.setItem('showRegSuccess', 'true'); } catch (e) { }
+                // 先消耗 cookie（避免殘留導致後續重複彈窗）
+                if (window.InviteReturn && typeof window.InviteReturn.consume === 'function') {
+                    try { window.InviteReturn.consume(); } catch { }
+                }
+                // 導向後端回傳的 redirectUrl（通常為 /Auth/Login?ReturnUrl=...）
                 window.location.href = res.redirectUrl || window.Routes.Auth.Login;
             },
             error: async function (err) {
@@ -311,48 +338,5 @@
 
     });
 
-    //function confirmEmailViaAjax(userId, code) {
-    //    $.ajax({
-    //        url: window.Routes.AuthApi.ConfirmEmail,
-    //        type: 'GET',
-    //        data: { userId: userId, code: code },
-    //        success: function (response) {
-    //            if (response.success) {
-    //                // 成功：顯示 popup 並重定向到登入頁面
-    //                showPopup({
-    //                    title: "成功",
-    //                    message: "Email 驗證成功，請重新整理頁面以完成註冊流程。",
-    //                    type: "success"
-    //                }).then(() => {
-    //                    window.location.href = window.Routes.Auth.Register;
-    //                });
-    //            } else {
-    //                // 失敗：顯示錯誤訊息
-    //                showPopup({ title: "失敗", message: response.message || "Email 驗證失敗，請重新寄送驗證信。", type: "error" });
-    //            }
-    //        },
-    //        error: function (xhr) {
-    //            // 網路錯誤處理
-    //            showPopup({ title: "錯誤", message: "Email 驗證失敗，請重新寄送驗證信。", type: "error" });
-    //        }
-    //    });
-    //}
-
-    //// 如果 URL 驗證參數
-    ////const urlParams = new URLSearchParams(window.location.search);
-    ////const userId = urlParams.get('userId');
-    ////const code = urlParams.get('code');
-    ////if (userId && code) {
-    ////    confirmEmailViaAjax(userId, code);
-    ////}
-
-    ////綁定特定連結點擊事件
-    ////$('#confirmEmailLink').on("click", function (e) {
-    ////    e.preventDefault();
-    ////    const userId = $(this).data("userid");
-    ////    const code = $(this).data("code");
-    ////    confirmEmailViaAjax(userId, code);
-    //});
-
-    //});
+    // end $(function)
 });
