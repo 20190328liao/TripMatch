@@ -71,8 +71,10 @@ export const TripApi = {
     },
 
     // 刪除航班
-    deleteFlight: (id) => {
-        return sendRequest(`/api/TripApi/DeleteFlight/${id}`, 'DELETE');
+    deleteFlight: (id, rowVersion) => {
+        // 使用 encodeURIComponent 確保 Base64 中的特殊字元 (如 + / =) 不會破壞網址結構
+        const url = `/api/TripApi/DeleteFlight/${id}?rowVersion=${encodeURIComponent(rowVersion)}`;
+        return sendRequest(url, 'DELETE');
     },
 
     // 加入住宿

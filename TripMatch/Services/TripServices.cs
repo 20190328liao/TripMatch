@@ -245,6 +245,9 @@ namespace TripMatch.Services
                     DepTimeUtc = flight.DepartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
                     ArrTimeLocal = flight.ArriveUtc.ToString("yyyy-MM-dd HH:mm"),
                     ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
+
+                    // 將 byte[] 轉換為 Base64 字串
+                    RowVersion = flight.RowVersion != null ? Convert.ToBase64String(flight.RowVersion) : null
                 };
                 tripDetailDto.Flights.Add(flightDto);
             }
@@ -381,6 +384,22 @@ namespace TripMatch.Services
             catch (Exception)
             {
                 // 這裡可以 Log 錯誤原因
+                return false;
+            }
+        }
+        // 刪除住宿
+        public async Task<bool> DeleteAccommodation(int Id)
+        {
+            var existing = await _context.Accommodations
+                    .FirstOrDefaultAsync(It => It.Id == Id);
+            if (existing != null)
+            {
+                _context.Accommodations.Remove(existing);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
                 return false;
             }
         }
@@ -895,18 +914,26 @@ namespace TripMatch.Services
         }
 
 
-        public async Task<bool> DeleteFlight(int id)
+        public async Task<bool> DeleteFlight(int flightId, string rowVersionStr)
         {
-            var existing = await _context.Flights
-                    .FirstOrDefaultAsync(f => f.Id == id);
-            if (existing != null)
+            var flight = await _context.Flights.FindAsync(flightId);
+            if (flight == null) return false;
+
+            try
             {
-                _context.Flights.Remove(existing);
+                // 將前端傳回的印章轉回二進位
+                byte[] clientVersion = Convert.FromBase64String(rowVersionStr);
+
+                // 告訴 EF：比對這個版本號
+                _context.Entry(flight).Property("RowVersion").OriginalValue = clientVersion;
+
+                _context.Flights.Remove(flight);
                 await _context.SaveChangesAsync();
                 return true;
             }
-            else
+            catch (DbUpdateConcurrencyException)
             {
+                // 抓到衝突：代表資料庫的版本號已經變了
                 return false;
             }
         }

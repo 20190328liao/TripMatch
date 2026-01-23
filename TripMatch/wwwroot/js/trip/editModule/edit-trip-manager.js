@@ -353,9 +353,31 @@ function renderItinerary(items, dates, accommodations, flights) {
 
     // 綁定「刪除航班」按鈕
     document.querySelectorAll('.delete-flight-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (confirm("刪除航班?")) {
-                TripApi.deleteFlight(e.currentTarget.dataset.id).then(() => loadTripData());
+        btn.addEventListener('click', async (e) => {
+            // 取得按鈕上的資料 (建議在渲染 HTML 時補上 data-version)
+            const flightId = e.currentTarget.dataset.id;
+            const rowVersion = e.currentTarget.dataset.version;
+
+            if (!flightId || !rowVersion) {
+                console.error("缺少刪除所需的 ID 或版本資訊");
+                return;
+            }
+
+            if (confirm("確定要刪除這筆航班資訊嗎？")) {
+                try {
+                    // 傳送 ID 與版本標記
+                    await TripApi.deleteFlight(flightId, rowVersion);
+
+                    // 刪除成功後重新載入資料
+                    alert("刪除成功！");
+                    loadTripData();
+                } catch (error) {
+                    // 這裡會接收到 API 回傳的 409 衝突或其他錯誤訊息
+                    alert("操作失敗：" + error);
+
+                    // 如果是衝突錯誤，通常建議重新載入資料以獲取最新版本
+                    loadTripData();
+                }
             }
         });
     });
