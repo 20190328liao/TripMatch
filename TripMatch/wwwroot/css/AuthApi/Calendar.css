@@ -18,12 +18,12 @@
     font-size: 20pt;
 }
 
-.file-two-column {
+/*.file-two-column {
     display: flex;
     gap: 1rem;
     align-items: flex-start;
 }
-
+*/
 .header-style-adjusted {
     background: linear-gradient(180deg, rgba(98, 222, 177, .16), rgba(98, 222, 177, .06));
     display: flex;
@@ -56,21 +56,6 @@
         cursor: pointer;
         color: var(--accent);
     }
-
-
-.day-cell .day-label {
-    padding-top: 6px; /* 可視需要微調 */
-    padding-bottom: 6px; /* 可視需要微調 */
-}
-
-.day-cell {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
 
 .week div {
     display: flex;
@@ -165,23 +150,8 @@
     max-height: 3rem;
 }
 
-/* 範圍起點 (粉藍) */
-.day-cell.range-start .day-label {
-    background: linear-gradient(180deg,#bfe8ff,#a7ddff);
-    color: #04253a;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-}
 
-/* 範圍終點 (橘色) */
-.day-cell.range-end .day-label {
-    background: linear-gradient(180deg,#ffb86b,#ff974d);
-    color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-}
+
 
 /* 今天 (藍色圈) */
 .day-cell.today .day-label {
@@ -202,20 +172,7 @@
     opacity: 0.85;
 }
 
-/* 日曆格樣式 */
-.day-cell {
-    width: 100%;
-    max-width: none; /* 移除固定最大寬度，交由 grid 欄位決定 */
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    aspect-ratio: 1 / 1;
-    position: relative;
-    padding: 0;
-    background: transparent;
-}
+
 
 .cell-delete {
     position: absolute;
@@ -232,22 +189,7 @@
     cursor: pointer;
 }
 
-.day-cell .day-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 0.95rem;
-    user-select: none;
-    width: 95%;
-    height: 95%;
-    box-sizing: border-box;
-    min-width: 0.8rem;
-    min-height: 0.8rem;
-    max-width: 3rem;
-    max-height: 3rem;
-    white-space: nowrap;
-}
+
 
 /* 編輯模式右上 X */
 .cell-close {
@@ -322,11 +264,11 @@
 .calendar_legend .dot.range {
     background: linear-gradient(90deg,#dff7ea,#eaf9d6);
 }
-/* 淡綠：範圍整區 */
+ 淡綠：範圍整區 
 .calendar_legend .dot.range-start {
     background: #bfe8ff;
 }
-/* 粉藍：範圍開始 */
+ 粉藍：範圍開始 
 .calendar_legend .dot.range-end {
     background: #ffb86b;
 }
@@ -459,16 +401,7 @@ body:not(.calendar-editing) .day-cell {
     border-radius: 50%;
 }
 
-.day-cell {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 3.2rem;
-    /* 若需要內距或字型自適應，可在 .day-label 調整 */
-}
+
     /* 新舊提交樣式（如果尚未加入） */
     .day-cell.submitted-old {
         background: linear-gradient(95deg, #cffff0,#e4faff);
@@ -542,7 +475,6 @@ body:not(.calendar-editing) .day-cell {
     width: 100%;
     aspect-ratio: 1 / 1; /* 每格為正方形 */
     box-sizing: border-box;
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
@@ -563,21 +495,7 @@ body:not(.calendar-editing) .day-cell {
     transition: box-shadow 0.25s ease;
 }
 
-/* 限定於會員頁面內還原 container 行為（避免覆寫 Bootstrap 全域 .container） */
-/*.member_center_wrap > .container {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-}*/
 
-/* 强制會員頁面日曆區塊在桌面三欄同排 */
-/*.member_center_wrap #calendar_section > .container > .row {*/
-/* 以 flex 排列，桌面不換行 */
-/*display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 1rem;
-}*/
 
 /* 桌面：左側月份、主日曆、右側清單 */
 @media (min-width: 992px) {
@@ -624,10 +542,7 @@ body:not(.calendar-editing) .day-cell {
         max-height: 720px;
     }
 
-    .member_center_wrap #calendar_section > .container > .row {
-        display: block;
-    }
-
+ 
     .member_center_wrap #calendar_section .months-panel,
     .member_center_wrap #calendar_section .month-panel,
     .member_center_wrap #calendar_section .list-panel {
@@ -683,12 +598,10 @@ body:not(.calendar-editing) .day-cell {
     align-items: center; /* container 層也確保置中 */
 }
 
+/*正確,0123已刪除重複*/
     .days .day-cell {
         position: relative;
-        display: block;
         padding: 0;
-        align-self: center;
-        justify-self: center;
     }
 
 
@@ -716,7 +629,6 @@ body:not(.calendar-editing) .day-cell {
 /* 讓 cell 不裁切並確保相對定位 */
 .days .day-cell {
     position: relative;
-    display: block;
     padding: 0;
     box-sizing: border-box;
     overflow: visible;
@@ -728,9 +640,6 @@ body:not(.calendar-editing) .day-cell {
         left: 50%;
         top: 50%;
         transform: translate(-50%,-50%);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
         box-sizing: border-box;
         margin: 0;
         line-height: 1;
@@ -765,7 +674,6 @@ body:not(.calendar-editing) .day-cell {
     background: transparent;
     border: none;
     font-size: var(--cal-font-normal);
-    padding: 0.12rem 0.25rem; /* 若想增加可點擊面積可微調 */
 }
 
 
@@ -835,23 +743,44 @@ body:not(.calendar-editing) .day-cell {
 }
 
 /* 1400px以上: 3欄 */
+/* --- 1. 中型桌面 (992px ~ 1399.98px) --- */
+/* 此時空間不足以塞下三欄，所以讓清單換行到下方滿版，避免主日曆被擠扁 */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .member_center_wrap #calendar_section > .container > .row {
+        display: grid !important;
+        grid-template-columns: 320px 1fr;
+        grid-template-areas:
+            "months main"
+            "list   list";
+        gap: 2rem;
+    }
+}
+
+/* --- 2. 大型桌面 (1400px 以上) --- */
+/* 空間充足，恢復成您最初想要的三欄併排 */
 @media (min-width: 1400px) {
     .member_center_wrap #calendar_section > .container > .row {
+        display: grid !important;
+        /* 分配三欄比例：左側固定、中間彈性、右側固定 */
         grid-template-columns: 320px 1fr 300px;
         grid-template-areas: "months main list";
+        gap: 1.5rem;
+        align-items: start;
     }
 
-    .member_center_wrap #calendar_section .months-panel {
-        grid-area: months;
-    }
-
-    .member_center_wrap #calendar_section .month-panel {
-        grid-area: main;
-    }
-
+    /* 確保清單面板在三欄模式下不會過寬 */
     .member_center_wrap #calendar_section .list-panel {
         grid-area: list;
+        width: auto;
+        max-width: 300px;
     }
+
+        /* 恢復清單為垂直排列，以符合側欄視覺 */
+        .member_center_wrap #calendar_section .list-panel .calendar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 }
 /* months-panel 內的 months-grid：手機3欄，電腦2欄 */
 .member_center_wrap #calendar_section .months-panel .months-grid {
@@ -928,3 +857,28 @@ body:not(.calendar-editing) .day-cell {
     transform: translate(-50%, -50%);
     z-index: 2;
 }
+/* ===============================
+   Calendar – FINAL, SINGLE source of truth
+   =============================== */
+
+/* cell 當定位容器 */
+.days .day-cell {
+    position: relative;
+}
+
+    /* 所有日期數字（唯一版本） */
+    .days .day-cell .day-label {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        /* 關鍵：用 flex 幾何置中 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+        line-height: 1;
+        box-sizing: border-box;
+        text-align: center;
+    }

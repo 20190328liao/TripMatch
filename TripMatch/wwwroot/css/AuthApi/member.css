@@ -77,7 +77,7 @@ margin-right:20px;
     position: static;
     left: auto;
     flex: 1 1 auto;
-    width: 100%;
+    padding-left: 45px;
     box-sizing: border-box;
     min-width: 0; /* 允許在窄螢幕內縮 */
     margin-bottom: 10px;
@@ -96,9 +96,6 @@ margin-right:20px;
 .profile_info_section label {
     color: var(--color_Dark);
     font-weight: 600;
-}
-.info_value {
-    padding-left: 45px;
 }
 #btnEditName, #btnEditBackupEmail {
     color: var(--color_link);
@@ -129,6 +126,7 @@ margin-right:20px;
     margin: 3rem 0 1.5rem 0;
 }
 
+/*必須保留,會突然出現底線*/
 .inputLine,
 .inputNone,
 .backIndex,
@@ -762,16 +760,6 @@ input:is(:-webkit-autofill, :autofill) {
     }
 }
 
-
-
-/* 讓 .inputLine / .inputNone 使用固定寬度（顯示為 inline-block 以維持並排）*/
-.loginWrap .inputLine,
-.loginWrap .inputNone {
-    width: auto;
-    padding: 0 4.5rem; /* 桌機原本值 */
-    white-space: nowrap;
-}
-
 /* 讓表單內的輸入欄位、提示與按鈕與上方標題寬度一致並置中 */
 #loginForm .input_group_custom,
 #loginForm .inputHint,
@@ -788,8 +776,6 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* Login 表單左右留白對齊 .inputLine / .inputNone */
 #loginForm {
-    padding-left: 8rem; /* 與 .inputLine 同步 */
-    padding-right: 8rem;
     box-sizing: border-box;
     width: 80%;
     max-width: 100%;
@@ -837,29 +823,15 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* RWD: desktop */
 @media (min-width: 992px) {
-    #wishlist_cards > .col {
+
+
+        #wishlist_cards > .col {
         display: flex;
         min-width: 350px !important;
     }
-    .auth-page .loginWrap > .inputLine,
-    .auth-page .loginWrap > .inputNone,
-    .auth-page #loginWrap > .inputLine,
-    .auth-page #loginWrap > .inputNone {
-        padding: 0 4.5rem;
-        display: inline-flex;
-        white-space: nowrap;
-    }
 
 
-    .auth-page #loginForm,
-    .auth-page .signContent.s2 .formWrap {
-        width: 100%;
-        max-width: 480px;
-        padding-left: 0;
-        padding-right: 0;
-        margin: 20px auto;
-        box-sizing: border-box;
-    }
+
     /* Profile 區塊：avatar 固定寬度、info 區撐滿剩餘空間 */
     .profile_container {
         display: flex;
@@ -892,8 +864,6 @@ input:is(:-webkit-autofill, :autofill) {
         align-items: flex-start;
     }*/
 
-
-
     .member_center_wrap #calendar_section 
     {
         flex: 1 1 auto;
@@ -909,7 +879,6 @@ input:is(:-webkit-autofill, :autofill) {
 
     /* 使 container 下的直接 .row 成為不換行的 flex row，避免 Bootstrap 或其他規則導致換行 */
     .wishlist_cards_container > .row {
-        display: flex !important;
         flex-wrap: nowrap !important; /* 關鍵：不要換行，避免左側被推到上面 */
         align-items: flex-start;
         gap: 1rem;
@@ -968,6 +937,7 @@ input:is(:-webkit-autofill, :autofill) {
         padding: 0;
     }
 
+    /*保留*/
         .auth-page .loginWrap > .inputLine,
         .auth-page .loginWrap > .inputNone,
         .auth-page #loginWrap > .inputLine,
@@ -976,7 +946,7 @@ input:is(:-webkit-autofill, :autofill) {
             padding: 0 4.5rem;
             white-space: nowrap;
         }
-
+        /*0123保留*/
     .auth-page #loginForm,
     .auth-page .signContent.s2 .formWrap {
         width: 100%;
@@ -996,13 +966,11 @@ input:is(:-webkit-autofill, :autofill) {
         display: flex;
         justify-content: center;
         align-items: flex-start;
-        margin-left: 200px;
         padding-left: 40px;
     }
 
     .profile_info_section {
         flex: 1;
-        position: relative;
         padding: 30px;
         background-color: var(--color_bk);
         border-radius: 18px;
@@ -1012,7 +980,6 @@ input:is(:-webkit-autofill, :autofill) {
         white-space: nowrap;
         font-size: 18pt;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        left: 30px;
     }
 
 
@@ -1092,11 +1059,38 @@ input:is(:-webkit-autofill, :autofill) {
     .formWrap {
         margin-top: 30px;
     }
+
+        /* 恢復桌機版 .info_value 換行，與手機板行為一致但只影響桌機 */
+        .profile_info_section {
+            white-space: normal; /* 避免父容器強制 nowrap */
+        }
+
+            .profile_info_section .info_value {
+                display: flex;
+                flex-wrap: wrap; /* 允許子項在需要時換行 */
+                align-items: center;
+                gap: 0.5rem;
+                padding-left: 45px; /* 保留原本左內距 */
+                min-width: 0; /* 防止 flex 項撐破父容器 */
+                width: 100%;
+                white-space: normal !important; /* 覆寫先前的 nowrap，允許文字換行 */
+                word-break: break-word;
+                overflow-wrap: anywhere;
+                margin-bottom: 10px;
+            }
+
+                /* 內部表單元件在桌機不受 46vh 限制，改以容器寬度為準 */
+                .profile_info_section .info_value .form-control,
+                .profile_info_section .info_value input,
+                .profile_info_section .info_value select,
+                .profile_info_section .info_value textarea {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box;
+                }
+ 
 }
 
-.wishlist_cards_container > .row {
-    display: block !important;
-}
 
 .wishlist_cards_container .wishlist-left-panel,
 .wishlist_cards_container .wishlist-right-panel,
@@ -1114,26 +1108,7 @@ input:is(:-webkit-autofill, :autofill) {
 
 
 
-/* FIX: 正確還原 .inputLine / .inputNone 在手機（並列/不換行）與極窄螢幕下換行行為 */
-/* 僅針對 auth/login 區塊增加優先度，不改顏色或設計 */
-.auth-page .loginWrap > .inputLine,
-.auth-page .loginWrap > .inputNone,
-.auth-page #loginWrap > .inputLine,
-.auth-page #loginWrap > .inputNone,
-.loginWrap > .inputLine,
-.loginWrap > .inputNone,
-#loginWrap > .inputLine,
-#loginWrap > .inputNone {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap; /* 手機/平板預設不換行 */
-    width: auto;
-    flex: 1 1 50%;
-    max-width: calc(50% - 0.5rem);
-    padding: 0.45rem 1rem;
-}
+
 
 
 
@@ -1186,40 +1161,6 @@ input:is(:-webkit-autofill, :autofill) {
     padding-right: 0;
     box-sizing: border-box;
 }
-
-/* email_row：水平排列，input 填滿剩餘空間，按鈕維持較小寬度 */
-.signContent.s2 .email_row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-    flex-wrap: nowrap;
-}
-
-    /* input 同 Login 欄位尺寸 */
-    .signContent.s2 .email_row input.email2 {
-        flex: 1 1 auto;
-        min-width: 0; /* 重要，允許 flex 正確收縮 */
-        height: 48px;
-        padding: 0 12px;
-        box-sizing: border-box;
-    }
-
-    /* 寄驗證信按鈕：縮小寬度但保留可點擊區域 */
-    .signContent.s2 .email_row button.eLabel {
-        flex: 0 0 auto; /* 不撐滿剩餘空間 */
-        min-width: 80px;
-        height: 48px;
-        padding: 0 14px;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-
 
 
 /* 若螢幕非常窄，改用換行避免溢出（按鈕仍保持小寬度） */
@@ -1278,12 +1219,6 @@ input:is(:-webkit-autofill, :autofill) {
         white-space: nowrap;
     }
 
-
-.GoogleWrap {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
 
 .googleBtn {
     width: 80%;
@@ -1459,7 +1394,8 @@ input:is(:-webkit-autofill, :autofill) {
 
 /* RESTORE: .inputLine / .inputNone — 還原原始底線樣式與 Mobile 行為（僅覆寫/追加） */
 
-/* 基本顯示與底線（桌機主要樣式，與原設計一致） */
+/*0123保留，其他刪除*/
+/* 基本顯示與底線 */
 .inputLine,
 .inputNone {
     display: inline-block;
@@ -1467,9 +1403,10 @@ input:is(:-webkit-autofill, :autofill) {
     line-height: 1;
     box-sizing: border-box;
     cursor: pointer;
+    white-space: nowrap;
 }
 
-/* 選取 / 强調（原本醒目的底線）*/
+/* 選取 / 强調*/
 .inputLine {
     border-bottom: 4.5px solid var(--color_Light);
     font-weight: 700;
@@ -1485,13 +1422,7 @@ input:is(:-webkit-autofill, :autofill) {
     white-space: nowrap;
 }
 
-/* 確保在 .loginWrap 中維持 inline 行為（覆蓋可能的先前簡化） */
-.loginWrap .inputLine,
-.loginWrap .inputNone {
-    width: auto;
-    padding: 0 4.5rem; /* 保留桌機內距 */
-    white-space: nowrap;
-}
+
 
 /* 手機 / 平板：改為直列、滿寬並保留底線視覺（與原 mobile UX 一致） */
 @media (max-width: 991.98px) {
@@ -1611,30 +1542,14 @@ input:is(:-webkit-autofill, :autofill) {
     .auth-page #loginWrap {
         display: flex;
         flex-direction: row;
-        flex-wrap: nowrap;
         justify-content: center;
         gap: 0.5rem;
-        max-width: 420px;
+        max-width: 520px;
         margin: 30px auto;
         padding: 0 0.75rem;
     }
 
-        .auth-page .loginWrap > .inputLine,
-        .auth-page .loginWrap > .inputNone,
-        .auth-page #loginWrap > .inputLine,
-        .auth-page #loginWrap > .inputNone {
-            flex: 1 1 50%;
-            max-width: calc(50% - 0.5rem);
-            padding: 0.5rem 7.5rem;
-        }
 
-    .auth-page #loginForm {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto 30px;
-        padding-left: 0;
-        padding-right: 0;
-    }
 
     .loginWrap .inputLine,
     .loginWrap .inputNone {
@@ -1657,14 +1572,7 @@ input:is(:-webkit-autofill, :autofill) {
     }
 }
 
-/* 極窄裝置細節微調 */
-@media (max-width: 420px) {
-    .loginWrap .inputLine,
-    .loginWrap .inputNone {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.98rem;
-    }
-}
+
 
 /* keyboard / focus accessibility */
 .inputLine:focus-visible,
@@ -1685,6 +1593,7 @@ input:is(:-webkit-autofill, :autofill) {
     pointer-events: none;
 }
 
+/*0123保留*/
 /* End restore: .inputLine / .inputNone */
 /* FIX: 還原 Login / Signup 版面（僅作用於 .auth-page，避免影響 member_center） */
 
@@ -2121,45 +2030,7 @@ body .lineBlackWrap {
     }
 
 }
-/* 1200px ~ 1399.98px：兩欄但 list-panel 獨佔下一列（滿版） */
-@media (min-width: 1200px) and (max-width: 1399.98px) {
 
-    .member_center_wrap #calendar_section > .container > .row {
-        display: block; /* 允許 Calendar.css 在各斷點改為 grid */
-        box-sizing: border-box;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-
-    }
-    .member_center_wrap #calendar_section .list-panel {
-        width: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        box-sizing: border-box;
-        align-self: start;
-    }
-    .member_center_wrap #calendar_section > .container > .row {
-        display: grid !important;
-        grid-template-columns: 320px 1fr;
-        grid-template-areas:
-            "months main"
-            "list list";
-        gap: 1rem;
-        align-items: start;
-        box-sizing: border-box;
-        width: 100%;
-    }
-
-    .member_center_wrap #calendar_section .months-panel {
-        grid-area: months;
-    }
-
-    .member_center_wrap #calendar_section .month-panel {
-        grid-area: main;
-    }
-
-}
 /* 覆寫 wishlist 欄數：992px~1399.98px 強制 2 欄，>=1400px 為 3 欄 */
 @media (min-width: 992px) and (max-width: 1399.98px) {
     /* 同時覆寫多個可能的選擇器以提高覆蓋率 */
@@ -2189,4 +2060,15 @@ body .lineBlackWrap {
         width: 100%;
         box-sizing: border-box;
     }
+}
+.profile_info_section .info_value {
+    display: flex;
+    flex-wrap: wrap; /* 允許子項在需要時換行 */
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 45px; /* 保留原本左內距 */
+    min-width: 0; /* 防止 flex 項撐破父容器 */
+    white-space: normal !important; /* 允許文字換行（覆寫先前的 nowrap） */
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }

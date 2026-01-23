@@ -150,16 +150,15 @@ namespace TripMatch.Controllers.Api
                 string rawBody = string.Empty;
                 if (Request.ContentLength > 0)
                 {
-                    // Enable rewind not necessary here if body not read earlier
                     using var reader = new StreamReader(Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
                     rawBody = await reader.ReadToEndAsync();
                     _logger?.LogInformation("Signin raw body: {rawBody}", rawBody);
-                    // rewind stream for future readers (defensive)
                     try { Request.Body.Position = 0; } catch { }
                 }
 
                 string? email = null;
                 string? password = null;
+                string? returnUrlCandidate = null;
 
                 // 1) 支援 Content-Type: application/x-www-form-urlencoded 或 multipart/form-data
                 if (Request.HasFormContentType)
@@ -167,7 +166,9 @@ namespace TripMatch.Controllers.Api
                     var form = await Request.ReadFormAsync();
                     email = form["Email"].FirstOrDefault() ?? form["email"].FirstOrDefault();
                     password = form["Password"].FirstOrDefault() ?? form["password"].FirstOrDefault();
-                    _logger?.LogInformation("Signin parsed from form: email present={EmailPresent}", !string.IsNullOrEmpty(email));
+                    // 也嘗試從 form 讀取 returnUrl
+                    returnUrlCandidate = form["ReturnUrl"].FirstOrDefault() ?? form["returnUrl"].FirstOrDefault();
+                    _logger?.LogInformation("Signin parsed from form: email present={EmailPresent}, returnUrl present={ReturnPresent}", !string.IsNullOrEmpty(email), !string.IsNullOrEmpty(returnUrlCandidate));
                 }
                 // 2) 支援 JSON body
                 else if (!string.IsNullOrWhiteSpace(rawBody))
@@ -183,6 +184,10 @@ namespace TripMatch.Controllers.Api
 
                             if (root.TryGetProperty("Password", out var p1) && p1.ValueKind == JsonValueKind.String) password = p1.GetString();
                             else if (root.TryGetProperty("password", out var p2) && p2.ValueKind == JsonValueKind.String) password = p2.GetString();
+
+                            // JSON body may include returnUrl
+                            if (root.TryGetProperty("ReturnUrl", out var r1) && r1.ValueKind == JsonValueKind.String) returnUrlCandidate = r1.GetString();
+                            else if (root.TryGetProperty("returnUrl", out var r2) && r2.ValueKind == JsonValueKind.String) returnUrlCandidate = r2.GetString();
                         }
                     }
                     catch (JsonException jex)
@@ -190,6 +195,13 @@ namespace TripMatch.Controllers.Api
                         _logger?.LogWarning(jex, "Signin JSON parse failed");
                         return BadRequest(new { success = false, message = "無效的 JSON。" });
                     }
+                }
+
+                // 3) 若還沒取得，嘗試從 QueryString 取得 returnUrl
+                if (string.IsNullOrEmpty(returnUrlCandidate))
+                {
+                    if (Request.Query.ContainsKey("ReturnUrl")) returnUrlCandidate = Request.Query["ReturnUrl"].ToString();
+                    else if (Request.Query.ContainsKey("returnUrl")) returnUrlCandidate = Request.Query["returnUrl"].ToString();
                 }
 
                 email = email?.Trim();
@@ -215,6 +227,28 @@ namespace TripMatch.Controllers.Api
                         var token = _authService.GenerateJwtToken(user);
                         _authService.SetAuthCookie(HttpContext, token);
                         _authService.SetPendingCookie(HttpContext, user.Email);
+
+                        // 如果請求攜帶 returnUrl，且為本域路徑，server 端寫入供前端讀取的非 HttpOnly cookie（與原本 Login page 行為一致）
+                        try
+                        {
+                            if (!string.IsNullOrEmpty(returnUrlCandidate) && Url.IsLocalUrl(returnUrlCandidate))
+                            {
+                                var cookieOptions = new CookieOptions
+                                {
+                                    Expires = DateTimeOffset.UtcNow.AddMinutes(10),
+                                    HttpOnly = false,               // 前端需要讀取
+                                    SameSite = SameSiteMode.Lax,    // 與 Login action 相容
+                                    Path = "/"
+                                };
+                                Response.Cookies.Append("invite_return", returnUrlCandidate, cookieOptions);
+                                _logger?.LogInformation("Signin: wrote invite_return cookie for returnUrl {ReturnUrl}", returnUrlCandidate);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogWarning(ex, "Signin: failed to set invite_return cookie");
+                            // 不阻斷登入流程
+                        }
                     }
 
                     return Ok(new
@@ -1601,7 +1635,7 @@ namespace TripMatch.Controllers.Api
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "CreatePasswordResetSessionForUser failed for {Email}", email);
+                _logger?.LogError(ex, "無法為 {Email} 建立重設密碼連結", email);
                 return StatusCode(500, new { message = "無法建立重設連結，請稍後再試" });
             }
         }

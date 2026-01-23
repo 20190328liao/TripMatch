@@ -10,7 +10,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TripMatch</title>
     <link rel="stylesheet" href="~/bootstrap-grid.css" />
-    <link rel="stylesheet" href="~/bootstrap.bundle.min.js" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
@@ -51,7 +50,8 @@
     </footer>
 
     <!-- 共用腳本，確保上方已注入 window.isAuthenticated -->
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+
     <script src="~/js/navbar.js" asp-append-version="true"></script>
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
@@ -59,7 +59,6 @@
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/inviteLoginTrip.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/auth-returnurl.js" asp-append-version="true"></script>
-
     @RenderSection("Scripts", required: false)
 </body>
 </html>

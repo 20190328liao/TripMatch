@@ -11,6 +11,14 @@
         localStorage.removeItem('showRegSuccess');
     }
 
+    function isLocalPath(url) {
+        if (!url) return false;
+        if (!url.startsWith('/')) return false;
+        if (url.startsWith('//')) return false;
+        if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(url)) return false;
+        return true;
+    }
+
     // 2. 驗證邏輯函式
     function validateLoginForm() {
         const email = $('#email').val().trim();
@@ -74,6 +82,29 @@
                     const url = response.redirectUrl || '/';
                     // small warm-up & cleanup
                     try { localStorage.removeItem('tm_avatar'); } catch {}
+
+                    // 若本頁帶有 returnUrl（hidden input 或 query），寫入 invite_return cookie 讓首頁 modal 可以顯示
+                    try {
+                        const returnInput = document.querySelector('input[name="returnUrl"]');
+                        let returnUrl = returnInput ? (returnInput.value || null) : null;
+
+                        // fallback: 從 query string 取
+                        if (!returnUrl) {
+                            const qs = new URLSearchParams(window.location.search);
+                            returnUrl = qs.get('ReturnUrl') || qs.get('returnUrl') || null;
+                        }
+
+                        if (returnUrl && isLocalPath(returnUrl)) {
+                            // encode 存 cookie（首頁的 getCookie 會 decodeURIComponent）
+                            const encoded = encodeURIComponent(returnUrl);
+                            // max-age 600s = 10min, path=/, SameSite=Lax (與 server 之前的 cookie 行為一致)
+                            document.cookie = `invite_return=${encoded}; Max-Age=600; path=/; samesite=Lax`;
+                        }
+                    } catch (e) {
+                        // 不阻斷導向
+                        console.debug('set invite_return cookie failed', e);
+                    }
+
                     await new Promise(r => setTimeout(r, 200));
                     window.location.replace(url);
                     return;
