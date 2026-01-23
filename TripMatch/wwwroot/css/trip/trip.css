@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --c-white: #ffffff;
     --c-mint: #62DEB1;
     --c-teal: #00968A;
@@ -11,25 +11,51 @@
 .page {
     background: var(--c-white);
     padding: 56px 24px 80px;
-    max-width: 1200px;
+    max-width: 1480px;
     margin: 0 auto;
 }
 
 .mytrip-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 36px;
 }
+/* ---------- Current title marker ---------- */
+.current-title {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 0;
+    border-left: none;
+}
+.memberTitle {
+    color: #000;
+    font-weight: 700;
+    margin: 3rem 0;
+/*    margin-left: 25px;*/
+    margin-bottom: 15px
+}
 
-.mytrip-title {
+    .current-title::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 5px;
+        height: 80%;
+        background: var(--color_Light);
+        border-radius: 2px;
+    }
+
+/*.mytrip-title {
     font-size: 44px;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--c-text);
     margin: 0;
-}
+}*/
 
 .btn-create {
     display: inline-flex;

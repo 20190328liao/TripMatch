@@ -1,0 +1,580 @@
+﻿body {
+}
+:root {
+    /* 主色調：薄荷綠與漸層 */
+    --primary-mint: #62DEB1;
+    --dark-mint: #36b38c;
+    --bg-light-mint: #DAF3F3;
+    --text-dark: #333;
+    --text-gray: #888;
+    --bg-light: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --danger: #ff5252;
+    --accent-btn: var(--dark-mint);
+    --color_DarkGray: #4a4a4a;
+    --accent: #2DA78B;
+    --color_Dark: #333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft JhengHei", sans-serif;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    min-height: 100vh;
+    overflow-y: auto !important;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 100px;
+}
+
+/* =========================================
+   1. 圖例區塊 (Legend)
+   ========================================= */
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 15px 0;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+}
+
+.legend-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.marker-today {
+    border: 2px solid #3b82f6;
+    background-color: transparent;
+}
+
+.marker-locked {
+    background-color: #f1f5f9;
+    border: 1px solid transparent;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, #e2e8f0 2px, #e2e8f0 3px);
+}
+
+.marker-selected {
+    background: linear-gradient(135deg, var(--primary-mint), var(--dark-mint));
+    border: none;
+    box-shadow: 0 2px 5px rgba(54, 179, 140, 0.3);
+}
+
+.marker-joinable {
+    background-color: #f0fdf4;
+    border: 1px solid var(--primary-mint);
+}
+
+/* =========================================
+   2. 行事曆主體與版面 (保留原樣)
+   ========================================= */
+.page-wrap {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.calendar-container {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    padding: 30px;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.8);
+}
+
+.side-panel {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #f1f5f9;
+    height: 100%;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.year-header,
+.month-header {
+    background: linear-gradient(125deg, #72fbbc, #e8f7ff);
+    border-radius: 12px;
+    height: 50px;
+    padding: 6px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(114, 251, 188, 0.2);
+}
+
+.year-display, .month-display {
+    color: var(--color_DarkGray);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.year-header button,
+.month-header button,
+.nav-btn {
+    background: rgba(255,255,255,0.6);
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    transition: 0.2s;
+    border-radius: 50%;
+}
+
+    .year-header button:hover,
+    .month-header button:hover,
+    .nav-btn:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+.months-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 5px;
+}
+
+.month-btn {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    padding: 10px 5px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(0,128,96,0.04);
+    transition: 0.2s;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+    .month-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .month-btn.active {
+        outline: none;
+        background: linear-gradient(180deg, #f5fffb, #fff);
+        border: 2px solid var(--accent);
+        color: var(--accent);
+        font-weight: bold;
+    }
+
+.week-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    color: #888;
+    margin-bottom: 10px;
+    padding: 0 5px;
+}
+
+.days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: auto;
+    gap: 8px;
+    justify-items: stretch;
+    align-items: start;
+    width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.day-cell {
+    width: 100%;
+    max-width: 4rem;
+    aspect-ratio: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: default;
+    transition: 0.2s;
+    position: relative;
+    padding: 0;
+    background: transparent;
+    color: #444;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
+
+    .day-cell:hover:not(.locked):not(.empty) {
+        background-color: #f0fdf4;
+        border-color: var(--primary-mint);
+        transform: scale(1.05);
+        z-index: 2;
+        cursor: pointer;
+    }
+
+    .day-cell.empty {
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .day-cell.today {
+        border: 2px solid #3b82f6;
+        color: #3b82f6;
+        font-weight: bold;
+    }
+
+    .day-cell.locked {
+        background-color: #f1f5f9;
+        color: #cbd5e1;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .day-cell.range-mid {
+        background: linear-gradient(90deg, #dff7ea, #eaf9d6);
+        border-radius: 0;
+        color: #166534;
+        max-width: 4.2rem;
+        max-height: 4.2rem;
+    }
+
+    .day-cell.range-start, .preview-start {
+        background: linear-gradient(135deg,#62DEB1,#36b38c) !important;
+        color: white;
+        border-radius: 50% 0 0 50% !important;
+        z-index: 1;
+    }
+
+    .day-cell.range-end, .preview-end {
+        background: linear-gradient(135deg,#ffb86b,#ff974d) !important;
+        color: white;
+        border-radius: 0 50% 50% 0 !important;
+        z-index: 1;
+    }
+
+    .day-cell.status-single {
+        background: linear-gradient(135deg,#62DEB1,#36b38c);
+        color: white;
+        border-radius: 50%;
+    }
+
+.preview-valid {
+    background-color: #ecfdf5 !important;
+    color: #166534;
+}
+
+.preview-invalid {
+    background-color: #fff1f2 !important;
+    color: #991b1b;
+}
+
+.range-mid {
+    background-color: #dbeafe !important;
+    color: #1e40af;
+}
+
+.selecting {
+    background-color: #3b82f6 !important;
+    color: white;
+}
+
+.list-scroll-area {
+    max-height: 350px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.calendar-list-item {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: 0.2s;
+}
+
+    .calendar-list-item:hover {
+        transform: translateX(2px);
+        border-color: var(--primary-mint);
+    }
+
+/* 原本的提交按鈕樣式 (保留) */
+.btn-submit-custom {
+    background: linear-gradient(90deg, var(--dark-mint), var(--primary-mint));
+    border: none;
+    color: white;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 40px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(54, 179, 140, 0.3);
+    transition: 0.3s;
+    border-radius: 50px;
+    line-height: 1.2;
+}
+
+    .btn-submit-custom:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(54, 179, 140, 0.4);
+    }
+
+.btn-main-text {
+    font-size: 1.2rem;
+}
+
+.btn-sub-text {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: normal;
+}
+
+
+/* =========================================
+   3. 全新設計的 Modal (Google Style) - 修正版
+   ========================================= */
+
+/* 背景遮罩 */
+.modal-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5); /* 半透明黑底 */
+    z-index: 99999 !important;
+    display: none; /* 預設隱藏，由 JS 控制顯示 */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px); /* 背景模糊效果 */
+}
+
+    .modal-overlay.active {
+        display: flex !important;
+    }
+
+/* Modal 本體 (已加寬) */
+.custom-modal {
+    background: white;
+    padding: 48px 40px;
+    border-radius: 28px;
+    max-width: 600px; /* [修改] 加大寬度，確保文字不換行且不被切掉 */
+    width: 95%; /* 手機時佔 95% 寬度 */
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    z-index: 100000;
+    text-align: center;
+}
+
+/* Modal 頂部大圖示 */
+.modal-top-icon {
+    width: 64px;
+    height: 64px;
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+}
+
+    .modal-top-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+
+/* 標題與副標題 */
+.custom-modal .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #202124;
+    margin-bottom: 12px;
+    line-height: 1.3;
+}
+
+.custom-modal .modal-subtitle {
+    font-size: 0.95rem;
+    color: #5f6368;
+    margin-bottom: 32px;
+    line-height: 1.6;
+    padding: 0 10px;
+}
+
+/* 中間功能說明區塊 */
+.feature-box {
+    background-color: #f8fafc;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: left;
+    border: 1px solid #f1f5f9;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+    .feature-item:last-child {
+        margin-bottom: 0;
+    }
+
+/* 列表左側小圖示 */
+.feature-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+    .feature-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+/* 小圖示顏色 */
+.icon-blue {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.icon-green {
+    background-color: #e6f4ea;
+    color: #188038;
+}
+
+.icon-purple {
+    background-color: #f3e8fd;
+    color: #9334e6;
+}
+
+/* 列表文字 (自動適應單行) */
+.feature-text {
+    flex: 1;
+    min-width: 0;
+}
+
+    .feature-text h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #3c4043;
+        margin: 0 0 4px 0;
+        line-height: 1.4;
+        white-space: nowrap; /* 標題永遠不換行 */
+    }
+
+    .feature-text p {
+        font-size: 0.9rem;
+        color: #70757a;
+        margin: 0;
+        line-height: 1.5;
+        /* [修改] 讓文字在寬度足夠時不換行，但不會強制隱藏 */
+        white-space: nowrap;
+    }
+
+/* Modal 按鈕區域 */
+.custom-modal .d-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.custom-modal .btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 0.5px;
+}
+
+    .custom-modal .btn svg,
+    .custom-modal .btn i {
+        margin-right: 8px;
+    }
+
+/* 主要按鈕 */
+.custom-modal .btn-primary-mint {
+    background-color: var(--primary-mint) !important;
+    color: white;
+    box-shadow: 0 4px 12px rgba(98, 222, 177, 0.4);
+}
+
+    .custom-modal .btn-primary-mint:hover {
+        background-color: var(--dark-mint) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(98, 222, 177, 0.5);
+    }
+
+/* 次要按鈕 */
+.custom-modal .btn-secondary-light {
+    background: transparent;
+    color: #70757a;
+    border: 1px solid #dadce0;
+}
+
+    .custom-modal .btn-secondary-light:hover {
+        background: #f8fafc;
+        color: #3c4043;
+        border-color: #d2d4d7;
+    }
+
+/* --- RWD 手機版適配 (防止爆版) --- */
+@media (max-width: 620px) {
+    .custom-modal {
+        padding: 30px 20px;
+    }
+
+    .feature-text p {
+        /* 手機螢幕太小塞不下一行時，自動換行顯示，確保不被切掉 */
+        white-space: normal;
+    }
+}

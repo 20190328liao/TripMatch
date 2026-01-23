@@ -4,17 +4,140 @@
     const apiToggle = window.Routes?.MemberCenterApi?.Toggle ?? '/api/MemberCenterApi/Toggle';
     const apiGetPhoto = window.Routes?.MemberCenterApi?.GetSpotPhoto ?? '/api/MemberCenterApi/GetSpotPhoto';
     const apiGetExternalPlace = window.Routes?.AuthApi?.GetExternalPlaceId ?? '/api/auth/GetExternalPlaceId';
+
+    // 新增：分類相關 API
+    const apiCategories = window.Routes?.MemberCenterApi?.GetWishlistCategories ?? '/api/MemberCenterApi/GetWishlistCategories';
+    const apiWishByCat = window.Routes?.MemberCenterApi?.GetWishByCategory ?? '/api/MemberCenterApi/GetWishByCategory';
+
     const undoTimers = {};
     if (!wishlistContainer) return;
 
-    loadWishlist();
+    // 初始化：先載入分類按鈕，再載入全部（categoryId = 0）
+    init();
 
-    async function loadWishlist() {
+    async function init() {
         try {
-            const res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            await renderCategories(); // 嘗試載入分類（失敗不阻塞）
+        } catch {
+            // ignore
+        }
+        await loadWishlist(0);
+    }
+
+    // 新增：載入並渲染分類按鈕 (支援縮圖 sampleImage / imageUrl)
+    async function renderCategories() {
+        try {
+            const res = await fetch(apiCategories, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const j = await res.json().catch(() => ({}));
+            const cats = j.categories || [];
+            const container = document.getElementById('wishlist_categories');
+            if (!container) return;
+
+            // helper: hex -> {r,g,b}，支援 #abc 與 #aabbcc
+            function hexToRgb(hex) {
+                if (!hex) return null;
+                let h = hex.replace('#', '').trim();
+                if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
+                if (h.length !== 6) return null;
+                const r = parseInt(h.substring(0, 2), 16);
+                const g = parseInt(h.substring(2, 4), 16);
+                const b = parseInt(h.substring(4, 6), 16);
+                if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
+                return { r, g, b };
+            }
+
+            function rgba(hex, a = 1) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return `rgba(0,0,0,${a})`;
+                return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${a})`;
+            }
+
+            // helper: 決定白或深色文字（以相對亮度近似）
+            function readableTextColor(hex) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return '#0b1220'; // fallback 深色文字
+
+                // linearize sRGB then compute relative luminance (WCAG)
+                const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+                    const c = v / 255;
+                    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+                });
+                const l = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+
+                // 以亮度閾值選擇文字顏色：較亮背景用深色文字，較暗背景用白色文字
+                return l < 0.6 ? '#0b1220' : '#ffffff';
+            }
+
+            container.innerHTML = cats.map(c => {
+                const id = c.id ?? 0;
+                const badge = c.count ? `<span class="badge bg-secondary ms-2">${c.count}</span>` : '';
+                const imgSrc = c.sampleImage || c.imageUrl || '';
+                const imgTag = imgSrc ? `<img src="${escapeHtml(imgSrc)}" class="cat-thumb" alt="${escapeHtml(c.nameZh)}" />` : '';
+
+                const bg = (c.color || '#0EA5A4').trim();
+                const fg = readableTextColor(bg);
+                const border = rgba(bg, 0.12);
+
+                // data 屬性方便其他 script 使用
+                return `<button class="wishlist-cat-btn btn-transparent btn-sm" data-cat-id="${id}" data-cat-color="${escapeHtml(bg)}" data-cat-text="${escapeHtml(fg)}" style="background: linear-gradient(180deg, #f5fffb, #fff); background-color: ${escapeHtml(bg)}; color: ${escapeHtml(fg)}; border:1px solid ${border};">${imgTag}<span class="cat-name">${escapeHtml(c.nameZh)}</span> ${badge}</button>`;
+            }).join('');
+            attachCatHandlers();
+        } catch (ex) {
+            console.warn('載入分類失敗', ex);
+        }
+    }
+
+    function attachCatHandlers() {
+        const container = document.getElementById('wishlist_categories');
+        if (!container) return;
+        container.querySelectorAll('.wishlist-cat-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = Number(btn.getAttribute('data-cat-id') || '0');
+                // 樣式切換
+                container.querySelectorAll('.wishlist-cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                await loadWishlist(id);
+            });
+        });
+    }
+
+    // 修改：loadWishlist 支援 categoryId。若 categoryId 為 0 或 undefined 使用原本的 apiGet。
+    async function loadWishlist(categoryId) {
+        try {
+            let res;
+            if (categoryId && Number(categoryId) > 0) {
+                const url = `${apiWishByCat}?categoryId=${encodeURIComponent(categoryId)}`;
+                res = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            } else {
+                res = await fetch(apiGet, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+            }
+
             if (!res.ok) { renderEmpty(); return; }
-            const data = await res.json();
-            const items = (data && data.items) ? data.items : data;
+            const data = await res.json().catch(() => ({}));
+
+            // 若來自 GetWishByCategory API（通常回傳 { items: [...] }，items 物件屬性名可能不同），將其 map 成舊的 shape 以重用 render()
+            let items = (data && data.items) ? data.items : data;
+
+            // 若 items 的第一筆有 nameZh 或 photosSnapshot（表示是由 GetWishByCategory 回傳），則做 mapping
+            if (Array.isArray(items) && items.length > 0 && (items[0].nameZh !== undefined || items[0].photosSnapshot !== undefined)) {
+                items = items.map(it => ({
+                    spotId: it.spotId ?? it.SpotId ?? 0,
+                    SpotId: it.spotId ?? it.SpotId ?? 0,
+                    name_ZH: it.nameZh ?? it.name_ZH ?? it.spotTitle ?? null,
+                    Name_ZH: it.nameZh ?? it.Name_ZH ?? it.spotTitle ?? null,
+                    externalPlaceId: it.externalPlaceId ?? it.ExternalPlaceId ?? '',
+                    ExternalPlaceId: it.externalPlaceId ?? it.ExternalPlaceId ?? '',
+                    PhotosSnapshot: it.photosSnapshot ?? it.PhotosSnapshot ?? it.photosSnapshotJson ?? null,
+                    photosSnapshot: it.photosSnapshot ?? it.PhotosSnapshot ?? it.photosSnapshotJson ?? null,
+                    Address: it.address ?? it.Address ?? '',
+                    Rating: it.rating ?? it.Rating ?? null,
+                    imageUrl: it.imageUrl ?? null,
+                    spot: it.spot ?? null,
+                    locationCategoryId: it.locationCategoryId ?? it.locationCategoryId ?? null
+                }));
+            }
+
             render(items);
         } catch (ex) {
             console.error('載入願望清單失敗', ex);
@@ -57,6 +180,11 @@
                         needsGoogleFetch = true;
                         currentImageUrl = '/img/placeholder.png';
                     }
+                } else if (Array.isArray(parsedPhoto) && parsedPhoto.length) {
+                    const s = parsedPhoto[0] && parsedPhoto[0].trim ? parsedPhoto[0].trim() : '';
+                    if (s.toLowerCase().startsWith('http')) currentImageUrl = s;
+                    else if (/^\d+x\d+\?text=/.test(s)) currentImageUrl = `https://via.placeholder.com/${s}`;
+                    else needsGoogleFetch = true;
                 } else {
                     currentImageUrl = '/img/placeholder.png';
                 }
@@ -117,16 +245,19 @@
         fetchMissingPhotos(); // 渲染後立即啟動補圖
     }
 
+    // 替換原有 fetchMissingPhotos，移除 Google API 與 client-side photo sync 的 fallback
+    // 僅使用後端快照 (apiGetPhoto) 與已存在的 externalPlaceId 機制來取得圖片
     async function fetchMissingPhotos() {
         const images = document.querySelectorAll('img[data-spot-id]');
         for (let img of images) {
             const isPlaceholder = img.src && (img.src.endsWith('/img/placeholder.png') || img.src.includes('placeholder'));
             if (!isPlaceholder) continue;
 
-            const spotId = img.getAttribute('data-spot-id');
-            let placeId = img.getAttribute('data-place-id');
+            const spotId = img.getAttribute('data-spot-id') || img.dataset?.spotId || '';
+            let placeId = img.getAttribute('data-place-id') || img.dataset?.placeId || '';
 
             try {
+                // 1) 若沒有 placeId，先向後端查 spot -> externalPlaceId
                 if ((!placeId || placeId === 'null') && spotId) {
                     try {
                         const resExt = await fetch(`${apiGetExternalPlace}/${encodeURIComponent(spotId)}`, { credentials: 'include' });
@@ -135,79 +266,47 @@
                             placeId = json.externalPlaceId || placeId;
                             if (placeId) {
                                 img.setAttribute('data-place-id', placeId);
-                                updateCardLinks(spotId, placeId); // 新增這行
+                                updateCardLinks(spotId, placeId);
+                                // 同步更新卡片內所有連結
                                 const card = img.closest('.col');
                                 if (card) {
-                                    const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link');
+                                    const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link, a.btn_member_detail');
                                     const finalUrl = `/Spot?placeId=${encodeURIComponent(placeId)}`;
                                     aLinks.forEach(a => {
-                                        a.setAttribute('href', finalUrl);
-                                        a.setAttribute('data-place-id', placeId);
+                                        try { a.setAttribute('href', finalUrl); a.setAttribute('data-place-id', placeId); } catch { }
                                     });
                                     const cardWrapper = card.querySelector('.wishlist-item') || card;
                                     cardWrapper && cardWrapper.setAttribute('data-place-id', placeId);
                                 }
                             }
                         }
-                    } catch { /* ignore */ }
-                }
-
-                if (placeId && placeId !== 'null') {
-                    try {
-                        const photoRes = await fetch(`/api/auth/GetSpotPhoto?placeId=${encodeURIComponent(placeId)}&spotId=${encodeURIComponent(spotId || '')}`, { credentials: 'include' });
-                        if (photoRes.ok) {
-                            const j = await photoRes.json().catch(() => ({}));
-                            if (j.imageUrl) {
-                                img.src = j.imageUrl;
-                                continue;
-                            }
-                        }
-                    } catch (ex) {
-                        console.warn('fetchMissingPhotos GetSpotPhoto error', ex);
-                    }
-
-                    if (window.viewSpotPhotoSyncFetch && typeof window.viewSpotPhotoSyncFetch === 'function') {
-                        try {
-                            const url = await window.viewSpotPhotoSyncFetch(placeId);
-                            if (url) {
-                                img.src = url;
-                                continue;
-                            }
-                        } catch (e) { /* ignore */ }
-                    }
-                } else {
-                    // 最後嘗試用 client-side Google Places 以 title 搜尋
-                    const card = img.closest('.col');
-                    const title = card?.getAttribute('data-title') || img.getAttribute('alt') || '';
-                    if (title && window.google && window.google.maps && window.google.maps.places) {
-                        try {
-                            const svc = new window.google.maps.places.PlacesService(document.createElement('div'));
-                            svc.findPlaceFromQuery({ query: title, fields: ['place_id', 'photos'] }, (places, status) => {
-                                const okStatus = window.google.maps.places.PlacesServiceStatus.OK;
-                                if (status === okStatus && places && places.length) {
-                                    const p = places[0];
-                                    if (p.place_id) {
-                                        // 更新所有連結
-                                        const aLinks = card.querySelectorAll('a.btn-view-more, a.btn_view_more, a.btnSpot, a.wishlist-link');
-                                        const finalUrl = `/Spot?placeId=${encodeURIComponent(p.place_id)}`;
-                                        aLinks.forEach(a => {
-                                            a.setAttribute('href', finalUrl);
-                                            a.setAttribute('data-place-id', p.place_id);
-                                        });
-                                        img.setAttribute('data-place-id', p.place_id);
-                                    }
-                                    if (p.photos && p.photos.length) {
-                                        try { img.src = p.photos[0].getUrl({ maxWidth: 800 }); } catch { }
-                                    }
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('client-side findPlaceFromQuery failed', e);
-                        }
+                    } catch (e) {
+                        // 不阻斷後續流程
+                        console.warn('fetchMissingPhotos: fetch externalPlaceId failed', e);
                     }
                 }
+
+                // 2) 使用後端快照 API 取得最終 imageUrl（若存在） — 不再呼叫 Google Places 或 client-side sync
+                try {
+                    // 優先使用在檔案頂部定義的 apiGetPhoto（若未定義再 fallback 到 known path）
+                    const getPhotoUrl = apiGetPhoto || '/api/MemberCenterApi/GetSpotPhoto';
+                    const url = `${getPhotoUrl}?${placeId ? `placeId=${encodeURIComponent(placeId)}&` : ''}${spotId ? `spotId=${encodeURIComponent(spotId)}` : ''}`;
+                    const photoRes = await fetch(url, { credentials: 'include' });
+                    if (photoRes.ok) {
+                        const j = await photoRes.json().catch(() => ({}));
+                        if (j && j.imageUrl) {
+                            img.src = j.imageUrl;
+                            continue; // 成功更新，處理下一張
+                        }
+                    }
+                } catch (ex) {
+                    console.warn('fetchMissingPhotos: apiGetPhoto failed', ex);
+                }
+
+                // 3) 如果後端也沒有，保留 placeholder（不再嘗試 Google API）
+                // 若將來需要可在此加入額外策略
             } catch (err) {
-                console.error("補撈圖片失敗:", err);
+                console.error('fetchMissingPhotos error', err);
             }
         }
     }
@@ -402,7 +501,7 @@
         if (existing) existing.remove();
         const toast = document.createElement('div');
         toast.id = 'undo_toast_' + spotId;
-        toast.style = "position:fixed; bottom:20px; right:20px; z-index:2000; padding:10px 16px; background:#27354A; color:#fff; border-radius:8px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+        toast.style = "position:fixed; bottom:20px; z-index:2000; padding:10px 16px; background:#27354A; color:#fff; border-radius:8px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
         toast.innerHTML = `<span style="font-size:14px;">已從清單移除</span><button class="btn btn-sm btn-light" id="undo_btn_${spotId}" style="font-weight:bold;">還原</button>`;
         document.body.appendChild(toast);
         document.getElementById(`undo_btn_${spotId}`).onclick = onUndo;
@@ -425,3 +524,31 @@
         return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
     }
 });
+
+// 替換原 notify，Spot?placeId= 時 suppress popup
+function notify(type, title, message, seconds = 2) {
+    try {
+        const loc = window.location;
+        const isSpotWithPlaceId = loc && typeof loc.pathname === 'string'
+            && loc.pathname.toLowerCase().startsWith('/spot')
+            && new URLSearchParams(loc.search).has('placeId');
+
+        if (isSpotWithPlaceId) {
+            // 在 Spot?placeId= 頁面完全禁止 popup（改為寫入 console 以便除錯）
+            console.debug('[notify suppressed on Spot?placeId] ', { type, title, message });
+            return;
+        }
+
+        // 原有顯示邏輯（保留）
+        if (typeof window.showPopup === 'function') {
+            try { return window.showPopup({ title: title || '', message: message || '', type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'), autoClose: !!seconds, seconds }); } catch { /* ignore */ }
+        }
+        if (typeof window.showToast === 'function') {
+            try { window.showToast(message || title || ''); return; } catch { /* ignore */ }
+        }
+        alert((title ? title + '\n' : '') + (message || ''));
+    } catch (ex) {
+        // 防止 notify 本身拋錯影響主流程
+        console.warn('notify error', ex);
+    }
+}

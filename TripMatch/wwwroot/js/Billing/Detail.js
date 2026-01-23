@@ -98,7 +98,7 @@ function renderGroupTab() {
                             <div class="exp-right">
                                 <span class="exp-amount">NT$${item.total}</span>
                                 <div class="exp-actions">
-                                    <button class="action-icon-btn" onclick="editExpense(${item.id})"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="action-icon-btn" onclick="openEditModal(${item.id})"><i class="fa-solid fa-pen"></i></button>
                                     <button class="action-icon-btn delete" onclick="deleteExpense(${item.id})"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
@@ -262,7 +262,7 @@ function renderBalanceTab() {
                 .reduce((sum, s) => sum + s.amount, 0);
 
             // 判斷狀態
-            const isFullyPaid = paidAmount >= d.amount - 1; // 容許 1 元誤差
+            const isFullyPaid = paidAmount >= d.amount - 0.1; // 容許 0.1 元誤差
             const remaining = d.amount - paidAmount;
 
             // 根據狀態決定顯示樣式
@@ -279,7 +279,7 @@ function renderBalanceTab() {
                             </span>
                         </div>
                         <div class="debt-amount" style="color: #888;">
-                            NT$${Math.round(d.amount)}
+                            NT$${d.amount.toFixed(1)}
                         </div>
                     </div>
                 `;
@@ -295,7 +295,7 @@ function renderBalanceTab() {
                             ${paidAmount > 0 ? '<span style="font-size:12px; color:#f59e0b; margin-left:5px;">(部分還款)</span>' : ''}
                         </div>
                         <div class="debt-amount">
-                            NT$${Math.round(remaining)}
+                            NT$${remaining.toFixed(1)}
                         </div>
                     </div>
                 `;
@@ -321,17 +321,28 @@ function renderBalanceTab() {
                         <span class="settled-badge">還款紀錄</span>
                     </div>
                     <div class="settled-amount">
-                        NT$${Math.round(item.amount)}
+                        NT$${item.amount.toFixed(1)}
                     </div>
                 </div>
             `;
         }).join('');
     }
 }
-function openSettleModal(from, to, amount) {
-    appState.pendingSettle = { from, to, amount: Math.round(amount) };
-    document.getElementById('settle-desc').innerHTML = `<b>${from}</b> 需支付 <b>${to}</b>`;
+function openSettleModal(fromId, toId, amount) {
+    const fixAmount = parseFloat(amount.toFixed(1));
+
+    // 1. 儲存結清資訊
+    appState.pendingSettle = { from: fromId, to: toId, amount: fixAmount };
+
+    // 2. 利用 getMemberName 把 ID 轉成名字
+    const fromName = getMemberName(fromId);
+    const toName = getMemberName(toId);
+
+    // 3. 更新畫面 (顯示名字，而不是數字 ID)
+    document.getElementById('settle-desc').innerHTML = `<b>${fromName}</b> 需支付 <b>${toName}</b>`;
     document.getElementById('settle-amount').innerText = `NT$${Math.round(amount)}`;
+
+    // 4. 顯示視窗
     const modal = document.getElementById('settleModal');
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('show'), 10);
@@ -355,7 +366,7 @@ function confirmSettle() {
     formData.append('amount', amount);
 
     // 發送請求給後端
-    fetch('/Home/CreateSettlement', {
+    fetch('/Billing/CreateSettlement', {
         method: 'POST',
         body: formData
     })
@@ -422,30 +433,83 @@ function deleteExpense(id) {
                 alert("刪除失敗：" + (data.message || "未知錯誤"));
             }
         });
-}
+} 
 
-// 2. 開啟編輯視窗 (接收 HTML 傳來的資料)
-function openEditModal(id, title, amount, catId, dateStr) {
-    openExpenseModal(true); // 打開模態框 (設定為編輯模式)
+// 2. 開啟編輯視窗 (智慧 ID 查表版)
+function openEditModal(id) {
+    // 1. 除錯：印出來看看現在陣列裡有什麼，以及傳進來的 ID 是什麼型別
+    console.log("正在尋找 ID:", id, " (類型: " + typeof id + ")");
+    // console.log("目前的支出列表:", appState.expenses); // 如果資料很多，這行可以先註解掉
 
-    // 設定全域變數，讓儲存時知道現在是編輯哪一筆
+    // 2. ★★★ 修正重點：改用 == (兩個等號)，允許字串 '11' 等於數字 11 ★★★
+    const targetExpense = appState.expenses.find(e => e.id == id);
+
+    // 如果還是找不到，跳出警告
+    if (!targetExpense) {
+        console.error("找不到支出資料 ID:", id);
+        console.log("可用的 ID 列表:", appState.expenses.map(e => e.id));
+        alert("發生錯誤：找不到該筆支出資料 (ID: " + id + ")，請嘗試重新整理網頁。");
+        return;
+    }
+
+    // 3. 打開 Modal
+    openExpenseModal(true);
     appState.editingId = id;
 
-    // 填入表單資料
-    document.getElementById('m-date').value = dateStr;
-    document.getElementById('m-name').value = title;
-    // 注意：這裡假設您的 CategoryId 是 1~6，對應 select 的 value (例如 value="1" 代表食物)
-    // 如果您的 select value 是文字 (例如 "食物")，這裡可能要寫判斷轉換
-    document.getElementById('m-cat').selectedIndex = catId - 1;
+    // 4. 填入基本資料
+    document.getElementById('m-date').value = targetExpense.date;
+    document.getElementById('m-name').value = targetExpense.name;
 
-    // 填寫金額 (暫時簡化：編輯時先不處理分帳細節的顯示，只讓您改總額)
-    document.getElementById('pay-total-val').innerText = amount;
+    // 顯示總金額
+    document.getElementById('pay-total-val').innerText = targetExpense.total;
+    document.getElementById('split-total-val').innerText = targetExpense.total;
 
-    // 為了讓 UI 正常，把金額填入第一位成員的欄位 (這裡您可以再優化)
-    const firstInput = document.querySelector('.pay-amt');
-    if (firstInput) firstInput.value = amount;
+    // 5. 處理類別
+    const catSelect = document.getElementById('m-cat');
+    let catFound = false;
+    for (let i = 0; i < catSelect.options.length; i++) {
+        if (catSelect.options[i].text === targetExpense.cat) {
+            catSelect.selectedIndex = i;
+            catFound = true;
+            break;
+        }
+    }
+    if (!catFound && targetExpense.cat) {
+        catSelect.value = targetExpense.cat;
+    }
+
+    // 6. 還原付款人 (Payers)
+    document.querySelectorAll('.pay-amt').forEach(input => {
+        const userId = input.dataset.user;
+        const payAmount = targetExpense.payer[userId] || 0;
+        const checkbox = input.closest('.checkbox-row').querySelector('.pay-check');
+
+        if (payAmount > 0) {
+            input.value = payAmount;
+            checkbox.checked = true;
+        } else {
+            input.value = '';
+            checkbox.checked = false;
+        }
+    });
+
+    // 7. 還原分攤人 (Parts)
+    document.querySelectorAll('.part-amt').forEach(input => {
+        const userId = input.dataset.user;
+        const partAmount = targetExpense.parts[userId] || 0;
+        const checkbox = input.closest('.checkbox-row').querySelector('.part-check');
+
+        if (partAmount > 0) {
+            input.value = parseFloat(partAmount.toFixed(2));
+            checkbox.checked = true;
+        } else {
+            input.value = '';
+            checkbox.checked = false;
+        }
+    });
+
+    changeSplitMode('custom');
 }
-
 function saveExpense() {
     // 1. 取得基本欄位資料
     const date = document.getElementById('m-date').value;
@@ -616,7 +680,8 @@ function calcAverageSplit() {
     const total = Number(document.getElementById('pay-total-val').innerText);
     const checkedBoxes = document.querySelectorAll('.part-check:checked');
     const count = checkedBoxes.length;
-    const avg = count > 0 ? (total / count).toFixed(0) : 0;
+    // 保留一位小數 
+    const avg = count > 0 ? (total / count).toFixed(1) : 0;
     document.querySelectorAll('.part-amt').forEach(inp => inp.value = 0);
     checkedBoxes.forEach(box => {
         box.closest('.checkbox-row').querySelector('.part-amt').value = avg;
@@ -653,7 +718,7 @@ function editMyBudget() {
     formData.append('tripId', tripId);
     formData.append('newBudget', newBudget);
 
-    fetch('/Home/UpdateBudget', {
+    fetch('/Billing/UpdateBudget', {
         method: 'POST',
         body: formData
     })

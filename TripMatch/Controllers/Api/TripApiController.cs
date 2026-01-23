@@ -153,6 +153,30 @@ namespace TripMatch.Controllers.Api
         }
 
 
+        [HttpDelete("DeleteAccommodation/{id}")]
+        public async Task<IActionResult> DeleteAccommodation(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest("無效的 ID");
+                }
+
+                // 這裡執行刪除邏輯
+                bool success = await _tripServices.DeleteAccommodation(id);
+
+                // 成功刪除通常回傳 204 No Content 或 200 OK
+                return Ok(new { message = $"已成功刪除景點, 住宿id = {id}" });
+            }
+            catch (Exception ex)
+            {
+                // 伺服器錯誤
+                return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
+            }
+        }
+
+
 
 
 
@@ -261,6 +285,33 @@ namespace TripMatch.Controllers.Api
             catch (Exception ex)
             {
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
+            }
+        }
+
+        [HttpDelete("DeleteDay/{tripId:int}/{dayNum:int}")]
+        [Authorize] // 建議加上權限檢查
+        public async Task<IActionResult> DeleteDay(int tripId, int dayNum)
+        {
+            try
+            {
+                // 建議在此加入權限檢查：確認目前的 UserId 是否有權限編輯此 TripId
+                // 例如：var userId = _tagUserId.UserId;
+                // if (!await _tripServices.IsUserTripMember(userId, tripId)) return Forbid();
+
+                bool success = await _tripServices.DeleteTripDay(tripId, dayNum);
+
+                if (success)
+                {
+                    return Ok(new { message = $"第 {dayNum} 天已刪除，後續行程已自動遞補" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "刪除失敗，請檢查行程編號或天數" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "伺服器內部錯誤：" + ex.Message });
             }
         }
 
@@ -373,11 +424,6 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, new { Message = "取得附近景點時發生伺服器錯誤。" });
             }
         }
-
-
-
-
-
         #endregion
 
         #region 航班資訊 Proxy
@@ -456,31 +502,78 @@ namespace TripMatch.Controllers.Api
         }
 
         [HttpDelete("DeleteFlight/{id}")]
-        public async Task<IActionResult> DeleteFlight(int id)
+        public async Task<IActionResult> DeleteFlight(int id, [FromQuery] string rowVersion)
         {
             try
             {
+                // 1. 基本驗證
                 if (id <= 0)
                 {
                     return BadRequest("無效的航班 ID");
                 }
-                // 呼叫服務層刪除航班
-                bool success = await _tripServices.DeleteFlight(id);
+
+                if (string.IsNullOrEmpty(rowVersion))
+                {
+                    return BadRequest("缺少版本標記 (RowVersion)");
+                }
+
+                // 2. 呼叫服務層進行帶有衝突檢查的刪除
+                // 注意：這裡 Service 的參數多了一個 rowVersion
+                bool success = await _tripServices.DeleteFlight(id, rowVersion);
+
                 if (success)
                 {
                     return Ok(new { message = $"已成功刪除航班, FlightId = {id}" });
                 }
                 else
                 {
-                    return NotFound("找不到指定的航班");
+                    // 如果回傳 false，通常代表找不到資料（已被他人刪除）
+                    return NotFound("找不到指定的航班，可能已被其他成員刪除");
                 }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 3. 專門處理並行衝突 (有人在你讀取後改動了資料)
+                return Conflict(new { message = "該航班資訊已被修改，請重新整理頁面取得最新狀態。" });
             }
             catch (Exception ex)
             {
-                // 伺服器錯誤
+                // 4. 處理其他意外錯誤
+                // 在正式環境建議不要直接把 ex.Message 丟回前端，此處保留你的原樣
                 return StatusCode(500, "伺服器內部錯誤：" + ex.Message);
             }
         }
+
+        #endregion
+
+        #region 行程邀請
+
+        // 取得邀請資訊 (公開 API，不一定要 Authorize，或者前端判斷未登入先跳轉)
+        [HttpGet("invite-info/{code}")]
+        public async Task<IActionResult> GetInviteInfo(string code)
+        {
+            var info = await _tripServices.GetTripInfoByInviteCode(code);
+            if (info == null) return NotFound(new { message = "無效的邀請碼" });
+
+            return Ok(info);
+        }
+
+        // 確認加入 (必須登入)
+        [HttpPost("join")]
+        [Authorize]
+        public async Task<IActionResult> JoinByCode([FromBody] JoinRequestDto req)
+        {
+            var userId = _tagUserId.UserId;
+            bool success = await _tripServices.JoinTripByInviteCode(userId, req.InviteCode);
+
+            if (success)
+                return Ok(new { message = "加入成功" });
+            else
+                return BadRequest(new { message = "加入失敗，邀請碼無效或發生錯誤" });
+        }
+
+        // DTO class 可以放下面或獨立檔案
+        public class JoinRequestDto { public string InviteCode { get; set; } }
 
         #endregion
     }

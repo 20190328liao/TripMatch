@@ -1,6 +1,9 @@
 ﻿/* =============================================
    導覽列字體設定 (覆蓋 Bootstrap 預設值)
    ============================================= */
+.dropdown-item {
+	font-size: 18px;
+}
 .navbar .nav-link {
 	font-size: 18px !important; /* 字體大小 */
 	font-weight: 600 !important; /* 字體粗細 */
@@ -148,9 +151,10 @@
 	box-sizing: border-box; /*解決百分比寬度破版擠壓*/
 }
 
-.footer-inner {
+.footerWrap,.footer-inner {
+	padding: 10px 0;
 	text-align: center;
-	font-size: 18pt;
+	font-size: 16pt;
 }
 
 html,
@@ -298,7 +302,7 @@ header {
 	border-radius: 4px;
 	font-size: 1rem;
 	cursor: pointer;
-	padding: 0.5em 1.5em;
+/*	padding: 0.5em 1.5em;*/
 	margin: 0 0.5rem 0 0.5rem;
 	border-radius: 4px;
 	cursor: pointer;

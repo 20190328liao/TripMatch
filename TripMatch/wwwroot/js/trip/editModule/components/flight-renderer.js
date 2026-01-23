@@ -92,7 +92,7 @@
                     </div>
 
                     <!-- 刪除按鈕 -->
-                    <button class="flight-delete-btn delete-flight-btn" data-id="${f.id}" title="移除航班">
+                    <button class="flight-delete-btn delete-flight-btn" data-id="${f.id}" data-version="${f.rowVersion}" title="移除航班">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>`;

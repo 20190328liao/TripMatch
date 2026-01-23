@@ -57,7 +57,9 @@ public partial class TravelDbContext : DbContext
 
     public virtual DbSet<Preference> Preferences { get; set; }
 
-    public virtual DbSet<Recommandation> Recommandations { get; set; }
+    public virtual DbSet<Recommendation> Recommendations { get; set; }
+
+    public virtual DbSet<RecommendationVote> RecommendationVotes { get; set; }
 
     public virtual DbSet<Settlement> Settlements { get; set; }
 
@@ -71,7 +73,9 @@ public partial class TravelDbContext : DbContext
 
     public virtual DbSet<Wishlist> Wishlists { get; set; }
 
-
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=.\\sqlexpress01;Database=travelDB;Integrated Security=True;Encrypt=False;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -594,15 +598,15 @@ public partial class TravelDbContext : DbContext
                 .HasConstraintName("FK_Preferences_AspNetUsers");
         });
 
-        modelBuilder.Entity<Recommandation>(entity =>
+        modelBuilder.Entity<Recommendation>(entity =>
         {
             entity.HasKey(e => e.Index).HasName("PK__Recomman__9A5B6228B4A79F8B");
-
-            entity.HasIndex(e => e.GroupId, "IX_Recommandations_GroupId");
 
             entity.HasIndex(e => new { e.GroupId, e.StartDate, e.EndDate }, "IX_Recommandations_GroupId_DateRange");
 
             entity.HasIndex(e => new { e.GroupId, e.Vote, e.Price }, "IX_Recommandations_GroupId_Vote_Price");
+
+            entity.HasIndex(e => e.GroupId, "IX_Recommendations_GroupId");
 
             entity.Property(e => e.CreatedAt).HasPrecision(0);
             entity.Property(e => e.DepartFlight).HasMaxLength(200);
@@ -614,10 +618,21 @@ public partial class TravelDbContext : DbContext
             entity.Property(e => e.StartDate).HasPrecision(0);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.Group).WithMany(p => p.Recommandations)
+            entity.HasOne(d => d.Group).WithMany(p => p.Recommendations)
                 .HasForeignKey(d => d.GroupId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Recommandations_GroupId_TravelGroups");
+        });
+
+        modelBuilder.Entity<RecommendationVote>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Recommen__3214EC07CE442206");
+
+            entity.HasIndex(e => new { e.UserId, e.GroupId }, "IX_Vote_User_Group");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Settlement>(entity =>

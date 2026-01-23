@@ -19,6 +19,7 @@ namespace TripMatch.Models.DTOs
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public List<GeoDto> TripRegions { get; set; } = [];
+        public string PhotoUrl { get; set; } = string.Empty;
         public List<string> DateStrings
         {
             get
@@ -53,6 +54,7 @@ namespace TripMatch.Models.DTOs
         public string ToAirport { get; set; } = string.Empty;
         public string FromLocation { get; set; } = string.Empty;
         public string ToLocation { get; set; } = string.Empty;
+        public string RowVersion { get; set; } = string.Empty;
 
         // --- 內建轉換邏輯 ---
 

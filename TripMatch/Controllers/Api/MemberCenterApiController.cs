@@ -58,6 +58,105 @@ namespace TripMatch.Controllers.Api
             public string Type { get; set; } = string.Empty;
         }
 
+        // 回傳使用者的 wishlist 分類統計與分類列表
+        [HttpGet("GetWishlistCategories")]
+        [Authorize]
+        public async Task<IActionResult> GetWishlistCategories()
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized();
+
+            // 1. 撈取啟用的分類
+            var categories = await _dbContext.LocationCategories
+                .AsNoTracking()
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.SortOrder)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    nameZh = c.NameZh,
+                    nameEn = c.NameEn,
+                    iconTag = c.IconTag,
+                    color = c.ColorCode,
+                    sortOrder = c.SortOrder
+                })
+                .ToListAsync();
+
+            // 2. 計算該 user 每個分類的 wishlist 數量（含 Spot.LocationCategoryId 為 null 的情況）
+            var counts = await _dbContext.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .Include(w => w.Spot)
+                .GroupBy(w => w.Spot != null ? w.Spot.LocationCategoryId : null)
+                .Select(g => new { categoryId = g.Key, count = g.Count() })
+                .ToListAsync();
+
+            var total = counts.Sum(x => x.count);
+
+            // 3. 組合回傳（在前端方便渲染）
+            var result = categories.Select(c => new
+            {
+                id = c.id,
+                nameZh = c.nameZh,
+                nameEn = c.nameEn,
+                iconTag = c.iconTag,
+                color = c.color,
+                count = counts.FirstOrDefault(x => x.categoryId == c.id)?.count ?? 0
+            }).ToList();
+
+            // 插入「總覽 (All)」
+            var overview = new
+            {
+                id = 0,
+                nameZh = "總覽",
+                nameEn = "All",
+                iconTag = "bi bi-grid", // bootstrap icon fallback
+                color = "#27354A",
+                count = total
+            };
+
+            var withOverview = new List<object> { overview };
+            withOverview.AddRange(result);
+
+            return Ok(new { categories = withOverview, total });
+        }
+
+        // 以 categoryId 回傳該 user 的 wishlist（categoryId == 0 或 null 表示全部）
+        [HttpGet("GetWishByCategory")]
+        [Authorize]
+        public async Task<IActionResult> GetWishByCategory(int? categoryId)
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out var userId))
+                return Unauthorized();
+
+            var query = _dbContext.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .Include(w => w.Spot)
+                .OrderByDescending(w => w.CreatedAt)
+                .AsQueryable();
+
+            if (categoryId.HasValue && categoryId.Value > 0)
+            {
+                query = query.Where(w => w.Spot != null && w.Spot.LocationCategoryId == categoryId.Value);
+            }
+
+            var items = await query.Select(w => new
+            {
+                spotId = w.SpotId,
+                nameZh = w.Spot != null ? w.Spot.NameZh : "未知地點",
+                externalPlaceId = w.Spot != null ? w.Spot.ExternalPlaceId : "",
+                photosSnapshot = w.Spot != null ? w.Spot.PhotosSnapshot : null,
+                address = w.Spot != null ? w.Spot.AddressSnapshot : "",
+                rating = w.Spot != null ? w.Spot.Rating : (decimal?)null,
+                locationCategoryId = w.Spot != null ? w.Spot.LocationCategoryId : (int?)null
+            }).ToListAsync();
+
+            return Ok(new { items });
+        }
+
         [HttpPost]
         public async Task<IActionResult> ResultChangeEmail([FromBody] RequestChangeEmailModel model)
         {
@@ -656,5 +755,44 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        // POST api/MemberCenterApi/SeedDefaultCategoryColors (Admin only)
+        [HttpPost("SeedDefaultCategoryColors")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SeedDefaultCategoryColors()
+        {
+            // 藍綠系統一調色板（可視需求調整）
+            var defaults = new Dictionary<int, string>
+            {
+                { 1, "#06B6D4" }, // 美食 (cyan)
+                { 2, "#0284C7" }, // 景點 (blue)
+                { 3, "#0EA5A4" }, // 購物 (teal)
+                { 4, "#10B981" }, // 住宿 (emerald)
+                { 5, "#059669" }, // 交通 (green-teal)
+                { 6, "#065F46" }  // 自然 (deep green)
+            };
+
+            var updated = new List<int>();
+
+            foreach (var kv in defaults)
+            {
+                var cat = await _dbContext.LocationCategories.FindAsync(kv.Key);
+                if (cat != null)
+                {
+                    // 只在尚未設定 ColorCode 時才寫入，避免覆蓋管理員自訂色
+                    if (string.IsNullOrWhiteSpace(cat.ColorCode))
+                    {
+                        cat.ColorCode = kv.Value;
+                        updated.Add(kv.Key);
+                    }
+                }
+            }
+
+            if (updated.Any())
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return Ok(new { seeded = true, updated });
+        }
     }
 }
