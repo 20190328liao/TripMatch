@@ -46,11 +46,29 @@ namespace TripMatch.Controllers
             return View();
         }
 
-        // Login (GET)
+        // Login (GET)：確保 invite_return 寫入時 Path="/" 且 HttpOnly = false（雙重保險）
         [HttpGet]
         [RedirectIfAuthenticated]
         public IActionResult Login(string? returnUrl = null)
         {
+            // 若已登入，直接離開（Attribute 也會處理）
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            // 僅在 returnUrl 為安全本域路徑時寫入 Cookie（Path=/，HttpOnly=false 供前端讀取）
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                Response.Cookies.Append("invite_return", returnUrl, new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(10),
+                    HttpOnly = false,
+                    SameSite = SameSiteMode.Lax,
+                    Path = "/"
+                });
+            }
+
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
@@ -66,20 +84,39 @@ namespace TripMatch.Controllers
             {
                 return View(model);
             }
-            // 檢查 Email 與 Password 不為 null
+
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
             {
                 ModelState.AddModelError(string.Empty, "請輸入帳號與密碼。");
                 return View(model);
             }
-            // 不使用 RememberMe，固定為 false
+
             var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, isPersistent: false, lockoutOnFailure: false);
             if (result.Succeeded)
             {
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                // 決定最終 redirectUrl：優先 querystring 的 returnUrl，若無則檢查 invite_return cookie
+                string? finalReturnUrl = returnUrl;
+                if (string.IsNullOrEmpty(finalReturnUrl) && Request.Cookies.TryGetValue("invite_return", out var cookieReturn) && !string.IsNullOrEmpty(cookieReturn))
                 {
-                    return LocalRedirect(returnUrl);
+                    finalReturnUrl = cookieReturn;
                 }
+
+                // 若有 target，重新寫入短期 invite_return（確保首頁可以讀到），然後導回首頁讓前端顯示 modal
+                if (!string.IsNullOrEmpty(finalReturnUrl) && Url.IsLocalUrl(finalReturnUrl))
+                {
+                    Response.Cookies.Append("invite_return", finalReturnUrl, new CookieOptions
+                    {
+                        Expires = DateTimeOffset.UtcNow.AddMinutes(10),
+                        HttpOnly = false, // 允許前端讀取 modal 邏輯
+                        SameSite = SameSiteMode.Lax,
+                        Path = "/"
+                    });
+
+                    // 導回首頁，首頁的 auth-returnurl.js 會讀 cookie 並顯示詢問 modal
+                    return RedirectToAction("Index", "Home");
+                }
+
+                // 若沒有 returnUrl，依原本流程導向 Match（或 Home）
                 return RedirectToAction("Index", "Match");
             }
 
@@ -89,8 +126,10 @@ namespace TripMatch.Controllers
 
         [HttpGet]
         [RedirectIfAuthenticated]
-        public IActionResult Signup()
+        public IActionResult Signup(string? returnUrl = null)
         {
+            // 傳遞 returnUrl 到註冊頁，註冊頁應把此參數帶到表單或 redirect flow
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
@@ -361,19 +400,26 @@ namespace TripMatch.Controllers
 
         // Google 登入跳轉
         [HttpGet]
-            public IActionResult LoginGoogle()
-            {
-                var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", Url.Action("GoogleResponse", "Auth"));
-                return Challenge(properties, "Google");
-            }
+        public IActionResult LoginGoogle(string? returnUrl = null)
+        {
+            // 把 returnUrl 放到 callback 的 query string，外部 callback 時能拿回
+            var callbackUrl = Url.Action("GoogleResponse", "Auth", new { returnUrl }, Request.Scheme);
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", callbackUrl);
+            return Challenge(properties, "Google");
+        }
 
             // Google 登入回調
             [HttpGet]
-            public async Task<IActionResult> GoogleResponse()
+            public async Task<IActionResult> GoogleResponse(string? returnUrl = null)
             {
                 var info = await _signInManager.GetExternalLoginInfoAsync();
                 if (info == null)
                 {
+                    // 若無外部登入資訊，導回登入頁（保持 returnUrl）
+                    if (!string.IsNullOrEmpty(returnUrl))
+                    {
+                        return RedirectToAction("Login", new { returnUrl });
+                    }
                     return RedirectToAction("Login");
                 }
 
@@ -397,11 +443,18 @@ namespace TripMatch.Controllers
 
                         var token = _authService.GenerateJwtToken(user);
                         _authService.SetAuthCookie(HttpContext, token);
+
+                        // 成功登入後，優先導向 returnUrl（僅限本域）
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        {
+                            return LocalRedirect(returnUrl);
+                        }
+
                         return RedirectToAction("Index", "Home");
                     }
                 }
 
-                // 2. 如果沒帳號，自動註冊
+                // 2. 如果沒帳號，自動註冊（或連結到已存在帳號）
                 var email = info.Principal.FindFirstValue(ClaimTypes.Email);
                 if (string.IsNullOrEmpty(email)) return BadRequest("無法從 Google 取得 Email");
 
@@ -427,12 +480,22 @@ namespace TripMatch.Controllers
                     await _userManager.UpdateAsync(userByEmail);
                 }
 
-                // 連結 Google 帳號
-                await _userManager.AddLoginAsync(userByEmail, info);
-                await _signInManager.SignInAsync(userByEmail, isPersistent: false);
+                // 若尚未連結外部登入，連結之
+                var userLogins = await _userManager.GetLoginsAsync(userByEmail);
+                if (!userLogins.Any(l => l.LoginProvider == info.LoginProvider && l.ProviderKey == info.ProviderKey))
+                {
+                    await _userManager.AddLoginAsync(userByEmail, info);
+                }
 
+                await _signInManager.SignInAsync(userByEmail, isPersistent: false);
                 var newToken = _authService.GenerateJwtToken(userByEmail);
                 _authService.SetAuthCookie(HttpContext, newToken);
+
+                // 註冊／首次外部登入後，優先導向 returnUrl（僅限本域）
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return LocalRedirect(returnUrl);
+                }
 
                 return RedirectToAction("Index", "Home");
             }

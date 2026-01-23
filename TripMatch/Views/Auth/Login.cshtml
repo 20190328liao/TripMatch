@@ -3,6 +3,9 @@
     var tokens = Antiforgery.GetAndStoreTokens(Context);
     ViewData["Title"] = "登入";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
+
+    // 取回可能來自 QueryString 或 Controller 的 ReturnUrl（會是解碼後的相對路徑）
+    var returnUrlValue = (string?)ViewData["ReturnUrl"] ?? Context.Request.Query["ReturnUrl"].ToString();
 }
 
 <div class="signWrap">
@@ -36,7 +39,7 @@
                 <div class="loginWrap mb-4">
                     @* 使用 Url.Action 跳轉到註冊頁 *@
                     <a href="@Url.Action("Login", "Auth")" class="inputLine loginH1 titleWrap titleH1">登&ensp;入</a>
-                    <a href="@Url.Action("Signup", "Auth")" class="inputNone SignH1 titleWrap titleH1">註&ensp;冊</a>
+                    <a href="@Url.Action("Signup", "Auth", new { returnUrl = returnUrlValue })" class="inputNone SignH1 titleWrap titleH1">註&ensp;冊</a>
                 </div>
 
                 <form id="loginForm" class="loginForm">
@@ -105,6 +108,7 @@
 
     <!-- 只載入必要的共用套件與正確路徑的 helper/login -->
     <script src="~/js/AuthApi/login.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/inviteLoginTrip.js" asp-append-version="true"></script>
 
     <script>
         $(function () {

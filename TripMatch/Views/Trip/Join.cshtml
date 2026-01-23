@@ -119,10 +119,9 @@
 
                     if (res.status === 401) {
                         // 未登入，導向登入頁，並設定登入後跳回此頁
-                        const loginPath = '/Auth/Login';
-                        const encodedUrl = encodeURIComponent(window.location.pathname + window.location.search);                   
-                        window.location.href = `${window.location.origin}${loginPath}?ReturnUrl=${encodedUrl}`;
- 
+                         const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                        window.location.href = `https://localhost:5223/Auth/Login?ReturnUrl=${returnUrl}`;
+                        console.log( "FFGHERTFF",window.location.href);
                         return;
                     }
 
