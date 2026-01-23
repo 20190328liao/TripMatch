@@ -6,6 +6,9 @@
     --c-muted: #6b7280;
     --c-line: #e5e7eb;
     --c-shadow: 0 6px 20px rgba(17, 24, 39, 0.10);
+    --dark-mint: #36b38c;
+    --primary-mint: #62DEB1;
+    --accent-btn: var(--dark-mint);
 }
 
 .page {
@@ -57,37 +60,44 @@
     margin: 0;
 }*/
 
-.btn-create {
-    display: inline-flex;
+.create-btn {
+    background-color: var(--primary-mint);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(98, 222, 177, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-    border-radius: 10px;
-    background: var(--c-mint);
-    color: var(--c-white);
+    gap: 8px;
     text-decoration: none;
-    font-weight: 700;
-    box-shadow: 0 10px 18px rgba(0, 150, 138, 0.18);
-    user-select: none;
-    transition: transform .08s ease, background .15s ease;
+    margin-top: 55px;
 }
 
-    .btn-create:hover {
-        background: var(--c-teal);
+    .create-btn:hover {
+        background-color: var(--dark-mint);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(54, 179, 140, 0.4);
+        text-decoration: none;
+        color: white;
     }
 
-    .btn-create:active {
+/*    .create-btn:active {
         transform: translateY(1px);
-    }
+    }*/
 
-.btn-create-plus {
+.create-btn-plus {
     font-size: 18px;
     line-height: 1;
 }
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 28px;
     justify-content: start;
 }
@@ -194,7 +204,19 @@
             background: rgba(239, 68, 68, .10);
         }
 
-@media (max-width: 920px) {
+/*平板*/
+@media (max-width: 1200px) {
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .title {
+        font-size: 36px;
+    }
+}
+
+/* 手機 */
+@media (max-width: 640px) {
     .grid {
         grid-template-columns: 1fr;
     }
@@ -247,7 +269,7 @@
     cursor: pointer;
 }
 
-.btn-close {
+/*.btn-close {
     padding: 8px 14px;
     border-radius: 8px;
     border: 0;
@@ -293,7 +315,7 @@
     .btn-copy:disabled {
         opacity: .6;
         cursor: not-allowed;
-    }
+    }*/
 
 .invite-hint {
     margin-top: 8px;
@@ -307,3 +329,105 @@
     border-top: 1px solid #e5e7eb;
     margin: 12px 0;
 }
+
+/* 讓邀請碼與按鈕同一列、不換行 */
+.invite-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap; /* 重要：不要換行 */
+}
+
+/* 邀請碼外殼：固定高度/圓角/邊框 */
+.inviteCodeShell {
+    position: relative;
+    flex: 1 1 auto; /* 吃滿剩餘寬度 */
+    min-width: 0; /* 重要：允許在 flex 內縮小，否則會撐爆 */
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    background: #f9fafb;
+    padding: 10px 12px;
+}
+
+/* 邀請碼本體：單行、可反白、可橫向捲動看完整 */
+.invite-code {
+    display: block;
+    white-space: nowrap; /* 單行 */
+    overflow-x: auto; /*可橫向捲動*/
+    overflow-y: hidden;
+    font-weight: 800;
+    /*letter-spacing: .04em;*/ /* 邀請碼不需要太大字距，避免更擠 */
+    color: var(--c-text);
+    scrollbar-width: thin; /* Firefox */
+
+    /* 隱藏捲軸（Firefox/IE/Edge Legacy） */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+    /* 隱藏捲軸（Chrome/Safari） */
+    .invite-code::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Chrome/Safari 捲軸縮小（可省略） */
+    .invite-code::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .invite-code::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,.18);
+        border-radius: 999px;
+    }
+
+/* 視覺提示：右側漸層遮罩，暗示後面還有內容（但不影響選取與捲動） */
+.inviteCodeShell::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 56px;
+    height: 100%;
+    pointer-events: none;
+    background: linear-gradient(to right, rgba(249,250,251,0), rgba(249,250,251,1));
+}
+
+/* 右側按鈕：自訂，不再用原本 btn-close / btn-copy class */
+.invite-btn {
+    flex: 0 0 auto;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1px solid transparent;
+    user-select: none;
+    white-space: nowrap; /* 防止按鈕文字自己換行 */
+}
+
+/* Copy：主色 */
+.invite-btn-copy {
+    background: var(--c-mint);
+    color: var(--c-white);
+}
+
+    .invite-btn-copy:hover {
+        background: var(--c-teal);
+    }
+
+    .invite-btn-copy:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+/* Close：白底描邊 */
+.invite-btn-close {
+    background: var(--c-white);
+    color: var(--c-teal);
+    border-color: rgba(0,150,138,.35);
+}
+
+    .invite-btn-close:hover {
+        background: rgba(98,222,177,.14);
+    }
+

@@ -53,7 +53,7 @@
 
                     if (isOwner) {
                         // 團主 => 刪除
-                        const ok = confirm("確定刪除此行程? 此操作無法還原。");
+                        const ok = confirm("分帳紀錄將一併刪除，確定刪除此行程? 此操作無法還原。");
                         if (!ok) return;
 
                         try {
@@ -82,7 +82,7 @@
                             card.remove();
                         } catch (err) {
                             console.error(err);
-                            alert("退出失敗，請稍後再試。");
+                            alert("退出失敗 : 您在此行程仍有分帳或結算紀錄，請先刪除相關記帳紀錄後再試一次。");
                         }
                     }
                     return;
@@ -150,7 +150,7 @@
 
             btnCopyIntive.onclick = async () => {
                 await copyTextToClipboard(fullUrl);
-                inviteHint.textContent = "已複製邀請連結！";
+                inviteHint.textContent = "已複製邀請連結";
                 setTimeout(() => { inviteHint.textContent = ""; }, 1500);
             }
         } catch (err) {

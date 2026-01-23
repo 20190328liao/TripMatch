@@ -806,17 +806,57 @@ namespace TripMatch.Services
                 .Select(x => (byte?)x.RoleType)
                 .FirstOrDefaultAsync();
 
-            if (myRole is null) throw new UnauthorizedAccessException("Not a trip member.");
-            if (myRole != 1) throw new UnauthorizedAccessException("Only owner can delete.");
+            if (myRole is null) throw new UnauthorizedAccessException("不是該行程成員。");
+            if (myRole != 1) throw new UnauthorizedAccessException("只有團主有權刪除行程。");
 
-            // 刪除策略:
-            // -> 若 DB 有 cascade，直接刪 Trip
-            // -> 若沒有 cascade，需先刪 TripMembers/關聯表，再刪 Trip
             var trip = await _context.Trips.FindAsync(tripId);
             if (trip == null) return;
 
-            _context.Trips.Remove(trip);
-            await _context.SaveChangesAsync();
+            // 用 Transaction 防止刪到一半斷掉
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // === 先清記帳資料 ===
+                // 1. 找出該 trip 底下的 expenses
+                var expenseIds = await _context.Expenses
+                    .Where(e => e.TripId == tripId)
+                    .Select(e => e.ExpenseId)
+                    .ToListAsync();
+
+                if(expenseIds.Count > 0)
+                {
+                    // 2. 刪 ExpenseParticipants
+                    var eps = _context.ExpenseParticipants.Where(ep => expenseIds.Contains(ep.ExpenseId));
+                    _context.ExpenseParticipants.RemoveRange(eps);
+
+                    // 3. 刪 ExpensePayers
+                    var payers = _context.ExpensePayers.Where(p => expenseIds.Contains(p.ExpenseId));
+                    _context.ExpensePayers.RemoveRange(payers);
+
+                    // 4. 刪 Expenses
+                    var expenses = _context.Expenses.Where(e => e.TripId == tripId);
+                    _context.Expenses.RemoveRange(expenses);
+                }
+
+                // 5. 刪 Settlements
+                var settlements = _context.Settlements.Where(s => s.TripId == tripId);
+                _context.Settlements.RemoveRange(settlements);
+
+                // 再刪 Trip 子表
+                var members = _context.TripMembers.Where(tm => tm.TripId == tripId);
+                _context.TripMembers.RemoveRange(members);
+
+                // 刪 Trip
+                _context.Trips.Remove(trip);
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         // 離開行程
@@ -829,6 +869,26 @@ namespace TripMatch.Services
 
             // owner 不允許直接 leave
             if (tm.RoleType == 1) throw new InvalidCastException("Owner cannot leave.");
+
+            // === 記帳關聯檢查 ===
+            // 1. ExpenseParticipant
+            bool hasParticipant = await _context.ExpenseParticipants
+                .AnyAsync(ep => ep.TripId == tripId && ep.UserId == userId);
+            // 2. ExpensePayer
+            bool hasPayer = await _context.ExpensePayers
+                .AnyAsync(p => p.Member.UserId ==  userId && p.Member.TripId == tripId);
+
+            // 3. Settlement
+            bool hasSettlement = await _context.Settlements
+                .AnyAsync(s => s.TripId == tripId && (s.FromUserId == userId || s.ToUserId == userId));
+
+            // 檢查條件後才刪除
+            if (hasParticipant || hasPayer || hasSettlement)
+            {
+                throw new InvalidOperationException(
+                    "退出失敗: 您在此行程仍有分帳或結算紀錄，請先刪除相關記帳紀錄後再試一次。"
+                );
+            }
 
             _context.TripMembers.Remove(tm);
             await _context.SaveChangesAsync();

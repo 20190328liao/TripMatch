@@ -59,8 +59,17 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> Leave(int tripId)
         {
             var user = _tagUserId.UserId.Value;
-            await _tripServices.LeaveTripAsync(user, tripId);
-            return Ok(new { ok = true });
+
+            try
+            {
+                await _tripServices.LeaveTripAsync(user, tripId);
+                return Ok(new { ok = true });
+            }
+            catch(InvalidOperationException ex)
+            {
+                return BadRequest(new {ok = false, message = ex.Message});
+            }
+            
         }
 
         [HttpGet("{tripId:int}/invite-code")]

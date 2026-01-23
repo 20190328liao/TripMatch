@@ -261,8 +261,8 @@ body {
     box-shadow: 0 10px 26px rgba(0,0,0,0.14);
 }
 
-#searchBtn:hover {
-    background: rgba(0,0,0,0.04);
+#popularReopen:hover, #searchBtn:hover {
+    background: rgba(0,0,0,0.12);
 }
 
 /* Google Autocomplete dropdown needs to be above map/panel */
@@ -308,6 +308,8 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: transform .22s ease, opacity .22s ease;
+
+    overflow-y: auto;
 }
 
     .panel.open {
