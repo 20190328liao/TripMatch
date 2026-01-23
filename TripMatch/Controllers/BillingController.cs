@@ -42,7 +42,7 @@ namespace TripMatch.Controllers
             // 如果抓不到 ID (例如 Cookie 過期或異常)，為了安全可以踢回登入頁
             if (currentAspNetUserId == 0)
             {
-                return RedirectToAction("Login", "Auth"); // 或您專案的登入路徑
+                return RedirectToAction("Login", "Auth"); // 專案的登入路徑
             }
 
             // 2. 撈取旅程，並加入篩選條件
@@ -60,22 +60,24 @@ namespace TripMatch.Controllers
             if (id == null) return NotFound();
 
             var trip = await _context.Trips
+                // A.撈出成員資料
                 .Include(t => t.TripMembers).ThenInclude(tm => tm.User)  // 撈出成員對應的使用者資料 (AspNetUsers)
-                    .Include(t => t.Expenses).ThenInclude(e => e.Category)
-                    //撈出付款人資訊
+                // B.撈出分類
+                .Include(t => t.Expenses).ThenInclude(e => e.Category)
+                    // 撈出付款人資訊
                     .Include(t => t.Expenses)
                         .ThenInclude(e => e.ExpensePayers)
                         .ThenInclude(ep => ep.Member)
                         .ThenInclude(m => m.User)
 
-                    //撈出分攤人資訊 (為了算個人花費)
+                    // 撈出分攤人資訊 (為了算個人花費)
                     .Include(t => t.Expenses)
                         .ThenInclude(e => e.ExpenseParticipants)
                         .ThenInclude(ep => ep.User) // 注意：您的 Model 裡屬性叫 User，但型別是 TripMember
                         .ThenInclude(tm => tm.User) // 再連一層到 AspNetUser
 
-                    // 撈取結清紀錄 (Settlements) 
-                    .Include(t => t.Settlements)
+                // C.撈取結清紀錄 (Settlements) 
+                .Include(t => t.Settlements)
                         .ThenInclude(s => s.FromUser)
                         .ThenInclude(m => m.User) // 1. 載入「付款人 (FromUser)」的名字
 
@@ -119,7 +121,17 @@ namespace TripMatch.Controllers
         public async Task<IActionResult> UpdateBudget(int tripId, decimal newBudget)
         {
             // 1. 抓取目前登入者 (測試期間寫死 ID=2，之後記得改回 User.FindFirstValue)
-            int currentAspNetUserId = 2;
+            //int currentAspNetUserId = 2;
+            int currentAspNetUserId = 0;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 嘗試將 Claim 的字串轉成 int，如果失敗或沒抓到，就回傳錯誤
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int parsedId))
+            {
+                return Json(new { success = false, message = "無法識別使用者身份，請重新登入" });
+            }
+            currentAspNetUserId = parsedId;
+
 
             // 2. 找出對應的成員
             var member = await _context.TripMembers
