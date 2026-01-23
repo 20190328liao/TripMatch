@@ -39,5 +39,5 @@ public partial class TravelGroup
 
     public virtual ICollection<Preference> Preferences { get; set; } = new List<Preference>();
 
-    public virtual ICollection<Recommandation> Recommandations { get; set; } = new List<Recommandation>();
+    public virtual ICollection<Recommendation> Recommendations { get; set; } = new List<Recommendation>();
 }

@@ -693,76 +693,98 @@ if (document.readyState === 'loading') {
     }
 
     // 以 Spot.js 的 tripApi.addToWishlist（若存在）加入；若不存在則呼後端 API
-    async function addToWishlistUsingCurrentPlace(place) {
-        if (!place || !place.placeId) {
-            notify('error', '錯誤', '已有景點資料，如需刪除請至會員專區');
+    async function addToWishlistUsingCurrentPlace(place, toastFn) {
+        const toast = typeof toastFn === 'function' ? toastFn : (msg => notify('info', '', msg));
+        if (!place) {
+            toast('已儲存景點，如有刪除需求請到會員中心');
             return;
         }
 
-        // 若 Spot.js export 了 tripApi.addToWishlist，優先呼它
+        // 先嘗試 externalPlaceId 路徑（/api/spot/wishlist）
+        const externalId = place.placeId || place.place_id || place.externalPlaceId || null;
+        const spotId = place.spotId || place.SpotId || null;
         try {
-            if (window.tripApi && typeof window.tripApi.addToWishlist === 'function') {
-                await window.tripApi.addToWishlist({ place });
-                notify('success', '完成', `已將「${place.name}」加入願望清單`, 2);
-                // 嘗試更新 UI 狀態
-                if (typeof window.updateWishlistButtonState === 'function') {
-                    try { window.updateWishlistButtonState({ place_id: place.placeId }); } catch { }
+            if (externalId) {
+                const payload = {
+                    externalPlaceId: String(externalId),
+                    nameZh: place.name || place.nameZh || '',
+                    address: place.address || null,
+                    lat: place.lat != null ? Number(place.lat) : null,
+                    lng: place.lng != null ? Number(place.lng) : null,
+                    rating: place.rating != null ? Number(place.rating) : null,
+                    phone: place.phone || null,
+                    photoJson: JSON.stringify({ photoUrl: place.photoUrl || null })
+                };
+
+                const res = await fetch('/api/spot/wishlist', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    toast(`已將「${place.name || ''}」加入願望清單`);
+                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch {}
+                    return;
                 }
-                return;
-            }
-        } catch (ex) {
-            // 若 tripApi 方法拋錯，繼續 fallback
-            console.warn('tripApi.addToWishlist failed', ex);
-        }
 
-        // fallback: 直接呼後端 API 與 SpotApi 異動路徑相容
-        try {
-            const payload = {
-                externalPlaceId: place.placeId,
-                nameZh: place.name,
-                address: place.address || null,
-                lat: place.lat != null ? Number(place.lat) : null,
-                lng: place.lng != null ? Number(place.lng) : null,
-                rating: place.rating != null ? Number(place.rating) : null,
-                phone: place.phone || null,
-                photoJson: JSON.stringify({ photoUrl: place.photoUrl || null })
-            };
-
-            const res = await fetch('/api/spot/wishlist', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                notify('success', '完成', `已將「${place.name}」加入願望清單`, 2);
-                if (typeof window.updateWishlistButtonState === 'function') {
-                    try { window.updateWishlistButtonState({ place_id: place.placeId }); } catch { }
+                if (res.status === 409) {
+                    // 重複
+                    toast('重複儲存景點');
+                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch {}
+                    return;
                 }
-                return;
-            }
 
-            if (res.status === 409) {
-                const j = await res.json().catch(() => null);
-                notify('info', '提示', (j && j.message) ? j.message : '景點已在願望清單中', 2);
-                if (typeof window.updateWishlistButtonState === 'function') {
-                    try { window.updateWishlistButtonState({ place_id: place.PlaceId }); } catch { }
+                if (res.status === 401) {
+                    const loginUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login : '/Auth/Login';
+                    window.location.href = loginUrl;
+                    return;
                 }
-                return;
+
+                // 非預期失敗，讓下面 fallback 處理（若有 spotId）
             }
 
-            if (res.status === 401) {
-                const loginUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login : '/Auth/Login';
-                window.location.href = loginUrl;
-                return;
+            // fallback: 使用後端的 MemberCenter Toggle（以 spotId）
+            if (spotId) {
+                const toggleUrl = window.Routes?.MemberCenterApi?.Toggle ?? '/api/MemberCenterApi/Toggle';
+                const resp = await fetch(toggleUrl, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ spotId: Number(spotId) })
+                });
+
+                if (resp.ok) {
+                    const j = await resp.json().catch(() => ({}));
+                    if (j && typeof j.added === 'boolean') {
+                        if (j.added) toast(`已將「${place.name || ''}」加入願望清單`);
+                        else toast('已從願望清單移除');
+                    } else {
+                        // 若 API 沒明確回傳，加為成功
+                        toast(`已將「${place.name || ''}」加入願望清單`);
+                    }
+                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId || spotId }); } catch {}
+                    return;
+                }
+
+                if (resp.status === 409) {
+                    toast('重複儲存景點');
+                    return;
+                }
+
+                if (resp.status === 401) {
+                    const loginUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login : '/Auth/Login';
+                    window.location.href = loginUrl;
+                    return;
+                }
             }
 
-            const err = await res.json().catch(() => null);
-            notify('error', '錯誤', (err && err.message) ? err.message : `加入失敗 (狀態 ${res.status})`);
-        } catch (e) {
-            console.error('addToWishlist fallback failed', e);
-            notify('error', '錯誤', '網路錯誤，請稍後再試');
+            // 無法判斷目標時給出非破壞性提示（不覆寫 Spot.js 的處理）
+            toast('已儲存景點，如有刪除需求請到會員中心');
+        } catch (err) {
+            console.error('addToWishlistUsingCurrentPlace error', err);
+            toast('操作失敗，請稍後再試');
         }
     }
 
@@ -785,13 +807,7 @@ if (document.readyState === 'loading') {
     async function handleAddWishlistClick(el) {
         // local helper：使用 Spot.js 的黑色 toast（僅使用 showToast，移除 showPopup）
         const showSpotToast = (msg) => {
-            try {
-                if (typeof window.showToast === 'function') {
-                    window.showToast(msg);
-                    return;
-                }
-            } catch (e) { /* ignore */ }
-            // fallback 只記 log（不再彈 showPopup）
+            try { if (typeof window.showToast === 'function') { window.showToast(msg); return; } } catch {} 
             console.debug('[toast fallback]', msg);
         };
 
@@ -845,37 +861,45 @@ if (document.readyState === 'loading') {
         }
     }
 
-    // 全域事件代理（capture-phase），攔截 wishlist / trip 點擊並阻止後續 listener
-document.addEventListener('click', async function (e) {
-    try {
-        const t = e.target;
-        // infoWindow / FAB: 加入願望清單（常見 selector）
-        const wishlistBtn = t.closest && (t.closest('#add-to-wishlist-btn') || t.closest('#btnWishlist') || t.closest('.btn_add_to_wishlist') || t.closest('.add-to-wishlist'));
-        if (wishlistBtn) {
-            // 若已在處理中，略過
-            if (wishlistBtn.dataset.processing === '1') {
-                console.debug('[viewSpot] wishlist click ignored: processing');
+    // 修改：全域 click 攔截 - 只攔截帶有 placeId（或 data-place-id）的情境，避免無差別干擾 Spot.js
+    document.addEventListener('click', async function (e) {
+        try {
+            const t = e.target;
+            const wishlistBtn = t.closest && (t.closest('#add-to-wishlist-btn') || t.closest('#btnWishlist') || t.closest('.btn_add_to_wishlist') || t.closest('.add-to-wishlist'));
+            if (wishlistBtn) {
+                // 僅當有 data-place-id 或 href 包含 placeId 時才攔截
+                const dataPlaceId = wishlistBtn.getAttribute('data-place-id');
+                let hrefPlaceId = '';
+                const href = wishlistBtn.getAttribute('href') || wishlistBtn.href || '';
+                try {
+                    const u = new URL(href, window.location.origin);
+                    hrefPlaceId = u.searchParams.get('placeId') || '';
+                } catch { }
+
+                if (!dataPlaceId && !hrefPlaceId) {
+                    // 沒有 placeId，讓 Spot.js 處理
+                    return;
+                }
+
+                if (wishlistBtn.dataset.processing === '1') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return;
+                }
+
                 e.preventDefault();
                 e.stopImmediatePropagation();
+
+                wishlistBtn.dataset.processing = '1';
+                try {
+                    await handleAddWishlistClick(wishlistBtn);
+                } finally {
+                    delete wishlistBtn.dataset.processing;
+                }
                 return;
             }
 
-            e.preventDefault();
-            // 停止後續 listener（例如 Spot.js）再處理，避免重複呼 API
-            e.stopImmediatePropagation();
-
-            // 標記為處理中（避免重複觸發）
-            wishlistBtn.dataset.processing = '1';
-            try {
-                await handleAddWishlistClick(wishlistBtn);
-            } finally {
-                // 恢復狀態
-                delete wishlistBtn.dataset.processing;
-            }
-            return;
-        }
-
-        // 加入行程：常見 selector（Spot.js: btnTrip, add-trip-item, quick UI）
+            // 加入行程：常見 selector（Spot.js: btnTrip, add-trip-item, quick UI）
         const tripBtn = t.closest && (t.closest('#btnTrip') || t.closest('.add-to-trip') || t.closest('.btn-add-trip') || t.closest('.add-trip-item') || t.closest('.btn_add_to_trip'));
         if (tripBtn) {
             if (tripBtn.dataset.processing === '1') {

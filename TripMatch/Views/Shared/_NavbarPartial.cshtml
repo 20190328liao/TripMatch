@@ -29,6 +29,8 @@
                 <button class="dropdown-toggle desktop-only" type="button" aria-haspopup="true" aria-expanded="false" aria-label="會員選單"></button>
                 <ul class="dropdown-menu desktop-only" role="menu" aria-label="會員選單">
                     <li><a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter">個人資料</a></li>
+                    <li><a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter" asp-fragment="Calendar">個人行事曆</a></li>
+                    <li><a class="dropdown-item" asp-controller="Auth" asp-action="MemberCenter" asp-fragment="Wishlist">願望清單</a></li>
                     <li class="dropdown-divider" aria-hidden="true"></li>
                     <li>
                         @* 改為由 JS 處理（btn-logout），form 提供 action 與 return url *@

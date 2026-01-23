@@ -353,9 +353,31 @@ function renderItinerary(items, dates, accommodations, flights) {
 
     // 綁定「刪除航班」按鈕
     document.querySelectorAll('.delete-flight-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (confirm("刪除航班?")) {
-                TripApi.deleteFlight(e.currentTarget.dataset.id).then(() => loadTripData());
+        btn.addEventListener('click', async (e) => {
+            // 取得按鈕上的資料 (建議在渲染 HTML 時補上 data-version)
+            const flightId = e.currentTarget.dataset.id;
+            const rowVersion = e.currentTarget.dataset.version;
+
+            if (!flightId || !rowVersion) {
+                console.error("缺少刪除所需的 ID 或版本資訊");
+                return;
+            }
+
+            if (confirm("確定要刪除這筆航班資訊嗎？")) {
+                try {
+                    // 傳送 ID 與版本標記
+                    await TripApi.deleteFlight(flightId, rowVersion);
+
+                    // 刪除成功後重新載入資料
+                    alert("刪除成功！");
+                    loadTripData();
+                } catch (error) {
+                    // 這裡會接收到 API 回傳的 409 衝突或其他錯誤訊息
+                    alert("操作失敗：" + error);
+
+                    // 如果是衝突錯誤，通常建議重新載入資料以獲取最新版本
+                    loadTripData();
+                }
             }
         });
     });
@@ -504,7 +526,21 @@ function renderItinerary(items, dates, accommodations, flights) {
         daySection.innerHTML = `
         <div class="day-header">
             <span>Day ${dayNum} <small class="text-secondary fw-normal ms-2">${dateString}</small></span>
-            <button class="btn btn-sm text-secondary p-0"><i class="bi bi-three-dots"></i></button>
+
+            <div class="dropdown">
+                <button class="btn btn-sm text-secondary p-0" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item text-danger delete-day-btn"
+                           href="javascript:void(0)"
+                           data-day="${dayNum}">
+                           <i class="bi bi-calendar-minus me-2"></i>刪除此天
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     
         <div class="timeline-container" style="min-height: 50px;">
@@ -709,6 +745,21 @@ function bindItemEvents() {
                     }
                 });
             }
+        });
+    });
+
+    // --- 新增：刪除天數的事件監聽 ---
+    const deleteDayButtons = document.querySelectorAll('.delete-day-btn');
+
+    deleteDayButtons.forEach(btn => {
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault(); // 阻止 <a> 標籤的預設跳轉行為
+
+            // 從 data-day 屬性中取得天數
+            const dayNum = parseInt(this.getAttribute('data-day'));
+
+            // 直接呼叫模組內的 deleteTripDay 函式 (不需要 window.)
+            await deleteTripDay(dayNum);
         });
     });
 
@@ -968,3 +1019,43 @@ function handleSpotClick(data) {
         }
     }
 }
+
+// 處理刪除天數（包含中間天數遞補邏輯）
+async function deleteTripDay(dayNum) {
+    const totalDays = DateStrings.length;
+
+    // 安全檢查
+    if (totalDays <= 1) {
+        alert("行程至少需要保留一天。");
+        return;
+    }
+
+    const confirmMsg = `確定要刪除第 ${dayNum} 天嗎？\n\n警告：\n1. 該天的所有景點與住宿將被永久刪除。\n2. 第 ${dayNum + 1} 天之後的行程將會自動往前遞補。\n3. 行程總天數將減少一天。`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        // 呼叫後端 API 執行刪除與遞補邏輯
+        // 這裡的 URL 需對應您後端的 Action
+        await $.ajax({
+            url: `/api/TripApi/DeleteDay/${currentTripId}/${dayNum}`,
+            type: 'DELETE',
+            success: function () {
+                alert(`第 ${dayNum} 天已刪除，後續行程已自動遞補。`);
+                // 重新載入資料以更新介面 (DateStrings, 導覽列, 行程列表)
+                refreshItineraryList();
+                // 如果刪除後導致日期變動，建議重新載入頁面確保全域變數同步
+                window.location.reload();
+            },
+            error: function (xhr) {
+                const errorMsg = xhr.responseJSON?.message || "刪除天數失敗";
+                alert(errorMsg);
+            }
+        });
+    } catch (err) {
+        console.error("Delete Day Error:", err);
+    }
+}
+
+// 為了讓 HTML onclick 能點到，需掛載到 window (或在 bindEvents 綁定)
+window.deleteTripDay = deleteTripDay;

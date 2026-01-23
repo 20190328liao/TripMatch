@@ -58,32 +58,35 @@ namespace TripMatch.Controllers.Api
         [HttpGet("{groupId}/status")]
         public async Task<IActionResult> GetGroupStatus(int groupId)
         {
-            var group = await _context.TravelGroups
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
+            var group = await _context.TravelGroups.FirstOrDefaultAsync(g => g.GroupId == groupId);
             if (group == null) return NotFound(new { message = "找不到該群組" });
 
-            // 1. 計算總人數 (從 GroupMembers)
-            int totalMembers = await _context.GroupMembers
-                .CountAsync(gm => gm.GroupId == groupId);
+            Console.WriteLine($"[DEBUG] GroupID: {group.GroupId}");
+            Console.WriteLine($"[DEBUG] DB DateStart: {group.DateStart}");
+            Console.WriteLine($"[DEBUG] DB TravelDays: {group.TravelDays}");
+            // 1. 【關鍵修正】分母必須是「目標人數 (TargetNumber)」
+            // 如果 TargetNumber 是 0 (舊資料可能沒設)，才退而求其次用現有人數
+            int totalTarget = group.TargetNumber > 0 ? group.TargetNumber : await _context.GroupMembers.CountAsync(m => m.GroupId == groupId);
 
-            if (totalMembers == 0) totalMembers = 1;
+            // 2. 取得「已提交」的人數 (檢查 SubmittedAt 不為 null)
+            int submittedCount = await _context.GroupMembers
+                .CountAsync(m => m.GroupId == groupId && m.SubmittedAt != null);
 
-            // 2. 計算已提交人數 (從 MemberTimeSlots)
-            int submittedMembersCount = await _context.MemberTimeSlots
-                .Where(m => m.GroupId == groupId)
-                .Select(m => m.UserId)
-                .Distinct()
-                .CountAsync();
+            // 3. 判定是否完成：必須「已提交人數」大於等於「目標人數」
+            // 只有全員都交了，isComplete 才是 true
+            bool isComplete = submittedCount >= totalTarget;
 
             return Ok(new
             {
                 dateStart = group.DateStart,
                 dateEnd = group.DateEnd,
-                travelDays = group.TravelDays, // 假設有此欄位
+                travelDays = group.TravelDays,
+                status = isComplete ? "COMPLETED" : "WAITING",
+                isComplete = isComplete,
 
-                // 回傳是否完成
-                isComplete = (submittedMembersCount >= totalMembers)
+                // 讓前端顯示進度 (例如: 1 / 4)
+                submittedCount = submittedCount,
+                memberCount = totalTarget
             });
         }
 
@@ -183,7 +186,7 @@ namespace TripMatch.Controllers.Api
             try
             {
                 // Todo: 這一步會跑比較久 (因為要 Call 外部 API)，前端記得顯示 Loading
-                var recommendations = await _timeWindowService.GenerateRecommandationsAsync(groupId);
+                var recommendations = await _timeWindowService.GenerateRecommendationsAsync(groupId);
                 return Ok(recommendations);
             }
             catch (Exception ex)
@@ -225,12 +228,12 @@ namespace TripMatch.Controllers.Api
 
         // 12. 投票 (POST)
         [HttpPost("{groupId}/vote")]
-        public async Task<IActionResult> Vote(int groupId, [FromBody] List<int> recommendationIds)
+        public async Task<IActionResult> Vote(int groupId, [FromBody] List<int> Index)
         {
             try
             {
                 int userId = User.GetUserId();
-                var newCounts = await _timeWindowService.SubmitVotesAsync(groupId, userId, recommendationIds);
+                var newCounts = await _timeWindowService.SubmitVotesAsync(groupId, userId, Index);
 
                 return Ok(new
                 {

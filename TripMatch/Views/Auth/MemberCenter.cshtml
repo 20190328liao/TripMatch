@@ -22,7 +22,7 @@
 }
 
 
-
+<div class="main-content2">
 <div class="member_center_wrap container">
 
     <!-- =============================================
@@ -120,9 +120,9 @@
          區塊二：個人行事曆
          ============================================= -->
     <section class="member_section" id="calendar_section">
-        <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>個人行事曆</h2>
+        <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
         <div class="calendar_legend mb-3">
-      <div class="legend-hint w-100">* 會員如果需要單日，則日期點兩下：</div>
+      <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
         </div>
 
 
@@ -178,20 +178,23 @@
             </div>
 
             @* 共用按鈕放在底部一列，手機會縮滿寬度 *@
-            <div class="row mt-3">
-                <div class="col-12 d-flex gap-2 flex-wrap calendarBtnWrap">
-                    <button class="confirm btn1 btn-confirm">提交</button>
-                    <button class="edit btn1 btn-edit">開始編輯</button>
-                    <button class="btn-delete btn1 btn-danger1">刪除</button>
 
-                    <!-- 匯入 JSON 日曆 -->
-                    <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                    <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入 JSON 日曆</button>
-                </div>
               
                 <div class="col-12">
                     <div id="importCalendarMessage" class="alert d-none mt-3" role="alert" style="max-width:600px;"></div>
                 </div>
+            </div>
+            <div class="row mt-3">
+
+        </div>
+            <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100">
+                <button class="confirm btn1 btn-confirm">提交</button>
+                <button class="edit btn1 btn-edit">開始編輯</button>
+                <button class="btn-delete btn1 btn-danger1">刪除</button>
+
+                <!-- 匯入 JSON 日曆 -->
+                <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
+                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入 JSON 日曆</button>
             </div>
             <div class="calendar_legend mb-3">
                 <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
@@ -204,7 +207,6 @@
                 <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
                 <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
             </div>
-        </div>
     </section>
 
     <!-- =============================================
@@ -222,7 +224,7 @@
 
         <section class="member_section" id="wishlist_section">
             <div class="section_header d-flex align-items-center justify-content-between">
-            <h2 class="memberTitle titleWrap titleH2"><span class="current-title"></span>願望清單</h2>
+            <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>
@@ -289,9 +291,7 @@
 
     
 </div>
-<a href="@Url.Action("Index", "Home")" class="back-home-link">
-    回到首頁
-</a>
+</div>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 

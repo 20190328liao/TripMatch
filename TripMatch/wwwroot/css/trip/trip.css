@@ -14,13 +14,13 @@
 .page {
     background: var(--c-white);
     padding: 56px 24px 80px;
-    max-width: 1200px;
+    max-width: 1480px;
     margin: 0 auto;
 }
 
 .mytrip-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 36px;
@@ -33,12 +33,10 @@
     border-left: none;
 }
 .memberTitle {
-    position: relative;
-    left: -25px;
     color: #000;
     font-weight: 700;
     margin: 3rem 0;
-    margin-left: 25px;
+/*    margin-left: 25px;*/
     margin-bottom: 15px
 }
 

@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
-@* 翊淳使用避免頭貼或路由消失 *@
 @using System.Text.Json
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
     // 以 Url.Action 產生 server 路徑（MVC view），安全序列化給 client
     // 明確區分「頁面路由」（Auth）與「API 路由」（api/auth）
@@ -108,30 +108,30 @@
     </main>
 
     @* 與 _Layout-copy 保持一致的腳本順序 *@
+    <!-- 與 _Layout-copy 保持一致的腳本順序：把 jQuery 提前，避免依賴錯誤 -->
+    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+
+    <!-- 全站腳本（可在 site.js 使用 jQuery） -->
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <script>
-        // 讓 helper.js 可以把 CSRF token 放進 AJAX header（若專案使用 antiforgery）
-        window.csrfToken = (window.csrfToken || '');
-    </script>
+    <!-- 顯示邀請回跳的 modal（只需載入一次） -->
 
-    @* 保留原本需要的腳本（如 jquery, helper, avatar, logout）並與 Layout-copy 同步順序 *@
-
+    <!-- Navbar 與 Auth API 相關腳本（確保在 jQuery 之後） -->
     <script src="~/js/navbar.js" asp-append-version="true"></script>
-    <script src="~/bootstrap.bundle.min.js" asp-append-version="true"></script>
-    <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/helper.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/avatar.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/inviteLoginTrip.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/auth-returnurl.js" asp-append-version="true"></script>
+
 
     <script>
-    // 放在 bootstrap.bundle.min.js 之後、其他自訂 script 之前
-    document.addEventListener('DOMContentLoaded', function () {
-      var el = document.querySelector('#carouselExample');
-      if (el && window.bootstrap && bootstrap.Carousel) {
-        new bootstrap.Carousel(el, { interval: 4000, pause: 'hover' });
-      }
-    });
+               // 讓 helper.js 可以把 CSRF token 放進 AJAX header
+        window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
+        // 將伺服器端登入狀態傳到前端（布林或字串都接受）
+        window.isAuthenticated = @(User?.Identity?.IsAuthenticated == true ? "true" : "false");
+
     </script>
 
     @RenderSection("Scripts", required: false)

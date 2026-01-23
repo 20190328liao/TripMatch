@@ -366,11 +366,36 @@ namespace TripMatch.Controllers.Api
             if (result.Succeeded)
             {
                 Response.Cookies.Delete("PendingEmail");
+
+                // 確保刪除短期 invite_return（避免殘留）
+                try { Response.Cookies.Delete("invite_return"); } catch { }
+
+                // 取得可能的 returnUrl：優先 query string，其次 invite_return cookie
+                string? returnUrl = null;
+                if (Request.Query.ContainsKey("returnUrl"))
+                {
+                    returnUrl = Request.Query["returnUrl"].ToString();
+                }
+                else if (Request.Cookies.TryGetValue("invite_return", out var invite) && !string.IsNullOrEmpty(invite))
+                {
+                    returnUrl = invite;
+                }
+
+                string loginUrl;
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    loginUrl = Url.Action("Login", "Auth", new { returnUrl = returnUrl }) ?? Url.Action("Login", "Auth")!;
+                }
+                else
+                {
+                    loginUrl = Url.Action("Login", "Auth")!;
+                }
+
                 return Ok(new
                 {
                     success = true,
                     message = "帳戶設定成功！請登入",
-                    redirectUrl = Url.Action("Login", "Auth")
+                    redirectUrl = loginUrl
                 });
             }
 
@@ -1671,6 +1696,7 @@ namespace TripMatch.Controllers.Api
             public string? PlaceId { get; set; }
             public string? ImageUrl { get; set; }
         }
+
 
     }
 
