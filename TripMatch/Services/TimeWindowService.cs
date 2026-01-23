@@ -293,9 +293,9 @@ namespace TripMatch.Services
 
         // 8.生成推薦方案並存檔
         // 回傳：已經存進資料庫的 Recommandation 清單
-        public async Task<List<Recommandation>> GenerateRecommandationsAsync(int groupId)
+        public async Task<List<Recommendation>> GenerateRecommandationsAsync(int groupId)
         {
-            var existingRecs = await _context.Recommandations
+            var existingRecs = await _context.Recommendations
                 .Where(r => r.GroupId == groupId)
                 .ToListAsync();
 
@@ -305,7 +305,7 @@ namespace TripMatch.Services
             }
 
             var timeRanges = await GetCommonTimeRangesAsync(groupId);
-            if (!timeRanges.Any()) return new List<Recommandation>();
+            if (!timeRanges.Any()) return new List<Recommendation>();
 
             var rawPlaces = await _context.Preferences
                 .Where(p => p.GroupId == groupId && !string.IsNullOrEmpty(p.PlacesToGo))
@@ -321,7 +321,7 @@ namespace TripMatch.Services
 
             if (!places.Any()) places.Add("未定地點");
 
-            var newRecommendations = new List<Recommandation>();
+            var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
             {
@@ -329,7 +329,7 @@ namespace TripMatch.Services
                 {
                     var travelInfo = await _travelInfoService.GetTravelInfoAsync(place, range.StartDate, range.EndDate);
 
-                    var rec = new Recommandation
+                    var rec = new Recommendation
                     {
                         GroupId = groupId,
                         StartDate = range.StartDate.ToDateTime(TimeOnly.MinValue), // 轉回 DateTime 存 DB
@@ -350,7 +350,7 @@ namespace TripMatch.Services
                 }
             }
 
-            await _context.Recommandations.AddRangeAsync(newRecommendations);
+            await _context.Recommendations.AddRangeAsync(newRecommendations);
             await _context.SaveChangesAsync();
 
             return newRecommendations;
@@ -409,7 +409,7 @@ namespace TripMatch.Services
 
             if (member == null) throw new Exception("非成員");
 
-            var targets = await _context.Recommandations
+            var targets = await _context.Recommendations
                 .Where(r => r.GroupId == groupId && recommendationIds.Contains(r.Index))
                 .ToListAsync();
 
