@@ -387,11 +387,31 @@ namespace TripMatch.Services
         // 新增景點
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
         {
+
+
+
+
             // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)int? userId, ItineraryItemDto dto
             int nextSortOrder = await _context.ItineraryItems
                 .Where(x => x.TripId == dto.TripId && x.DayNumber == dto.DayNumber)
                 .Select(x => (int?)x.SortOrder) // 使用 int? 預防當天還沒資料的情況
                 .MaxAsync() ?? 0;
+
+
+            // 取得最後一個景點
+            var lastItem = await _context.ItineraryItems
+                .Where(x => x.TripId == dto.TripId && x.DayNumber == dto.DayNumber)
+                .OrderByDescending(x => x.SortOrder)
+                .FirstOrDefaultAsync();
+
+            if (lastItem == null || lastItem.EndTime==null)
+            {
+                // 如果當天沒有任何景點，預設時間為 09:00 - 10:00
+                lastItem = new ItineraryItem
+                {
+                    EndTime = new TimeOnly(9, 0)
+                };
+            }
 
             ItineraryItem item = new()
             {
@@ -399,8 +419,8 @@ namespace TripMatch.Services
                 TripId = dto.TripId,
                 SpotId = dto.SpotId,
                 DayNumber = dto.DayNumber,
-                StartTime = dto.StartTime,
-                EndTime = dto.EndTime,
+                StartTime = lastItem.EndTime,
+                EndTime = lastItem.EndTime.Value.AddHours(1),
                 SortOrder = nextSortOrder + 1,
                 ItemType = 1,
                 IsOpened = true,
@@ -464,7 +484,45 @@ namespace TripMatch.Services
             await _context.SaveChangesAsync();
             return true;
         }
+        // 刪除一天
+        public async Task<bool> DeleteTripDay(int tripId, int dayNum)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. 取得行程基本資訊
+                var trip = await _context.Trips.FindAsync(tripId);
+                if (trip == null) return false;
 
+                // 2. 刪除該天的所有項目 (景點、活動等)
+                var itemsToDelete = _context.ItineraryItems
+                    .Where(ii => ii.TripId == tripId && ii.DayNumber == dayNum);
+                _context.ItineraryItems.RemoveRange(itemsToDelete);
+
+                // 3. 處理遞補邏輯：將 DayNum 之後的所有項目 DayNumber 往前移 (Day - 1)
+                var itemsToShift = _context.ItineraryItems
+                    .Where(ii => ii.TripId == tripId && ii.DayNumber > dayNum)
+                    .ToList();
+
+                foreach (var item in itemsToShift)
+                {
+                    item.DayNumber -= 1;
+                }
+
+                // 4. 更新行程結束日期 (EndDate 減一天)
+                trip.EndDate = trip.EndDate.AddDays(-1);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // 這裡可以記錄 log: ex.Message
+                return false;
+            }
+        }
         #endregion
 
         #region 景點快照與願望清單

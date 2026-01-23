@@ -511,8 +511,10 @@ function renderItinerary(items, dates, accommodations, flights) {
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                        <a class="dropdown-item text-danger delete-day-btn" href="#" data-day="${dayNum}">
-                            <i class="bi bi-calendar-minus me-2"></i>刪除此天
+                        <a class="dropdown-item text-danger delete-day-btn"
+                           href="javascript:void(0)"
+                           data-day="${dayNum}">
+                           <i class="bi bi-calendar-minus me-2"></i>刪除此天
                         </a>
                     </li>
                 </ul>
@@ -724,12 +726,18 @@ function bindItemEvents() {
         });
     });
 
-    // [新增] 綁定刪除天數按鈕
-    document.querySelectorAll('.delete-day-btn').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const dayNum = this.getAttribute('data-day');
-            handleDeleteDay(dayNum);
+    // --- 新增：刪除天數的事件監聽 ---
+    const deleteDayButtons = document.querySelectorAll('.delete-day-btn');
+
+    deleteDayButtons.forEach(btn => {
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault(); // 阻止 <a> 標籤的預設跳轉行為
+
+            // 從 data-day 屬性中取得天數
+            const dayNum = parseInt(this.getAttribute('data-day'));
+
+            // 直接呼叫模組內的 deleteTripDay 函式 (不需要 window.)
+            await deleteTripDay(dayNum);
         });
     });
 
@@ -990,19 +998,42 @@ function handleSpotClick(data) {
     }
 }
 
-function handleDeleteDay(dayNum) {
-    if (!confirm(`確定要刪除第 ${dayNum} 天嗎？該天的所有行程也將被移除。`)) return;
+// 處理刪除天數（包含中間天數遞補邏輯）
+async function deleteTripDay(dayNum) {
+    const totalDays = DateStrings.length;
 
-    $.ajax({
-        url: `/api/TripApi/DeleteTripDay/${currentTripId}/${dayNum}`, // 假設您的 API 路徑
-        type: 'DELETE',
-        success: function (response) {
-            alert("天數已成功刪除");
-            loadTripData(); // 重新整理列表與地圖資料
-        },
-        error: function (err) {
-            console.error("刪除天數失敗:", err);
-            alert("刪除天數失敗：" + (err.responseJSON?.message || "請檢查網路連線"));
-        }
-    });
+    // 安全檢查
+    if (totalDays <= 1) {
+        alert("行程至少需要保留一天。");
+        return;
+    }
+
+    const confirmMsg = `確定要刪除第 ${dayNum} 天嗎？\n\n警告：\n1. 該天的所有景點與住宿將被永久刪除。\n2. 第 ${dayNum + 1} 天之後的行程將會自動往前遞補。\n3. 行程總天數將減少一天。`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        // 呼叫後端 API 執行刪除與遞補邏輯
+        // 這裡的 URL 需對應您後端的 Action
+        await $.ajax({
+            url: `/api/TripApi/DeleteDay/${currentTripId}/${dayNum}`,
+            type: 'DELETE',
+            success: function () {
+                alert(`第 ${dayNum} 天已刪除，後續行程已自動遞補。`);
+                // 重新載入資料以更新介面 (DateStrings, 導覽列, 行程列表)
+                refreshItineraryList();
+                // 如果刪除後導致日期變動，建議重新載入頁面確保全域變數同步
+                window.location.reload();
+            },
+            error: function (xhr) {
+                const errorMsg = xhr.responseJSON?.message || "刪除天數失敗";
+                alert(errorMsg);
+            }
+        });
+    } catch (err) {
+        console.error("Delete Day Error:", err);
+    }
 }
+
+// 為了讓 HTML onclick 能點到，需掛載到 window (或在 bindEvents 綁定)
+window.deleteTripDay = deleteTripDay;
