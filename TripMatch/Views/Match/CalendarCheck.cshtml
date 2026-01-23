@@ -12,139 +12,57 @@
 
 <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" />
 
-<style>
-    /* --- 只保留必要的排版 CSS，不覆蓋原本的按鈕/格子樣式 --- */
-
-    .page-wrap {
-        padding: 40px 20px;
-        max-width: 1200px; /* 限制最大寬度，避免日曆變超級大 */
-        margin: 0 auto;
-    }
-
-    .calendar-container {
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        padding: 30px;
-        position: relative;
-    }
-
-    /* 調整左右欄位的間距 */
-    .row.g-4 {
-        margin-top: 10px;
-    }
-
-    /* 左側面板的卡片感 */
-    .side-panel {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 15px;
-        border: 1px solid #f1f5f9;
-        height: 100%;
-    }
-
-    /* 讓清單可以捲動 */
-    .list-scroll-area {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    /* --- Modal 必須強制置頂 --- */
-    .modal-overlay {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 99999 !important;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        backdrop-filter: blur(5px);
-    }
-
-        .modal-overlay.active {
-            display: flex !important;
-        }
-
-    .custom-modal {
-        background: white;
-        padding: 40px;
-        border-radius: 24px;
-        max-width: 500px;
-        width: 90%;
-        position: relative;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        z-index: 100000;
-    }
-
-    /* --- 補回 Hover 預覽的特殊色 (這是原本 CSS 沒有的功能) --- */
-    /* 只加這幾個必要的狀態色，其他都用原本的 */
-    .preview-valid {
-        background-color: #dcfce7 !important;
-        color: #166534;
-    }
-
-    .preview-invalid {
-        background-color: #fee2e2 !important;
-        color: #991b1b;
-    }
-
-    .range-start, .preview-start {
-        border-radius: 8px 0 0 8px;
-        background-color: #3b82f6 !important;
-        color: white;
-    }
-
-    .range-end, .preview-end {
-        border-radius: 0 8px 8px 0;
-        background-color: #3b82f6 !important;
-        color: white;
-    }
-
-    .range-mid {
-        background-color: #dbeafe !important;
-        color: #1e40af;
-    }
-
-    .selecting {
-        background-color: #3b82f6 !important;
-        color: white;
-    }
-</style>
-
 <div class="page-wrap">
 
     <div id="selectionSection" class="@(isSubmitted ? "d-none" : "")">
         <div class="calendar-container">
-            <h2 class="text-center fw-bold mb-2">確認您的可用時間</h2>
+            <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
             <p class="text-center text-muted mb-4">系統已自動帶入您在會員中心的設定，請確認本次行程的可用時段</p>
 
-            <div class="d-flex justify-content-center gap-2 mb-4">
+            @* <div class="d-flex justify-content-center gap-2 mb-4">
                 <span class="badge bg-white text-dark border">● 今天</span>
                 <span class="badge bg-light text-muted border">░ 非揪團期間</span>
                 <span class="badge" style="background:#dbeafe; color:#1e40af">■ 已選取</span>
                 <span class="badge" style="background:#16a34a; color:white">● 我可以參加</span>
+            </div> *@
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <span class="legend-marker marker-today"></span>
+                    <span>今天</span>
+                </div>
+
+                <div class="legend-item">
+                    <span class="legend-marker marker-locked"></span>
+                    <span>非揪團期間</span>
+                </div>
+
+                <div class="legend-item">
+                    <span class="legend-marker marker-selected"></span>
+                    <span>已選取</span>
+                </div>
+
+                <div class="legend-item">
+                    <span class="legend-marker marker-joinable"></span>
+                    <span>我可以參加</span>
+                </div>
             </div>
 
             <div class="row g-4">
-
                 <div class="col-lg-3 col-md-4">
                     <div class="side-panel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <button class="year-left btn btn-sm btn-light">◀</button>
-                            <div class="year-display fw-bold fs-5">2026</div>
-                            <button class="year-right btn btn-sm btn-light">▶</button>
+                        <div class="year-header">
+                            <button class="year-left nav-btn">◀</button>
+                            <div class="year-display">2026</div>
+                            <button class="year-right nav-btn">▶</button>
                         </div>
 
                         <div class="months-grid mb-4"></div>
 
-                        <hr />
+                        <hr style="border-color:#eee" />
 
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0 fw-bold">已選時段</h6>
-                            <span class="badge bg-primary rounded-pill" id="selectedCount">0</span>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
+                            <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
                         </div>
                         <div class="list-scroll-area">
                             <div id="calendarList" class="d-flex flex-column gap-2"></div>
@@ -153,31 +71,34 @@
                 </div>
 
                 <div class="col-lg-9 col-md-8">
-                    <div class="d-flex justify-content-between align-items-center mb-3 px-3">
-                        <button class="month-left btn btn-link text-decoration-none fs-4">◀</button>
-                        <div class="month-display fs-3 fw-bold text-dark">January 2026</div>
-                        <button class="month-right btn btn-link text-decoration-none fs-4">▶</button>
+                    <div class="month-header mb-3">
+                        <button class="month-left nav-btn">◀</button>
+                        <div class="month-display">January 2026</div>
+                        <button class="month-right nav-btn">▶</button>
                     </div>
 
-                    <div class="d-flex justify-content-between text-center text-secondary fw-bold mb-2">
-                        <div style="flex:1">週一</div>
-                        <div style="flex:1">週二</div>
-                        <div style="flex:1">週三</div>
-                        <div style="flex:1">週四</div>
-                        <div style="flex:1">週五</div>
-                        <div style="flex:1">週六</div>
-                        <div style="flex:1; color:#ef4444">週日</div>
+                    <div class="week-header">
+                        <div>週一</div>
+                        <div>週二</div>
+                        <div>週三</div>
+                        <div>週四</div>
+                        <div>週五</div>
+                        <div>週六</div>
+                        <div style="color:#ef4444">週日</div>
                     </div>
 
                     <div class="days"></div>
                 </div>
-
             </div>
 
             <div class="row mt-5">
                 <div class="col-12 text-center">
-                    <button id="btnSubmit" onclick="submitSlots()" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
+                    @* <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
                         確認提交，下一步
+                    </button> *@
+                    <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
+                        <span class="btn-main-text">確認提交</span>
+                        <span class="btn-sub-text">下一步</span>
                     </button>
                 </div>
             </div>
@@ -185,9 +106,9 @@
     </div>
 
     <div id="waitingSection" class="@(isSubmitted ? "" : "d-none")" style="text-align: center; padding: 60px 20px;">
-        <div class="calendar-container shadow-lg" style="max-width: 600px; margin: 0 auto; border-radius: 20px;">
+        <div class="calendar-container" style="max-width: 600px; margin: 0 auto;">
             <div class="mb-4 pt-4">
-                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem; color:var(--primary-mint) !important;" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
@@ -197,24 +118,74 @@
                 全員完成後，系統將自動跳轉至結果頁。
             </p>
             <div class="bg-light px-4 py-2 rounded-pill d-inline-block mb-4">
-                目前狀態：<span id="progressText" class="fw-bold text-primary">連線中...</span>
+                目前狀態：<span id="progressText" class="fw-bold" style="color:var(--dark-mint)">連線中...</span>
             </div>
         </div>
     </div>
 
 </div>
 
-<div class="modal-overlay" id="askCalendarModal">
+<div class="modal-overlay active" id="calendarModal">
     <div class="custom-modal">
-        <button class="close-btn" onclick="closeModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer;">✕</button>
-        <div class="header-icon text-center mb-3 text-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+
+        <div class="modal-top-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z" />
+            </svg>
         </div>
-        <h2 class="modal-title text-center fw-bold mb-2">設定你的行事曆</h2>
-        <p class="modal-subtitle text-center text-muted mb-4">同步您的行事曆，讓時間媒合更快速</p>
-        <div class="d-grid gap-2">
-            <button class="btn btn-primary btn-lg rounded-pill" onclick="goToMemberCenter()">前往設定行事曆</button>
-            <button class="btn btn-light btn-lg rounded-pill text-muted" onclick="closeModal()">先跳過，稍後再設定</button>
+
+        <h2 class="modal-title">設定你的行事曆</h2>
+        <p class="modal-subtitle">同步您的行事曆，讓時間媒合更快速、更準確</p>
+
+        <div class="feature-box">
+            <div class="feature-item">
+                <div class="feature-icon icon-blue">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                    </svg>
+                </div>
+                <div class="feature-text">
+                    <h4>自動偵測可用時間</h4>
+                    <p>系統會自動分析您的行事曆，標示出可以出發的日期</p>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon icon-green">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 6 6.5 9.5 3 12l3.5 2.5L9 18l2.5-3.5L15 12l-3.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" />
+                    </svg>
+                </div>
+                <div class="feature-text">
+                    <h4>一次設定，永久使用</h4>
+                    <p>之後每次時間媒合都可以直接帶入，省去重複設定的麻煩</p>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon icon-purple">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                </div>
+                <div class="feature-text">
+                    <h4>提高協調效率</h4>
+                    <p>減少人工輸入錯誤，讓團隊更快找到共同時間</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid">
+            <button class="btn btn-primary-mint" onclick="goToMemberCenter()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" />
+                </svg>
+                前往設定行事曆
+            </button>
+
+            <button class="btn btn-secondary-light" onclick="closeModal()">
+                先跳過，稍後再設定
+            </button>
         </div>
     </div>
 </div>
@@ -391,10 +362,10 @@
                              if (rangeStatus.type === 'start') cell.classList.add('range-start');
                              if (rangeStatus.type === 'end') cell.classList.add('range-end');
                              if (rangeStatus.type === 'mid') cell.classList.add('range-mid');
-                             if (rangeStatus.type === 'single') cell.classList.add('range-start', 'range-end');
+                             if (rangeStatus.type === 'single') cell.classList.add('status-single');
                          }
                          if (pendingStartDate && iso === pendingStartDate) {
-                              cell.classList.add('range-start', 'selecting');
+                             cell.classList.add('range-start', 'selecting');
                          }
                          cell.onclick = () => handleDateClick(iso);
                          cell.onmouseenter = () => handleDateHover(iso);
@@ -488,6 +459,7 @@
                  return false;
              }
 
+             // ★★★ 配合新 CSS 樣式的清單 HTML (邏輯沒變，只改樣式) ★★★
              function renderList() {
                  const $list = document.getElementById('calendarList');
                  const $count = document.getElementById('selectedCount');
@@ -499,14 +471,14 @@
                      return;
                  }
                  $list.innerHTML = selectedRanges.map(r => `
-                     <div class="d-flex justify-content-between align-items-center bg-white p-2 border rounded shadow-sm">
+                     <div class="calendar-list-item">
                          <div>
                              <div class="fw-bold ${r.valid ? 'text-success' : 'text-danger'}" style="font-size:0.9rem">
                                  ${r.start.slice(5)} ~ ${r.end.slice(5)}
                              </div>
                              <small class="text-muted">${r.days} 天 ${r.valid ? 'OK' : '不足'}</small>
                          </div>
-                         <button class="btn btn-sm btn-light text-danger" onclick="window.removeRange('${r.start}')">✕</button>
+                         <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onclick="window.removeRange('${r.start}')">✕</button>
                      </div>
                  `).join('');
                  const validCount = selectedRanges.filter(r => r.valid).length;
