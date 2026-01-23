@@ -229,19 +229,34 @@
         let pollingInterval;
 
         document.addEventListener("DOMContentLoaded", async function() {
-            // Modal 檢查
-            const storageKey = `TripMatch_CalendarCheck_Visited_${currentGroupId}`;
-            const hasVisited = localStorage.getItem(storageKey);
+
+            // 1. 讀取後端 ViewData 決定是否顯示 Modal
+            // 邏輯：後端查 DB 發現這個人沒填過資料 -> shouldShowPrompt = true
+            var shouldShowPrompt = @((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false");
+
             const modal = document.getElementById('askCalendarModal');
-            if (!hasFilledCalendar && !hasVisited && !isSubmittedInit && modal) {
+
+            // 2. 顯示 Modal 的判斷 (不再看 localStorage)
+            // 只要後端說要顯示 (shouldShowPrompt) 且 Modal 元素存在，就彈出來
+            if (shouldShowPrompt && modal) {
                 modal.classList.add('active');
-                localStorage.setItem(storageKey, 'true');
             }
 
-            if (isSubmittedInit) {
+            // 3. 處理頁面狀態 (這部分保留你原本的邏輯)
+            // 這裡假設 isSubmittedInit 是你原本在上方定義好的變數 (判斷是否已提交)
+            if (typeof isSubmittedInit !== 'undefined' && isSubmittedInit) {
                 showWaitingMode();
+
+                // ★★★ 記得加入這行：開始輪詢狀態 ★★★
+                // 這樣在等待頁面才會每幾秒去問後端 "大家填完了沒?"
+                setInterval(checkStatus, 3000);
+                checkStatus();
+
             } else {
-                await initCalendar();
+                // 還沒提交，初始化行事曆讓使用者填寫
+                if (typeof initCalendar === 'function') {
+                    await initCalendar();
+                }
             }
         });
 
@@ -279,19 +294,35 @@
             pollingInterval = setInterval(checkStatus, 3000);
         }
 
+                // 檔案：TripMatch/Views/Match/CalendarCheck.cshtml
+
         async function checkStatus() {
             try {
                 const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
                 if (res.ok) {
                     const statusData = await res.json();
+
+                    // 這裡現在可以正常顯示人數了 (因為後端補了欄位)
                     const textEl = document.getElementById('progressText');
                     if(textEl) textEl.innerText = `${statusData.submittedCount} / ${statusData.memberCount} 人已提交`;
+
+                    // 這裡現在可以讀到 "COMPLETED" 了
                     if (statusData.status === "COMPLETED") {
                         clearInterval(pollingInterval);
-                        window.location.href = `/Match/Result/${currentGroupId}`;
-                    }
+
+                        // ★★★ 修改這裡：跳轉到正確的 Recommandation 頁面 ★★★
+                        // 原本: window.location.href = `/Match/Result/${currentGroupId}`;
+                        window.location.href = `/Match/Recommendations/${currentGroupId}`;
+                            }
+                    else {
+                            // 否則更新進度文字，繼續等待
+                         document.getElementById("statusText").innerText =
+                           `等待成員提交中... (${statusData.submittedCount} / ${statusData.memberCount})`;
+                             }
                 }
-            } catch (e) { console.error("Polling error", e); }
+            } catch (e) {
+                console.error("Polling error", e);
+            }
         }
 
         function closeModal() {
