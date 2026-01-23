@@ -504,7 +504,19 @@ function renderItinerary(items, dates, accommodations, flights) {
         daySection.innerHTML = `
         <div class="day-header">
             <span>Day ${dayNum} <small class="text-secondary fw-normal ms-2">${dateString}</small></span>
-            <button class="btn btn-sm text-secondary p-0"><i class="bi bi-three-dots"></i></button>
+
+            <div class="dropdown">
+                <button class="btn btn-sm text-secondary p-0" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item text-danger delete-day-btn" href="#" data-day="${dayNum}">
+                            <i class="bi bi-calendar-minus me-2"></i>刪除此天
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     
         <div class="timeline-container" style="min-height: 50px;">
@@ -709,6 +721,15 @@ function bindItemEvents() {
                     }
                 });
             }
+        });
+    });
+
+    // [新增] 綁定刪除天數按鈕
+    document.querySelectorAll('.delete-day-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const dayNum = this.getAttribute('data-day');
+            handleDeleteDay(dayNum);
         });
     });
 
@@ -967,4 +988,21 @@ function handleSpotClick(data) {
             window.currentMapInstance.setZoom(17);
         }
     }
+}
+
+function handleDeleteDay(dayNum) {
+    if (!confirm(`確定要刪除第 ${dayNum} 天嗎？該天的所有行程也將被移除。`)) return;
+
+    $.ajax({
+        url: `/api/TripApi/DeleteTripDay/${currentTripId}/${dayNum}`, // 假設您的 API 路徑
+        type: 'DELETE',
+        success: function (response) {
+            alert("天數已成功刪除");
+            loadTripData(); // 重新整理列表與地圖資料
+        },
+        error: function (err) {
+            console.error("刪除天數失敗:", err);
+            alert("刪除天數失敗：" + (err.responseJSON?.message || "請檢查網路連線"));
+        }
+    });
 }
