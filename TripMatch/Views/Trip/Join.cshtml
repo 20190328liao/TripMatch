@@ -42,14 +42,16 @@
                 <span id="tripDates"></span>
             </p>
 
-            <div class="d-grid gap-2">
+            <div class="d-flex justify-content-center gap-3 mt-3">
                 <!-- 邀請碼藏在這裡 -->
                 <input type="hidden" id="inviteCode" value="@ViewBag.InviteCode" />
 
-                <button id="btnJoin" class="btn btn-primary btn-lg">
+                <a href="/" class="btn btn_Gray text-muted btn-lg flex-fill btn-join-option" style="text-decoration:none;">
+                    回首頁
+                </a>
+                <button id="btnJoin" class="btn btn_light btn-lg flex-fill btn-join-option">
                     確認加入行程
                 </button>
-                <a href="/" class="btn btn-link text-muted">回首頁</a>
             </div>
         </div>
 
@@ -80,9 +82,8 @@
                 document.getElementById("tripTitle").textContent = trip.title;
                 document.getElementById("tripDates").textContent =
                     `${trip.startDate} - ${trip.endDate}`; // 注意日期格式化可能需要微調
-
-                if(trip.coverImageUrl) {
-                     document.getElementById("tripCover").src = trip.coverImageUrl;
+                if(trip.photoUrl) {
+                     document.getElementById("tripCover").src = trip.photoUrl;
                 } else {
                      // 預設圖
                      document.getElementById("tripCover").src = "https://placehold.co/600x400?text=Trip";
@@ -118,11 +119,10 @@
 
                     if (res.status === 401) {
                         // 未登入，導向登入頁，並設定登入後跳回此頁
-                        const returnUrl = encodeURIComponent(window.location.pathname);
-                        window.location.href = `/Auth/Login?ReturnUrl=${returnUrl}`;
-
-                        console.log( "FFGHERTFF",window.location.href);
-                        // 假設 Auth/Index 是登入頁
+                        const loginPath = '/Auth/Login';
+                        const encodedUrl = encodeURIComponent(window.location.pathname + window.location.search);                   
+                        window.location.href = `${window.location.origin}${loginPath}?ReturnUrl=${encodedUrl}`;
+ 
                         return;
                     }
 
