@@ -305,23 +305,23 @@ namespace TripMatch.Services
         }
 
         // 8. 方案卡
-        public async Task<List<Recommandation>> GenerateRecommendationsAsync(int groupId)
+        public async Task<List<Recommendation>> GenerateRecommendationsAsync(int groupId)
         {
             // 1. 檢查是否已經有生成過的方案
-            var existingRecs = await _context.Recommandations
+            var existingRecs = await _context.Recommendations
         .Where(r => r.GroupId == groupId)
         .ToListAsync();
 
             // ★ 開發階段修改：如果有舊資料，先刪除，強制重新生成 ★
             if (existingRecs.Any())
             {
-                _context.Recommandations.RemoveRange(existingRecs);
+                _context.Recommendations.RemoveRange(existingRecs);
                 await _context.SaveChangesAsync();
             }
 
             // 2. 取得共同時間段
             var timeRanges = await GetCommonTimeRangesAsync(groupId);
-            if (!timeRanges.Any()) return new List<Recommandation>();
+            if (!timeRanges.Any()) return new List<Recommendation>();
 
             // 3. 取得地點偏好 (邏輯不變)
             var rawPlaces = await _context.Preferences
@@ -340,7 +340,7 @@ namespace TripMatch.Services
 
             // ★★★ 修改重點：嚴格讀取資料庫設定，不寫死預設值 ★★★
             var group = await _context.TravelGroups.FindAsync(groupId);
-            if (group == null) return new List<Recommandation>(); // 防呆
+            if (group == null) return new List<Recommendation>(); // 防呆
 
             // 直接取用資料庫中的 TravelDays
             int tripDays = group.TravelDays;
@@ -348,7 +348,7 @@ namespace TripMatch.Services
             // 邏輯防呆：萬一資料庫異常存了 0 或負數，至少要算 1 天，否則日期計算會出錯
             if (tripDays < 1) tripDays = 1;
 
-            var newRecommendations = new List<Recommandation>();
+            var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
             {
@@ -366,7 +366,7 @@ namespace TripMatch.Services
 
                     var travelInfo = await _travelInfoService.GetTravelInfoAsync(place, priceCheckStart, priceCheckEnd);
 
-                    var rec = new Recommandation
+                    var rec = new Recommendation
                     {
                         GroupId = groupId,
 
@@ -388,7 +388,7 @@ namespace TripMatch.Services
                 }
             }
 
-            await _context.Recommandations.AddRangeAsync(newRecommendations);
+            await _context.Recommendations.AddRangeAsync(newRecommendations);
             await _context.SaveChangesAsync();
 
             return newRecommendations;
@@ -447,7 +447,7 @@ namespace TripMatch.Services
 
             if (member == null) throw new Exception("非成員");
 
-            var targets = await _context.Recommandations
+            var targets = await _context.Recommendations
                 .Where(r => r.GroupId == groupId && recommendationIds.Contains(r.Index))
                 .ToListAsync();
 
