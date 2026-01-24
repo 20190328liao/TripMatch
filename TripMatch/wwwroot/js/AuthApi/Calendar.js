@@ -233,6 +233,20 @@
             }
         });
 
+        // 更新 badge（左側面板的 selectedCount）
+        try {
+            const count = filtered.length;
+            const badge = document.getElementById('selectedCount');
+            if (badge) {
+                badge.textContent = String(count);
+                badge.setAttribute('title', `${count} 個已選日期（本月）`);
+                // 對於輕量提示，同時顯示 list header 的暫時訊息（3 秒）
+                setListHeaderMessage(`已選 ${count} 個時段`, 3);
+            }
+        } catch (e) {
+            console.warn('update selectedCount failed', e);
+        }
+
         if (!filtered.length) {
             const emptyHtml = '<div class="text-muted">本月份尚無選擇的日期</div>';
             if ($list.length) $list.html(emptyHtml);
@@ -296,6 +310,14 @@
         const all = Array.from(new Set(getAllDraftDates().concat(submittedDates || [])));
         if (!all.length) {
             $el.html(''); // 清空
+            // update selectedCount as 0 when range-only rendering used
+            try {
+                const badge = document.getElementById('selectedCount');
+                if (badge) {
+                    badge.textContent = '0';
+                    badge.setAttribute('title', `0 個已選日期（本月）`);
+                }
+            } catch { }
             return;
         }
 
