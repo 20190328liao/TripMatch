@@ -1045,3 +1045,70 @@ body:not(.calendar-editing) .day-cell {
 .day-cell.submitted-new .dot {
     background-color: #003366 !important; /* 深藍色 */
 }
+
+/* 3. 開始：粉藍 (Powder Blue) - 範圍選擇 */
+.dot.range-start {
+    background-color: #89CFF0 !important;
+}
+
+/* 4. 結束：橘 (Orange) - 範圍選擇 */
+.dot.range-end {
+    background-color: #FFA500 !important;
+}
+/* =========================================
+   2. 虛線引導提示 (Guide Hint)
+   ========================================= */
+
+@keyframes dash-pulse {
+    0% {
+        border-color: rgba(0, 150, 81, 0.4);
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0.2);
+    }
+
+    50% {
+        border-color: rgba(0, 150, 81, 1);
+        box-shadow: 0 0 0 4px rgba(0, 150, 81, 0.1);
+    }
+
+    100% {
+        border-color: rgba(0, 150, 81, 0.4);
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0);
+    }
+}
+
+/* 套用在日曆格子上的虛線框 */
+.day-cell.guide-highlight {
+    border: 2px dashed #009651 !important; /* 藍綠色虛線 */
+    animation: dash-pulse 2s infinite;
+    position: relative;
+    z-index: 20; /* 浮在最上層 */
+}
+
+    /* 浮動提示文字 (Tooltip) */
+    .day-cell.guide-highlight::after {
+        content: "點擊此處開始選擇";
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0.9;
+    }
+    /* 小三角形 */
+    .day-cell.guide-highlight::before {
+        content: "";
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: #333 transparent transparent transparent;
+        pointer-events: none;
+    }

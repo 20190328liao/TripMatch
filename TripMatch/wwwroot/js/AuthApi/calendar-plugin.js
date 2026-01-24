@@ -93,6 +93,28 @@
                     ui.createBell(payload);
                 }
 
+                // 加入引導提示
+                // 1. 初始化顯示編輯提示
+                document.querySelector('.btn-edit')?.classList.add('guide-hint');
+
+                // 2. 當點擊編輯時
+                document.querySelector('.btn-edit')?.addEventListener('click', function () {
+                    this.classList.remove('guide-hint');
+                    // 提示切換月份
+                    document.querySelectorAll('.month-header .nav-btn').forEach(btn => btn.classList.add('guide-hint'));
+                });
+
+                // 假設您有一個選擇日期的事件監聽器，如果沒有，您可以嘗試監聽 .day-cell 的點擊事件
+                // 這裡使用 document.body 委派監聽，因為 .day-cell 可能是動態生成的
+                document.body.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('day-cell') && !e.target.classList.contains('empty') && !e.target.classList.contains('locked')) {
+                        // 移除月份提示
+                        document.querySelectorAll('.month-header .nav-btn').forEach(btn => btn.classList.remove('guide-hint'));
+                        // 提示提交
+                        document.getElementById('btn-confirm')?.classList.add('guide-hint');
+                    }
+                });
+
                 // (如果您希望有舊資料時還是要彈窗，可以解開下方的註解，但為了不阻擋您編輯，預設隱藏)
                 /*
                 try {
@@ -128,6 +150,9 @@
         document.body.addEventListener('click', function (e) {
             const btn = e.target.closest('#btn-confirm');
             if (btn) {
+                // 移除提示
+                btn.classList.remove('guide-hint');
+
                 // 延遲 0.5 秒讓儲存動畫先跑，再搖動鈴鐺提示下一步
                 setTimeout(() => {
                     const ui = getUI();

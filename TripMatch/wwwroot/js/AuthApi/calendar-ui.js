@@ -75,7 +75,13 @@
                         <button id="btn-import-save" style="flex:1;padding:12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">匯入時段</button>
                         <button id="btn-import-close" style="flex:1;padding:12px;background:#f3f4f6;color:#333;border:none;border-radius:8px;font-weight:600;cursor:pointer;">繼續編輯日曆</button>
                     </div>
-                    <a href="javascript:history.back()" class="btn-back-link">取消並回到上一頁</a>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                        <a href="javascript:history.back()" class="btn-back-link" style="margin:0; font-size:0.85rem;">取消並回到上一頁</a>
+                        <button id="btn-dismiss-hints" style="background:transparent; border:none; color:#999; font-size:0.85rem; cursor:pointer; text-decoration:underline;">
+                            關閉教學提示
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -90,27 +96,29 @@
         document.getElementById('btn-import-close').onclick = () => {
             const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
             if (isMatchPage) {
-                // 如果在確認頁按繼續編輯 -> 去會員中心
                 window.location.href = '/Auth/MemberCenter#calendar_section';
             } else {
-                // 如果在會員中心按繼續編輯 -> 關彈窗顯示鈴鐺
                 ns.closePendingModal();
                 ns.createBell(payload);
             }
         };
+
+        // ★ 新增：綁定消除指示按鈕事件
+        document.getElementById('btn-dismiss-hints').onclick = () => {
+            document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+            ns.closePendingModal();
+            ns.createBell(payload);
+        };
     };
 
-    // 成功匯入的提示 (倒數後回確認頁)
     ns.showImportSuccess = function (count, groupId) {
         showToast(`已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後返回行程確認...`, groupId);
     };
 
-    // 無資料時的提示 (倒數後去會員中心)
     ns.showNoDataNotice = function (groupId) {
         showToast(`您尚未選擇休假日期，將於 <b>{sec}</b> 秒後進入編輯頁面...`, groupId, '/Auth/MemberCenter#calendar_section');
     };
 
-    // 內部封裝的 Toast 邏輯
     function showToast(messageTemplate, groupId, customRedirectUrl = null) {
         const old = document.getElementById(TOAST_ID);
         if (old) old.remove();
