@@ -12,39 +12,43 @@
 
 <link rel="stylesheet" href="~/css/Match/CalendarCheck.css" />
 
-<div class="page-wrap">
+<style>
+    /* 讓彈窗可以透過 class 控制顯示隱藏，並置中 */
+    .modal-overlay {
+        display: none; /* 預設隱藏 */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(2px);
+    }
 
+        .modal-overlay.active {
+            display: flex !important; /* 加上 active 才會顯示 */
+        }
+    /* 這裡不需要覆寫 .custom-modal 的寬度，沿用您原始 CSS 即可保持原樣 */
+</style>
+
+<div class="page-wrap">
     <div id="selectionSection" class="@(isSubmitted ? "d-none" : "")">
         <div class="calendar-container">
             <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
             <p class="text-center text-muted mb-4">系統已自動帶入您在會員中心的設定，請確認本次行程的可用時段</p>
 
-            @* <div class="d-flex justify-content-center gap-2 mb-4">
-                <span class="badge bg-white text-dark border">● 今天</span>
-                <span class="badge bg-light text-muted border">░ 非揪團期間</span>
-                <span class="badge" style="background:#dbeafe; color:#1e40af">■ 已選取</span>
-                <span class="badge" style="background:#16a34a; color:white">● 我可以參加</span>
-            </div> *@
+            <div id="groupRangeInfo" class="text-center mb-4 d-none" style="font-size:0.95rem; color:var(--text-muted)">
+                揪團期間：尚未設定
+            </div>
+
             <div class="calendar-legend">
-                <div class="legend-item">
-                    <span class="legend-marker marker-today"></span>
-                    <span>今天</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-locked"></span>
-                    <span>非揪團期間</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-selected"></span>
-                    <span>已選取</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-joinable"></span>
-                    <span>我可以參加</span>
-                </div>
+                <div class="legend-item"><span class="legend-marker marker-today"></span><span>今天</span></div>
+                <div class="legend-item"><span class="legend-marker marker-locked"></span><span>非揪團期間</span></div>
+                <div class="legend-item"><span class="legend-marker marker-selected"></span><span>已選取</span></div>
+                <div class="legend-item"><span class="legend-marker marker-joinable"></span><span>我可以參加</span></div>
             </div>
 
             <div class="row g-4">
@@ -55,11 +59,8 @@
                             <div class="year-display">2026</div>
                             <button class="year-right nav-btn">▶</button>
                         </div>
-
                         <div class="months-grid mb-4"></div>
-
                         <hr style="border-color:#eee" />
-
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
                             <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
@@ -76,26 +77,15 @@
                         <div class="month-display">January 2026</div>
                         <button class="month-right nav-btn">▶</button>
                     </div>
-
                     <div class="week-header">
-                        <div>週一</div>
-                        <div>週二</div>
-                        <div>週三</div>
-                        <div>週四</div>
-                        <div>週五</div>
-                        <div>週六</div>
-                        <div style="color:#ef4444">週日</div>
+                        <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div><div style="color:#ef4444">週日</div>
                     </div>
-
                     <div class="days"></div>
                 </div>
             </div>
 
             <div class="row mt-5">
                 <div class="col-12 text-center">
-                    @* <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
-                        確認提交，下一步
-                    </button> *@
                     <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
                         <span class="btn-main-text">確認提交</span>
                         <span class="btn-sub-text">下一步</span>
@@ -122,12 +112,10 @@
             </div>
         </div>
     </div>
-
 </div>
 
-<div class="modal-overlay active" id="calendarModal">
+<div class="modal-overlay" id="calendarModal">
     <div class="custom-modal">
-
         <div class="modal-top-icon">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z" />
@@ -176,11 +164,11 @@
         </div>
 
         <div class="d-grid">
-            <button class="btn btn-primary-mint" onclick="goToMemberCenter()">
+            <button id="btnImportFromCheck" class="btn btn-primary-mint">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" />
                 </svg>
-                前往設定行事曆
+                匯入個人行事曆
             </button>
 
             <button id="closeModal" class="btn btn-secondary-light" onclick="closeModal()">
@@ -191,60 +179,94 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/AuthApi/Datehelper.js"></script>
-    <script src="~/js/AuthApi/calendar-plugin.js"></script>
+    <script src="~/js/AuthApi/Datehelper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-ui.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
+
     <script>
         const currentGroupId = '@groupId';
+        const currentGroupIdInt = parseInt(currentGroupId || '0', 10);
+        const recommendationsUrlServer = '@Url.Action("Recommendations", "Match", new { id = (ViewData["GroupId"] ?? 0) })';
+
+        let targetDays = 1;
+        let selectedRanges = [];
+
+        function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
+
         const isSubmittedInit = '@isSubmitted.ToString().ToLower()' === 'true';
         const hasFilledCalendar = JSON.parse('@Html.Raw(Json.Serialize(hasData))');
         let pollingInterval;
-        document.addEventListener("DOMContentLoaded", async function() {
 
-            // 1. 讀取後端 ViewData 決定是否顯示 Modal
-            // 邏輯：後端查 DB 發現這個人沒填過資料 -> shouldShowPrompt = true
-            var shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
+        // --- 1. 跳轉邏輯 (核心) ---
+        function goToMemberCenter() {
+            // 記錄這團 ID，讓會員中心知道我是為了這團來的 (才會顯示鈴鐺)
+            sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
+            // 跳轉
+            window.location.href = '/Auth/MemberCenter#calendar_section';
+        }
+
+        function closeModal() {
+            sessionStorage.removeItem('calendar_check_pending');
             const modal = document.getElementById('calendarModal');
+            if (modal) modal.classList.remove('active');
+        }
 
-            // 2. 顯示 Modal 的判斷 (不再看 localStorage)
-            // 只要後端說要顯示 (shouldShowPrompt) 且 Modal 元素存在，就彈出來
-            if (shouldShowPrompt && modal) {
-                modal.classList.add('active');
+        // --- 渲染清單 ---
+        function renderList() {
+            const $list = document.getElementById('calendarList');
+            const $count = document.getElementById('selectedCount');
+            if (!$list) return;
+
+            selectedRanges.sort((a, b) => a.start.localeCompare(b.start));
+
+            if (selectedRanges.length === 0) {
+                $list.innerHTML = '<div class="text-muted text-center mt-3 fs-7">尚無選取區段</div>';
+                if($count) $count.textContent = '0';
+                return;
             }
 
-            // 3. 處理頁面狀態 (這部分保留你原本的邏輯)
-            // 這裡假設 isSubmittedInit 是你原本在上方定義好的變數 (判斷是否已提交)
-            if (typeof isSubmittedInit !== 'undefined' && isSubmittedInit) {
-                showWaitingMode();
+            $list.innerHTML = selectedRanges.map(r => {
+                const isEnough = r.days >= targetDays;
+                const borderClass = isEnough ? '' : 'border-danger';
+                const textClass = isEnough ? 'text-muted' : 'text-danger fw-bold';
+                const statusText = isEnough ? '符合需求' : '天數不足';
 
-                // ★★★ 記得加入這行：開始輪詢狀態 ★★★
-                // 這樣在等待頁面才會每幾秒去問後端 "大家填完了沒?"
-                setInterval(checkStatus, 3000);
-                checkStatus();
+                return `
+                <div class="calendar-list-item ${borderClass}">
+                    <div>
+                        <div class="fw-bold ${r.valid ? 'text-success' : 'text-danger'}" style="font-size:0.95rem">
+                            ${r.start.slice(5)} ~ ${r.end.slice(5)}
+                        </div>
+                        <small class="${textClass}" style="font-size:0.85rem">
+                            ${r.days} 天 (${statusText})
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-light text-danger border-0 rounded-circle"
+                            style="width:30px;height:30px;"
+                            onclick="window.removeRange('${r.start}')">✕</button>
+                </div>
+                `;
+            }).join('');
 
-            } else {
-                // 還沒提交，初始化行事曆讓使用者填寫
-                if (typeof initCalendar === 'function') {
-                    await initCalendar();
+            if($count) $count.textContent = selectedRanges.filter(r => r.valid).length;
+        }
+
+        window.removeRange = function(startIso) {
+            const idx = selectedRanges.findIndex(r => r.start === startIso);
+            if(idx >= 0) {
+                selectedRanges.splice(idx, 1);
+                if(window._tripmatch_calendar_instance && window._tripmatch_calendar_instance.render) {
+                    window._tripmatch_calendar_instance.render();
+                } else {
+                    renderList();
                 }
             }
-        });
-
-        // 全域 Calendar API (供 calendar-plugin.js / MemberCenter 呼叫)
-        window.Calendar = window.Calendar || {};
-        window.Calendar.importDates = function(dates) {
-            try { sessionStorage.setItem('calendar_imported_dates', JSON.stringify(dates || [])); } catch (e) {}
-            if (window._tripmatch_calendar_instance && typeof window._tripmatch_calendar_instance.importDates === 'function') {
-                window._tripmatch_calendar_instance.importDates(dates || []);
-            }
-        };
-        window.Calendar.importRanges = function(ranges) {
-            try { sessionStorage.setItem('calendar_imported_ranges', JSON.stringify(ranges || [])); } catch (e) {}
-            if (window._tripmatch_calendar_instance && typeof window._tripmatch_calendar_instance.importRanges === 'function') {
-                window._tripmatch_calendar_instance.importRanges(ranges || []);
-            }
         };
 
+        // --- 提交邏輯 ---
         async function submitSlots() {
+            if (!hasValidGroupId()) { alert('無效的揪團 ID，無法提交。'); return; }
+
             const validRanges = (selectedRanges || []).filter(r => r && r.valid);
             if (!validRanges || validRanges.length === 0) {
                 alert("您沒有選擇任何「符合天數要求」的日期區段！");
@@ -254,31 +276,14 @@
 
             const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
 
-            // 產生單日清單（MemberCenter 的 LeaveDates 單日格式）
-            function expandToDates(range) {
-                const out = [];
-                let curr = new Date(range.startAt.slice(0,10) + 'T00:00:00Z');
-                const last = new Date(range.endAt.slice(0,10) + 'T00:00:00Z');
-                while (curr <= last) {
-                    out.push(curr.toISOString().slice(0,10));
-                    curr.setUTCDate(curr.getUTCDate() + 1);
-                }
-                return out;
-            }
-            const dates = slots.flatMap(s => expandToDates(s));
-
-            // 儲存草稿到 sessionStorage，供 MemberCenter 顯示 / 匯入使用
             try {
-                const payload = { groupId: currentGroupId, ranges: slots, dates: Array.from(new Set(dates)), savedAt: new Date().toISOString() };
+                const payload = { groupId: currentGroupId, ranges: slots, savedAt: new Date().toISOString() };
                 sessionStorage.setItem('calendar_draft_ranges', JSON.stringify(payload));
-                // 也寫入 pending key，calendar-plugin.js 會在 MemberCenter 顯示 modal -> 可縮為鈴鐺
-                sessionStorage.setItem('calendar_check_pending', JSON.stringify(payload));
-            } catch (e) {
-                console.warn('store calendar_draft_ranges failed', e);
-            }
+                sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
+            } catch (e) { console.warn(e); }
 
             const btn = document.getElementById('btnSubmit');
-            if (btn) { btn.disabled = true; btn.innerText = "提交中..."; }
+            if (btn) { btn.disabled = true; }
 
             try {
                 const res = await fetch(`/api/timewindow/${encodeURIComponent(currentGroupId)}/available`, {
@@ -292,75 +297,58 @@
                 });
 
                 if (res.ok) {
-                    try { sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId })); } catch {}
+                    try { sessionStorage.removeItem('calendar_draft_ranges'); } catch {}
+                    try { sessionStorage.removeItem('calendar_check_pending'); } catch {}
+                    try { sessionStorage.removeItem('calendar_imported_ranges'); } catch {}
                     showWaitingMode();
                 } else {
                     const err = await res.json().catch(() => ({}));
                     alert("提交失敗：" + (err.message || "未知錯誤"));
-                    if (btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
+                    if (btn) btn.disabled = false;
                 }
             } catch (e) {
                 console.error(e);
                 alert("連線錯誤");
-                if (btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
+                if (btn) btn.disabled = false;
             }
         }
 
+        // --- 狀態檢查 ---
         function showWaitingMode() {
             const sel = document.getElementById('selectionSection');
             const wait = document.getElementById('waitingSection');
             if(sel) sel.classList.add('d-none');
             if(wait) wait.classList.remove('d-none');
-            checkStatus();
+            if (hasValidGroupId()) checkStatus();
             if(pollingInterval) clearInterval(pollingInterval);
-            pollingInterval = setInterval(checkStatus, 3000);
+            pollingInterval = setInterval(() => { if (hasValidGroupId()) checkStatus(); }, 3000);
         }
 
-                // 檔案：TripMatch/Views/Match/CalendarCheck.cshtml
-
         async function checkStatus() {
-            try {
+             if (!hasValidGroupId()) return;
+             try {
                 const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
                 if (res.ok) {
                     const statusData = await res.json();
-
-                    // 這裡現在可以正常顯示人數了 (因為後端補了欄位)
                     const textEl = document.getElementById('progressText');
                     if(textEl) textEl.innerText = `${statusData.submittedCount} / ${statusData.memberCount} 人已提交`;
 
-                    // 這裡現在可以讀到 "COMPLETED" 了
                     if (statusData.status === "COMPLETED") {
                         clearInterval(pollingInterval);
-
-                        // ★★★ 修改這裡：跳轉到正確的 Recommandation 頁面 ★★★
-                        // 原本: window.location.href = `/Match/Result/${currentGroupId}`;
-                        window.location.href = `/Match/Recommendations/${currentGroupId}`;
-                            }
-                    else {
-                            // 否則更新進度文字，繼續等待
-                         document.getElementById("statusText").innerText =
-                           `等待成員提交中... (${statusData.submittedCount} / ${statusData.memberCount})`;
-                             }
+                        if (hasValidGroupId()) window.location.href = `/Match/Recommendations/${currentGroupId}`;
+                        else window.location.href = recommendationsUrlServer;
+                    }
                 }
-            } catch (e) {
-                console.error("Polling error", e);
-            }
+             } catch(e) { console.error(e); }
         }
 
-        function closeModal() {
-            const modal = document.getElementById('calendarModal');
-            if(modal) modal.classList.remove('active');
-        }
-        function goToMemberCenter() { window.location.href = '/Auth/MemberCenter#calendar_section'; }
-
-        // 行事曆核心
-        let selectedRanges = [];
-
+        // --- 行事曆核心 ---
         async function initCalendar() {
              let currentYear = new Date().getFullYear();
              let currentMonth = new Date().getMonth();
-             let groupStart = null; let groupEnd = null;
-             let targetDays = 1; let myLeaveDates = new Set();
+             let groupStart = null;
+             let groupEnd = null;
+             let myLeaveDates = new Set();
              let pendingStartDate = null;
 
              const getTodayIso = () => {
@@ -369,9 +357,37 @@
              };
              const todayIso = getTodayIso();
 
-             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
-             document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
+             window._tripmatch_calendar_instance = {
+                render: function() { renderMonth(); renderList(); },
 
+                // 匯入時自動裁切日期
+                importRanges: function(ranges) {
+                     if (!Array.isArray(ranges)) return;
+                     ranges.forEach(r => {
+                         let start = (r.startAt || r.start).slice(0, 10);
+                         let end = (r.endAt || r.end).slice(0, 10);
+                         if (!start || !end) return;
+
+                         if (groupStart && start < groupStart) start = groupStart;
+                         if (groupEnd && end > groupEnd) end = groupEnd;
+                         if (start > end) return;
+                         if (checkOverlap(start, end)) return;
+
+                         const dayCount = calculateDays(start, end);
+                         const isValid = dayCount >= targetDays;
+                         selectedRanges.push({ start, end, days: dayCount, valid: isValid });
+                     });
+                     renderMonth();
+                     renderList();
+                },
+                importDates: function(dates) { /* ... */ }
+             };
+
+             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
+             await loadMyExistingSlots();
+             loadImportedDraft();
+
+             document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
              buildMonthPanel();
              renderMonth();
              bindCalendarEvents();
@@ -390,6 +406,7 @@
                              const d = new Date(groupStart);
                              currentYear = d.getFullYear(); currentMonth = d.getMonth();
                          }
+                         updateGroupRangeDisplay();
                      }
                  } catch(e) { console.error(e); }
              }
@@ -402,6 +419,44 @@
                          if(data.dates) data.dates.forEach(d => myLeaveDates.add(d));
                      }
                  } catch(e) { console.error(e); }
+             }
+
+             async function loadMyExistingSlots() {
+                 try {
+                     const res = await fetch(`/api/timewindow/${currentGroupId}/available`, { credentials: 'include' });
+                     if (res.ok) {
+                         const data = await res.json();
+                         const slots = data.slots || (Array.isArray(data) ? data : []);
+                         if (slots.length > 0) {
+                             window._tripmatch_calendar_instance.importRanges(slots);
+                         }
+                     }
+                 } catch(e) { console.warn('Failed to load existing slots', e); }
+             }
+
+             function loadImportedDraft() {
+                 try {
+                     const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
+                     if (draftRaw) {
+                         const draft = JSON.parse(draftRaw);
+                         if (draft.groupId == currentGroupId && Array.isArray(draft.ranges)) {
+                             window._tripmatch_calendar_instance.importRanges(draft.ranges);
+                         }
+                     }
+                 } catch(e) { console.warn(e); }
+             }
+
+             function updateGroupRangeDisplay() {
+                 const el = document.getElementById('groupRangeInfo');
+                 if (!el) return;
+                 if (groupStart && groupEnd) {
+                     const days = calculateDays(groupStart, groupEnd);
+                     el.innerHTML = `揪團期間：<strong>${groupStart}</strong> ～ <strong>${groupEnd}</strong> （共 ${days} 天） • 行程需 ${targetDays} 天`;
+                     el.classList.remove('d-none');
+                 } else {
+                     el.innerHTML = '揪團期間：尚未設定';
+                     el.classList.add('d-none');
+                 }
              }
 
              function isLocked(iso) {
@@ -519,9 +574,9 @@
                  document.querySelectorAll('.day-cell').forEach(cell => {
                      cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
                  });
-             }
-             function checkOverlap(newStart, newEnd) { return selectedRanges.some(r => !(newEnd < r.start || newStart > r.end)); }
-             function getDateRangeStatus(iso) {
+            }
+            function checkOverlap(newStart, newEnd) { return selectedRanges.some(r => !(newEnd < r.start || newStart > r.end)); }
+            function getDateRangeStatus(iso) {
                  for (let range of selectedRanges) {
                      if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid };
                      if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid };
@@ -529,9 +584,9 @@
                      if (iso === range.end) return { type: 'end', isValid: range.valid };
                  }
                  return null;
-             }
-             function calculateDays(start, end) { const s = new Date(start); const e = new Date(end); return Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1; }
-             function checkRangeHasLocked(start, end) {
+            }
+            function calculateDays(start, end) { const s = new Date(start); const e = new Date(end); return Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1; }
+            function checkRangeHasLocked(start, end) {
                  let curr = new Date(start); const last = new Date(end);
                  while(curr <= last) {
                      const z = curr.getTimezoneOffset() * 60 * 1000;
@@ -539,106 +594,68 @@
                      if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
                  }
                  return false;
-             }
-
-             // ★★★ 配合新 CSS 樣式的清單 HTML (邏輯沒變，只改樣式) ★★★
-             function renderList() {
-                 const $list = document.getElementById('calendarList');
-                 const $count = document.getElementById('selectedCount');
-                 if(!$list) return;
-                 selectedRanges.sort((a, b) => a.start.localeCompare(b.start));
-                 if (selectedRanges.length === 0) {
-                     $list.innerHTML = '<div class="text-muted text-center mt-3 fs-7">尚無選取區段</div>';
-                     if($count) $count.textContent = '0';
-                     return;
-                 }
-                 $list.innerHTML = selectedRanges.map(r => `
-                     <div class="calendar-list-item">
-                         <div>
-                             <div class="fw-bold ${r.valid ? 'text-success' : 'text-danger'}" style="font-size:0.9rem">
-                                 ${r.start.slice(5)} ~ ${r.end.slice(5)}
-                             </div>
-                             <small class="text-muted">${r.days} 天 ${r.valid ? 'OK' : '不足'}</small>
-                         </div>
-                         <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onclick="window.removeRange('${r.start}')">✕</button>
-                     </div>
-                 `).join('');
-                 const validCount = selectedRanges.filter(r => r.valid).length;
-                 if($count) $count.textContent = validCount;
-             }
-             window.removeRange = function(startIso) {
-                 const idx = selectedRanges.findIndex(r => r.start === startIso);
-                 if(idx >= 0) { selectedRanges.splice(idx, 1); renderMonth(); }
-             };
-
+            }
              function bindCalendarEvents() {
                  const yearLeft = document.querySelector('.year-left');
                  const yearRight = document.querySelector('.year-right');
                  const monthLeft = document.querySelector('.month-left');
                  const monthRight = document.querySelector('.month-right');
-
                  if(yearLeft) yearLeft.onclick = () => { currentYear--; buildMonthPanel(); renderMonth(); };
                  if(yearRight) yearRight.onclick = () => { currentYear++; buildMonthPanel(); renderMonth(); };
                  if(monthLeft) monthLeft.onclick = () => { currentMonth--; if(currentMonth < 0) { currentMonth = 11; currentYear--; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
                  if(monthRight) monthRight.onclick = () => { currentMonth++; if(currentMonth > 11) { currentMonth = 0; currentYear++; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
              }
-
-             // 暴露可被外部呼叫的 instance，用於即時匯入（calendar-plugin.js / MemberCenter 會呼叫）
-             window._tripmatch_calendar_instance = {
-                 importDates: function(dates) {
-                     if (!Array.isArray(dates)) return;
-                     dates.forEach(d => myLeaveDates.add(d));
-                     renderMonth();
-                 },
-                 importRanges: function(ranges) {
-                     if (!Array.isArray(ranges)) return;
-                     ranges.forEach(r => {
-                         const start = (r.startAt || r.start || '').slice(0,10);
-                         const end = (r.endAt || r.end || '').slice(0,10);
-                         if (!start || !end) return;
-                         if (checkOverlap(start, end) || checkRangeHasLocked(start, end)) return;
-                         const days = calculateDays(start, end);
-                         const valid = days >= targetDays;
-                         selectedRanges.push({ start, end, days, valid });
-                     });
-                     renderMonth();
-                 }
-             };
-
-             // 如果前一頁（或 MemberCenter）已經放了待匯入資料到 sessionStorage，這裡讀取並套用
-             try {
-                 const rawDates = sessionStorage.getItem('calendar_imported_dates');
-                 if (rawDates) {
-                     const arr = JSON.parse(rawDates);
-                     if (Array.isArray(arr)) arr.forEach(d => myLeaveDates.add(d));
-                     sessionStorage.removeItem('calendar_imported_dates');
-                 }
-             } catch (e) { console.warn('imported_dates parse failed', e); }
-
-             try {
-                 const rawRanges = sessionStorage.getItem('calendar_imported_ranges') || sessionStorage.getItem('calendar_draft_ranges');
-                 if (rawRanges) {
-                     let parsed = JSON.parse(rawRanges);
-                     let rangesArr = [];
-                     if (Array.isArray(parsed)) rangesArr = parsed;
-                     else if (Array.isArray(parsed.ranges)) rangesArr = parsed.ranges;
-                     else if (Array.isArray(parsed.draft)) rangesArr = parsed.draft;
-                     rangesArr.forEach(r => {
-                         const start = (r.startAt || r.start || '').slice(0,10);
-                         const end = (r.endAt || r.end || '').slice(0,10);
-                         if (!start || !end) return;
-                         if (checkOverlap(start, end) || checkRangeHasLocked(start, end)) return;
-                         const dayCount = calculateDays(start, end);
-                         const isValid = dayCount >= targetDays;
-                         selectedRanges.push({ start, end, days: dayCount, valid: isValid });
-                     });
-                     try { sessionStorage.removeItem('calendar_imported_ranges'); } catch {}
-                 }
-             } catch (e) { console.warn('imported_ranges parse failed', e); }
-
-             // 重新 render 以確保剛匯入的資料會顯示
-             renderMonth();
         }
-        
+
+        // --- 頁面入口 ---
+        document.addEventListener("DOMContentLoaded", async function() {
+            const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
+            const shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
+
+            // ★ 修改：綁定「匯入」按鈕事件 -> 直接去會員中心
+            const btnImport = document.getElementById('btnImportFromCheck');
+            if (btnImport) {
+                btnImport.onclick = goToMemberCenter;
+            }
+
+            let isDraftValid = false;
+            if (draftRaw) {
+                try {
+                    const draft = JSON.parse(draftRaw);
+                    if (draft.groupId == currentGroupId) {
+                        isDraftValid = true;
+                    }
+                } catch(e) {}
+            }
+
+            if (isDraftValid) {
+                window._calendar_auto_import = true;
+                const modal = document.getElementById('calendarModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                }
+            } else if (shouldShowPrompt) {
+                const modal = document.getElementById('calendarModal');
+                if (modal) modal.classList.add('active');
+            }
+
+            if (!hasValidGroupId()) {
+                console.warn("Invalid Group ID");
+                return;
+            }
+
+            if (isSubmittedInit) {
+                showWaitingMode();
+                checkStatus();
+                const modal = document.getElementById('calendarModal');
+                if (modal) modal.classList.remove('active');
+                return;
+            }
+
+            if (typeof initCalendar === 'function') {
+                await initCalendar();
+            }
+        });
     </script>
 }

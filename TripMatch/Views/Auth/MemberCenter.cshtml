@@ -183,8 +183,8 @@
                 <button class="btn-delete btn1 btn-danger1">刪除</button>
 
                 <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                <button type="button" id="btnExportCalendar" class="btn2 btn-outline2">匯出</button>
-                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入</button>
+                <button type="button" id="btnExportCalendar" class="btn2 btn-outline2">匯出檔</button>
+                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入檔</button>
             </div>
 
             <div class="calendar_legend mb-3 mt-3">
@@ -302,7 +302,27 @@
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/viewSpot.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-ui.js" asp-append-version="true"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 監聽 #btn-confirm 的點擊事件
+            const btnConfirm = document.getElementById('btn-confirm');
+
+            if (btnConfirm) {
+                btnConfirm.addEventListener('click', function() {
+                    // 您原本的儲存邏輯會在這裡執行 (例如 AJAX submit)
+                    // 我們額外觸發鈴鐺搖動事件
+
+                    // 為了讓使用者感覺到「儲存後」才提示，可以加一點延遲 (例如 0.5 秒)
+                    setTimeout(() => {
+                        console.log('Triggering bell shake...'); // 除錯用
+                        document.dispatchEvent(new CustomEvent('calendar:saved'));
+                    }, 500);
+                });
+            } else {
+                console.warn('找不到 #btn-confirm 按鈕，請確認 ID 是否正確');
+            }
+        });
     </script>
 }
 

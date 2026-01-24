@@ -368,13 +368,14 @@ body:not(.calendar-editing) .day-cell {
     align-content: flex-start;
 }
 
-/* 右側清單樣式 */
+/* 清單樣式 */
 .calendar-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     overflow: auto;
     padding: 0.4rem;
+    max-height: 14rem;
 }
 
     /* 單項條目 */
@@ -902,4 +903,145 @@ body:not(.calendar-editing) .day-cell {
         padding-left: 0.75rem;
         padding-right: 0.75rem;
     }
+}
+/* =========================================
+   1. 修復 .dot 顏色 (範圍選擇：開始與結束)
+   ========================================= */
+
+/* 確保圓點在選取狀態下依然顯示，並置於最上層 */
+.day-cell .dot {
+    z-index: 10;
+    position: absolute;
+    /* 根據您的原設計調整位置，通常是 bottom: 4px 或 top */
+}
+
+/* 開始日期：粉藍色 (Powder Blue) */
+.day-cell.range-start .dot {
+    background-color: #89CFF0 !important; /* 粉藍色 */
+    opacity: 1 !important;
+    display: block !important;
+    box-shadow: 0 0 4px rgba(137, 207, 240, 0.6);
+}
+
+/* 結束日期：橘色 (Orange) */
+.day-cell.range-end .dot {
+    background-color: #FFA500 !important; /* 橘色 */
+    opacity: 1 !important;
+    display: block !important;
+    box-shadow: 0 0 4px rgba(255, 165, 0, 0.6);
+}
+
+/* 確保文字顏色在深色背景下為白色 (可選) */
+.day-cell.range-start,
+.day-cell.range-end {
+    color: #fff !important;
+}
+
+/* =========================================
+   2. 視覺引導提示 (虛線框動畫)
+   ========================================= */
+
+/* 定義呼吸動畫 */
+@keyframes guide-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0.4);
+        transform: scale(1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(0, 150, 81, 0);
+        transform: scale(1.02);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0);
+        transform: scale(1);
+    }
+}
+
+/* 通用提示樣式 */
+.guide-hint {
+    position: relative;
+    animation: guide-pulse 2s infinite;
+}
+
+/* [步驟1] 編輯按鈕：藍綠色虛線框 */
+.btn-edit.guide-hint {
+    border: 2px dashed #009651 !important; /* 藍綠色 */
+    background-color: rgba(0, 150, 81, 0.05);
+    color: #009651;
+}
+    /* 提示文字 (Tooltip) */
+    .btn-edit.guide-hint::after {
+        content: "點擊開始編輯 ✎";
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #009651;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+/* [步驟2] 月份切換：提示選擇月份 */
+.month-header .nav-btn.guide-hint {
+    border: 2px dashed #24a1f3 !important; /* 藍色虛線 */
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* [步驟3] 提交按鈕：提示按下 */
+#btn-confirm.guide-hint {
+    border: 2px dashed #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    color: #0d6efd !important;
+}
+
+    #btn-confirm.guide-hint::before {
+        content: "完成後點此提交";
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #0d6efd;
+        font-size: 12px;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+/* =========================================
+   3. 狀態顏色確認 (Legend Colors)
+   ========================================= */
+
+/* 藍色圈：今天 */
+.day-cell.today .dot {
+    background-color: #0d6efd !important;
+}
+
+/* 灰色圈：已有行程 (不可選/Locked) */
+.day-cell.has-trip .dot {
+    background-color: #6c757d !important; /* 灰色 */
+}
+
+.day-cell.locked {
+    color: #ccc;
+    pointer-events: none;
+}
+
+/* 藍綠色：舊提交 (假設 class 是 .submitted-old) */
+.day-cell.submitted-old .dot {
+    background-color: #20c997 !important; /* Teal / 藍綠色 */
+}
+
+/* 深藍色：新提交 (假設 class 是 .submitted-new) */
+.day-cell.submitted-new .dot {
+    background-color: #003366 !important; /* 深藍色 */
 }

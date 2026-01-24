@@ -901,6 +901,68 @@
             ${moreNote}
         `;
 
+        // 建立 bootstrap modal 實例（若已存在則重用）
+        const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+
+        // cleanup 保證只執行一次（避免多次 remove/hide 導致視窗閃爍）
+        let _closed = false;
+        function cleanup() {
+            if (_closed) return;
+            _closed = true;
+            try { bs.hide(); } catch { }
+            // 等待 hidden 事件再移除 DOM（避免直接移除導致 bootstrap 錯誤）
+            // 若 hidden 已經發生，直接移除
+            const onHidden = () => {
+                try { modalEl.remove(); } catch (e) { /* ignore */ }
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            };
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            // 如果 modal 目前沒有顯示（bs.hide 不觸發 hidden），則移除延遲執行
+            setTimeout(() => {
+                if (!document.body.contains(modalEl)) return;
+                try { modalEl.remove(); } catch { }
+            }, 700);
+        }
+
+        // 顯示 modal
+        bs.show();
+
+        // 綁定確認匯入按鈕（用 once 保證只執行一次）
+        const btnConfirm = modalEl.querySelector('#importCalendarConfirm');
+        const newBtn = btnConfirm.cloneNode(true);
+        btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+
+        newBtn.addEventListener('click', function () {
+            const detail = { fileName: filename, raw: parsed, dates: dates };
+            document.dispatchEvent(new CustomEvent('calendar:import', { detail }));
+
+            // UI 更新
+            const msgEl = document.getElementById('importCalendarMessage');
+            if (msgEl) {
+                msgEl.classList.remove('d-none', 'alert-danger');
+                msgEl.classList.add('alert', 'alert-success');
+                msgEl.textContent = `已將 ${dates.length} 筆資料送交匯入，處理結果請稍候。`;
+            }
+
+            // 關閉 modal（使用 cleanup，以確保只執行一次）
+            cleanup();
+        }, { once: true });
+
+        // 綁定取消按鈕與 close icon：只呼叫 cleanup（一次）
+        modalEl.querySelectorAll('[data-bs-dismiss="modal"], .btn-close').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                cleanup();
+            }, { once: true });
+        });
+
+        // 若使用者點 overlay（bootstrap 預設會處理 backdrop），也只執行一次 cleanup
+        modalEl.addEventListener('click', function (e) {
+            if (e.target === modalEl) {
+                cleanup();
+            }
+        }, { once: true });
+
         return dates;
     }
 
@@ -922,9 +984,20 @@
 
                 newConfirm.addEventListener('click', function () {
                     const detail = { fileName: file.name, raw: parsed, dates: dates };
+
+                    // 1. 發送原本的匯入事件
                     document.dispatchEvent(new CustomEvent('calendar:import', { detail }));
 
-                    // 嘗試更新畫面上的 importCalendarMessage（若存在）
+                    // 2. 【新增】清除 Session 中的待處理狀態，這樣鈴鐺才不會再出來
+                    sessionStorage.removeItem('calendar_check_pending');
+                    sessionStorage.removeItem('calendar_draft_ranges');
+
+                    // 3. 【新增】如果畫面上正掛著鈴鐺，直接把它拔掉
+                    if (window.CalendarUI && typeof window.CalendarUI.destroyBell === 'function') {
+                        window.CalendarUI.destroyBell();
+                    }
+
+                    // 4. 更新訊息提示（您原本的程式碼）
                     const msgEl = document.getElementById('importCalendarMessage');
                     if (msgEl) {
                         msgEl.classList.remove('d-none', 'alert-danger');
@@ -933,6 +1006,11 @@
                     }
 
                     bs.hide();
+
+                    // 5. 【建議】視情況重新導向或刷新
+                    // 如果您希望匯入後立刻看到行事曆更新，可以加這一行：
+                     location.reload(); 
+
                 }, { once: true });
 
             } catch (ex) {
