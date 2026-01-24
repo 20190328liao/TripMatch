@@ -96,16 +96,16 @@
         color: #333;
     }
 
-    .month-btn .en {
-        font-size: 12pt;
-        color: #777;
-    }
-
     .month-btn.active {
         outline: 3px solid rgba(0,128,128,0.12);
         background: linear-gradient(180deg, #f5fffb, #fff);
     }
-
+/* 手機/窄螢幕降為 2 欄 */
+@media (max-width: 575.98px) {
+    .months-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .months-panel, .month-panel, .list-panel {
     min-height: 650px;
     max-height: 650px;
@@ -208,6 +208,7 @@
     justify-content: center;
     cursor: pointer;
 }
+
 
 .calendarBtnWrap {
     margin-top: 15px;
@@ -434,7 +435,7 @@ body:not(.calendar-editing) .day-cell {
 /* 在小螢幕收窄高度 */
 @media (max-width: 991.98px) {
     .calendar-list {
-        max-height: 49vh;
+        max-height: 12rem;
     }
 }
 
@@ -496,50 +497,11 @@ body:not(.calendar-editing) .day-cell {
 }
 
 
-
-/* 桌面：左側月份、主日曆、右側清單 */
-@media (min-width: 992px) {
-    /*.member_center_wrap #calendar_section .months-panel {
-        flex: 0 0 320px;*/ /* 固定基底寬度，避免拉伸 */
-    /*min-width: 420px;
-        box-sizing: border-box;
-    }
-
-    .member_center_wrap #calendar_section .month-panel {
-        flex: 1 1 0;*/ /* 讓中間區域撐滿剩餘空間，且可縮放 */
-    /*min-width: 560px;
-        max-width: 560px;
-        box-sizing: border-box;
-    }
-
-    .member_center_wrap #calendar_section .list-panel {
-        flex: 0 0 320px;*/ /* 固定作為側欄 */
-    /*min-width: 300px;
-        max-width: 300px;
-        box-sizing: border-box;
-        align-self: flex-start;
-    }*/
-
-    /* 若有 Bootstrap col-* 干擾，覆寫為不使用寬度百分比 */
-    /*.member_center_wrap #calendar_section .months-panel[class*="col-"],
-        .member_center_wrap #calendar_section .month-panel[class*="col-"],
-        .member_center_wrap #calendar_section .list-panel[class*="col-"] {
-            width: auto;
-        }*/
-
-    /* 右側清單內文垂直頂端對齊 */
-    /*.member_center_wrap #calendar_section .calendar-list {
-        min-height: 43vh;
-        max-height: 43vh;
-        overflow: auto;
-    }*/
-}
-
 /* 平板與手機維持原本 Bootstrap 行為（自動換行） */
 @media (max-width: 992px) {
     .month-panel {
-        min-height: 720px;
-        max-height: 720px;
+        min-height: 620px;
+        max-height: 620px;
     }
 
  
@@ -551,47 +513,6 @@ body:not(.calendar-editing) .day-cell {
         box-sizing: border-box;
     }
 
-
-    /* 固定側欄：占視窗寬度的一部分並可垂直捲動 */
-    .month-panel.mobile-fixed,
-    .list-panel.mobile-fixed {
-        position: fixed;
-        left: 0;
-        top: 56px; /* 若有 header，調整高度 */
-        width: 85vw; /* 手機時占視窗寬度比率，可改為 70vw / 95vw */
-        max-width: 360px; /* 限制最大寬度 */
-        height: calc(100vh - 56px);
-        overflow-y: auto;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-        background: var(--white);
-        border-radius: 0 12px 12px 0;
-        z-index: 1050;
-        transition: transform 0.22s ease, width 0.22s ease;
-        transform: translateX(0); /* 顯示狀態 */
-    }
-
-        /* 收合狀態：往左隱藏（加上 .collapsed 由 JS 切換） */
-        .month-panel.mobile-fixed.collapsed,
-        .list-panel.mobile-fixed.collapsed {
-            transform: translateX(-100%);
-        }
-
-        /* 若想要在顯示時縮小內容字體/間距以呈現“縮放”效果 */
-        .month-panel.mobile-fixed.scale-small,
-        .list-panel.mobile-fixed.scale-small {
-            width: 72vw;
-            font-size: 0.95rem;
-            padding: 0.5rem;
-        }
-
-    /* 替代方案：貼齊但不脫離文流（sticky）*/
-    .month-panel.sticky,
-    .list-panel.sticky {
-        position: -webkit-sticky;
-        position: sticky;
-        top: 8px;
-        margin-left: 0;
-    }
 }
 /* 強制絕對置中 day-label，解決圓形「浮起來」偏移問題 */
 .days {
@@ -782,29 +703,24 @@ body:not(.calendar-editing) .day-cell {
             gap: 0.5rem;
         }
 }
-/* months-panel 內的 months-grid：手機3欄，電腦2欄 */
-.member_center_wrap #calendar_section .months-panel .months-grid {
+.months-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 8px;
-}
-
-@media (min-width: 1200px) {
-    .member_center_wrap #calendar_section .months-panel .months-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-.calendarBtnWrap {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    width: 100%;
+    gap: 0.5rem;
+    align-items: start;
 }
 
 @media (min-width: 992px) {
+
+    .member_center_wrap #calendar_section {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+        .member_center_wrap #calendar_section .list-panel {
+            max-width: 300px;
+        }
+
     .calendarBtnWrap {
         flex-direction: row;
         flex-wrap: wrap;
@@ -882,3 +798,108 @@ body:not(.calendar-editing) .day-cell {
         box-sizing: border-box;
         text-align: center;
     }
+/* 1400px 起顯示 2 欄 */
+@media (min-width: 1400px) {
+    .member_center_wrap #calendar_section > .container > .row.calendar-three-col {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    .member_center_wrap #calendar_section .months-panel {
+        grid-area: months;
+    }
+
+    /* 確保右側清單與左側月份保持側欄行為 */
+    .member_center_wrap #calendar_section .months-panel,
+    .member_center_wrap #calendar_section .list-panel {
+        align-self: start;
+    }
+
+    /* 內層直接子元素（卡片／panel）保持寬度 100% 並可伸展 */
+    .member_section .container > * {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+    }
+}
+
+/* 箭頭樣式：仿照 CalendarCheck 的 nav-btn */
+.nav-btn {
+    background: transparent;
+    border: none;
+    font-size: 18pt;
+    cursor: pointer;
+    color: var(--accent);
+    padding: 0 .4rem;
+    line-height: 1;
+}
+
+/* 若原本有 .btn 或 .btn-link 干擾，強制覆蓋 */
+.year-header .nav-btn,
+.month-header .nav-btn {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* 微調：在桌面上讓 header 按鈕尺寸與 CalendarCheck 接近 */
+@media (min-width: 992px) {
+    .year-header .nav-btn,
+    .month-header .nav-btn {
+        font-size: 20px;
+    }
+}
+
+/* tm pending bell UI */
+#tm-pending-bell {
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.2s ease;
+}
+#tm-pending-bell:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(2,6,23,0.26);
+}
+#tm-pending-bell button {
+    font-size: 18px;
+    line-height: 1;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+
+.container, .container-fluid, .container-xxl, .container-xl, .container-lg, .container-md, .container-sm {
+    width: 100%;
+     padding-right: 0; 
+     padding-left: 0; 
+}
+
+/* MemberCenter: 讓 container 不水平置中，但不變動內部元素 */
+.member_center_wrap > .container,
+.member_center_wrap #calendar_section > .container,
+.member_section > .container {
+    width: 100% !important; /* 滿寬，避免 max-width 限制 */
+    max-width: none !important; /* 移除預設最大寬度 */
+    margin-left: 0 !important; /* 取消水平置中 */
+    margin-right: 0 !important;
+    padding-left: 0.75rem; /* 保留適度內距（可微調） */
+    padding-right: 0.75rem;
+    box-sizing: border-box;
+}
+
+/* 若想在 MemberCenter 保留 content 內的自動置中行為，讓子元素自行控制：
+   這不會改變已存在於子元素上的 margin:auto 行為（子元素仍會置中） */
+
+/* 小螢幕保留同樣行為（避免被其他 media query 覆寫） */
+@media (max-width: 991.98px) {
+    .member_center_wrap > .container,
+    .member_center_wrap #calendar_section > .container,
+    .member_section > .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}

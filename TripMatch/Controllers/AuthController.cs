@@ -250,9 +250,12 @@ namespace TripMatch.Controllers
                     // 寫入站域 cookie，供前端 polling/register 流程使用
                     _authService.SetPendingCookie(HttpContext, refreshed.Email);
 
+                    // 指定下一步為註冊頁（讓 view 可讀取）
+                    ViewData["NextUrl"] = Url.Action("Signup", "Auth");
+
                     if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers["Accept"].ToString().Contains("application/json"))
                     {
-                        return Ok(new { success = true, message = "Email 驗證成功！" });
+                        return Ok(new { success = true, message = "Email 驗證成功！", nextUrl = ViewData["NextUrl"] });
                     }
 
                     ViewData["Status"] = "Success";

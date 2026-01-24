@@ -517,7 +517,7 @@
     }
 
     function checkEmpty() { if (wishlistContainer.querySelectorAll('.col').length === 0) renderEmpty(); }
-    function renderEmpty() { wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">目前沒有願望清單</p></div>'; }
+   
 
     function escapeHtml(s) {
         if (!s) return '';

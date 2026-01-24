@@ -1,0 +1,127 @@
+﻿:root {
+    --mc-max-width: 1340px;
+    --theme-teal-600: #0ea5a4;
+    --theme-teal-500: #14b8a6;
+    --theme-cyan-500: #06b6d4;
+    --theme-blue-600: #0284c7;
+    --theme-emerald-500: #10b981;
+    /* fallback UI tokens */
+    --btn-transparent-border-alpha: rgba(2, 132, 199, 0.14);
+    --btn-transparent-hover-alpha: rgba(2, 132, 199, 0.06);
+    /*wishlist*/
+    --category-blue: #0284C7;
+    --category-teal: #0EA5A4;
+    --category-green: #10B981;
+}
+
+.main-content2 {
+    background-color: #f8fafc;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+    padding-bottom: 24px;
+}
+
+.member_center_wrap {
+    box-sizing: border-box;
+}
+
+.profile_info_section .info_value {
+    display: flex;
+    flex-wrap: wrap; /* 允許子項在需要時換行 */
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 45px; /* 保留原本左內距 */
+    min-width: 0; /* 防止 flex 項撐破父容器 */
+    white-space: normal !important; /* 允許文字換行（覆寫先前的 nowrap） */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+@media (min-width: 992px) {
+
+    /* Profile 區塊：avatar 固定寬度、info 區撐滿剩餘空間 */
+    .profile_container {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        box-sizing: border-box;
+    }
+
+
+    .profile_avatar_section {
+        flex: 0 0 320px; /* 固定寬度 */
+        max-width: 320px;
+        background-color: var(--color_bk);
+        border-radius: 18px;
+        border: 1px var(--color_Gray);
+        width: 35%;
+        height: 35rem;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+        margin-left: 15px;
+    }
+
+    .profile_info_section {
+        flex: 1 1 auto;
+        min-width: 0; /* 防止內容撐破 */
+    }
+
+    .profile_info_section {
+        flex: 1;
+        padding: 30px;
+        background-color: var(--color_bk);
+        border-radius: 18px;
+        border: 1px var(--color_Gray);
+        min-width: 10px;
+        height: 35rem;
+        white-space: normal;
+        font-size: 18pt;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+        .profile_info_section .info_value {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 45px;
+            min-width: 0;
+            width: 100%;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            margin-bottom: 10px;
+        }
+
+            .profile_info_section .info_value .form-control,
+            .profile_info_section .info_value input,
+            .profile_info_section .info_value select,
+            .profile_info_section .info_value textarea {
+                width: 40% !important;
+                max-width: 40% !important;
+                box-sizing: border-box;
+            }
+}
+
+/*0123保留電腦版*/
+/* 登入註冊 only */
+.auth-page #loginForm,
+.auth-page .signContent.s2 .formWrap {
+    width: 100%;
+    max-width: 480px;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 20px auto;
+}
+
+/*0123保留*/
+/* End restore: .inputLine / .inputNone */
+/* FIX: 還原 Login / Signup 版面（僅作用於 .auth-page，避免影響 member_center） */
+
+.auth-page .signContent.s2 .formWrap,
+.auth-page #loginForm,
+.auth-page .loginWrap,
+.auth-page #loginWrap {
+    /*    margin-left: auto;
+    margin-right: auto;*/
+    box-sizing: border-box;
+}

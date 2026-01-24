@@ -1,0 +1,165 @@
+﻿
+/* Desktop and up: 3 columns (被更高優先度覆寫時會再以 !important 強制) */
+@media (min-width: 992px) {
+    #wishlist_cards > .col {
+        display: flex;
+        min-width: 350px !important;
+    }
+    #wishlist_cards {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .wishlist_cards_container > .row {
+        flex-wrap: nowrap !important; /* 關鍵：不要換行，避免左側被推到上面 */
+        align-items: flex-start;
+        gap: 1rem;
+        box-sizing: border-box;
+    }
+
+    /* 左側選單固定寬度並允許捲動 */
+    .wishlist_cards_container .wishlist-left-panel {
+        position: relative;
+        left: -40px;
+        flex: 0 0 280px !important;
+        max-width: 280px !important;
+        box-sizing: border-box;
+        align-self: stretch;
+        max-height: calc(100vh - 140px);
+        overflow-y: auto;
+    }
+
+    /* 右側卡片區撐滿剩餘空間 */
+    .wishlist_cards_container .wishlist-right-panel {
+        flex: 1 1 auto !important;
+        min-width: 0; /* 防止內容撐破 */
+        box-sizing: border-box;
+    }
+
+        /* 右側內層 #wishlist_cards 使用 grid/row 行為維持 3 欄顯示 */
+        .wishlist_cards_container .wishlist-right-panel #wishlist_cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            align-items: start;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+    /* 確保每張卡片可等高 */
+    .wishlist_cards_container #wishlist_cards > .col,
+    .wishlist_cards_container #wishlist_cards .col {
+        display: flex;
+    }
+    /* 強制 wrapper row 在桌機為左右兩欄（不換行）*/
+    .member_center_wrap .wishlist_cards_container > .row,
+    .wishlist_cards_container > .row {
+        display: flex !important;
+        flex-wrap: nowrap !important; /* 關鍵：不要換行，避免左側被推到上面 */
+        gap: 1rem;
+        align-items: flex-start;
+        box-sizing: border-box;
+    }
+
+    /* 左側選單固定寬度並允許捲動 */
+    .wishlist_cards_container .wishlist-left-panel,
+    #wishlist_cards_wrapper .wishlist-left-panel {
+        flex: 0 0 200px !important;
+        max-width: 200px !important;
+        box-sizing: border-box;
+        align-self: stretch;
+        max-height: calc(100vh - 140px);
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* 右側卡片區撐滿剩餘空間 */
+    .wishlist_cards_container .wishlist-right-panel,
+    #wishlist_cards_wrapper .wishlist-right-panel {
+        flex: 1 1 auto !important;
+        min-width: 0; /* 防止內容撐破 */
+        box-sizing: border-box;
+    }
+
+        /* 右側內層 #wishlist_cards 使用 grid（保證 3 欄、gap） */
+        .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
+        #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 1rem !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+    /* 每張卡片外層 .col 以 flex 呈現，讓內部 .card 可等高 */
+    .wishlist_cards_container #wishlist_cards > .col,
+    #wishlist_cards_wrapper #wishlist_cards > .col,
+    .wishlist_cards_container #wishlist_cards .col,
+    #wishlist_cards_wrapper #wishlist_cards .col {
+        display: flex;
+        box-sizing: border-box;
+        min-width: 350px;
+    }
+}
+
+
+/* 小螢幕回復單欄、左側變橫向（原有行為保留） */
+@media (max-width: 991.98px) {
+    .wishlist_cards_container #wishlist_cards > .col,
+    #wishlist_cards_wrapper #wishlist_cards > .col,
+    .wishlist_cards_container #wishlist_cards .col,
+    #wishlist_cards_wrapper #wishlist_cards .col {
+        min-width: 335px;
+    }
+
+    .wishlist_cards_container > .row,
+    #wishlist_cards_wrapper > .row {
+        display: block !important;
+    }
+
+    .wishlist_cards_container .wishlist-left-panel,
+    .wishlist_cards_container .wishlist-right-panel,
+    #wishlist_cards_wrapper .wishlist-left-panel,
+    #wishlist_cards_wrapper .wishlist-right-panel,
+    #wishlist_cards {
+        width: 100%;
+        max-width: none;
+        display: block;
+        box-sizing: border-box;
+    }
+}
+
+
+/* 覆寫 wishlist 欄數：992px~1399.98px 強制 2 欄，>=1400px 為 3 欄 */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    /* 同時覆寫多個可能的選擇器以提高覆蓋率 */
+    #wishlist_cards,
+    .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
+    #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+        box-sizing: border-box;
+    }
+}
+
+
+
+
+/* 1400px 起顯示 3 欄 */
+@media (min-width: 1400px) {
+    #wishlist_cards,
+    .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
+    #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 1rem !important;
+        box-sizing: border-box;
+    }
+}
+.wishlist_cards_container .wishlist-left-panel,
+.wishlist_cards_container .wishlist-right-panel,
+.wishlist_cards_container #wishlist_cards {
+    width: 100%;
+    max-width: none;
+    display: block;
+}

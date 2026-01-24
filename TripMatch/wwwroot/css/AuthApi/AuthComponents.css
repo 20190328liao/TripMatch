@@ -1,0 +1,359 @@
+﻿.edit_cards_link {
+    font-size: 14pt;
+}
+
+.section_header {
+    margin-right: 20px;
+}
+
+.info_item svg {
+    position: relative;
+    fill: var(--color_Dark);
+    bottom: 2px;
+    margin-right:20px;
+}
+
+.info_item2 {
+    display: inline;
+    text-align: center;
+    margin-left: 40px;
+    margin-top: 25px;
+}
+
+    .info_item2 a {
+        text-decoration: none;
+        color: var(--color_Dark);
+        padding-bottom: 20px;
+        max-width: 100%;
+        word-break: break-all;
+    }
+
+.info_item {
+    display: flex;
+    flex-wrap: wrap; /* 小螢幕時自動換行 */
+    flex-direction: row;
+    margin-bottom: 0rem;
+    margin-top: 0rem;
+}
+
+    .info_item .info_label {
+        flex: 0 0 140px; /* 可依需求改成 120 / 160 */
+        min-width: 120px;
+        box-sizing: border-box;
+        white-space:nowrap;
+        margin-top:25px;
+        margin-bottom:10px;
+    }
+
+.info_value button {
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.info_value {
+    position: static;
+    left: auto;
+    flex: 1 1 auto;
+    padding-left: 45px;
+    box-sizing: border-box;
+    min-width: 0; /* 允許在窄螢幕內縮 */
+    margin-bottom: 10px;
+}
+
+    .info_value .form-control,
+    .info_value input,
+    .info_value select,
+    .info_value textarea {
+        width: 100%;
+        max-width: 46vh;
+        box-sizing: border-box;
+        padding-bottom: 0;
+    }
+.profile_info_section label {
+    color: var(--color_Dark);
+    font-weight: 600;
+}
+
+
+#btnEditName, #btnEditBackupEmail {
+    color: var(--color_link);
+    font-weight: 600;
+}
+
+.form-control {
+    height: 48px;
+    font-size: 18pt;
+}
+
+.btn_view_more {
+    text-align: center;
+    font-size: 18px;
+}
+
+.calendarBtnWrap {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-start;
+    white-space: normal;
+    -webkit-overflow-scrolling: touch;
+}
+
+.btnSpot {
+    font-size: 18pt;
+    text-decoration: none;
+}
+
+.calendarBtnWrap .btn {
+    width: 15rem;
+    border: none;
+    border-radius: 10px;
+}
+
+.calendarBtnWrap .btn1, .calendarBtnWrap .btn2 {
+    width: 10rem;
+    min-width: 8rem;
+    border: none;
+    border-radius: 10px;
+}
+
+.edit_link {
+    font-size: 18pt;
+    white-space: nowrap;
+}
+.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .btn-outline2 {
+    height: 48px;
+    font-size: 18pt;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin: 0.5rem;
+    white-space: nowrap;
+}
+
+.btn-confirm {
+    background-color: #ccf1fe;
+    border: 1px solid #82c1f6a6;
+    color: black;
+}
+
+    .btn-confirm:focus {
+        background-color: #6be1f6;
+        border: 1px solid #82c1f6a6;
+        color: black;
+    }
+
+.btn-edit {
+    background-color: var(--color_Gray);
+    color: black;
+}
+
+    .btn-edit:focus {
+        background-color: #ffc083;
+    }
+
+.btn-danger1 {
+    background-color: var(--color_nav, #ff6b6b);
+    color: black;
+}
+
+    .btn-danger1:focus {
+        background-color: #6dfbbe;
+        color: black;
+    }
+
+.btn-primary2 {
+    background-color: #7ca8e5;
+    color: black;
+}
+
+/* verify / step buttons */
+#btn_next_step {
+    height: 48px;
+    width: 30rem;
+    justify-content: center;
+}
+#btnLogin {
+    font-size: 16pt;
+    min-width: 20rem;
+    max-width: 30rem;
+    padding: .5rem 1.2rem;
+    display: inline-block;
+}
+
+.backIndex {
+    color: var(--color_Dark);
+    margin: 0;
+    padding: 0.25rem 0;
+    text-decoration: none;
+}
+
+.back-home-link {
+    display: inline-block;
+    margin: 0;
+    padding: 0.25rem 0;
+    font-size: 16pt;
+    color: var(--color_Dark);
+    text-decoration: none;
+}
+
+    .back-home-link a {
+        color: var(--color_Dark);
+        text-decoration: none;
+    }
+
+    .back-home-link:hover,
+    .back-home-link:focus {
+        text-decoration: none;
+        color: var(--color_Dark);
+    }
+@media (max-width: 1200px) {
+    /* 1. 強制讓項目垂直排列，並佔滿寬度 */
+    .info_item {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        width: 100%;
+        gap: 5px;
+        margin: 0px;
+        padding: 0px;
+    }
+
+        .info_item .info_label {
+            flex: 0;
+            width: 100%;
+            min-width: 0;
+            margin: 0px;
+            padding: 0px;
+        }
+
+}
+
+
+    @media (max-width: 991.98px) {
+        /* 1. 強制讓項目垂直排列，並佔滿寬度 */
+        .info_item {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            width: 100%;
+            margin-bottom: 1rem;
+            gap: 5px;
+        }
+
+            .info_item .info_label {
+                flex: 0;
+                width: 100%;
+                min-width: 0;
+                margin-bottom: 0px;
+            }
+
+        /* 3. 確保內容容器完全填滿父容器 */
+        .info_value {
+            font-size: 16pt;
+            width: 100% !important;
+            margin-left: 0;
+            padding-left: 45px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+            .info_value .form-control,
+            .info_value input,
+            .info_value select,
+            .info_value textarea {
+                width: 90% !important; /* 確保輸入框與容器等寬  */
+                max-width: 90% !important; /* 覆蓋 max-width: 46vh  */
+                box-sizing: border-box; /* 確保 Padding 不會撐破寬度  */
+            }
+
+        /* 5. 調整編輯按鈕與文字對齊 */
+        .edit_link {
+            margin-left: 0;
+            padding-top: 5px;
+        }
+    }
+    /* 小螢幕微調 */
+    @media (max-width: 575.98px) {
+        .btn-confirm,
+        .btn-edit,
+        .btn-danger1,
+        .btn-primary2,
+        .btn-outline2 {
+            height: 44px;
+            display: flex;
+            flex-wrap: wrap;
+            flex-direction: row;
+        }
+    }
+/* 新增：右下黑色浮彈窗（importCalendar toast） */
+#importCalendarMessage {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    min-width: 260px;
+    max-width: 420px;
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    z-index: 1080;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    font-size: 14px;
+    line-height: 1.3;
+    transform: translateY(12px);
+    opacity: 0;
+    transition: transform 240ms ease, opacity 240ms ease;
+    cursor: pointer;
+}
+
+    /* 顯示時 */
+    #importCalendarMessage.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    /* 類型色帶 (左側小色條) */
+    #importCalendarMessage.success {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+        border-left: 4px solid #16a34a;
+    }
+
+    #importCalendarMessage.error {
+        border-left: 4px solid #ef4444;
+    }
+
+    #importCalendarMessage.info {
+        border-left: 4px solid #3b82f6;
+    }
+
+/* 小螢幕調整，避免擋住底部元素 */
+@media (max-width: 420px) {
+    #importCalendarMessage {
+        right: 8px;
+        left: 8px;
+        bottom: 12px;
+        min-width: 0;
+        max-width: calc(100% - 16px);
+    }
+}
+
+.backIndexWrap {
+    text-align: center;
+    color: var(--color_Dark);
+    margin-top: 0.5rem; /* 原本過大的間距改小 */
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+}

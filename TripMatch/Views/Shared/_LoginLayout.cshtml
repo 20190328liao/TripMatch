@@ -75,7 +75,9 @@
 
 
     <link rel="stylesheet" href="~/css/AuthApi/member.css" asp-append-version="true" />
-
+    <link rel="stylesheet" href="~/css/AuthApi/AuthComponents.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/AuthLayout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/wishlist.css" asp-append-version="true" />
     @* Favicon 圖示 - 加上版本控制防止快取問題 *@
     <link rel="shortcut icon" href="~/img/Logo/favicon.png" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/img/Logo/favicon.png" asp-append-version="true" />
@@ -111,6 +113,7 @@
     <!-- 與 _Layout-copy 保持一致的腳本順序：把 jQuery 提前，避免依賴錯誤 -->
     <script src="~/js/jquery-3.7.1.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    
 
     <!-- 全站腳本（可在 site.js 使用 jQuery） -->
     <script src="~/js/site.js" asp-append-version="true"></script>
@@ -130,8 +133,7 @@
                // 讓 helper.js 可以把 CSRF token 放進 AJAX header
         window.csrfToken = '@Antiforgery.GetAndStoreTokens(Context).RequestToken';
         // 將伺服器端登入狀態傳到前端（布林或字串都接受）
-        window.isAuthenticated = @(User?.Identity?.IsAuthenticated == true ? "true" : "false");
-
+        window.isAuthenticated = "@(User?.Identity?.IsAuthenticated == true ? "true" : "false")" === "true";
     </script>
 
     @RenderSection("Scripts", required: false)

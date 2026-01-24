@@ -122,29 +122,41 @@
     <section class="member_section" id="calendar_section">
         <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
         <div class="calendar_legend mb-3">
-      <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
+        <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
         </div>
 
-
         <div class="container">
-            <div class="row g-3 align-items-start">
-                <!-- 左：月份選擇器 -->
+            <div class="row g-3 align-items-start calendar-three-col">
+                <!-- 左：月份選擇器 + 已選時段（將原本的 list-panel 移入此處） -->
                 <div class="col-sm-12 col-md-3 months-panel">
                     <header class="year-header d-flex justify-content-between align-items-center">
-                        <button class="year-left btn btn-sm btn-link">◀</button>
+                        <button class="year-left nav-btn">◀</button>
                         <div class="year-display">2026年</div>
-                        <button class="year-right btn btn-sm btn-link">▶</button>
+                        <button class="year-right nav-btn">▶</button>
                     </header>
 
                     <div class="months-grid mt-2"></div>
+
+                    <hr style="border-color:#eee" />
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
+                        <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
+                    </div>
+
+                    <div class="list-scroll-area">
+                        <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
+                            @* 由 Calendar.js 填入；若本月無選擇會顯示「本月份尚無選擇的日期」 *@
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 中：日曆 -->
                 <div class="col-sm-12 col-md-6 month-panel">
                     <header class="month-header d-flex justify-content-between align-items-center">
-                        <button class="month-left btn btn-sm btn-link">◀</button>
+                        <button class="month-left nav-btn">◀</button>
                         <div class="month-display">January 2026</div>
-                        <button class="month-right btn btn-sm btn-link">▶</button>
+                        <button class="month-right nav-btn">▶</button>
                     </header>
 
                     <div class="week mt-2 d-flex justify-content-between small text-muted">
@@ -158,45 +170,24 @@
                     </div>
 
                     <div class="days mt-2"></div>
-
-                    @* <div class="display-selected mt-3">
-                        <p class="selected"></p>
-                    </div> *@
                 </div>
 
-                <!-- 右：清單（草稿 + 已提交） -->
-                <aside class="col-sm-12 col-md-3 list-panel">
-                    <div class="list-header mb-2">
-                        <h5 class="mb-0">目前選擇</h5>
-                        <small class="text-muted">提示</small>
-                    </div>
-
-                    <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
-                        @* 由 Calendar.js 填入，每列格式如 "2026年1月1日" *@
-                    </div>
-                </aside>
-            </div>
-
-            @* 共用按鈕放在底部一列，手機會縮滿寬度 *@
-
-              
-                <div class="col-12">
-                    <div id="importCalendarMessage" class="alert d-none mt-3" role="alert" style="max-width:600px;"></div>
+                <!-- 右：移除 .list-panel（已將清單搬到 months-panel），保留右側如需其他內容可放此處 -->
+                <div class="col-sm-12 col-md-3">
+                @* 若將來要放其他側欄內容，可使用此區塊；目前移除 list-panel 以避免重複 *@
                 </div>
             </div>
-            <div class="row mt-3">
-
-        </div>
-            <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100">
-                <button class="confirm btn1 btn-confirm">提交</button>
+            <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100 mt-3">
+                <button class="confirm btn1 btn-confirm" id="btn-confirm">提交</button>
                 <button class="edit btn1 btn-edit">開始編輯</button>
                 <button class="btn-delete btn1 btn-danger1">刪除</button>
 
-                <!-- 匯入 JSON 日曆 -->
                 <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入 JSON 日曆</button>
+                <button type="button" id="btnExportCalendar" class="btn2 btn-outline2">匯出</button>
+                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入</button>
             </div>
-            <div class="calendar_legend mb-3">
+
+            <div class="calendar_legend mb-3 mt-3">
                 <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
                 <div class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</div>
                 <div class="legend-item">
@@ -207,6 +198,7 @@
                 <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
                 <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
             </div>
+        </div>
     </section>
 
     <!-- =============================================
@@ -230,6 +222,19 @@
                 </div>
             </div>
 
+            @* 將「目前沒有願望清單」說明移到此處（出現在標題下方、整個欄位外側）
+               當有卡片時不渲染說明（即：有卡片就關閉說明） *@
+            @if (!cards.Any())
+            {
+                <div class="container mt-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="nullWishlist">目前沒有願望清單，快去探索景點吧！</p>
+                        </div>
+                    </div>
+                </div>
+            }
+
         <!-- 分類按鈕群組 (左側面板將顯示此處) -->
         <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">
             <div class="row g-3">
@@ -241,13 +246,7 @@
 
                 <div class="col-12 col-lg-9 wishlist-right-panel">
                     <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                        @if (!cards.Any())
-                        {
-                            <div class="col-12 text-center py-5">
-                                <p class="text-muted">目前沒有願望清單，快去探索景點吧！</p>
-                            </div>
-                        }
-                        else
+                        @if (cards.Any())
                         {
                             @foreach (var item in cards)
                             {
@@ -302,7 +301,7 @@
     <script src="~/js/AuthApi/memberCenter.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/viewSpot.js" asp-append-version="true"></script>
-
+    <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
     <script>
     </script>
 }

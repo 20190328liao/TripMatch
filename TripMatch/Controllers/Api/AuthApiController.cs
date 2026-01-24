@@ -1384,7 +1384,7 @@ namespace TripMatch.Controllers.Api
                 };
                 Response.Cookies.Append("BackupLookupPending", t, cookieOptions);
 
-                return RedirectToAction("CheckEmail", "Auth", new { backupVerified = 1 });
+                return RedirectToAction("CheckEmail", "Auth", new { backupVerified = 1, next = Url.Action("ForgotEmail", "Auth") });
             }
             catch (Exception ex)
             {

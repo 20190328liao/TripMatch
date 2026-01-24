@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Claims;
@@ -15,6 +16,31 @@ public class ApplicationUser : IdentityUser<int>
     public bool BackupEmailConfirmed { get; set; }
     public DateTime CreatedAt { get; set; }
 
+    public ApplicationUser()
+    {
+        CreatedAt = GetTaipeiNow();
+    }
+
+    private static DateTime GetTaipeiNow()
+    {
+        // 支援 Linux/Windows 不同的時區 ID
+        var candidates = new[] { "Asia/Taipei", "Taipei Standard Time" };
+        foreach (var id in candidates)
+        {
+            try
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            }
+            catch
+            {
+                // 忽略找不到的例外，嘗試下一個 id
+            }
+        }
+
+        // 若系統無法解析時區，fallback 為 UTC+8
+        return DateTime.UtcNow.AddHours(8);
+    }
 }
 
 public class AppUserClaims : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<int>>

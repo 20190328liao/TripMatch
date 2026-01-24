@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TripMatch.Extensions;
 using TripMatch.Models;
 using TripMatch.Services;
 using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
-using System.Security.Claims;
 
 namespace TripMatch
 {
@@ -52,8 +53,7 @@ namespace TripMatch
             builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
             builder.Services.AddRazorPages();
 
-            // 註冊身分驗證基礎設施
-
+     
 
 
             // Swagger 與 授權
@@ -108,6 +108,7 @@ namespace TripMatch
             // todo:串外部api要回來改實作類別
             builder.Services.AddScoped<ITravelInfoService, MockTravelInfoService>();
 
+
             // --- 建立應用程式 ---
             var app = builder.Build();
 
@@ -127,6 +128,8 @@ namespace TripMatch
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
+
             app.UseHttpsRedirection();
             app.UseDefaultFiles(); // 支援 wwwroot/signup.html 等靜態檔案
 

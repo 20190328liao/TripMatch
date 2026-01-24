@@ -1,4 +1,10 @@
-﻿const MemberProfile = {
+﻿/* Member center front-end
+   已整合匯出日曆功能至此檔（之前在 memberCalendar-export.js），
+   并修正刪除帳號流程：在刪除前可選擇先匯出日曆（隱藏 iframe 下載），
+   匯出完成後會以 POST form 直接送到 /api/MemberCenterApi/DeleteAccount 讓伺服器處理刪除與 redirect。
+*/
+
+const MemberProfile = {
     init() {
         console.log("MemberProfile 初始化開始");
         this.cacheDOM();
@@ -46,52 +52,109 @@
             .off('click.member', '#btnResetEmail')
             .on('click.member', '#btnResetEmail', null, async function (e) {
                 e.preventDefault();
+
                 // Step1：基本確認
                 if (!confirm("你即將刪除目前帳號並導向註冊頁面。刪除後所有個人資料將被移除。是否繼續？")) return;
 
-                // Step2：是否先匯出日曆
-                if (confirm("是否要先匯出日曆資料（JSON）？按「確定」會先下載日曆資料，再執行刪除；按「取消」直接刪除。")) {
+                // 匯出 helper（使用 hidden iframe + form GET，瀏覽器處理 Content-Disposition / redirect）
+                function triggerExportDownload(callback) {
                     try {
-                        const leavesRes = await fetch('/api/auth/GetLeaves', { method: 'GET', credentials: 'include' });
-                        if (leavesRes.ok) {
-                            const json = await leavesRes.json();
-                            const filename = `calendar_export_${(self.primaryEmail||'me').replace(/[^a-z0-9@._-]/ig,'')}_${new Date().toISOString().slice(0,10)}.json`;
-                            const blob = new Blob([JSON.stringify(json)], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = filename;
-                            document.body.appendChild(a);
-                            a.click();
-                            URL.revokeObjectURL(url);
-                            a.remove();
-                        } else {
-                            console.warn('匯出日曆失敗', leavesRes.status);
-                            alert('匯出日曆失敗，將直接進行刪除。');
-                        }
+                        const iframeId = 'membercalendar_download_iframe';
+                        // 移除已存在 iframe
+                        const existing = document.getElementById(iframeId);
+                        if (existing) existing.remove();
+
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.id = iframeId;
+                        iframe.name = iframeId;
+                        document.body.appendChild(iframe);
+
+                        const form = document.createElement('form');
+                        form.method = 'GET';
+                        form.action = '/api/membercalendar/export';
+                        form.target = iframe.name;
+                        form.style.display = 'none';
+                        document.body.appendChild(form);
+
+                        // 提交觸發下載
+                        form.submit();
+
+                        // callback 延遲執行，給瀏覽器些微時間啟動下載（不可準確偵測完成）
+                        const delay = 1200;
+                        setTimeout(() => {
+                            try { form.remove(); } catch {}
+                            try { iframe.remove(); } catch {}
+                            if (typeof callback === 'function') callback();
+                        }, delay);
                     } catch (ex) {
-                        console.error('匯出日曆發生錯誤', ex);
-                        alert('匯出過程發生錯誤，將直接進行刪除。');
+                        console.error('triggerExportDownload failed', ex);
+                        if (typeof callback === 'function') callback();
                     }
                 }
 
-                // Step3：呼叫刪除 API
-                try {
-                    const res = await fetch('/api/MemberCenterApi/DeleteAccount', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    const data = await res.json().catch(() => ({}));
-                    if (res.ok) {
-                        alert(data.message || '帳號已刪除，即將導向註冊頁');
-                        window.location.href = data.redirect || '/Auth/Signup';
-                    } else {
-                        alert(data.message || '刪除帳號失敗，請聯絡管理員');
+                // 刪除 helper：以 POST form 提交讓伺服器執行刪除並 redirect（瀏覽器會處理 redirect）
+                async function submitDeleteForm() {
+                    try {
+                        const res = await fetch('/api/MemberCenterApi/DeleteAccount', {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        // 如果伺服器回傳 redirect 並瀏覽器自動跟隨，fetch 會回應最終內容。
+                        // 優先嘗試 parse JSON
+                        let data = null;
+                        try { data = await res.json(); } catch { data = null; }
+
+                        if (res.ok) {
+                            const message = (data && (data.message || data.success && data.message)) || '刪除成功';
+                            const redirect = (data && data.redirect) || (window.Routes && window.Routes.Auth && window.Routes.Auth.Signup) || '/Auth/Signup';
+
+                            if (typeof window.showPopup === 'function') {
+                                try {
+                                    await window.showPopup({ title: '刪除成功', message: message, type: 'success', autoClose: true, seconds: 3 });
+                                } catch { /* ignore */ }
+                            } else {
+                                alert(message);
+                            }
+
+                            // 再導向（給使用者短暫時間看見提示）
+                            window.location.href = redirect;
+                            return;
+                        }
+
+                        // 非 ok
+                        const errMsg = (data && data.message) || `刪除失敗 (狀態 ${res.status})`;
+                        if (typeof window.showPopup === 'function') {
+                            window.showPopup({ title: '刪除失敗', message: errMsg, type: 'error' });
+                        } else {
+                            alert(errMsg);
+                        }
+                    } catch (ex) {
+                        console.error('submitDeleteForm failed', ex);
+                        if (typeof window.showPopup === 'function') {
+                            window.showPopup({ title: '刪除失敗', message: '刪除請求發生錯誤，請稍後再試。', type: 'error' });
+                        } else {
+                            alert('刪除請求發生錯誤，請稍後再試。');
+                        }
                     }
-                } catch (ex) {
-                    console.error('刪除帳號失敗', ex);
-                    alert('刪除帳號失敗，請稍後再試');
+                }
+
+                // Step2：是否先匯出日曆
+                if (confirm("是否要先匯出日曆資料（JSON）？按「確定」會先下載日曆資料，再執行刪除；按「取消」直接刪除。")) {
+                    // 先觸發下載，完成後再提交刪除表單（submitDeleteForm 會導向註冊頁）
+                    triggerExportDownload(() => {
+                        // 再次確認避免誤刪（可視需求移除）
+                        if (!confirm("匯出已啟動，是否現在刪除帳號？（匯出完成後會自動導向）")) return;
+                        submitDeleteForm();
+                    });
+                } else {
+                    // 直接刪除：提交 POST form，瀏覽器會跟隨伺服器 redirect
+                    submitDeleteForm();
                 }
             });
 
@@ -524,12 +587,30 @@ $(function () {
 
         if (!btn || !input || !message) return;
 
-        function showMessage(text, type = 'info') {
-            message.classList.remove('d-none','alert-success','alert-danger','alert-info');
-            if (type === 'success') message.classList.add('alert-success');
-            else if (type === 'error') message.classList.add('alert-danger');
-            else message.classList.add('alert-info');
+        // 新版 showMessage：把 #importCalendarMessage 變成右下浮彈窗，點擊即可消失，會自動隱藏
+        function showMessage(text, type = 'info', duration = 4500) {
+            // 移除既有類別，加入 floating 類別與型別
+            message.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-info', 'success', 'error', 'info');
+            message.classList.add(type === 'success' ? 'success' : type === 'error' ? 'error' : 'info');
+            // 設定文字（保留純文字）
             message.textContent = text;
+            // 顯示動畫
+            message.classList.add('show');
+
+            // 點擊或自動隱藏
+            if (message._hideTimer) { clearTimeout(message._hideTimer); message._hideTimer = null; }
+            message._hideTimer = setTimeout(() => {
+                message.classList.remove('show');
+                message._hideTimer = null;
+            }, duration);
+
+            // 點擊立刻關閉
+            const onClick = () => {
+                message.classList.remove('show');
+                if (message._hideTimer) { clearTimeout(message._hideTimer); message._hideTimer = null; }
+                message.removeEventListener('click', onClick);
+            };
+            message.addEventListener('click', onClick);
         }
 
         btn.addEventListener('click', () => input.click());

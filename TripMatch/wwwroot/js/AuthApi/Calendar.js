@@ -1,4 +1,8 @@
-﻿(async function () {
+﻿/* Calendar.js
+   修改重點：在 MemberCenter 頁面（含 .member_center_wrap）隱藏英文月份，
+*/
+
+(async function () {
 
     async function fetchLockedRanges() {
         // 優先使用 jQuery.ajax（可利用 helper.js 的全域設定），無 jQuery 時 fallback 到 fetch
@@ -9,12 +13,8 @@
                     method: 'GET',
                     xhrFields: { withCredentials: true },
                     headers: { 'RequestVerificationToken': window.csrfToken || '' },
-                    success(data) {
-                        resolve(data?.ranges || []);
-                    },
-                    error() {
-                        resolve([]);
-                    }
+                    success(data) { resolve(data?.ranges || []); },
+                    error() { resolve([]); }
                 });
             });
         } else {
@@ -52,6 +52,25 @@
     }
 
     const DH = window.DateHelper;
+
+    // 永遠不顯示英文月份（你已移除英文月份）
+    let showEnglishMonths = false;
+
+    // 用於去重與排序日期陣列，避免在其他函式找不到定義
+    function dedupeDates(arr) {
+        if (!Array.isArray(arr)) return [];
+        try {
+            // 移除空值、trim 並使用 Set 去重，再以字串排序（yyyy-MM-dd 的字典排序即時間排序）
+            const normalized = arr
+                .filter(Boolean)
+                .map(s => String(s).trim())
+                .filter(s => s.length > 0);
+            return Array.from(new Set(normalized)).sort();
+        } catch (e) {
+            console.warn('dedupeDates error', e);
+            return [];
+        }
+    }
 
     /* =============================
   * 狀態
@@ -288,12 +307,6 @@
         $el.html(html);
     }
 
-    // 去重 helper
-    function dedupeDates(arr) {
-        if (!Array.isArray(arr)) return [];
-        return Array.from(new Set(arr)).sort();
-    }
-
     /* 從後端載入已儲存的請假日（加入去重） */
     async function fetchSubmittedDatesFromServer() {
         try {
@@ -377,6 +390,11 @@
         currentMonth = options.month ?? today.getMonth();
         lockedRanges = options.lockedRanges ?? [];
 
+        // 允許呼叫端用 options 覆寫是否顯示英文月份
+        if (typeof options.showEnglishMonths !== 'undefined') {
+            showEnglishMonths = !!options.showEnglishMonths;
+        }
+
         const draft = loadDraftFromSession();
 
         if (draft && ((draft.singles && draft.singles.length) || (draft.ranges && draft.ranges.length)) && !_calendarDraftPromptShown) {
@@ -401,6 +419,7 @@
 
         buildMonthPanel();
         bindEvents();
+        bindImportHandlers(); // <- 新增：綁定匯入按鈕 / input 行為
         renderMonth();
         renderSubmittedList();
     }
@@ -545,10 +564,12 @@
 
         for (let m = 0; m < 12; m++) {
             const d = new Date(currentYear, m, 1);
+            // 依 showEnglishMonths 決定是否產生英文月份節點
+            const enHtml = showEnglishMonths ? `<div class="en">${d.toLocaleString('en-US', { month: 'long' })}</div>` : '';
             const $btn = $(`
                 <div class="month-btn" data-month="${m}">
                     <div class="mn">${m + 1} 月</div>
-                    <div class="en">${d.toLocaleString('en-US', { month: 'long' })}</div>
+                    ${enHtml}
                 </div>
             `);
             $grid.append($btn);
@@ -796,10 +817,172 @@
     }
 
     /* =============================
+     * Import modal & file handling (新增)
+     * ============================= */
+    function ensureImportModal() {
+        if (document.getElementById('importCalendarModal')) return document.getElementById('importCalendarModal');
+
+        const html = `
+<div class="modal fade" id="importCalendarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">匯入行事曆：預覽並確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="importCalendarPreview" class="mb-3"></div>
+        <div id="importCalendarError" class="alert alert-danger d-none" role="alert"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="importCalendarConfirm" class="btn btn-primary">確認匯入</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        return document.getElementById('importCalendarModal');
+    }
+
+    function showImportPreview(parsed, filename) {
+        const modalEl = ensureImportModal();
+        const previewEl = modalEl.querySelector('#importCalendarPreview');
+        const errorEl = modalEl.querySelector('#importCalendarError');
+        errorEl.classList.add('d-none');
+        previewEl.innerHTML = '';
+
+        // 簡單驗證資料形態（接受陣列或物件含 dates 欄位）
+        let dates = null;
+        if (Array.isArray(parsed)) {
+            dates = parsed;
+        } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.dates)) {
+            dates = parsed.dates;
+        }
+
+        if (!dates || dates.length === 0) {
+            errorEl.textContent = '找不到可匯入的日期資料。請確認檔案格式。';
+            errorEl.classList.remove('d-none');
+            previewEl.innerHTML = `<p>檔名：<strong>${filename}</strong></p><p>解析結果找不到日期陣列。</p>`;
+            return null;
+        }
+
+        // 限制預覽項目數量，避免巨大檔案塞爆 modal
+        const MAX_PREVIEW = 200;
+        const previewItems = dates.slice(0, MAX_PREVIEW).map(d => `<li>${String(d)}</li>`).join('');
+        const moreNote = dates.length > MAX_PREVIEW ? `<p class="small text-muted">僅顯示前 ${MAX_PREVIEW} 筆，共 ${dates.length} 筆。</p>` : '';
+
+        previewEl.innerHTML = `
+            <p>檔名：<strong>${filename}</strong></p>
+            <p>偵測到 <strong>${dates.length}</strong> 筆日期（格式視實際資料而定）。</p>
+            <ul style="max-height:280px; overflow:auto; padding-left:1rem;">${previewItems}</ul>
+            ${moreNote}
+        `;
+
+        return dates;
+    }
+
+    function handleImportFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const text = e.target.result;
+                const parsed = JSON.parse(text);
+                const dates = showImportPreview(parsed, file.name);
+                const modalEl = ensureImportModal();
+                const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                bs.show();
+
+                const btnConfirm = modalEl.querySelector('#importCalendarConfirm');
+                btnConfirm.replaceWith(btnConfirm.cloneNode(true));
+                const newConfirm = modalEl.querySelector('#importCalendarConfirm');
+
+                newConfirm.addEventListener('click', function () {
+                    const detail = { fileName: file.name, raw: parsed, dates: dates };
+                    document.dispatchEvent(new CustomEvent('calendar:import', { detail }));
+
+                    // 嘗試更新畫面上的 importCalendarMessage（若存在）
+                    const msgEl = document.getElementById('importCalendarMessage');
+                    if (msgEl) {
+                        msgEl.classList.remove('d-none', 'alert-danger');
+                        msgEl.classList.add('alert', 'alert-success');
+                        msgEl.textContent = `已將 ${detail.dates.length} 筆資料送交匯入，處理結果請稍候。`;
+                    }
+
+                    bs.hide();
+                }, { once: true });
+
+            } catch (ex) {
+                console.error('匯入檔案解析失敗', ex);
+                const modalEl = ensureImportModal();
+                const errorEl = modalEl.querySelector('#importCalendarError');
+                errorEl.textContent = '解析 JSON 失敗，請確認檔案內容格式正確。';
+                errorEl.classList.remove('d-none');
+                const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                bs.show();
+            }
+        };
+        reader.onerror = function () {
+            console.error('FileReader error');
+            const modalEl = ensureImportModal();
+            const errorEl = modalEl.querySelector('#importCalendarError');
+            errorEl.textContent = '讀取檔案失敗，請重新嘗試。';
+            errorEl.classList.remove('d-none');
+            const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+            bs.show();
+        };
+        reader.readAsText(file, 'utf-8');
+    }
+
+    function bindImportHandlers() {
+        // 綁定現有頁面上的匯入按鈕與隱藏 input（MemberCenter.cshtml 有）
+        try {
+            const importBtn = document.getElementById('btnImportCalendar');
+            const importInput = document.getElementById('importCalendarInput');
+
+            if (!importBtn || !importInput) return;
+
+            importBtn.addEventListener('click', function () {
+                importInput.value = null;
+                importInput.click();
+            });
+
+            importInput.addEventListener('change', function (e) {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                handleImportFile(f);
+            }, false);
+        } catch (ex) {
+            console.warn('bindImportHandlers failed', ex);
+        }
+    }
+
+    // 提供一個範例監聽器：當收到 calendar:import 時，執行實際匯入（使用者可在 Calendar.js 實作）
+    document.addEventListener('calendar:import', function (ev) {
+        // ev.detail => { fileName, raw, dates }
+        console.info('calendar:import 事件收到：', ev.detail);
+        try {
+            if (window.Calendar && typeof window.Calendar.importDates === 'function') {
+                // 若 raw 為物件包含 dates 則傳遞，否則嘗試 raw 本身
+                const d = Array.isArray(ev.detail.dates) ? ev.detail.dates : (Array.isArray(ev.detail.raw) ? ev.detail.raw : []);
+                window.Calendar.importDates(d, []);
+            }
+        } catch (ex) {
+            console.error('處理匯入資料時發生錯誤', ex);
+        }
+    }, false);
+
+    /* =============================
      * 對外 API
      * ============================= */
     window.Calendar = {
         init,
+        importDates: (singles, ranges) => {
+            if (Array.isArray(singles)) selectedSingles = singles;
+            if (Array.isArray(ranges)) selectedRanges = ranges;
+            renderMonth();
+        },
         startRange() {
             rangeDraftStart = null;
         },
@@ -841,3 +1024,4 @@
 
 
 })(window.jQuery);
+

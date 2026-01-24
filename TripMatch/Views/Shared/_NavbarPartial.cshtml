@@ -59,7 +59,6 @@
                 <li class="nav-item desktop-only">
                     <a class="nav-link text-dark" asp-area="" asp-controller="Billing" asp-action="Index">記帳分帳</a>
                 </li>
-
                 @* 手機專用：固定五項順序（我的行程、景點探索、記帳分帳、個人資料/註冊、登出/登入）
                    - 個人資料 & 登出 只在已登入顯示（跟桌機行為一致）
                    - 註冊 & 登入 只在未登入顯示
@@ -80,6 +79,12 @@
                         <a class="nav-link text-dark" asp-controller="Auth" asp-action="MemberCenter">個人資料</a>
                     </li>
                     <li class="nav-item mobile-only">
+                        <a class="nav-link dropdown-item" asp-controller="Auth" asp-action="MemberCenter" asp-fragment="Calendar">個人行事曆</a>
+                    </li>
+                    <li class="nav-item mobile-only">
+                        <a class="nav-link dropdown-item" asp-controller="Auth" asp-action="MemberCenter" asp-fragment="Wishlist">願望清單</a>
+                    </li>
+                    <li class="nav-item mobile-only">
                         <form class="d-inline logout-form" asp-controller="AuthApi" asp-action="Logout" method="post" data-return-url='@Url.Content("~/")'>
                             <div type="button" class="nav-link text-dark btn-as-link btn-logout">登出</div>
                         </form>
@@ -87,6 +92,7 @@
                 }
                 else
                 {
+
                     @* 未登入：在手機選單顯示 註冊 / 登入 *@
                     <li class="nav-item mobile-only">
                         <a class="nav-link text-dark" asp-controller="Auth" asp-action="Signup">註冊</a>

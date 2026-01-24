@@ -183,7 +183,7 @@
                 前往設定行事曆
             </button>
 
-            <button class="btn btn-secondary-light" onclick="closeModal()">
+            <button id="closeModal" class="btn btn-secondary-light" onclick="closeModal()">
                 先跳過，稍後再設定
             </button>
         </div>
@@ -192,20 +192,18 @@
 
 @section Scripts {
     <script src="~/js/AuthApi/Datehelper.js"></script>
-
+    <script src="~/js/AuthApi/calendar-plugin.js"></script>
     <script>
         const currentGroupId = '@groupId';
-        const isSubmittedInit = @isSubmittedJs;
-        const hasFilledCalendar = @Json.Serialize(hasData);
+        const isSubmittedInit = '@isSubmitted.ToString().ToLower()' === 'true';
+        const hasFilledCalendar = JSON.parse('@Html.Raw(Json.Serialize(hasData))');
         let pollingInterval;
-
         document.addEventListener("DOMContentLoaded", async function() {
 
             // 1. 讀取後端 ViewData 決定是否顯示 Modal
             // 邏輯：後端查 DB 發現這個人沒填過資料 -> shouldShowPrompt = true
-            var shouldShowPrompt = @((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false");
-
-            const modal = document.getElementById('askCalendarModal');
+            var shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
+            const modal = document.getElementById('calendarModal');
 
             // 2. 顯示 Modal 的判斷 (不再看 localStorage)
             // 只要後端說要顯示 (shouldShowPrompt) 且 Modal 元素存在，就彈出來
@@ -231,28 +229,81 @@
             }
         });
 
+        // 全域 Calendar API (供 calendar-plugin.js / MemberCenter 呼叫)
+        window.Calendar = window.Calendar || {};
+        window.Calendar.importDates = function(dates) {
+            try { sessionStorage.setItem('calendar_imported_dates', JSON.stringify(dates || [])); } catch (e) {}
+            if (window._tripmatch_calendar_instance && typeof window._tripmatch_calendar_instance.importDates === 'function') {
+                window._tripmatch_calendar_instance.importDates(dates || []);
+            }
+        };
+        window.Calendar.importRanges = function(ranges) {
+            try { sessionStorage.setItem('calendar_imported_ranges', JSON.stringify(ranges || [])); } catch (e) {}
+            if (window._tripmatch_calendar_instance && typeof window._tripmatch_calendar_instance.importRanges === 'function') {
+                window._tripmatch_calendar_instance.importRanges(ranges || []);
+            }
+        };
+
         async function submitSlots() {
-             const validRanges = selectedRanges.filter(r => r.valid);
-             if(validRanges.length === 0) { alert("您沒有選擇任何「符合天數要求」的日期區段！"); return; }
-             if(!confirm(`您已選擇 ${validRanges.length} 個有效時段，確定提交嗎？`)) return;
+            const validRanges = (selectedRanges || []).filter(r => r && r.valid);
+            if (!validRanges || validRanges.length === 0) {
+                alert("您沒有選擇任何「符合天數要求」的日期區段！");
+                return;
+            }
+            if (!confirm(`您已選擇 ${validRanges.length} 個有效時段，確定提交嗎？`)) return;
 
-             const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
-             const btn = document.getElementById('btnSubmit');
-             if(btn) { btn.disabled = true; btn.innerText = "提交中..."; }
+            const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
 
-             try {
-                 const res = await fetch(`/api/timewindow/${currentGroupId}/available`, {
-                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(slots)
-                 });
-                 if(res.ok) { showWaitingMode(); }
-                 else {
-                     const err = await res.json(); alert("提交失敗：" + (err.message || "未知錯誤"));
-                     if(btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
-                 }
-             } catch(e) {
-                 console.error(e); alert("連線錯誤");
-                 if(btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
-             }
+            // 產生單日清單（MemberCenter 的 LeaveDates 單日格式）
+            function expandToDates(range) {
+                const out = [];
+                let curr = new Date(range.startAt.slice(0,10) + 'T00:00:00Z');
+                const last = new Date(range.endAt.slice(0,10) + 'T00:00:00Z');
+                while (curr <= last) {
+                    out.push(curr.toISOString().slice(0,10));
+                    curr.setUTCDate(curr.getUTCDate() + 1);
+                }
+                return out;
+            }
+            const dates = slots.flatMap(s => expandToDates(s));
+
+            // 儲存草稿到 sessionStorage，供 MemberCenter 顯示 / 匯入使用
+            try {
+                const payload = { groupId: currentGroupId, ranges: slots, dates: Array.from(new Set(dates)), savedAt: new Date().toISOString() };
+                sessionStorage.setItem('calendar_draft_ranges', JSON.stringify(payload));
+                // 也寫入 pending key，calendar-plugin.js 會在 MemberCenter 顯示 modal -> 可縮為鈴鐺
+                sessionStorage.setItem('calendar_check_pending', JSON.stringify(payload));
+            } catch (e) {
+                console.warn('store calendar_draft_ranges failed', e);
+            }
+
+            const btn = document.getElementById('btnSubmit');
+            if (btn) { btn.disabled = true; btn.innerText = "提交中..."; }
+
+            try {
+                const res = await fetch(`/api/timewindow/${encodeURIComponent(currentGroupId)}/available`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': window.csrfToken || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(slots)
+                });
+
+                if (res.ok) {
+                    try { sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId })); } catch {}
+                    showWaitingMode();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert("提交失敗：" + (err.message || "未知錯誤"));
+                    if (btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
+                }
+            } catch (e) {
+                console.error(e);
+                alert("連線錯誤");
+                if (btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
+            }
         }
 
         function showWaitingMode() {
@@ -297,7 +348,7 @@
         }
 
         function closeModal() {
-            const modal = document.getElementById('askCalendarModal');
+            const modal = document.getElementById('calendarModal');
             if(modal) modal.classList.remove('active');
         }
         function goToMemberCenter() { window.location.href = '/Auth/MemberCenter#calendar_section'; }
@@ -531,6 +582,63 @@
                  if(monthLeft) monthLeft.onclick = () => { currentMonth--; if(currentMonth < 0) { currentMonth = 11; currentYear--; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
                  if(monthRight) monthRight.onclick = () => { currentMonth++; if(currentMonth > 11) { currentMonth = 0; currentYear++; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
              }
+
+             // 暴露可被外部呼叫的 instance，用於即時匯入（calendar-plugin.js / MemberCenter 會呼叫）
+             window._tripmatch_calendar_instance = {
+                 importDates: function(dates) {
+                     if (!Array.isArray(dates)) return;
+                     dates.forEach(d => myLeaveDates.add(d));
+                     renderMonth();
+                 },
+                 importRanges: function(ranges) {
+                     if (!Array.isArray(ranges)) return;
+                     ranges.forEach(r => {
+                         const start = (r.startAt || r.start || '').slice(0,10);
+                         const end = (r.endAt || r.end || '').slice(0,10);
+                         if (!start || !end) return;
+                         if (checkOverlap(start, end) || checkRangeHasLocked(start, end)) return;
+                         const days = calculateDays(start, end);
+                         const valid = days >= targetDays;
+                         selectedRanges.push({ start, end, days, valid });
+                     });
+                     renderMonth();
+                 }
+             };
+
+             // 如果前一頁（或 MemberCenter）已經放了待匯入資料到 sessionStorage，這裡讀取並套用
+             try {
+                 const rawDates = sessionStorage.getItem('calendar_imported_dates');
+                 if (rawDates) {
+                     const arr = JSON.parse(rawDates);
+                     if (Array.isArray(arr)) arr.forEach(d => myLeaveDates.add(d));
+                     sessionStorage.removeItem('calendar_imported_dates');
+                 }
+             } catch (e) { console.warn('imported_dates parse failed', e); }
+
+             try {
+                 const rawRanges = sessionStorage.getItem('calendar_imported_ranges') || sessionStorage.getItem('calendar_draft_ranges');
+                 if (rawRanges) {
+                     let parsed = JSON.parse(rawRanges);
+                     let rangesArr = [];
+                     if (Array.isArray(parsed)) rangesArr = parsed;
+                     else if (Array.isArray(parsed.ranges)) rangesArr = parsed.ranges;
+                     else if (Array.isArray(parsed.draft)) rangesArr = parsed.draft;
+                     rangesArr.forEach(r => {
+                         const start = (r.startAt || r.start || '').slice(0,10);
+                         const end = (r.endAt || r.end || '').slice(0,10);
+                         if (!start || !end) return;
+                         if (checkOverlap(start, end) || checkRangeHasLocked(start, end)) return;
+                         const dayCount = calculateDays(start, end);
+                         const isValid = dayCount >= targetDays;
+                         selectedRanges.push({ start, end, days: dayCount, valid: isValid });
+                     });
+                     try { sessionStorage.removeItem('calendar_imported_ranges'); } catch {}
+                 }
+             } catch (e) { console.warn('imported_ranges parse failed', e); }
+
+             // 重新 render 以確保剛匯入的資料會顯示
+             renderMonth();
         }
+        
     </script>
 }

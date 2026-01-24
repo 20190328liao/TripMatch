@@ -86,7 +86,6 @@
     function enableNextButton(email) {
         const btn = qs('#btn_next_step') || qs('#btn_next') || qs('a#btn_next_step');
         if (!btn) return;
-        // replace to remove prior handlers, then re-query
         const cloned = btn.cloneNode(true);
         btn.parentNode.replaceChild(cloned, btn);
 
@@ -97,7 +96,21 @@
         newBtn.classList.remove('btn_Gray');
         newBtn.classList.add('btn_light');
 
-        // 改為導向 ForgotEmail 的 Step2（帶上 email）
+        // 優先使用 server 傳入的 data-next-url
+        const dataNext = newBtn.getAttribute('data-next-url');
+        if (dataNext) {
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                let url = dataNext;
+                if (email && !url.includes('email=')) {
+                    url += (url.includes('?') ? '&' : '?') + 'email=' + encodeURIComponent(email);
+                }
+                window.location.href = url;
+            }, { once: true });
+            return;
+        }
+
+        // fallback: 舊有忘記帳號流程
         const forgotEmailUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.ForgotEmail)
             ? window.Routes.Auth.ForgotEmail
             : '/Auth/ForgotEmail';
