@@ -58,7 +58,7 @@
     }
         /* 提示文字 */
         .guide-highlight::after {
-            content: "點擊此處開始選擇範圍";
+            content: "點擊此處拖曳選擇範圍";
             position: absolute;
             bottom: 125%;
             left: 50%;
@@ -209,7 +209,6 @@
     <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
 
     <script>
-        // --- 變數定義 ---
         const currentGroupId = '@groupId';
         const currentGroupIdInt = parseInt(currentGroupId || '0', 10);
         const recommendationsUrlServer = '@Url.Action("Recommendations", "Match", new { id = (ViewData["GroupId"] ?? 0) })';
@@ -221,7 +220,6 @@
 
         function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
 
-        // --- 1. 跳轉與彈窗邏輯 ---
         function goToMemberCenter() {
             sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
             window.location.href = '/Auth/MemberCenter#calendar_section';
@@ -233,22 +231,28 @@
             if (modal) modal.classList.remove('active');
         }
 
-        // --- 2. 隨機引導提示邏輯 ---
+        // --- ★ 修改：引導提示 (改為固定選第一個可用位置) ---
         function initGuideHints() {
+            // 清除舊提示
             document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
+
+            // 尋找可用格子 (排除 header, empty, locked)
             const availableCells = Array.from(document.querySelectorAll('.day-cell:not(.empty):not(.locked)'));
 
             if (availableCells.length > 0) {
-                const randomIdx = Math.floor(Math.random() * availableCells.length);
-                const target = availableCells[randomIdx];
+                // ★ 改為選擇第一個可用日期 (Start 位置)
+                const target = availableCells[0];
+
+                // 加上虛線提示 Class
                 target.classList.add('guide-highlight');
 
+                // 綁定「Hover 或 點擊」後消除
                 const removeHint = () => {
                     target.classList.remove('guide-highlight');
-                    target.removeEventListener('click', removeHint);
+                    target.removeEventListener('mousedown', removeHint);
                     target.removeEventListener('mouseenter', removeHint);
                 };
-                target.addEventListener('click', removeHint);
+                target.addEventListener('mousedown', removeHint);
                 target.addEventListener('mouseenter', removeHint);
             }
         }
@@ -257,7 +261,7 @@
             document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
         });
 
-        // --- 3. 渲染清單 ---
+        // --- 渲染清單 ---
         function renderList() {
             const $list = document.getElementById('calendarList');
             const $count = document.getElementById('selectedCount');
@@ -298,7 +302,7 @@
             }
         };
 
-        // --- 4. 提交與狀態 ---
+        // --- 提交與狀態 ---
         async function submitSlots() {
             if (!hasValidGroupId()) { alert('無效的揪團 ID'); return; }
             const validRanges = selectedRanges.filter(r => r.valid);
@@ -346,7 +350,7 @@
             } catch(e) {}
         }
 
-        // --- 5. 行事曆核心 (含裁切邏輯) ---
+        // --- 行事曆核心 ---
         async function initCalendar() {
             let currentYear = new Date().getFullYear();
             let currentMonth = new Date().getMonth();
@@ -354,6 +358,10 @@
             let myLeaveDates = new Set();
             let pendingStartDate = null;
             const todayIso = new Date().toISOString().split('T')[0];
+
+            // 拖曳變數
+            let isDragging = false;
+            let anchorDate = null;
 
             window._tripmatch_calendar_instance = {
                 render: function() { renderMonth(); renderList(); },
@@ -368,8 +376,7 @@
                         if (checkOverlap(s, e)) return;
 
                         const dayCount = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
-                        const isValid = dayCount >= targetDays;
-                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: isValid });
+                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
                     });
                     renderMonth();
                     renderList();
@@ -381,6 +388,8 @@
             loadImportedDraft();
 
             document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+
             buildMonthPanel();
             renderMonth();
             bindCalendarEvents();
@@ -422,21 +431,93 @@
                 }
             }
 
-            // --- 內部函數 ---
-            function updateGroupRangeDisplay() { /* 已整合在 loadGroupInfo */ }
+            function handleMouseDown(iso, existingRange) {
+                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+                isDragging = true;
+                if (existingRange) {
+                    const idx = selectedRanges.indexOf(existingRange);
+                    if (idx > -1) selectedRanges.splice(idx, 1);
+                    if (iso === existingRange.start) anchorDate = existingRange.end;
+                    else if (iso === existingRange.end) anchorDate = existingRange.start;
+                    else anchorDate = iso;
+                } else {
+                    anchorDate = iso;
+                }
+                renderMonth();
+                handleMouseOver(iso);
+            }
+
+            function handleMouseOver(hoverIso) {
+                if (!isDragging || !anchorDate) return;
+                clearPreview();
+                const start = anchorDate < hoverIso ? anchorDate : hoverIso;
+                const end = anchorDate < hoverIso ? hoverIso : anchorDate;
+                const dayCount = calculateDays(start, end);
+                const isOverlap = checkOverlap(start, end);
+                const hasLocked = checkRangeHasLocked(start, end);
+                const isValid = (dayCount >= targetDays) && !isOverlap && !hasLocked;
+                const previewClass = isValid ? 'preview-valid' : 'preview-invalid';
+                document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
+                    const iso = cell.dataset.iso;
+                    if (iso >= start && iso <= end) {
+                        cell.classList.add(previewClass);
+                        if (iso === start) cell.classList.add('preview-start');
+                        if (iso === end) cell.classList.add('preview-end');
+                    }
+                });
+            }
+
+            function handleGlobalMouseUp() {
+                if (!isDragging) return;
+                isDragging = false;
+                const startCell = document.querySelector('.day-cell.preview-start');
+                const endCell = document.querySelector('.day-cell.preview-end');
+                if (startCell && endCell) {
+                    const s = startCell.dataset.iso;
+                    const e = endCell.dataset.iso;
+                    if (!checkOverlap(s, e) && !checkRangeHasLocked(s, e)) {
+                        const dayCount = calculateDays(s, e);
+                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
+                    }
+                }
+                anchorDate = null;
+                clearPreview();
+                renderMonth();
+            }
+
+            function clearPreview() {
+                document.querySelectorAll('.day-cell').forEach(cell => {
+                    cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
+                });
+            }
+
             function isLocked(iso) {
                 if (!groupStart || !groupEnd) return true;
                 return iso < groupStart || iso > groupEnd;
             }
+            function checkOverlap(start, end) {
+                return selectedRanges.some(r => !(end < r.start || start > r.end));
+            }
+            function calculateDays(start, end) { return Math.round((new Date(end) - new Date(start)) / 86400000) + 1; }
+            function checkRangeHasLocked(start, end) {
+                let curr = new Date(start); const last = new Date(end);
+                while(curr <= last) {
+                    const z = curr.getTimezoneOffset() * 60 * 1000;
+                    const iso = new Date(curr - z).toISOString().split('T')[0];
+                    if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
+                }
+                return false;
+            }
             function getDateRangeStatus(iso) {
                 for (let range of selectedRanges) {
-                    if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid };
-                    if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid };
-                    if (iso === range.start) return { type: 'start', isValid: range.valid };
-                    if (iso === range.end) return { type: 'end', isValid: range.valid };
+                    if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid, range: range };
+                    if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid, range: range };
+                    if (iso === range.start) return { type: 'start', isValid: range.valid, range: range };
+                    if (iso === range.end) return { type: 'end', isValid: range.valid, range: range };
                 }
                 return null;
             }
+
             function renderMonth() {
                 const $days = document.querySelector('.days');
                 const $monthDisplay = document.querySelector('.month-display');
@@ -466,24 +547,24 @@
                     else {
                         if (iso === todayIso) cell.classList.add('today');
                         if (myLeaveDates.has(iso)) cell.classList.add('has-leave');
-                        const rangeStatus = getDateRangeStatus(iso);
-                        if (rangeStatus) {
-                            cell.classList.add(rangeStatus.isValid ? 'status-valid' : 'status-invalid');
-                            if (rangeStatus.type === 'start') cell.classList.add('range-start');
-                            if (rangeStatus.type === 'end') cell.classList.add('range-end');
-                            if (rangeStatus.type === 'mid') cell.classList.add('range-mid');
-                            if (rangeStatus.type === 'single') cell.classList.add('status-single');
-                        }
-                        if (pendingStartDate && iso === pendingStartDate) {
-                            cell.classList.add('range-start', 'selecting');
-                        }
-                        cell.onclick = () => handleDateClick(iso);
-                        cell.onmouseenter = () => handleDateHover(iso);
 
-                        // 加入小圓點
-                        const dot = document.createElement('div');
-                        dot.className = 'dot';
-                        cell.appendChild(dot);
+                        const status = getDateRangeStatus(iso);
+                        if (status) {
+                            cell.classList.add(status.isValid ? 'status-valid' : 'status-invalid');
+                            if (status.type === 'start') cell.classList.add('range-start');
+                            if (status.type === 'end') cell.classList.add('range-end');
+                            if (status.type === 'mid') cell.classList.add('range-mid');
+
+                            const dot = document.createElement('div');
+                            dot.className = 'dot';
+                            cell.appendChild(dot);
+                        }
+
+                        cell.onmousedown = (e) => {
+                            e.preventDefault();
+                            handleMouseDown(iso, status ? status.range : null);
+                        };
+                        cell.onmouseenter = () => handleMouseOver(iso);
                     }
                     $days.appendChild(cell);
                 }
@@ -509,61 +590,6 @@
                     btn.classList.toggle('active', idx === currentMonth);
                 });
             }
-
-            function handleDateClick(iso) {
-                if (pendingStartDate) {
-                    let start = pendingStartDate < iso ? pendingStartDate : iso;
-                    let end = pendingStartDate < iso ? iso : pendingStartDate;
-                    if (checkOverlap(start, end)) { alert("區段重疊！"); return; }
-                    if (checkRangeHasLocked(start, end)) { alert("包含鎖定日期"); return; }
-                    const dayCount = calculateDays(start, end);
-                    const isValid = dayCount >= targetDays;
-                    selectedRanges.push({ start, end, days: dayCount, valid: isValid });
-                    pendingStartDate = null; clearPreview(); renderMonth(); return;
-                }
-                const existingIdx = selectedRanges.findIndex(r => iso >= r.start && iso <= r.end);
-                if (existingIdx >= 0) {
-                    selectedRanges.splice(existingIdx, 1);
-                    pendingStartDate = null; clearPreview(); renderMonth(); return;
-                }
-                pendingStartDate = iso; renderMonth();
-            }
-
-            function handleDateHover(hoverIso) {
-               if (!pendingStartDate) return;
-               clearPreview();
-               const start = pendingStartDate < hoverIso ? pendingStartDate : hoverIso;
-               const end = pendingStartDate < hoverIso ? hoverIso : pendingStartDate;
-               const dayCount = calculateDays(start, end);
-               const isOverlap = checkOverlap(start, end);
-               const hasLocked = checkRangeHasLocked(start, end);
-               const isValid = (dayCount >= targetDays) && !isOverlap && !hasLocked;
-               const previewClass = isValid ? 'preview-valid' : 'preview-invalid';
-               document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
-                   const iso = cell.dataset.iso;
-                   if (iso >= start && iso <= end) {
-                       cell.classList.add(previewClass);
-                       if (iso === start) cell.classList.add('preview-start');
-                       if (iso === end) cell.classList.add('preview-end');
-                   }
-               });
-           }
-           function clearPreview() {
-                document.querySelectorAll('.day-cell').forEach(cell => {
-                    cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
-                });
-           }
-           function checkOverlap(newStart, newEnd) { return selectedRanges.some(r => !(newEnd < r.start || newStart > r.end)); }
-           function calculateDays(start, end) { const s = new Date(start); const e = new Date(end); return Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1; }
-           function checkRangeHasLocked(start, end) {
-                let curr = new Date(start); const last = new Date(end);
-                while(curr <= last) {
-                    const z = curr.getTimezoneOffset() * 60 * 1000;
-                    const iso = new Date(curr - z).toISOString().split('T')[0];
-                    if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
-                }
-                return false;
-           }
             function bindCalendarEvents() {
                 const yearLeft = document.querySelector('.year-left');
                 const yearRight = document.querySelector('.year-right');
@@ -581,7 +607,6 @@
             const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
             const shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
 
-            // 按鈕事件：去會員中心
             document.getElementById('btnImportFromCheck').onclick = goToMemberCenter;
 
             let isDraftValid = false;
@@ -600,13 +625,15 @@
                 if (modal) { modal.classList.add('active'); modal.style.display = 'flex'; }
             }
 
+            if (!hasValidGroupId()) return;
+
             if (isSubmittedInit) {
                 showWaitingMode();
                 document.getElementById('calendarModal')?.classList.remove('active');
             } else {
                 if (typeof initCalendar === 'function') {
                     await initCalendar();
-                    setTimeout(initGuideHints, 600); // 確保日曆畫完再提示
+                    setTimeout(initGuideHints, 600);
                 }
             }
         });
