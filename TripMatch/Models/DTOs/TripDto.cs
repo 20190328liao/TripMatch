@@ -120,6 +120,7 @@ namespace TripMatch.Models.DTOs
     public class SpotTimeDto
     {
         public int Id { get; set; }
+        public int TripId { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
         public string RowVersion { get; set; } = string.Empty;

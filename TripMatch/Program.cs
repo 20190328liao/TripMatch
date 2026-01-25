@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TripMatch.Extensions;
+using TripMatch.Hubs;
 using TripMatch.Models;
 using TripMatch.Services;
 using TripMatch.Services.Common;
@@ -54,12 +55,16 @@ namespace TripMatch
             builder.Services.AddScoped<ITagUserId, TagUserIdAccessor>();
             builder.Services.AddRazorPages();
 
+            // 註冊身分驗證基礎設施
+
+            builder.Services.AddSignalR();
      
 
 
             // Swagger 與 授權
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
+
 
             // 配置 Session 服務
             builder.Services.AddSession(options =>
@@ -171,6 +176,8 @@ namespace TripMatch
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseTagUserId();  // 假設你有 extension 方法註冊 Middleware
+
+            app.MapHub<TripHub>("/tripHub");
 
             app.MapControllerRoute(
                 name: "default",
