@@ -51,8 +51,12 @@ public class AppUserClaims : UserClaimsPrincipalFactory<ApplicationUser, Identit
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
     {
         var idClaims = await base.GenerateClaimsAsync(user);
-        // 塞入頭像路徑，如果 null 就給預設圖
-        idClaims.AddClaim(new Claim("Avatar", user.Avatar ?? "/images/default_avatar.png"));
+        idClaims.AddClaim(new Claim("Avatar", user.Avatar ?? "/img/default_avatar.png"));
+        // ★ 只有當 FullName 有值時才寫入 GivenName Claim
+        if (!string.IsNullOrEmpty(user.FullName))
+        {
+            idClaims.AddClaim(new Claim(ClaimTypes.GivenName, user.FullName));
+        }
         return idClaims;
     }
 }

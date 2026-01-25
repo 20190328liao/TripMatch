@@ -1,0 +1,165 @@
+﻿/* ==========================================================================
+   獨立條款頁面樣式 (Privacy & Terms Standalone Page)
+   ========================================================================== */
+
+/* 頁面外層容器：確保在大螢幕上置中且寬度適中 */
+.policy-page-wrapper {
+    background-color: #f8fafc;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    font-size: 18pt;
+}
+
+.policy-container {
+    background-color: #fff;
+    width: 100%;
+    max-width: 1000px; /* 限制寬度方便閱讀 */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 標頭區 */
+.policy-header {
+    padding: 30px 40px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    background-color: #fff;
+}
+
+    .policy-header h1.titleH1 {
+        font-size: 26pt;
+        font-weight: 700;
+        margin: 0;
+        color: var(--color_Dark, #00968A);
+    }
+
+/* 內容區 */
+.policy-content {
+    padding: 40px 60px;
+    line-height: 1.8;
+    color: #444;
+}
+
+    /* 二級標題 (隱私權政策) */
+    .policy-content h2.titleH2 {
+        font-size: 24pt;
+        font-weight: bold;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+        border-bottom: 2px solid var(--color_Light, #62DEB1);
+        display: inline-block;
+        padding-bottom: 5px;
+    }
+
+    /* 四級標題 (一、二、三...) */
+    .policy-content h4.titleH4 {
+        font-size: 20pt;
+        font-weight: 600;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        color: #000;
+        border-left: 5px solid var(--color_Light, #62DEB1);
+        padding-left: 15px;
+    }
+
+/* 段落文字 */
+.textbody {
+    margin-bottom: 1.5rem;
+    padding-left: 0;
+}
+
+.textbody2 {
+    padding-left: 80px;
+    margin-bottom: 1rem;
+}
+
+/* 列表設定 */
+.policy-list {
+    padding-left: 50px; /* 修正原本 90px 太大的問題 */
+    margin-bottom: 2rem;
+}
+
+    .policy-list li {
+        margin-bottom: 0.8rem;
+        list-style-type: decimal;
+        margin-left:3.8rem;
+
+    }
+
+/* 頁尾按鈕區 */
+.policy-footer {
+    padding: 30px 40px;
+    border-top: 1px solid #eee;
+    text-align: center;
+    background-color: #f9f9f9;
+    white-space:nowrap;
+}
+
+.policy-modal__btn {
+    background-color: var(--color_Dark, #00968A);
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 8px;
+    display: inline-block;
+    transition: all 0.2s;
+    font-size: 18pt;
+}
+
+    .policy-modal__btn:hover {
+        background-color: var(--color_Light, #62DEB1);
+        color: #000 !important;
+        transform: translateY(-2px);
+    }
+
+/* ==========================================================================
+   手機版適配 (Responsive)
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .policy-page-wrapper {
+        padding: 0; /* 手機版貼齊邊緣 */
+    }
+
+    .policy-container {
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .policy-header {
+        padding: 24px;
+    }
+
+        .policy-header h1.titleH1 {
+            font-size: 22pt;
+        }
+
+    .policy-content {
+        padding: 25px 20px;
+        font-size: 18pt; /* 手機版字體稍微縮小 */
+    }
+
+        .policy-content h2.titleH2 {
+            font-size: 20pt;
+        }
+
+        .policy-content h4.titleH4 {
+            font-size: 18pt;
+            /* 懸掛縮排效果 */
+            padding-left: 10px;
+            margin-left: 0;
+        }
+    .textbody2 {
+        padding-left: 70px;
+        margin-bottom: 1rem;
+    }
+    .policy-list li {
+        margin-bottom: 0.8rem;
+        list-style-type: decimal;
+        margin-left: 3.1rem;
+    }
+}

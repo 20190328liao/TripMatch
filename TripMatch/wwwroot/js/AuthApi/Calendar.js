@@ -712,8 +712,14 @@
         const d = DH.fromIso(iso);
         const today = DH.startOfToday();
 
+        // ★ 鎖定邏輯 1：過去的時間
+        // 這一行是寫死在 JS 裡的。只要日期在「今天之前」，就會回傳 true (鎖定)。
+        // 即使後端 API 沒回傳任何資料，這裡也會生效。
         if (DH.isBefore(d, today)) return true;
 
+        // ★ 鎖定邏輯 2：後端指定的區間 (Locked Ranges)
+        // 這裡會比對 fetchLockedRanges() 從 API 拿到的資料。
+        // 因為剛剛改了後端回傳空清單，所以這段目前永遠回傳 false。
         return lockedRanges.some(r =>
             DH.isBetweenInclusive(d, DH.fromIso(r.start), DH.fromIso(r.end))
         );

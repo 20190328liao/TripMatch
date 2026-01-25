@@ -1,0 +1,678 @@
+﻿/* ==========================================================================
+   User.css - Login & Signup 通用樣式表
+   包含：版面佈局、表單樣式、響應式、網站預設樣式重置
+   ========================================================================== */
+
+/* 1. 全域變數 (Variables) */
+:root {
+    --mc-max-width: 1340px;
+    --font_H1: 30pt;
+    --font_H2: 28pt;
+    --font_H3: 26pt;
+    --font_H4: 24pt;
+    --font_H5: 20pt;
+    --fontBody: 18pt;
+    --color_font: #000000;
+    --color_Light: #62DEB1; /* Active Tab / Primary */
+    --color_Dark: #00968A; /* Theme Color / Hover */
+    --color_Contrast: #ED5F00; /* Error */
+    --color_Green: #2AB514; /* Success */
+    --color_Gray: #C0C0C0; /* Inactive Button */
+    --color_DarkGray: #464646; /* Inactive Tab Text */
+    --color_bk: #ffffff;
+    --color_Border: #e0e0e0;
+    --color_link: #377BC3; /* 連結藍色 */
+}
+
+/* ==========================================================================
+   2. 重置與去除網站影響 (Reset & Normalize)
+   ========================================================================== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 覆寫瀏覽器預設表單外觀 */
+input, button, select, textarea {
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+
+/* 去除所有連結預設底線 */
+a, .inputLine, .inputNone, .backIndex, .back-home-link, .back-home-link a {
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   3. 佈局容器 (Layout)
+   ========================================================================== */
+.signContent {
+    background: white;
+}
+
+    /* 右側表單區塊容器 */
+    .signContent.s2 {
+        padding: 50px 0;
+    }
+
+/* 標題與 Typography */
+.titleWrap {
+    color: var(--color_font);
+}
+
+    .titleWrap.titleH1 {
+        font-size: var(--font_H1);
+    }
+
+    .titleWrap.titleH4 {
+        font-size: var(--font_H4);
+    }
+
+/* ==========================================================================
+   4. Tab 切換 (登入/註冊按鈕)
+   ========================================================================== */
+.loginWrap, #loginWrap {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 20px auto;
+    padding: 0;
+}
+
+.inputLine, .inputNone {
+    display: inline-block;
+    padding-bottom: 0.28rem;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* 選中狀態 (Active) */
+.inputLine {
+    border-bottom: 4.5px solid var(--color_Light);
+    font-weight: 700;
+    color: var(--color_Dark);
+}
+
+/* 未選中狀態 (Inactive) */
+.inputNone {
+    border-bottom: 3px solid var(--color_Gray);
+    font-weight: 500;
+    color: var(--color_DarkGray);
+}
+
+/* ==========================================================================
+   5. 表單樣式 (Forms)
+   ========================================================================== */
+/* 表單容器 (Login & Signup) */
+#loginForm, .signupForm {
+    box-sizing: border-box;
+    width: 80%;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.formWrap {
+    margin-top: 30px;
+}
+
+/* 輸入框外層 (含圖示/按鈕的容器) */
+.input_group_custom {
+    position: relative;
+    display: flex;
+    height: 48px;
+    padding: 0 12px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color_Border);
+    border-radius: 6px;
+    background-color: var(--color_bk);
+    width: 100%;
+}
+
+    .input_group_custom:focus-within {
+        border-color: var(--color_Dark); /* Focus 時變色 */
+    }
+
+    .input_group_custom input {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        height: 100%;
+        font-size: var(--fontBody);
+        padding-right: 40px; /* 預留給眼睛按鈕的空間 */
+    }
+
+/* --- Signup 專用: Email 與 驗證按鈕排列 --- */
+.email_row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch; /* 讓按鈕與輸入框等高 */
+    width: 100%;
+    margin-bottom: .5rem;
+}
+
+    .email_row input.email2 {
+        flex: 1;
+        min-height: 48px;
+        padding: 0 12px;
+        font-size: var(--fontBody);
+        border: 1px solid var(--color_Border);
+        border-radius: 4px;
+        background-color: var(--color_bk);
+    }
+
+/* 寄送驗證信按鈕 */
+button.eLabel {
+    height: 48px;
+    padding: 0 16px;
+    font-size: var(--fontBody);
+    border-radius: 4px;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+}
+
+.btn_light {
+    background: var(--color_Light);
+    color: var(--color_font);
+}
+
+/* 密碼眼睛按鈕 */
+.btn-toggle-pwd {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+    .btn-toggle-pwd img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+
+/* 提示訊息 (Hint) */
+.inputHint,
+.goodHint {
+    display: block;
+    min-height: 1.2em;
+    font-size: 16pt;
+    line-height: 1.4;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.5rem;
+}
+
+    .inputHint.success {
+        color: var(--color_Green);
+    }
+
+    .inputHint.error {
+        color: var(--color_Contrast);
+    }
+
+.goodHint {
+    width: 100%;
+}
+.incomplete {
+    color: var(--color_Contrast);
+    font-size: var(--f_small); /* 注意：var(--f_small) 若沒定義會失效 */
+    font-weight: bold;
+}
+.systemMessage {
+    border-radius: 4px;
+}
+
+.name_hint,
+#emailHint,
+#pwdHint {
+    display: block;
+    margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   6. 底部連結與條款 (Links & Terms)
+   ========================================================================== */
+/* 隱私權條款文字 */
+.privacy {
+    font-size: 14pt;
+    margin-top: 25px;
+    color: var(--color_font);
+}
+
+/* 隱私權與服務條款連結顏色 */
+.privacyLink,
+.serviceLink {
+    color: var(--color_link); /* #377BC3 */
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+    .privacyLink:hover,
+    .serviceLink:hover {
+        color: var(--color_Dark);
+        text-decoration: underline;
+    }
+
+/* 底部回首頁/忘記密碼區塊 */
+.backIndexWrap {
+    text-align: center;
+    color: var(--color_Dark);
+    margin-top: 1.5rem;
+}
+
+.back-home-link,
+.back-home-link a {
+    font-size: 16pt;
+    color: var(--color_Dark);
+}
+
+/* ==========================================================================
+   7. 按鈕 (Buttons)
+   ========================================================================== */
+.btn {
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin: 0 0.5rem;
+    transition: background 0.2s;
+}
+
+    /* 灰色按鈕 (未啟用狀態) */
+    .btn.btn_Gray {
+        background: var(--color_Gray);
+        color: var(--color_font);
+    }
+
+/* 主要登入/註冊按鈕 */
+#btnLogin, #btnRegister {
+    font-size: 16pt;
+    min-width: 20rem;
+    padding: .5rem 1.2rem;
+    height: 48px;
+    width: 100%;
+    display: inline-block;
+    max-width: none;
+}
+
+/* 分隔線 (或是) */
+.lineBlackWrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 2rem;
+}
+
+.lineStroke {
+    display: block;
+    height: 2px;
+    background: linear-gradient(to right, transparent 5%, var(--color_Gray) 15%, var(--color_Gray) 90%, transparent 95%);
+    width: 100%;
+}
+
+.lineBlack {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color_bk);
+    padding: 0 1rem;
+    font-size: 18pt;
+    color: var(--color_font);
+}
+
+/* Google 登入區塊 */
+.GoogleWrap {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+/* Google 按鈕大小 */
+.googleBtn {
+    width: 80%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* ==========================================================================
+   8. 響應式設計 (Media Queries)
+   ========================================================================== */
+
+/* --- Desktop (>= 992px) --- */
+@media (min-width: 992px) {
+    /* 確保垂直高度不足時可捲動 (overflow-y: auto) */
+    .auth-page {
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    /* 表單置中與寬度限制 */
+    #loginForm, .signupForm {
+        width: 100%;
+        max-width: 480px;
+        margin: 20px auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Tab 寬度與 Padding */
+    .loginWrap, #loginWrap {
+        max-width: 480px;
+    }
+
+    .inputLine, .inputNone {
+        padding: 0 4.5rem;
+    }
+}
+
+/* --- Mobile (< 992px) --- */
+@media (max-width: 991.98px) {
+    /*  手機版輪播圖高度設定 */
+    .carousel, .carousel-item img {
+        height: 650px;
+        object-fit: cover;
+    }
+
+    .auth-page {
+        height: auto;
+        overflow-y: auto;
+    }
+
+    /* 手機版 Form 撐滿容器 */
+    #loginForm, .signupForm {
+        width: 100%;
+        max-width: 450px;
+        margin: 0 auto 30px;
+    }
+
+    /* Tab 樣式改為並排滿版 */
+    .loginWrap, #loginWrap {
+        width: 100%;
+        max-width: 520px;
+        flex-wrap: nowrap;
+        padding: 0 0.75rem;
+    }
+
+        .loginWrap .inputLine, .loginWrap .inputNone,
+        #loginWrap .inputLine, #loginWrap .inputNone {
+            display: block;
+            width: 100%;
+            padding: 0.6rem 1rem;
+            text-align: center;
+            flex: 1;
+        }
+
+    /* Google 按鈕在手機版稍微加寬 */
+    .GoogleWrap .googleBtn {
+        width: 95%;
+    }
+}
+
+/* --- Small Mobile (< 420px) --- */
+@media (max-width: 420px) {
+    /* [Signup] 極小螢幕下，Email 輸入框與按鈕垂直堆疊 */
+    .signContent.s2 .email_row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+        .signContent.s2 .email_row input.email2,
+        .signContent.s2 .email_row button.eLabel {
+            width: 100%;
+            max-width: none;
+        }
+}
+/* ==========================================================================
+   Privacy & Terms Links (隱私權與服務條款連結)
+   ========================================================================== */
+.privacyLink,
+.serviceLink {
+    color: var(--color_link, #377BC3); /* 使用全域連結色，預設藍色 */
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 14pt; /* 配合您的全域字體大小 */
+    transition: color 0.2s ease;
+    display: inline-block; /* 確保 padding 生效 */
+    margin: 0 5px;
+}
+
+    .privacyLink:hover,
+    .serviceLink:hover {
+        color: var(--color_Dark, #00968A); /* 使用深色主題色 */
+        text-decoration: none;
+    }
+
+/* 確保在 footer 或 privacy 區塊中正確排列 */
+.privacy {
+    font-size: 14pt;
+    margin-top: 25px;
+    text-align: center; /* 預設置中，視需求調整 */
+}
+
+
+/* ==========================================================================
+   Policy Modal (隱私權彈窗樣式修復)
+   ========================================================================== */
+
+/* 遮罩層：全螢幕、半透明黑底、置中內容 */
+.policy-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.55); /* 半透明黑 */
+    z-index: 10000; /* 最上層 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px; /* 避免貼邊 */
+    box-sizing: border-box;
+    backdrop-filter: blur(2px); /* 模糊背景 (現代瀏覽器) */
+}
+
+/* 彈窗本體：白底、圓角、陰影 */
+.policy-modal {
+    background: #fff;
+    color: #333;
+    width: 100%;
+    max-width: 800px; /* 最大寬度 */
+    max-height: 85vh; /* 最大高度 (視窗 85%) */
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column; /* header/body/footer 垂直排列 */
+    overflow: hidden; /* 內部滾動，外部不滾動 */
+    position: relative;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+/* 彈窗出現動畫 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 標頭：固定在上方 */
+.policy-modal__header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+}
+
+.policy-modal__title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color_Dark, #00968A);
+}
+
+.policy-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0 5px;
+}
+
+    .policy-modal__close:hover {
+        color: #333;
+    }
+
+/* 內容區：可垂直滾動 */
+.policy-modal__body {
+    padding: 30px 30px;
+    overflow-y: auto; /* 內容過長時出現卷軸 */
+    font-size: 18pt;
+    line-height: 1.6;
+    color: #444;
+    text-align: left; /* 確保內容靠左對齊 */
+}
+
+    /* 內容區內的標題樣式 */
+    .policy-modal__body h1.titleH1 {
+        font-size: 24pt;
+        margin-bottom: 1rem;
+        text-align: center;
+        color: #333;
+    }
+
+    .policy-modal__body h2.titleH2 {
+        font-size: 22pt;
+        font-weight: bold;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--color_Light, #62DEB1);
+        padding-left: 10px;
+    }
+
+    .policy-modal__body h4.titleH4 {
+        font-size: 20pt;
+        margin-top: 1.2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        padding-left: 20px;
+        color: #000;
+    }
+
+    .policy-modal__body ol {
+        padding-left: 20px;
+        margin-bottom: 1rem;
+    }
+
+    .policy-modal__body li {
+        margin-bottom: 0.5rem;
+    }
+
+/* 頁尾：固定在下方 (包含關閉按鈕) */
+.policy-modal__footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+    background-color: #f9f9f9;
+}
+
+.policy-modal__btn {
+    background-color: var(--color_Dark, #00968A);
+    color: #fff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+    .policy-modal__btn:hover {
+        background-color: var(--color_Light, #62DEB1);
+        color: #000;
+    }
+
+.policy-modal__body li {
+    margin-left: 90px;
+}
+
+.textbody {
+    padding-left: 20px;
+}
+
+.textbody2 {
+    padding-left: 80px;
+}
+
+/* 手機版適配 */
+/*懸掛縮排*/
+@media (max-width: 991.98px) {
+    .policy-modal__body h4.titleH4 {
+        margin-left: 2.2em;
+        text-indent: -2.2em;
+    }
+
+    .policy-modal {
+        max-height: 90vh;
+        width: 95%;
+    }
+
+    .policy-modal__body {
+        padding: 15px;
+    }
+}
+
+/*0123保留電腦版*/
+/* 登入註冊 only */
+.auth-page #loginForm,
+.auth-page .signContent.s2 .formWrap {
+    width: 100%;
+    max-width: 480px;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/*0123保留*/
+/* End restore: .inputLine / .inputNone */
+/* FIX: 還原 Login / Signup 版面（僅作用於 .auth-page，避免影響 member_center） */
+
+.auth-page .signContent.s2 .formWrap,
+.auth-page #loginForm,
+.auth-page .loginWrap,
+.auth-page #loginWrap {
+    /*    margin-left: auto;
+    margin-right: auto;*/
+    box-sizing: border-box;
+}
+#btnRegister, .confirmCheck {
+    position: relative;
+    right: 10px;
+}

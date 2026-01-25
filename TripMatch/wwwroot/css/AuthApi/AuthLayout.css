@@ -23,7 +23,12 @@
     box-sizing: border-box;
     padding-bottom: 24px;
 }
-
+.member_center_wrap {
+    max-width: var(--mc-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
 .member_center_wrap {
     box-sizing: border-box;
 }
@@ -39,8 +44,24 @@
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+/* 1. 會員中心專用標題與裝飾 */
+.profile_avatar_section,
+.profile_info_section {
+    padding: 20px;
+    background-color: var(--color_bk);
+    border-radius: 12px;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+}
 @media (min-width: 992px) {
-
+    .auth-page {
+        height: 100vh;
+    }
+    .member_center_wrap {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-left: 40px;
+    }
     /* Profile 區塊：avatar 固定寬度、info 區撐滿剩餘空間 */
     .profile_container {
         display: flex;
@@ -102,26 +123,66 @@
             }
 }
 
-/*0123保留電腦版*/
-/* 登入註冊 only */
-.auth-page #loginForm,
-.auth-page .signContent.s2 .formWrap {
-    width: 100%;
-    max-width: 480px;
-    padding-left: 0;
-    padding-right: 0;
-    margin: 20px auto;
-}
+@media (max-width: 991.98px) {
+    .auth-page {
+        height: auto;
+        overflow: auto;
+    }
+    .main-content2 {
+        padding: 0 56px 80px 56px;
+    }
 
-/*0123保留*/
-/* End restore: .inputLine / .inputNone */
-/* FIX: 還原 Login / Signup 版面（僅作用於 .auth-page，避免影響 member_center） */
+    .member-page .profile_container .info_row {
+        padding-left: 30px;
+    }
 
-.auth-page .signContent.s2 .formWrap,
-.auth-page #loginForm,
-.auth-page .loginWrap,
-.auth-page #loginWrap {
-    /*    margin-left: auto;
-    margin-right: auto;*/
-    box-sizing: border-box;
+    .profile_avatar_section, .profile_info_section {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        min-height: 25rem;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        box-sizing: border-box;
+        align-content: center;
+    }
+
+    .profile_info_section {
+        white-space: normal;
+        font-size: 14pt;
+    }
+    #profile_section .row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin: 0;
+    }
+
+    .info_row {
+        font-size: 18pt;
+        margin-left: 25px;
+    }
+
+    .info_item {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #profile_section [class*="col-"] {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .profile_avatar_section .avatar_frame, .profile_avatar_section .avatar_btns {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
 }

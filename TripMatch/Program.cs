@@ -34,7 +34,8 @@ namespace TripMatch
 
             // 註冊身分驗證基礎設施
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
-
+            // 
+            builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaims>();
             // 註冊各個模組的services
             builder.Services.AddScoped<MatchServices>();
             builder.Services.AddScoped<TripServices>();

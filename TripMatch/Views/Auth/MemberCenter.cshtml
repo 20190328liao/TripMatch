@@ -12,9 +12,9 @@
     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
 }
 @section Styles{
-    <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
+    @* <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
   
-    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" /> *@
 
     <style>
 
@@ -299,6 +299,7 @@
     <script src="~/js/AuthApi/Calendar.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/wishlist.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/memberCenter.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/memberCenter-email.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/viewSpot.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>

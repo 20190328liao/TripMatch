@@ -156,6 +156,8 @@
         const bell = document.createElement('div');
         bell.id = BELL_ID;
         bell.style.cssText = `position:fixed;bottom:30px;right:30px;width:56px;height:56px;background:linear-gradient(135deg, #00695c, #004d40);border-radius:50%;box-shadow:0 4px 15px rgba(0,77,64,0.4);z-index:9990;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,background 0.3s;`;
+
+
         bell.innerHTML = `<svg width="24" height="24" viewBox="0 0 16 16" fill="white"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg><span style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border:2px solid #fff;border-radius:50%;"></span>`;
         bell.onmouseenter = () => bell.style.transform = 'scale(1.1)';
         bell.onmouseleave = () => bell.style.transform = 'scale(1)';
@@ -171,10 +173,12 @@
     ns.shakeBell = function () {
         const bell = document.getElementById(BELL_ID);
         if (bell) {
+
+            bell.classList.add('guide-hint');
+
             bell.classList.remove('tm-bell-shaking');
             void bell.offsetWidth;
             bell.classList.add('tm-bell-shaking');
-            setTimeout(() => bell.classList.remove('tm-bell-shaking'), 2500);
-        }
+            setTimeout(() => bell.classList.remove('tm-bell-shaking'), 2500);   }
     };
 })();

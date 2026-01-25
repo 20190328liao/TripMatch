@@ -1,4 +1,4 @@
-// ·s¼WÂ²³æ«eºİÅŞ¿è¡]MemberCenter ½s¿è Email ¬yµ{ªº client-side¡^
+ï»¿// æ–°å¢ç°¡å–®å‰ç«¯é‚è¼¯ï¼ˆMemberCenter ç·¨è¼¯ Email æµç¨‹çš„ client-sideï¼‰
 (function () {
     const apiSendChangePrimary = window.Routes?.AuthApi?.SendChangePrimaryEmail ?? '/api/auth/SendChangePrimaryEmail';
     const apiSendChangeBackup = window.Routes?.AuthApi?.SendChangeBackupEmail ?? '/api/auth/SendChangeBackupEmail';
@@ -12,10 +12,10 @@
                 body: JSON.stringify(email)
             });
             return await res.json();
-        } catch { return { success: false, message: 'ºô¸ô¿ù»~' }; }
+        } catch { return { success: false, message: 'ç¶²è·¯éŒ¯èª¤' }; }
     }
 
-    // ¸j©w UI¡]©I¥s©ó memberCenter.js init¡^
+    // ç¶å®š UIï¼ˆå‘¼å«æ–¼ memberCenter.js initï¼‰
     window.MemberEmailUX = {
         bind() {
             $('#btnEditEmail').on('click', () => $('#inputEmail').prop('disabled', false));
@@ -24,7 +24,7 @@
             $('#btnSaveEmail').on('click', async () => {
                 const email = $('#inputEmail').val();
                 const r = await sendChangeRequest(apiSendChangePrimary, email);
-                alert(r.message || (r.success ? '¤w±H¥XÅçÃÒ«H¡A§¹¦¨ÅçÃÒ«á¤~·|§ó·s¥D«H½c' : '±H«H¥¢±Ñ'));
+                alert(r.message || (r.success ? 'å·²å¯„å‡ºé©—è­‰ä¿¡ï¼Œå®Œæˆé©—è­‰å¾Œæ‰æœƒæ›´æ–°ä¸»ä¿¡ç®±' : 'å¯„ä¿¡å¤±æ•—'));
                 $('#inputEmail').prop('disabled', true);
             });
 
@@ -34,9 +34,9 @@
             $('#btnSaveBackupEmail').on('click', async () => {
                 const email = $('#inputBackupEmail').val();
                 const r = await sendChangeRequest(apiSendChangeBackup, email);
-                alert(r.message || (r.success ? '¤w±H¥XÅçÃÒ«H¡A§¹¦¨ÅçÃÒ«á¤~·|§ó·s³Æ´©«H½c' : '±H«H¥¢±Ñ'));
+                alert(r.message || (r.success ? 'å·²å¯„å‡ºé©—è­‰ä¿¡ï¼Œå®Œæˆé©—è­‰å¾Œæ‰æœƒæ›´æ–°å‚™æ´ä¿¡ç®±' : 'å¯„ä¿¡å¤±æ•—'));
                 $('#inputBackupEmail').prop('disabled', true);
             });
         }
     };
-})();£|
+})();

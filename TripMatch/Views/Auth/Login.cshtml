@@ -7,6 +7,9 @@
     // 取回可能來自 QueryString 或 Controller 的 ReturnUrl（會是解碼後的相對路徑）
     var returnUrlValue = (string?)ViewData["ReturnUrl"] ?? Context.Request.Query["ReturnUrl"].ToString();
 }
+@section Styles {
+    <link href="~/css/AuthApi/login.css" rel="stylesheet" asp-append-version="true" />
+}
 
 <div class="signWrap">
     <div class="container-fluid p-0">
@@ -64,7 +67,7 @@
                         <div id="pwdHint" class="inputHint"></div>
 
 
-                            <p class="privacy"> * 登入即表示您同意<a src="" class="privacyLink">隱私權政策</a>及<a src="" class="serviceLink">服務條款</a>。</p>
+                        <p class="privacy"> * 登入即表示您同意<a href="" class="privacyLink">隱私權政策</a>及<a href="" class="serviceLink">服務條款</a>。</p>
                         <button type="button" class="btn btn_Gray confirmCheck eLabel mt-4" id="btnLogin" disabled>登入</button>
                     </div>
                     

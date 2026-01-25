@@ -74,11 +74,21 @@ namespace TripMatch.Controllers.Api
 
 
 
+        // GET: api/auth/GetLockedRanges
         [HttpGet("GetLockedRanges")]
         [Authorize]
-        public async Task<IActionResult> GetLockedRanges(int? userId)
+        public IActionResult GetLockedRanges(int? userId)
         {
-            // 1. 取得使用者 ID (優先從 Token 拿)
+            // ==========================================
+            // 【開發階段修改】
+            // 暫時不從資料庫撈取 Trip 時間，直接回傳空清單。
+            // 前端 Calendar.js 仍會自動鎖定「今天以前」的日期 (isBefore today)，
+            // 這樣就達成了「只鎖過去，不鎖未來行程」的效果。
+            // ==========================================
+
+            return Ok(new { ranges = new List<object>() });
+
+            /* // --- 以下為原本的邏輯 (先註解保留，等正式上線或有 Status 欄位後再打開) ---
             if (!userId.HasValue)
             {
                 var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -86,27 +96,24 @@ namespace TripMatch.Controllers.Api
                 userId = parsed;
             }
 
-            // 2. 撈取該使用者的行程區間
-            // 使用 AsNoTracking 提高讀取效能
             var ranges = await _dbContext.TripMembers
                 .AsNoTracking()
                 .Where(tm => tm.UserId == userId.Value)
+                // 未來可在此加入 .Where(tm => tm.Trip.Status == 1) 來判斷是否已確認
                 .Select(tm => new { tm.Trip.StartDate, tm.Trip.EndDate })
                 .Where(t => t.StartDate != default && t.EndDate != default)
                 .Distinct()
                 .ToListAsync();
 
-            // 3. 格式化回傳
             var result = ranges.Select(r => new
             {
                 start = r.StartDate.ToString("yyyy-MM-dd"),
                 end = r.EndDate.ToString("yyyy-MM-dd")
             }).ToList();
 
-            // 4. 自動加上「今天以前」的鎖定區間 (如果你希望後端統一處理)
             return Ok(new { ranges = result });
+            */
         }
-
         [HttpGet("GetLeaves")]
         [Authorize]
         public async Task<IActionResult> GetLeaves(int? userId)
