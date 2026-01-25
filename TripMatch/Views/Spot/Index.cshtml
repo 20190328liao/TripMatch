@@ -21,7 +21,7 @@
             @* <span class="ma-icon">🔎</span> *@
             <input id="searchInput" placeholder="搜尋地點 / 地址 / 關鍵字(Enter)" />
         </div>
-        <button class="iconBtn" id="searchBtn" title="搜尋" aria-label="搜尋">🔍</button>
+        <button class="clickBtn iconBtn" id="searchBtn" title="搜尋" aria-label="搜尋">🔍</button>
         <!-- </div> -->
         <!-- 黑色提示泡泡 eg.景點已加入行程 -->
         <div class="toast" id="toast"></div>
@@ -30,7 +30,7 @@
         <aside class="panel" id="panel">
             <div class="panelHeader">
                 <h3 id="pName">景點名稱</h3>
-                <button class="panelClose" id="panelClose" title="收合">×</button>
+                <button class="clickBtn panelClose" id="panelClose" title="收合">×</button>
             </div>
 
             <div class="panelBody">
@@ -81,20 +81,20 @@
                     <div class="popularTitle">熱門景點</div>
                     <!-- 熱門景點卡片本人 -->
                     <div class="tabs" role="tablist" aria-label="熱門分類">
-                        <div class="tab active" data-cat="restaurant">餐廳</div>
-                        <div class="tab" data-cat="entertainment">娛樂</div>
-                        <div class="tab" data-cat="all">全部</div>
+                        <div class="clickBtn tab active" data-cat="restaurant">餐廳</div>
+                        <div class="clickBtn tab" data-cat="entertainment">娛樂</div>
+                        <div class="clickBtn tab" data-cat="all">全部</div>
                     </div>
                 </div>
                 <!-- 關閉熱門景點btn -->
-                <button class="popularClose" id="popularClose" title="收合熱門">×</button>
+                <button class="clickBtn popularClose" id="popularClose" title="收合熱門">×</button>
             </div>
             <!-- 熱門區捲軸 -->
             <div class="cardsRow" id="cardsRow"></div>
         </section>
 
         <!-- 叫出熱門的按鈕 -->
-        <button class="popularReopen" id="popularReopen" title="顯示熱門" aria-label="顯示熱門">⭐</button>
+        <button class="clickBtn popularReopen" id="popularReopen" title="顯示熱門" aria-label="顯示熱門">⭐</button>
 
         <!-- 遮罩層 -->
         <div class="overlay" id="overlay">
@@ -103,7 +103,7 @@
                 <!-- 彈出視窗標題 -->
                 <div class="modalHead">
                     <h3 id="mTitle">加入...</h3>
-                    <button class="modalClose" id="modalClose" aria-label="關閉">×</button>
+                    <button class="clickBtn modalClose" id="modalClose" aria-label="關閉">×</button>
                 </div>
                 <!-- 彈出視窗內容 -->
                 <div class="modalBody">

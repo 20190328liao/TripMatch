@@ -14,6 +14,12 @@ let recModal;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
+let connection = null;
+
+
+
+
+
 
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
@@ -52,26 +58,13 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
 
         handleAddSpotFromModal(placeId, dayNum);
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     addFlightModal = new AddFlightModal();
     flightRenderer = new FlightRenderer('flight-wrapper'); 
     restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
     initTimeEditModal();
     initHotelEditModal();
     loadTripData();
+    setupSignalR(currentTripId);
 }
 
 export function refreshItineraryList() {
@@ -80,6 +73,63 @@ export function refreshItineraryList() {
 
 export function GetDateStrings() {
     return DateStrings;
+}
+
+async function setupSignalR(tripId) {
+    connection = new signalR.HubConnectionBuilder()
+        .withUrl("/tripHub")
+        .withAutomaticReconnect()
+        .build();
+
+    // 監聽廣播
+    connection.on("ReceiveItineraryUpdate", (data) => {
+        showSimpleToast(data.message); // 1. 提示
+        flashElement(data.targetId);   // 2. 閃爍
+
+        // 3. 延遲刷新 (解決 Edge 渲染競爭問題)
+        setTimeout(() => refreshItineraryList(), 500);
+    });
+
+    try {
+        await connection.start();
+        // 連線後立即加入群組
+        await connection.invoke("JoinTripGroup", tripId.toString());
+
+        // 【補強】針對 Edge 重連機制：重新連線後要補回群組身分
+        connection.onreconnected(() => {
+            connection.invoke("JoinTripGroup", tripId.toString());
+        });
+    } catch (err) {
+        console.error("SignalR 啟動失敗:", err);
+    }
+}
+
+// 簡單的提示小工具
+function showSimpleToast(msg) {
+    const toastId = 'toast-' + Date.now();
+    const html = `
+        <div id="${toastId}" class="toast show align-items-center text-white bg-dark border-0 position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">${msg}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+    $('body').append(html);
+    setTimeout(() => $(`#${toastId}`).fadeOut(() => $(`#${toastId}`).remove()), 3000);
+}
+
+function flashElement(id) {
+    if (id) {
+        const $item = $(`.itinerary-item[data-id="${id}"]`);
+        if ($item.length > 0) {
+            $item.css({
+                'transition': 'background-color 0.5s',
+                'background-color': '#fff3cd'
+            });
+            // 2秒後移除黃色背景
+            setTimeout(() => $item.css('background-color', ''), 2000);
+        }
+    }
 }
 
 function handleAddSpotFromModal(googlePlaceId, dayNum) {
@@ -852,6 +902,7 @@ function saveEditedTime() {
     // 準備 DTO (根據您的後端需求調整，通常需要補上秒數)
     const updateDto = {
         Id: parseInt(id),
+        TripId: currentTripId,
         RowVersion: rowVersion, // 如果需要版本控制，請在此填入正確的值
         StartTime: start + ":00", // 補上秒數
         EndTime: end ? (end + ":00") : null
@@ -871,9 +922,14 @@ function saveEditedTime() {
         contentType: 'application/json',
         data: JSON.stringify(updateDto),
         success: function (response) {
-            // 成功時可以選擇不彈窗，或是顯示一個自動消失的小提示
-            console.log("更新成功");
+
             refreshItineraryList();
+
+            // 通知成員修改
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                connection.invoke("NotifyUpdate", updateDto.TripId.toString(), updateDto.Id)
+                    .catch(err => console.error("通知失敗: ", err));
+            }            
         },
         error: function (xhr) {
             // 這裡只處理「儲存」這件事發生的錯誤

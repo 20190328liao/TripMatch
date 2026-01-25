@@ -22,8 +22,8 @@
             const kebab = e.target.closest(".kebab-btn");
             const menuItem = e.target.closest(".menu-item");
 
-            // 三點選單
-            if (kebab) {
+            // 三點選單 (只處理有menu的卡片)
+            if (kebab && menu) {
                 // 防止冒泡到父層(卡片層)
                 e.stopPropagation();
                 // willOpen -> true -> menu 是 close
@@ -34,8 +34,8 @@
                 return;
             }
 
-            // 點選單內項目
-            if (menuItem && menu.contains(menuItem)) {
+            // 點選單內項目 (只處理有menu的卡片)
+            if (menu && menuItem && menu.contains(menuItem)) {
                 e.stopPropagation();
                 closeAllMenus(null);
 
@@ -89,11 +89,12 @@
                 }
             }
 
-            // 點卡片其他區域 -> 跳轉到行程頁
+            // 如果選單開著，點卡片先不跳
             if (menu.classList.contains("open")) {
                 return;
             }
          
+            // 點卡片其他區域 -> 跳轉到行程頁
             const detailsUrl = card.dataset.detailsUrl;
             if (detailsUrl && detailsUrl !== "#") {
                 window.location.href = detailsUrl;

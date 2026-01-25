@@ -261,10 +261,13 @@ body {
     box-shadow: 0 10px 26px rgba(0,0,0,0.14);
 }
 
-#popularReopen:hover, #searchBtn:hover {
+.clickBtn:hover {
     background: rgba(0,0,0,0.12);
 }
 
+#searchBtn:hover {
+    background: rgba(0,0,0,0.12);
+}
 /* Google Autocomplete dropdown needs to be above map/panel */
 .pac-container {
     z-index: 10001 !important;
@@ -392,7 +395,7 @@ body {
 }
 
 .label {
-    width: 74px;
+    width: 94px;
     color: var(--muted);
     flex: 0 0 auto;
 }

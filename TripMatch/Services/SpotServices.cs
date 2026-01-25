@@ -14,6 +14,7 @@ namespace TripMatch.Services
             _context = context;
         }
 
+        // 加入最愛
         public async Task<(bool ok, string? message, int spotId)> AddToWishlistAsync(int userId, SpotDto.AddWishlistRequest req)
         {
             var p = req?.Place;
@@ -24,14 +25,19 @@ namespace TripMatch.Services
 
             // 照片快照只在這裡產生
             var photoJson = BuildPhotoJsonFromPlace(p);
+            // 產生 categoryId
+            var categoryId = await ResolvePrimaryLocationCategoryIdAsync(p.Types);
 
             var spotId = await GetOrCreateSpotIdAsync(
                 externalPlaceId: p.PlaceId,
                 nameZh: p.Name,
+                nameEn: p.NameEn,
                 address: p.Address,
                 lat: p.Lat.Value,
                 lng: p.Lng.Value,
                 rating: p.Rating,
+                userRatingsTotal: p.UserRatingsTotal,
+                locationCategoryId: categoryId,
                 photosSnapshotJson: photoJson
             );
 
@@ -56,6 +62,42 @@ namespace TripMatch.Services
             return (true, null, spotId);
         }
 
+        public async Task<(bool ok, string? message)> RemoveFromWishlistAsync(int userId, string placeId)
+        {
+            if (string.IsNullOrWhiteSpace(placeId)) return (false, "placeId is required.");
+
+            // 找到該景點之spotId
+            var spotId = await _context.PlacesSnapshots
+                .AsNoTracking()
+                .Where(p => p.ExternalPlaceId == placeId)
+                .Select(p => (int?)p.SpotId)
+                .FirstOrDefaultAsync();
+            if (spotId is null) return (false, "Spot not found.");
+
+            var row = await _context.Wishlists
+                .SingleOrDefaultAsync(w => w.UserId == userId && w.SpotId == spotId.Value);
+            if (row is null) return (false, "Not in wishlist.");
+
+            _context.Wishlists.Remove(row);
+            await _context.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        // 回傳現有wishlist之placeId List，方便刷新時正確寫入btnWishlist狀態
+        public async Task<List<string>> GetWishlistPlaceIdAsync(int userId)
+        {
+            return await _context.Wishlists
+                .AsNoTracking()
+                .Where(w => w.UserId == userId)
+                .Join(
+                    _context.PlacesSnapshots.AsNoTracking(),
+                    w => w.SpotId,
+                    p => p.SpotId,
+                    (w, p) => p.ExternalPlaceId
+                )
+                .ToListAsync();
+        }
 
         public async Task<(bool ok, string? message, int itineraryItemId, int spotId)> AddToItineraryAsync(
             int userId,
@@ -78,14 +120,18 @@ namespace TripMatch.Services
 
             // 2) GetOrCreate SpotId（對齊 PlacesSnapshot Entity 欄位）
             var photoJson = BuildPhotoJsonFromPlace(p);
+            var categoryId = await ResolvePrimaryLocationCategoryIdAsync(p.Types);
 
             var spotId = await GetOrCreateSpotIdAsync(
                 externalPlaceId: p.PlaceId,
                 nameZh: p.Name,
+                nameEn: p.NameEn,
                 address: p.Address,
                 lat: p.Lat.Value,
                 lng: p.Lng.Value,
                 rating: p.Rating,
+                userRatingsTotal: p.UserRatingsTotal,
+                locationCategoryId: categoryId,
                 photosSnapshotJson: photoJson
             );
 
@@ -139,14 +185,63 @@ namespace TripMatch.Services
             return (true, null, item.Id, spotId);
         }
 
+        // 只用既有 LocationCategories，不建新表
+        private async Task<int?> ResolvePrimaryLocationCategoryIdAsync(string[]? types)
+        {
+            //  LocationCategories.Name_EN：Dining / Attractions / Shopping / Accommodation / Transport / Nature
+            // 這裡「主類別」用優先順序決定（可自行調整）
+            string bucket = MapTypesToBucket(types);
+
+            // 依 Name_EN 查 Id（避免硬寫 1~6，保持擴充彈性）
+            var id = await _context.LocationCategories
+                .AsNoTracking()
+                .Where(c => c.IsActive && c.NameEn == bucket)
+                .Select(c => (int?)c.Id)
+                .FirstOrDefaultAsync();
+
+            // 查不到就給預設：Attractions
+            if (id != null) return id;
+
+            return await _context.LocationCategories
+                .AsNoTracking()
+                .Where(c => c.IsActive && c.NameEn == "Attractions")
+                .Select(c => (int?)c.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        // types 轉換成我的 CategoryI
+        private static string MapTypesToBucket(string[]? types)
+        {
+            if (types == null || types.Length == 0) return "Attractions";
+
+            // 用 HashSet 做 contains，之後要擴充只要加字串
+            var t = new HashSet<string>(types, StringComparer.OrdinalIgnoreCase);
+
+            // 優先順序（你可以調整）：住宿 > 交通 > 美食 > 購物 > 自然 > 景點
+            if (t.Overlaps(new[] { "lodging", "hotel", "motel", "hostel" })) return "Accommodation";
+            if (t.Overlaps(new[] { "airport", "train_station", "subway_station", "transit_station", "bus_station", "parking", "taxi_stand" })) return "Transport";
+            if (t.Overlaps(new[] { "restaurant", "cafe", "bakery", "bar", "food", "meal_takeaway", "meal_delivery" })) return "Dining";
+            if (t.Overlaps(new[] { "shopping_mall", "department_store", "store", "supermarket", "convenience_store", "clothing_store" })) return "Shopping";
+            if (t.Overlaps(new[] { "park", "natural_feature", "campground", "beach" })) return "Nature";
+
+            // 沒命中就歸景點
+            return "Attractions";
+        }
+
+
+
+
         // ===== PlacesSnapshot Upsert (對齊 PlacesSnapshot Entity 欄位) =====
         private async Task<int> GetOrCreateSpotIdAsync(
             string externalPlaceId,
             string nameZh,
+            string nameEn,
             string? address,
             decimal lat,
             decimal lng,
             decimal? rating,
+            int? userRatingsTotal,
+            int? locationCategoryId,
             string? photosSnapshotJson
         )
         {
@@ -167,11 +262,14 @@ namespace TripMatch.Services
             var place = new PlacesSnapshot
             {
                 ExternalPlaceId = externalPlaceId,
+                LocationCategoryId = locationCategoryId,
                 NameZh = nameZh,
+                NameEn = nameEn,
                 AddressSnapshot = address,
                 Lat = lat,
                 Lng = lng,
                 Rating = rating,
+                UserRatingsTotal = userRatingsTotal,
                 PhotosSnapshot = photosSnapshotJson,
                 CreatedAt = nowTw,
                 UpdatedAt = nowTw,

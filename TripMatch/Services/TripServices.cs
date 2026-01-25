@@ -749,6 +749,7 @@ namespace TripMatch.Services
         // 抓我自己的行程
         public async Task<MyTripsDto> GetMyTripsAsync(int? userId = null)
         {
+            // 已開團 Trips
             var trips = await _context.TripMembers
                 .AsNoTracking()
                 .Where(tm => tm.UserId == userId)
@@ -764,10 +765,55 @@ namespace TripMatch.Services
                     IsOwner = (tm.RoleType == 1),
                     DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
+                    // 新增: 顯示該團人數
+                    MemberCount = _context.TripMembers.Count(x => x.TripId == tm.TripId)
                 })
                 .ToListAsync();
-            return new MyTripsDto { Trips = trips };
+
+            // 媒合中 groups
+            var matchingGroupsRaw = await _context.TravelGroups
+                .AsNoTracking()
+                .Where(g => g.OwnerUserId == userId
+                            && g.Status != "JOINING"
+                            && (g.Status == "AAA" || g.Status == "BBB" || g.Status == "CCC" || g.Status == "DDD"))
+                .OrderByDescending(g => g.CreatedAt)
+                .Select(g => new
+                {
+                    g.GroupId,
+                    g.Title,
+                    g.Status
+                })
+                .ToListAsync();
+
+            // 再投影成 DTO (要用 helper)
+            var matchingGroups = matchingGroupsRaw.Select(g => new MatchingGroupCardDto
+            {
+                GroupId = g.GroupId,
+                Title = g.Title,
+                Status = g.Status,
+                CoverImageUrl = $"https://picsum.photos/seed/GROUP-{g.GroupId}/800/400",
+                DetailsUrl = MapStatusToUrl(g.Status ?? "", g.GroupId)
+            }).ToList();
+
+            return new MyTripsDto { 
+                Trips = trips,
+                MatchingGroups = matchingGroups
+            };
         }
+
+        // 依照 Status 轉換 Url
+        private static string MapStatusToUrl(string status, int groupId)
+        {
+            return status switch
+            {
+                "AAA" => $"/Trip/aaa?groupId={groupId}",
+                "BBB" => $"/Trip/bbb?groupId={groupId}",
+                "CCC" => $"/Trip/ccc?groupId={groupId}",
+                "DDD" => $"/Trip/ddd?groupId={groupId}",
+                _ => "#"
+            };
+        }
+
 
 
         // return 成員名單
@@ -892,7 +938,7 @@ namespace TripMatch.Services
             await _context.SaveChangesAsync();
         }
 
-        // 取得驗證碼
+        // 取得邀請碼
         public async Task<Guid> GetInviteCodeAsync(int userId, int tripId)
         {
             var isMember = await _context.TripMembers

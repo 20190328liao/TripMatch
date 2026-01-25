@@ -122,11 +122,19 @@
     padding: 14px 16px 16px;
 }
 
-.card-name {
+.card-title {
     font-size: 18px;
     font-weight: 800;
     color: var(--c-text);
     margin-bottom: 6px;
+}
+
+.card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
 }
 
 .card-date {
@@ -134,6 +142,20 @@
     color: var(--c-muted);
     font-weight: 600;
 }
+
+/*人數*/
+.member-pill {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--c-muted);
+    /*    background: rgba(98, 222, 177, .18);*/
+    border: 1px solid var(--c-line);
+    /*        rgba(98, 222, 177, .45);*/
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
 
 .card-actions {
     position: absolute;
@@ -451,3 +473,15 @@
     opacity: 0.8;
     background-color: rgba(0,0,0,0.05) !important;
 }
+
+/*新增的媒合中卡片*/
+.section-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 18px 0 20px;
+}
+
+.mt-24 {
+    margin-top: 24px;
+}
+

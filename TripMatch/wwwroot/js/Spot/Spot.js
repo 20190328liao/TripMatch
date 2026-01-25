@@ -77,7 +77,9 @@ function toPlaceDetailDTO(place) {
     return {
         placeId: place.place_id || place.placeId,
         name: place.name || "未命名景點",
+        nameEn: place.name ?? null,
         rating: Number(place.rating || 0),
+        userRatingsTotal: Number(place.user_ratings_total || 0),
         address: place.formatted_address || place.address || "--",
         phone: place.formatted_phone_number || place.phone || "--",
         weekdayText: place.opening_hours?.weekday_text || place.weekdayText || null,
@@ -86,6 +88,7 @@ function toPlaceDetailDTO(place) {
                 ? place.photos[0].getUrl({ maxWidth: 1200, maxHeight: 700 }) : null),
         lat: latLng?.lat ?? null,
         lng: latLng?.lng ?? null,
+        types: Array.isArray(place.types) ? place.types : []
     };
 }
 
@@ -117,6 +120,8 @@ const api = {
                     'place_id',
                     'name',
                     'rating',
+                    'user_ratings_total',
+                    'types',
                     'formatted_address',
                     'formatted_phone_number',
                     'opening_hours',
@@ -193,10 +198,13 @@ const tripApi = {
             place: {
                 placeId: place.placeId,
                 name: place.name,
+                nameEn: place.nameEn,
+                rating: place.rating,
+                userRatingsTotal: place.userRatingsTotal,
+                types: place.types,
                 address: place.address,
                 lat: place.lat,
                 lng: place.lng,
-                rating: place.rating,
                 photoUrl: place.photoUrl ?? null
             }
         };
@@ -210,6 +218,17 @@ const tripApi = {
         return { ok: true };
     },
 
+    async removeFromWishlist({ placeId }) {
+        await apiFetch(`/api/spot/wishlist?placeId=${encodeURIComponent(placeId)}`, {
+            method: "DELETE"
+        });
+        return { ok: true };
+    },
+
+    async getWishlistPlaceIds() {
+        const ids = await apiFetch(`/api/spot/wishlist/ids`);
+        return Array.isArray(ids) ? ids : [];
+    },
 
     async addToTripDay({ tripId, dayNo, place }) {
         const payload = {
@@ -220,10 +239,13 @@ const tripApi = {
             place: {
                 placeId: place.placeId,
                 name: place.name,
+                nameEn: place.nameEn,
+                rating: place.rating,
+                userRatingsTotal: place.userRatingsTotal,
+                types: place.types,
                 address: place.address,
                 lat: place.lat,
                 lng: place.lng,
-                rating: place.rating,
                 photoUrl: place.photoUrl ?? null
             }
         };
@@ -234,6 +256,20 @@ const tripApi = {
         return { ok: true };
     }
 };
+
+// 新增 抓已在 wishlist ids
+async function wishlistCache() {
+    wishlistPlaceIdSet.clear();
+
+    try {
+        const ids = await tripApi.getWishlistPlaceIds();
+        ids.forEach(id => wishlistPlaceIdSet.add(id));
+        console.debug("[wishlist] hydrated", wishlistPlaceIdSet.size);
+    } catch (err) {
+        // 未登入時不灌入
+        console.debug("[wishlist] hydrated skipped", err?.message);
+    }
+}
 
 // ====== Utils ======
 // 防止注入式html
@@ -356,20 +392,12 @@ function getNearbyTypeByTab() {
 function updateWishlistButtonState(place) {
     const btn = document.getElementById("btnWishlist");
     const placeId = place.place_id || place.placeId;
+    const inwish = wishlistPlaceIdSet.has(placeId);
 
-    if (!btnWishlist) return;
+    if (!btn) return;
 
-    if (wishlistPlaceIdSet.has(placeId)) {
-        btn.textContent = "已在願望清單";
-        btn.classList.add("disabled"); // 你可以用 css 控制外觀
-        btn.style.pointerEvents = "none";
-        btn.style.opacity = "0.6";
-    } else {
-        btn.textContent = "加入願望清單";
-        btn.classList.remove("disabled");
-        btn.style.pointerEvents = "auto";
-        btn.style.opacity = "1";
-    }
+    btn.textContent = inwish ? "移出願望清單" : "加入願望清單";
+    console.log("button updated to:", btn.textContent);
 }
 
 function fillPanelFromPlaceDetails(place) {
@@ -591,7 +619,7 @@ async function openTripPicker(mode) {
                 chip: "NEW",
                 onClick: () => {
                     closeModal(); // 先關掉 modal，避免疊一層 overlay
-                    window.location.href = "/Spot/Index";
+                    window.location.href = "/Trip/Create";
                 }
             }
         ];
@@ -609,8 +637,14 @@ async function openTripPicker(mode) {
             try {
                 if (mode == "wishlist") {
                     const r = await tripApi.addToWishlist({ place: currentPlace });
-                    if (r?.ok) showToast(`已將「${currentPlace.name}」加入願望清單`);
-                    else showToast(`加入失敗`);
+                    if (r?.ok) {
+                        wishlistPlaceIdSet.add(currentPlace.placeId);
+
+                        updateWishlistButtonState({ placeId: currentPlace.placeId });
+                    } else {
+                        showToast(r?.message || `加入失敗`);
+                    }
+                    
                     closeModal();
                 }
                 else {
@@ -715,31 +749,44 @@ function wireUI() {
     // click outside -> close fab / close modal by clicking overlay
     document.addEventListener('click', (e) => {
         const withinPanel = panel.contains(e.target);
-        if (panel.classList.contains("open") && !withinPanel) closeFab();
+        //if (panel.classList.contains("open") && !withinPanel) closeFab();
+        if (fabExpanded && !fabWrap.contains(e.target)) closeFab();
         if (overlay.classList.contains("show") && e.target === overlay) closeModal();
     });
 
     // 綁定 modal close btn
     modalClose.addEventListener('click', closeModal);
 
-    // actions
-    // 綁定 wishlist btn
-    // btnWishlist.addEventListener('click', () => {
-    //     if(!currentPlace) return;
-    //     showToast(`已將「${currentPlace.name}」加入願望清單`);
-    //     closeFab();
-    // });
-
-    btnWishlist.addEventListener('click', async () => {
+    btnWishlist.addEventListener('click', async (e) => {
         console.log("currentPlace", currentPlace);
+        e.stopPropagation();
         if (!currentPlace) return;
+        const placeId = currentPlace.placeId;
+        const inWish = wishlistPlaceIdSet.has(placeId);
+
         try {
-            const r = await tripApi.addToWishlist({ place: currentPlace });
-            if (r?.ok) showToast(`已將「${currentPlace.name}」加入願望清單`);
-            else showToast(r?.message || "加入失敗");
-        } catch (e) {
-            showToast(e.message || "加入失敗");
+            if (!inWish) {
+                const r = await tripApi.addToWishlist({ place: currentPlace });
+                if (r?.ok) {
+                    wishlistPlaceIdSet.add(placeId);
+                    showToast(`已將「${currentPlace.name}」加入願望清單`);
+                }
+                else showToast(r?.message || "加入失敗");
+            }
+            else {
+                const r = await tripApi.removeFromWishlist({ placeId });
+                if (r?.ok) {
+                    wishlistPlaceIdSet.delete(placeId);
+                    showToast(`已將「${currentPlace.name}」移出願望清單`);
+                }
+                else showToast(r?.message || "移出失敗");
+            }
+            // 更新按鈕文案
+            updateWishlistButtonState({ placeId });
+        } catch (err) {
+            showToast(err?.message || "操作失敗");
         }
+            
         closeFab();
     });
 
@@ -768,23 +815,7 @@ function wireUI() {
     // 監聽鍵盤是否按下 Enter => 查詢
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === "Enter") doSearch();
-    });
-
-    // 綁定 userbtn
-    // userBtn.addEventListener('click', () => showToast('使用者頁（示意）'));
-
-    // 熱門卡片滾動行為
-    // 只在桌機使用
-    const isDesktop = window.matchMedia("(pointer: fine)").matches;
-
-    if (isDesktop) {
-        cardsRow.addEventListener("wheel", (e) => {
-            if (popular.classList.contains("hidden")) return;
-            // 阻止瀏覽器默認行為
-            e.preventDefault();
-            cardsRow.scrollLeft += e.deltaY;
-        }, { passive: false });
-    }
+    });    
 }
 
 // ====== Google callback ======
@@ -800,6 +831,22 @@ function initMap() {
     });
 
     placesService = new google.maps.places.PlacesService(map);
+
+    // Autocomplete for search input
+    const ac = new google.maps.places.Autocomplete(searchInput, {
+        fields: ["place_id", "geometry", "name"],
+    });
+    ac.bindTo("bounds", map);
+
+    ac.addListener("place_changed", () => {
+        const p = ac.getPlace();
+        if (!p?.place_id) return;
+
+        openPlaceByPlaceId(p.place_id);
+
+        //清掉輸入框
+        searchInput.value = p.name || "";
+    });
 
     // icons must be created AFTER google is ready
     ICON_SELECTED_PIN = {
@@ -822,6 +869,7 @@ function initMap() {
     };
 
     wireUI();
+    wishlistCache();
     openPopular();
 
     // map moved -> refresh popular when visible

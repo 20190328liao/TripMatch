@@ -40,6 +40,28 @@ namespace TripMatch.Controllers.Api
             return Ok(new { ok = true, spotId });
         }
 
+        [HttpDelete("wishlist")]
+        public async Task<IActionResult> RemoveFromWishlist([FromQuery] string placeId)
+        {
+            var userId = _tagUserId.UserId;
+            if (userId is null) return Unauthorized(new { ok = false, message = "Unauthorized" });
+
+            var (ok, message) = await _spotServices.RemoveFromWishlistAsync(userId.Value, placeId);
+
+            if (!ok) return BadRequest(new { ok = false, message });
+
+            return Ok(new { ok = true, });
+        }
+
+        [HttpGet("wishlist/ids")]
+        public async Task<IActionResult> GetWishlistPlaceIds()
+        {
+            var userId = _tagUserId.UserId;
+            if (userId is null) return Unauthorized();
+
+            var ids = await _spotServices.GetWishlistPlaceIdAsync(userId.Value);
+            return Ok(ids);
+        }
 
         [HttpPost("itinerary")]
         [Authorize]

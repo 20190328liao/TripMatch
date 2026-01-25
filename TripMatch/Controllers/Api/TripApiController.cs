@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TripMatch.Models.DTOs;
 using TripMatch.Services;
+using Microsoft.AspNetCore.SignalR;
+using TripMatch.Hubs;
 
 namespace TripMatch.Controllers.Api
 {
@@ -15,11 +17,14 @@ namespace TripMatch.Controllers.Api
 
         private readonly ITagUserId _tagUserId;
 
+        private readonly IHubContext<TripHub> _hubContext;
+
         // 透過DI，給tripSerivces實體
-        public TripApiController(TripServices tripServices, ITagUserId tagUserId)
+        public TripApiController(TripServices tripServices, ITagUserId tagUserId, IHubContext<TripHub> hubContext)
         {
             _tripServices = tripServices;
             _tagUserId = tagUserId;
+            _hubContext = hubContext; 
         }
 
         #region 我的行程主頁
@@ -278,13 +283,10 @@ namespace TripMatch.Controllers.Api
                 bool success = await _tripServices.UpdateSpotTime(dto);
 
                 if (success)
-                {
-                    return Ok(new { message = "行程細項已更新" });
+                {                   
+                    return Ok(new { message = "資料庫更新成功", targetId = dto.Id });
                 }
-                else
-                {
-                    return NotFound("找不到指定的行程細項");
-                }
+                return NotFound("找不到指定的行程細項");
             }
             catch (DbUpdateConcurrencyException)
             {
