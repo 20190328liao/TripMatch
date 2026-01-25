@@ -1,18 +1,52 @@
-﻿// 完整替換現有檔案內容：Step2 顯示時隱藏回到登入/忘記密碼連結，寄信後不再提前啟用下一步
-(function () {
+﻿(function () {
     const API_GET_RESULT = '/api/auth/GetBackupLookupResult';
     const API_SEND = '/api/auth/SendBackupLookup';
+    const API_CLEAR_SESSION = '/api/auth/ClearPasswordResetSession';
+    // ★ 移除 CreatePasswordResetSessionForUser，因為我們不再自動跳轉 Step 2
 
+    let cooldownTime = 0;
+    let cooldownTimer = null;
+
+    // [驗證] 格式檢查
     function isValidEmailFormat(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return !!email && re.test(email);
     }
 
+    // [功能] 冷卻倒數
+    function startCooldown(seconds, $btn) {
+        cooldownTime = seconds;
+        $btn.disabled = true;
+        $btn.classList.add('btn_Gray');
+
+        if (cooldownTimer) clearInterval(cooldownTimer);
+        cooldownTimer = setInterval(() => {
+            cooldownTime--;
+            if (cooldownTime <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+                $btn.textContent = '寄驗證信';
+                const input = document.getElementById('inputBackupemail');
+                if (input) updateSendButtonState(input, $btn);
+            } else {
+                $btn.textContent = `重送(${cooldownTime}s)`;
+            }
+        }, 1000);
+    }
+
+    // [Storage] 標記驗證
     function markLocalVerified(email, minutes = 30) {
         try {
             const payload = { email: email || null, expiresAt: Date.now() + minutes * 60 * 1000 };
             localStorage.setItem('BackupLookupVerified', JSON.stringify(payload));
-        } catch { /* ignore */ }
+        } catch { }
+    }
+
+    function clearLocalVerified() {
+        try {
+            localStorage.removeItem('BackupLookupVerified');
+            localStorage.removeItem('PendingEmailLocal');
+        } catch { }
     }
 
     function isLocalVerifiedValid() {
@@ -33,6 +67,7 @@
         } catch { return null; }
     }
 
+    // [API]
     async function fetchBackupResult() {
         try {
             const res = await fetch(API_GET_RESULT, { credentials: 'include' });
@@ -41,17 +76,23 @@
         } catch { return null; }
     }
 
+    // [UI] 訊息提示
     function showMessage(message, type = 'info', autoCloseSeconds = 3) {
         try {
             if (typeof window.showPopup === 'function') {
-                window.showPopup({ title: type === 'error' ? '錯誤' : (type === 'success' ? '完成' : '提示'), message: message || '', type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'), autoClose: !!autoCloseSeconds, seconds: autoCloseSeconds });
+                window.showPopup({
+                    title: type === 'error' ? '錯誤' : (type === 'success' ? '完成' : '提示'),
+                    message: message || '',
+                    type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'),
+                    autoClose: !!autoCloseSeconds,
+                    seconds: autoCloseSeconds
+                });
                 return;
             }
-        } catch { /* ignore */ }
+        } catch { }
         alert(message);
     }
 
-    // 隱藏或顯示頁面上「回到登入 / 忘記密碼」連結（class=forgotEmailDisplay）
     function hideForgotEmailLinks() {
         document.querySelectorAll('.forgotEmailDisplay').forEach(el => el.classList.add('d-none'));
     }
@@ -59,87 +100,109 @@
         document.querySelectorAll('.forgotEmailDisplay').forEach(el => el.classList.remove('d-none'));
     }
 
-    // 顯示 Step2（接收遮罩字串與原始 email），並隱藏回到登入/忘記密碼連結
-    function showStep2(maskedEmail, originalEmail) {
+    // [核心] 顯示 Step 2 (結果頁)
+    function showStep2(displayHtml, verifiedEmail) {
         const step1 = document.getElementById('step1_content');
-        const step2 = document.getElementById('step3_content');
+        const step2 = document.getElementById('step2_content');
+
         if (step1) step1.classList.add('d-none');
         if (step2) step2.classList.remove('d-none');
 
-        // 隱藏頁面上的 a 連結（因為 Step2 有按鈕）
         hideForgotEmailLinks();
 
         try {
             const h3 = step2.querySelector('h3');
-            if (h3) h3.innerHTML = `成功找回帳號：您的帳號是：<strong>${maskedEmail || ''}</strong>`;
-        } catch { /* ignore */ }
+            if (h3) h3.innerHTML = displayHtml;
+        } catch { }
 
-        // 插入安全說明（若不存在）
+        // 插入安全提示
         let note = document.getElementById('forgotemail_security_note');
         if (!note) {
             note = document.createElement('p');
             note.id = 'forgotemail_security_note';
-            note.style.marginTop = '8px';
-            note.style.color = '#555';
-            note.innerHTML = '基於安全僅提示前四個帳號名稱字元，不會完整呈現帳號。可能會有多個主要信箱使用相同備援帳號，或請聯繫 TripMatch 團隊。';
+            note.className = 'text-muted mt-2 small';
+            note.innerHTML = '基於安全僅提示前四個帳號名稱字元。若無法回想完整帳號，請聯繫客服。';
             step2.appendChild(note);
-        } else {
-            note.innerHTML = '基於安全僅提示前四個帳號名稱字元，不會完整呈現帳號。可能會有多個主要信箱使用相同備援帳號，或請聯繫 TripMatch 團隊。';
         }
 
-        // 啟用 Step2 上的按鈕（登入 / 重設密碼）
-        const btnLogin = document.getElementById('btn_next_step1');
+        // 顯示操作區塊
+        const actionArea = document.getElementById('step2_actions');
+        if (actionArea) actionArea.classList.remove('d-none');
+
+        // 移除舊動態按鈕
+        const oldLoginBtn = document.getElementById('dynamic_login_btn');
+        if (oldLoginBtn) oldLoginBtn.remove();
+
+        // 處理「重設密碼」按鈕 (改成單純導向 ForgotPassword Step 1)
         const btnReset = document.getElementById('btn_next_step2');
-        if (btnLogin) {
-            btnLogin.removeAttribute('disabled');
-            btnLogin.classList.remove('btn_Gray');
-        }
         if (btnReset) {
+            btnReset.style.display = '';
             btnReset.removeAttribute('disabled');
             btnReset.classList.remove('btn_Gray');
-            btnReset.onclick = async () => {
-                try {
-                    const email = originalEmail || getLocalVerifiedEmail() || '';
-                    if (!email) {
-                        showMessage('找不到對應帳號，無法進行重設', 'error');
-                        return;
-                    }
 
-                    const res = await fetch('/api/auth/CreatePasswordResetSessionForUser', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(email)
-                    });
+            // ★ 修改：不再自動跳轉 Step 2，而是去 ForgotPassword 填寫帳號
+            btnReset.onclick = () => {
+                const targetEmail = verifiedEmail || getLocalVerifiedEmail() || '';
+                let url = (window.Routes && window.Routes.Auth && window.Routes.Auth.ForgotPassword)
+                    ? window.Routes.Auth.ForgotPassword
+                    : '/Auth/ForgotPassword';
 
-                    const json = await res.json().catch(() => ({
-                    }));
-                    if (res.ok) {
-                        window.location.href = json.redirect || '/Auth/ForgotPassword';
-                    } else {
-                        showMessage(json?.message || '建立重設連結失敗', 'error');
-                    }
-                } catch (ex) {
-                    console.error(ex);
-                    showMessage('網路錯誤，請稍後再試', 'error');
+                // 如果有找到 email，幫忙帶入參數 (方便使用者不用重打)，但不會自動跳過驗證
+                if (targetEmail) {
+                    url += `?email=${encodeURIComponent(targetEmail)}`;
                 }
+                window.location.href = url;
             };
         }
 
-        const s1 = document.getElementById('step1_indicator');
-        const s2 = document.getElementById('step2_indicator');
-        if (s1) { s1.classList.remove('step_incomplete'); s1.classList.add('step_complete'); }
-        if (s2) { s2.classList.remove('step_incomplete'); s2.classList.add('step_complete'); }
+        updateStepIndicators();
     }
 
-    // 顯示 Step1（顯示回到登入/忘記密碼連結）
+    // 更新指示器樣式
+    function updateStepIndicators() {
+        const s1 = document.getElementById('step1_indicator');
+        const s2 = document.getElementById('step2_indicator');
+
+        if (s1) {
+            s1.className = 'step_item step_completed';
+            const badge = s1.querySelector('.step_badge');
+            if (badge) {
+                badge.style.backgroundColor = 'var(--color_Light)';
+                badge.style.borderColor = 'var(--color_Light)';
+                badge.style.color = '#ffffff';
+                badge.innerHTML = '<span class="step_number">1</span>';
+            }
+            const label = s1.querySelector('.step_label');
+            if (label) label.style.fontWeight = 'normal';
+        }
+
+        if (s2) {
+            s2.className = 'step_item step_active';
+            const badge = s2.querySelector('.step_badge');
+            if (badge) {
+                badge.style.backgroundColor = 'var(--color_Contrast)';
+                badge.style.borderColor = 'var(--color_Contrast)';
+                badge.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#000000" class="bi bi-check-lg" viewBox="0 0 16 16">
+                        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+                    </svg>
+                `;
+            }
+            const label = s2.querySelector('.step_label');
+            if (label) {
+                label.style.fontWeight = 'bold';
+                label.style.color = 'var(--color_DarkGray)';
+            }
+        }
+    }
+
     function showStep1() {
         const step1 = document.getElementById('step1_content');
-        const step2 = document.getElementById('step3_content');
+        const step2 = document.getElementById('step2_content');
         if (step1) step1.classList.remove('d-none');
         if (step2) step2.classList.add('d-none');
         showForgotEmailLinks();
-        // 確保 Step1 的下一步按鈕預設為 disabled（必須等到後端驗證成功才會進行切換）
+
         const btnNext = document.getElementById('btn_next_step');
         if (btnNext) {
             btnNext.setAttribute('disabled', 'disabled');
@@ -147,44 +210,57 @@
         }
     }
 
-    // 前端遮罩（備援）
     function maskEmailLocal(email) {
         if (!email) return '';
         const at = email.indexOf('@');
         if (at <= 0) return email;
         const local = email.substring(0, at);
         const domain = email.substring(at);
-        if (local.length <= 4) return local + domain;
-        return local.substring(0, 4) + '*'.repeat(local.length - 4) + domain;
+        const visiblePart = local.substring(0, 4);
+        const stars = local.length > 4 ? '*'.repeat(local.length - 4) : '***';
+        return visiblePart + stars + domain;
     }
 
-    // 使用 helper.js 的 Validator 與 setFieldHint 顯示 emailHint（fallback 為簡單 regex）
-    function validateAndShowHint(rawEmail) {
-        try {
-            const v = String(rawEmail || '').trim();
-            if (window.Validator && typeof window.Validator.validateEmail === 'function' && typeof window.setFieldHint === 'function') {
-                const result = window.Validator.validateEmail(v);
+    function validateAndShowHint(email) {
+        if (window.Validator && typeof window.Validator.validateEmail === 'function') {
+            const result = window.Validator.validateEmail(email);
+            if (window.setFieldHint) {
                 window.setFieldHint('email', result.message, result.valid ? 'success' : 'error');
-                return result.valid;
-            } else {
-                const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-                if (window.setFieldHint) window.setFieldHint('email', ok ? '☑ Email 格式正確' : '☐ Email 格式不正確', ok ? 'success' : 'error');
-                return ok;
             }
-        } catch (ex) {
-            console.error('validateAndShowHint error', ex);
-            try { window.setFieldHint && window.setFieldHint('email'); } catch { }
-            return false;
+            return result.valid;
+        } else {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const valid = re.test(email);
+            if (window.setFieldHint) {
+                window.setFieldHint('email', valid ? '' : '格式不正確', valid ? 'success' : 'error');
+            }
+            return valid;
         }
     }
 
-    // 啟用寄送按鈕（但不再自動啟用「下一步」）
+    function updateSendButtonState(emailValue, $btn) {
+        if (!$btn) return;
+        const isValid = validateAndShowHint(emailValue);
+        const isCooldown = cooldownTime > 0;
+
+        if (isCooldown) {
+            $btn.disabled = true;
+            $btn.classList.add('btn_Gray');
+        } else {
+            $btn.disabled = !isValid;
+            if (isValid) {
+                $btn.classList.remove('btn_Gray');
+                $btn.textContent = '寄驗證信';
+            } else {
+                $btn.classList.add('btn_Gray');
+            }
+        }
+    }
+
     function enableSendControls($input, $btnSend) {
         if (!$input || !$btnSend) return;
-        validateAndShowHint($input.value);
+        updateSendButtonState($input.value, $btnSend);
 
-        $btnSend.removeAttribute('disabled');
-        $btnSend.classList.remove('btn_Gray');
         $btnSend.onclick = async (e) => {
             e.preventDefault();
             const email = String($input.value || '').trim();
@@ -202,23 +278,27 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(email)
                 });
-                const json = await res.json().catch(() => ({
-                }));
+                const json = await res.json().catch(() => ({}));
                 if (res.ok) {
                     const alertEl = document.getElementById('custom_alert');
                     if (alertEl) alertEl.classList.remove('d-none');
-                    // 只在 local 儲存以改善 UX；不要提前啟用「下一步」
                     markLocalVerified(email, 30);
                     showMessage(json?.message || '驗證信已寄出，請至備援信箱點擊連結以驗證。', 'success', 4);
+                    startCooldown(30, $btnSend);
+
+                    const btnNext = document.getElementById('btn_next_step');
+                    if (btnNext) {
+                        btnNext.removeAttribute('disabled');
+                        btnNext.classList.remove('btn_Gray');
+                    }
                 } else {
                     showMessage(json?.message || '寄送失敗，請稍後再試', 'error');
+                    updateSendButtonState($input.value, $btnSend);
                 }
             } catch (ex) {
                 console.error(ex);
                 showMessage('網路錯誤，請稍後再試', 'error');
-            } finally {
-                $btnSend.disabled = false;
-                $btnSend.textContent = '寄驗證信';
+                updateSendButtonState($input.value, $btnSend);
             }
         };
     }
@@ -226,186 +306,152 @@
     document.addEventListener('DOMContentLoaded', async () => {
         const input = document.getElementById('inputBackupemail');
         const btnSend = document.getElementById('btn_send_reset');
+        const btnNext = document.getElementById('btn_next_step');
+        const btnClear = document.getElementById('btnClearAndNew');
 
-        // 初始顯示 Step1 與連結
         showStep1();
 
         if (input) {
             input.addEventListener('input', () => {
-                const v = String(input.value || '').trim();
-                const isValid = validateAndShowHint(v);
-                if (btnSend) {
-                    btnSend.disabled = !isValid;
-                    btnSend.classList.toggle('btn_Gray', !isValid);
-                }
+                updateSendButtonState(input.value, btnSend);
             });
-
-            // 載入時若已有值也驗證一次
-            validateAndShowHint(input.value);
+            updateSendButtonState(input.value, btnSend);
         }
 
         enableSendControls(input, btnSend);
 
+        // 重新註冊
+        if (btnClear) {
+            btnClear.onclick = async () => {
+                clearLocalVerified();
+                try { fetch(API_CLEAR_SESSION, { method: 'POST' }); } catch { }
+                const signupUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Signup) ? window.Routes.Auth.Signup : '/Auth/Signup';
+                window.location.href = signupUrl;
+            };
+        }
+
+        // 下一步按鈕
+        if (btnNext) {
+            btnNext.onclick = async () => {
+                const apiRes = await fetchBackupResult();
+                if (apiRes && apiRes.found) {
+                    await handleApiRes(apiRes);
+                } else {
+                    showMessage('尚未完成驗證，請先至信箱點擊連結。', 'error');
+                }
+            };
+        }
+
+        // ★ 核心判斷
         async function handleApiRes(apiRes) {
             if (!apiRes || !apiRes.found) return;
 
-            // 多帳號處理（若後端回 accounts 會另行顯示選單）
+            // [多帳號]
             if (Array.isArray(apiRes.accounts) && apiRes.accounts.length > 1) {
-                // 顯示多帳號清單（會呼叫 showStep2 選項）
-                showMultipleAccountsInStep2(apiRes.accounts, apiRes.lookupEmailMasked || maskEmailLocal(apiRes.lookupEmail));
+                const backupEmail = apiRes.lookupEmail || '';
+                const backupMasked = apiRes.lookupEmailMasked || maskEmailLocal(backupEmail);
+                showMultipleAccountsInStep2(apiRes.accounts, backupMasked, backupEmail);
                 return;
             }
 
-            const maskedAccount = apiRes.accountEmailMasked || apiRes.lookupEmailMasked || null;
+            // [單一帳號]
+            const maskedAccount = apiRes.accountEmailMasked || apiRes.lookupEmailMasked || maskEmailLocal(apiRes.accountEmail || apiRes.lookupEmail);
             const originalAccount = apiRes.accountEmail || apiRes.lookupEmail || apiRes.email || null;
-            const maskedToShow = maskedAccount || maskEmailLocal(originalAccount);
 
-            // 如果該備援信箱已成功驗證並對應主帳號 -> 直接顯示 Step2（此時隱藏 a 連結）
-            if (apiRes.accountBackupEmail !== undefined) {
-                if (!apiRes.accountBackupEmail || !apiRes.accountBackupEmailConfirmed) {
-                    showMessage('該帳號尚未填寫或完成備援信箱驗證，請先確認備援信箱。', 'info', 4);
-                    markLocalVerified(apiRes.lookupEmail || null, 30);
-                    return;
-                }
-                markLocalVerified(apiRes.lookupEmail || apiRes.accountEmail || null, 30);
-                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證備援信箱，可繼續下一步', 'success'); } catch { }
-                showStep2(maskedToShow, originalAccount);
-                return;
-            }
-
-            if (apiRes.primaryEmailConfirmed === true) {
-                markLocalVerified(apiRes.lookupEmail || apiRes.accountEmail || null, 30);
-                try { window.setFieldHint && window.setFieldHint('email', '☑ 已驗證主信箱，可繼續下一步', 'success'); } catch { }
-                showStep2(maskedToShow, originalAccount);
-                return;
-            }
-
-            if (apiRes.accountEmail && apiRes.primaryEmailConfirmed === false) {
-                showMessage('找到對應帳號，但主信箱尚未驗證，請先完成 Email 驗證或重新註冊。', 'info', 5);
-                return;
+            if (apiRes.accountBackupEmailConfirmed || apiRes.primaryEmailConfirmed) {
+                markLocalVerified(apiRes.lookupEmail || originalAccount, 30);
+                showSingleAccountStep2(maskedAccount, originalAccount);
             }
         }
 
-        // 如果 localStorage 標記有效或 URL 表示 backupVerified，嘗試取得 server 結果並處理
+        // 檢查 LocalStorage 或 URL
         if (isLocalVerifiedValid() || new URLSearchParams(window.location.search).get('backupVerified') === '1') {
             const apiRes = await fetchBackupResult();
             if (apiRes && apiRes.found) {
                 markLocalVerified(apiRes.lookupEmail || apiRes.email || null, 30);
                 await handleApiRes(apiRes);
                 return;
+            } else {
+                if (btnNext) {
+                    btnNext.removeAttribute('disabled');
+                    btnNext.classList.remove('btn_Gray');
+                }
             }
         }
 
-        // 當頁面 focus 時再檢查一次（使用者可能在郵件分頁完成驗證）
         window.addEventListener('focus', async () => {
             if (isLocalVerifiedValid()) {
-                const localEmail = getLocalVerifiedEmail();
                 const apiRes = await fetchBackupResult();
                 if (apiRes && apiRes.found) {
-                    await handleApiRes(apiRes);
-                } else if (localEmail) {
-                    // 只有本地標記時仍顯示 Step2（非理想，但維持原 UX）
-                    try { window.setFieldHint && window.setFieldHint('email', '☑ 本地驗證成功', 'success'); } catch { }
-                    showStep2(maskEmailLocal(localEmail), localEmail);
-                }
-            } else {
-                const apiRes = await fetchBackupResult();
-                if (apiRes && apiRes.found) {
-                    markLocalVerified(apiRes.lookupEmail || apiRes.email || null, 30);
                     await handleApiRes(apiRes);
                 }
             }
         });
-
-        // 若來自其他頁面的導向：處理 goStep=2&email 直接顯示 Step2
-        (function handleGoStep2FromQuery() {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('goStep') === '2' && params.get('email')) {
-                    const emailParam = decodeURIComponent(params.get('email') || '');
-                    const inputEl = document.getElementById('inputBackupemail');
-                    if (inputEl) {
-                        inputEl.value = emailParam;
-                        if (typeof window.setFieldHint === 'function') {
-                            window.setFieldHint('email', '已帶入備援信箱，請檢查信箱驗證狀態', 'success');
-                        }
-                    }
-
-                    // 標記 local verified 作為 UX 改善（實際安全判定仍以後端為準）
-                    markLocalVerified(emailParam, 30);
-
-                    // 直接顯示 Step2（使用遮罩顯示 email）
-                    try {
-                        showStep2(maskEmailLocal(emailParam), emailParam);
-                    } catch (ex) {
-                        console.warn('showStep2 failed', ex);
-                    }
-
-                    // 清除 querystring，避免重複觸發
-                    if (window.history && window.history.replaceState) {
-                        const cleanUrl = window.location.pathname + window.location.hash;
-                        window.history.replaceState({}, document.title, cleanUrl);
-                    }
-                }
-            } catch (ex) { console.warn('handleGoStep2FromQuery error', ex); }
-        })();
     });
 
-    // 多帳號選擇顯示器（與之前版本一致）
-    function showMultipleAccountsInStep2(accounts, lookupMasked) {
-        // 延遲註冊，方便主流程呼叫
-        // 簡單實作：在 DOMContentLoaded 裡也可呼叫到
-        const step2 = document.getElementById('step3_content');
-        if (!step2) return;
+    // [UI] 單一帳號顯示邏輯
+    function showSingleAccountStep2(maskedAccount, originalAccount) {
+        const html = `成功找回帳號：<br><strong style="font-size: 1.4rem; color: #333;">${maskedAccount}</strong>`;
+        showStep2(html, originalAccount);
 
-        showStep2(lookupMasked || '', '');
+        const btnReset = document.getElementById('btn_next_step2');
+        if (btnReset && btnReset.parentNode) {
+            const loginBtn = document.createElement('button');
+            loginBtn.id = 'dynamic_login_btn';
+            loginBtn.type = 'button';
+            loginBtn.className = 'btn_next_step mt-3 btn-Login';
+            loginBtn.textContent = '登入';
+            loginBtn.onclick = () => {
+                const loginUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login : '/Auth/Login';
+                if (originalAccount) {
+                    window.location.href = `${loginUrl}?email=${encodeURIComponent(originalAccount)}`;
+                } else {
+                    window.location.href = loginUrl;
+                }
+            };
+            btnReset.parentNode.insertBefore(loginBtn, btnReset);
+        }
+    }
 
-        const old = document.getElementById('forgotemail_accounts_list');
-        if (old) old.remove();
+    // [UI] 多帳號顯示邏輯
+    function showMultipleAccountsInStep2(accounts, backupEmailMasked, rawBackupEmail) {
+        const html = `您的備援帳號是：<br><strong style="font-size: 1.4rem; color: #333;">${backupEmailMasked}</strong>`;
+        showStep2(html, rawBackupEmail);
+
+        const step2 = document.getElementById('step2_content');
+        const oldList = document.getElementById('forgotemail_accounts_list');
+        if (oldList) oldList.remove();
 
         const list = document.createElement('div');
         list.id = 'forgotemail_accounts_list';
-        list.style.marginTop = '12px';
-        list.style.padding = '8px';
-        list.style.border = '1px solid rgba(0,0,0,0.06)';
-        list.style.borderRadius = '8px';
-        list.style.background = '#fff';
+        list.className = 'multiple-accounts-wrap p-3 border rounded mt-3 bg-light text-start';
 
         const title = document.createElement('div');
-        title.textContent = '找到多個可能的主帳號，請選擇要使用的帳號：';
-        title.style.marginBottom = '8px';
+        title.textContent = '找到多個帳號，請選擇：';
         title.style.fontWeight = '600';
+        title.className = 'mb-2';
         list.appendChild(title);
 
         accounts.forEach(ac => {
             const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.justifyContent = 'space-between';
-            row.style.alignItems = 'center';
-            row.style.padding = '6px 4px';
-            row.style.borderBottom = '1px solid rgba(0,0,0,0.04)';
-
-            const left = document.createElement('div');
-            left.innerHTML = `<div style="font-weight:600">${ac.masked || maskEmailLocal(ac.email)}</div><div style="font-size:0.9rem;color:#666">${ac.emailConfirmed ? '主信箱已驗證' : '主信箱未驗證'}</div>`;
-            row.appendChild(left);
-
-            const right = document.createElement('div');
+            row.className = 'd-flex justify-content-between align-items-center py-2 border-bottom';
+            row.innerHTML = `<div>${ac.masked || maskEmailLocal(ac.email)}</div>`;
             const btn = document.createElement('button');
-            btn.className = 'btn btn-sm btn-primary';
-            btn.textContent = '使用此帳號';
+            btn.className = 'btn btn-sm btn-Login';
+            btn.textContent = '使用此帳號登入';
             btn.onclick = () => {
-                showStep2(ac.masked || maskEmailLocal(ac.email), ac.email);
-                markLocalVerified(ac.email, 30);
-                const el = document.getElementById('forgotemail_accounts_list');
-                if (el) el.remove();
+                const loginUrl = (window.Routes && window.Routes.Auth && window.Routes.Auth.Login) ? window.Routes.Auth.Login : '/Auth/Login';
+                window.location.href = `${loginUrl}?email=${encodeURIComponent(ac.email)}`;
             };
-            right.appendChild(btn);
-            row.appendChild(right);
-
+            row.appendChild(btn);
             list.appendChild(row);
         });
 
-        step2.appendChild(list);
+        const actions = document.getElementById('step2_actions');
+        if (actions) {
+            step2.insertBefore(list, actions);
+        } else {
+            step2.appendChild(list);
+        }
     }
-
 })();

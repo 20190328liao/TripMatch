@@ -131,7 +131,7 @@
     white-space: nowrap;
 }
 
-.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .btn-outline2 {
+.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .btn-outline2, .btn-Login {
     height: 48px;
     font-size: 18pt;
     display: flex;
@@ -143,12 +143,15 @@
     margin: 0.5rem;
     white-space: nowrap;
 }
-
-.btn-confirm {
-    background-color: #ccf1fe;
-    border: 1px solid #82c1f6a6;
-    color: black;
+.btn-Login {
+background-color:var(--color_Dark);
+color:white;
 }
+    .btn-confirm {
+        background-color: #ccf1fe;
+        border: 1px solid #82c1f6a6;
+        color: black;
+    }
 
     .btn-confirm:focus {
         background-color: #6be1f6;
@@ -186,7 +189,10 @@
     max-width: 30rem;
     box-sizing: border-box;
 }
-
+#displayArea #btn_next_step {
+padding:0;
+align-content:center;
+}
 .btn_next_step {
     background: var(--color_Gray);
     color: var(--color_font);
@@ -283,12 +289,13 @@
         gap: 5px;
     }
 
-        .info_item .info_label {
-            flex: 0;
-            width: 100%;
-            min-width: 0;
-            margin-bottom: 0px;
-        }
+    .info_label {
+        font-size: 18pt;
+        font-weight: 700;
+        color: #555;
+        display: flex;
+        align-items: center;
+    }
 
     .info_value {
         font-size: 16pt;
@@ -310,7 +317,12 @@
             max-width: 90% !important;
             box-sizing: border-box;
         }
-
+    .info_label svg {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        fill: var(--tm-teal);
+    }
     .edit_link {
         margin-left: 0;
         padding-top: 5px;
@@ -457,4 +469,18 @@ input:is(:-webkit-autofill, :autofill) {
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
     display: none;
+}
+.and1::after {
+    content: ""; 
+    display: inline-block;
+    width: 2px;
+    height: 18px; 
+    background-color: var(--color_Border, #e0e0e0); 
+    margin: 0 10px; 
+    vertical-align: middle; 
+    position: relative;
+    top: -1px; 
+}
+#forgotemail_security_note {
+    font-size: 14pt;
 }

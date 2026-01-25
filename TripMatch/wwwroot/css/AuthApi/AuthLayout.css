@@ -1,4 +1,5 @@
-﻿:root {
+﻿
+:root {
     --mc-max-width: 1340px;
     --theme-teal-600: #0ea5a4;
     --theme-teal-500: #14b8a6;
@@ -12,6 +13,14 @@
     --category-blue: #0284C7;
     --category-teal: #0EA5A4;
     --category-green: #10B981;
+    --tm-mint: #62DEB1; /* 亮綠色 */
+    --tm-teal: #00968A; /* 深綠色 */
+    --tm-bg-blue: #DAF3F3; /* 淡藍色 */
+    --tm-contrast: #ED5F00; /* 橘紅色 */
+    --tm-gray: linear-gradient(125deg, #e0eae9, #e0f1f3);
+    /* 灰色線條 */
+    --tm-text-black: #000; /* 標題黑字 */
+    --radius-card: 18px;
 }
 
 .main-content2 {
@@ -23,12 +32,22 @@
     box-sizing: border-box;
     padding-bottom: 24px;
 }
+/* 浮島式主要容器 */
+.member_section {
+    background: linear-gradient(to bottom, rgba(98, 222, 177, 0.15) 0%, #ffffff 80px, #ffffff 100%);
+    border-radius: var(--radius-card);
+    padding: 40px;
+    margin-bottom: 60px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    position: relative;
+}
 .member_center_wrap {
     max-width: var(--mc-max-width);
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
 }
+
 .member_center_wrap {
     box-sizing: border-box;
 }
@@ -52,10 +71,12 @@
     border-radius: 12px;
     box-shadow: 2px 0 12px rgba(0,0,0,0.08);
 }
+
 @media (min-width: 992px) {
     .auth-page {
         height: 100vh;
     }
+
     .member_center_wrap {
         display: flex;
         justify-content: center;
@@ -66,26 +87,31 @@
     .profile_container {
         display: flex;
         gap: 1.5rem;
+        gap: 30px;
         align-items: flex-start;
         box-sizing: border-box;
     }
 
 
     .profile_avatar_section {
-        flex: 0 0 320px; /* 固定寬度 */
-        max-width: 320px;
-        background-color: var(--color_bk);
+        flex: 1 1 320px; /* 固定寬度 */
+        max-width: 400px;
         border-radius: 18px;
-        border: 1px var(--color_Gray);
-        width: 35%;
-        height: 35rem;
+        border: 1px solid var(--tm-gray);
         box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-        margin-left: 15px;
+        padding: 25px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .profile_info_section {
-        flex: 1 1 auto;
-        min-width: 0; /* 防止內容撐破 */
+        flex: 999 1 400px;
+        border: 2px solid var(--tm-gray);
+        border-radius: 12px;
+        padding: 25px;
+        background: #fff;
     }
 
     .profile_info_section {
@@ -100,6 +126,7 @@
         font-size: 18pt;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
+
         .profile_info_section .info_value {
             display: flex;
             flex-wrap: wrap;
@@ -128,6 +155,7 @@
         height: auto;
         overflow: auto;
     }
+
     .main-content2 {
         padding: 0 56px 80px 56px;
     }
@@ -151,6 +179,7 @@
         white-space: normal;
         font-size: 14pt;
     }
+
     #profile_section .row {
         display: flex;
         flex-direction: column;
@@ -165,11 +194,10 @@
         margin-left: 25px;
     }
 
+    /* 資料行樣式 */
     .info_item {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        border-bottom: 1px dashed #eee;
+        padding: 15px 0;
     }
 
     #profile_section [class*="col-"] {
@@ -184,5 +212,4 @@
         justify-content: center;
         align-items: center;
     }
-
 }

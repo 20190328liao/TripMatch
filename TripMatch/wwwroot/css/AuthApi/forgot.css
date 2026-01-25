@@ -36,6 +36,7 @@
     margin-bottom: 0.35rem;
     margin-top: 1.5rem;
 }
+
 .forgotLineWrap {
     display: flex;
     justify-content: center;
@@ -87,9 +88,9 @@
 
 /* Header / Title 區塊（可放 logo 或說明） */
 .forgot_header {
-    display:flex;
-    align-items:center;
-    gap:12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 1rem;
 }
 /*.forgot_header .title {
@@ -111,17 +112,23 @@
     user-select: none;
 }
 
+.account {
+    font-size: var(--font_H5);
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+    margin-top: 1.5rem;
+}
 /* 單一步驟項目：改為圓形徽章 + label 在下方 */
 .step_item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    width: 72px;              /* 固定寬度，確保為圓形排列 */
+    width: 72px; /* 固定寬度，確保為圓形排列 */
     min-width: 72px;
     padding: 0;
     background: transparent;
-    border-radius: 999px;     /* 保持圓形對齊安全 */
+    border-radius: 999px; /* 保持圓形對齊安全 */
     transition: transform .12s ease, box-shadow .12s ease;
     cursor: default;
 }
@@ -138,7 +145,6 @@
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 1.05rem;
     background: rgba(0,0,0,0.06);
     color: var(--color_Dark, #0b2a2a);
     box-shadow: none;
@@ -149,7 +155,7 @@
    這裡不覆寫顏色以維持「step 的顏色照舊」。若需要微調可在全域變數或原始狀態 class 中調整。 */
 
 .step_label {
-    font-size: .85rem;
+    font-size: 16pt;
     color: var(--color_DarkGray, #6b7c7b);
     font-weight: 600;
     text-align: center;
@@ -164,34 +170,44 @@
 .step_item.step_active {
     transform: translateY(-6px);
 }
-.step_item.step_active .step_badge {
-    transform: scale(1.06);
-}
+
+    .step_item.step_active .step_badge {
+        transform: scale(1.06);
+    }
 
 /* 表單欄位 */
 .input_group_custom {
+
     position: relative;
     display: block;
+    height: auto;
+    padding: 0;
     margin-bottom: 0.75rem;
+    background: transparent;
     border-radius: 12px;
 }
-
-.input_custom {
+.input_row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     width: 100%;
     height: 52px;
-    padding: 0.6rem 3.6rem 0.6rem 1rem;
+}
+
+
+
+
+.input_custom {
+    height: 100%;
+    padding: 0.8rem 3.6rem 0.6rem 1.2rem;
     border-radius: 12px;
     border: 1px solid var(--color_Border, #e2e8e8);
     background: #fff;
-    font-size: 1rem;
+    font-size: 18pt;
     color: var(--color_font, #0b2a2a);
-    transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
     outline: none;
 }
-.input_custom:focus {
-    border-color: var(--color_Dark, #0b2a2a);
-    box-shadow: 0 6px 18px rgba(0,150,138,0.06);
-}
+
 
 /* 眼睛按鈕 */
 .btn-toggle-pwd {
@@ -210,29 +226,58 @@
     cursor: pointer;
     transition: background .12s ease;
 }
-.btn-toggle-pwd img { width: 20px; height: 20px; }
 
-/* 文字提示 */
-.inputHint {
-    font-size: .875rem;
-    color: var(--color_DarkGray, #6b7c7b);
-    min-height: 1.2em;
+    .btn-toggle-pwd img {
+        width: 20px;
+        height: 20px;
+    }
+
+.btn_Gray {
+    background-color: var(--color_Gray);
+    color: var(--color_font);
 }
 
-/* 按鈕樣式（保留原有 class 名稱，不改變步驟顏色）*/
+/* 按鈕樣式*/
 .btn_send_verify {
-    background: linear-gradient(180deg, var(--color_Light, #dff7f0), var(--primary-mint, #00bfa5));
+    background-color: var(--color_Light);
+    padding: 0 10px;
+    display: inline-block;
+    text-decoration: none;
     color: #fff;
     border: none;
-    padding: .75rem 1rem;
     border-radius: 12px;
-    font-size: 1rem;
+    margin-bottom: 12px;
+    height: 42pt;
+    font-size: 18pt;
     cursor: pointer;
+    white-space: nowrap;
 }
-.btn_send_verify:disabled {
-    opacity: .85;
-    cursor: not-allowed;
+
+.backEmailbtn {
+    margin-top: 12px;
+    text-align: center;
 }
+.backEmailbtn a {
+    color: var(--color_Dark);
+    font-size: 18pt;
+}
+.btn_Forgot {
+    background-color: var(--color_nav);
+    color: var(--color_Dark);
+}
+.btn_next_step {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 18pt;
+    font-weight: 400;
+    padding:0;
+}
+    .btn_send_verify:disabled {
+        opacity: .85;
+        cursor: not-allowed;
+    }
 
 /* 下一步按鈕 */
 .btn_next_step {
@@ -240,33 +285,86 @@
     height: 52px;
     border-radius: 12px;
     border: none;
-    background: linear-gradient(180deg, #e9eef0, #e0e6e9);
     color: rgba(0,0,0,0.6);
+    margin-bottom: 15px;
 }
-.btn_next_step:not(:disabled) {
-    background: linear-gradient(180deg, var(--color_Light, #dff7f0), var(--primary-mint, #00bfa5));
-    color: #fff;
-    cursor: pointer;
-}
+
+    .btn_next_step:not(:disabled) {
+        color: #fff;
+        cursor: pointer;
+    }
 
 /* alert */
 .alert_custom {
+    background-color: var(--color_nav);
     display: flex;
     gap: 10px;
     align-items: flex-start;
     background: rgba(255,255,255,0.9);
     padding: .75rem;
     border-radius: 10px;
-    border: 1px solid rgba(0,0,0,0.04);
+    border: 1.5px solid #d7e0e17a;
+}
+.forgot_wrap #dynamic_login_btn {
+    background-color: var(--color_Light);
+    color: black;
 }
 
-/* 響應式 */
-@media (max-width: 576px) {
-    .forgot_wrap { padding: 1.1rem; margin: 1.5rem 1rem; border-radius: 12px; }
-    .input_custom { height: 48px; }
-    .step_item { width: 64px; min-width: 64px; gap: 6px; }
-    .step_badge { width: 48px; height: 48px; min-width: 48px; font-size: 0.95rem; }
-    .step_label { font-size: .8rem; }
+.forgot_wrap #btn_next_step2 {
+    background-color: #7ca8e5;
+    color: black;
 }
 
-/* 備註：不覆寫 .step_incomplete / .step_complete 的顏色，以維持「step 的顏色照舊」。若要自訂 step 顏色，請在專案全域變數或原始 step class 中調整。 */
+
+.alert_custom strong {
+    font-size: 16pt;
+    color: var(--color_Dark);
+}
+    .alert_custom small {
+        font-size: 14pt;
+        color: var(--color_DarkGray);
+    }
+        /* 響應式 */
+        @media (max-width: 991.98px) {
+            .input_custom {
+                height: 52px;
+            }
+
+            .step_item {
+                width: 64px;
+                min-width: 64px;
+                gap: 6px;
+            }
+
+            .step_badge {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                font-size: 0.95rem;
+            }
+
+            .step_label {
+                font-size: 14pt;
+            }
+        }
+
+        .multiple-accounts-wrap {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.account-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #edf2f7;
+}
+
+    .account-row:last-child {
+        border-bottom: none;
+    }

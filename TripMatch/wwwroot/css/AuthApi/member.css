@@ -1,7 +1,26 @@
 ﻿/* ==========================================================================
    PROFILE SECTION (個人資料區塊)
    ========================================================================== */
-
+/* 虛線圓形頭像框 */
+.avatar_frame {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    padding: 8px;
+    border: 3px dashed var(--tm-gray);
+    margin-bottom: 25px;
+}
+/* 修改/編輯文字連結按鈕 */
+.edit_link {
+    font-size: 18pt;
+    color: var(--tm-teal);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+    .edit_link:hover {
+        text-decoration: underline;
+    }
 .bi-person, .bi-gear, .bi-envelope {
     margin-right: 8px;
     width: 25px;
