@@ -172,6 +172,34 @@ namespace TripMatch.Services.ExternalClients
             // 這是 Place Photo API 的標準格式
             return $"https://maps.googleapis.com/maps/api/place/photo?maxwidth={maxWidth}&photo_reference={photoReference}&key={_apiKey}";
         }
+
+        public async Task<string> GetPlaceCoverImageUrlAsync(string placeId, string language = "zh-TW")
+        {
+            if (string.IsNullOrWhiteSpace(placeId)) return string.Empty;
+
+            try
+            {
+                // 1. 呼叫現有的非同步詳細資料方法
+                var dto = await this.GetPlaceDetailsAsync(placeId, language);
+
+                // 2. 安全檢查：確保有資料且有照片
+                var firstPhotoReference = dto?.Result?.Photos?.FirstOrDefault()?.PhotoReference;
+
+                if (string.IsNullOrEmpty(firstPhotoReference))
+                {
+                    return string.Empty; // 無照片時回傳空字串
+                }
+
+                // 3. 調用現有方法轉換成最終 URL
+                return this.GetPhotoUrl(firstPhotoReference);
+            }
+            catch (Exception)
+            {
+                // 避免 API 異常導致程式崩潰，回傳空字串
+                return string.Empty;
+            }
+        }
+
     }
 
 

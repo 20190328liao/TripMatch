@@ -1,7 +1,8 @@
 ﻿// 1. 匯入edit module各項功能
+import { SignalRManager } from './editModule/signalr-manager.js';
 import { expandContainerToFullWidth } from './editModule/edit-layout-helper.js';
 import { initGoogleMap } from './editModule/edit-map-manager.js';
-import { initEditPage, refreshItineraryList } from './editModule/edit-trip-manager.js';
+import { initEditPage, refreshItineraryList, showSimpleToast, flashItineraryElement } from './editModule/edit-trip-manager.js';
 
 // 將 refreshItineraryList 掛載到 window 物件，讓 initGoogleMap 裡面的 AJAX 成功後可以呼叫
 window.refreshItineraryList = refreshItineraryList;
@@ -10,6 +11,23 @@ const tripId = document.getElementById('current-trip-id').value; // 取得行程
 
 // 2. 統一在內容載入後執行
 document.addEventListener("DOMContentLoaded", async function () {
+
+    // 【最優先步驟】啟動通訊中心
+    // 這裡定義收到訊息後的行為：跳通知 -> 刷新 -> 閃爍
+    SignalRManager.init(tripId, async (data) => {
+        showSimpleToast(data.message); // 跳通知
+
+        // 呼叫 manager 的功能來同步畫面
+        if (typeof refreshItineraryList === 'function') {
+            refreshItineraryList();
+
+            // 只有新增或修改 (ID != 0) 才閃爍
+            if (data.targetId && data.targetId !== 0) {
+                setTimeout(() => flashItineraryElement(data.targetId), 300);
+            }
+        }
+    });
+
 
     // 步驟 A: 調整版面
     expandContainerToFullWidth();

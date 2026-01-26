@@ -78,13 +78,13 @@
     margin-top: 55px;
 }
 
-    .create-btn:hover {
-        background-color: var(--dark-mint);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(54, 179, 140, 0.4);
-        text-decoration: none;
-        color: white;
-    }
+.create-btn:hover {
+    background-color: var(--dark-mint);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(54, 179, 140, 0.4);
+    text-decoration: none;
+    color: white;
+}
 
 /*    .create-btn:active {
         transform: translateY(1px);

@@ -13,14 +13,9 @@ namespace TripMatch.Hubs
         }
 
         // 通知群組內的其他人，但不包含發送者自己
-        public async Task NotifyUpdate(string tripId, int targetId)
+        public async Task NotifyUpdate(string tripId, int targetId, string message)
         {
-            // OthersInGroup 會自動排除目前連線的 ConnectionID
-            await Clients.OthersInGroup(tripId).SendAsync("ReceiveItineraryUpdate", new
-            {
-                message = "有成員更新了行程時間",
-                targetId = targetId
-            });
+            await Clients.OthersInGroup(tripId).SendAsync("ReceiveItineraryUpdate", new { message, targetId });
         }
     }
 }

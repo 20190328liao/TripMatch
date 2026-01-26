@@ -1,5 +1,4 @@
 ﻿import { TripApi } from '../api/trip-api.js';
-
 export class AddFlightModal {
     constructor() {
         this.renderHtml();
@@ -328,10 +327,15 @@ export class AddFlightModal {
 
     async save() {
         try {
+            // 這裡會等待 API 完成
             await TripApi.addFlight(this.storeData);
+
+            // 走到這一行代表成功了
             this.bsModal.hide();
             if (this.onSuccess) this.onSuccess();
+
         } catch (msg) {
+            // 這裡統一處理「要怎麼讓使用者知道失敗了」
             alert("儲存失敗: " + msg);
         }
     }

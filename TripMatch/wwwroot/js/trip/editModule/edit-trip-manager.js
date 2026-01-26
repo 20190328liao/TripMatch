@@ -5,6 +5,7 @@ import { FlightRenderer } from './components/flight-renderer.js';
 import { RestaurantRenderer } from './components/restaurant-renderer.js';
 import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
 import { RecommendationModal } from './components/recommendation-modal.js';
+import { SignalRManager } from './signalr-manager.js';
 
 
 const currentTripId = document.getElementById('current-trip-id').value;
@@ -14,7 +15,6 @@ let recModal;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
-let connection = null;
 
 
 
@@ -64,48 +64,14 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     initTimeEditModal();
     initHotelEditModal();
     loadTripData();
-    setupSignalR(currentTripId);
 }
-
 export function refreshItineraryList() {
     loadTripData();
 }
-
 export function GetDateStrings() {
     return DateStrings;
 }
-
-async function setupSignalR(tripId) {
-    connection = new signalR.HubConnectionBuilder()
-        .withUrl("/tripHub")
-        .withAutomaticReconnect()
-        .build();
-
-    // 監聽廣播
-    connection.on("ReceiveItineraryUpdate", (data) => {
-        showSimpleToast(data.message); // 1. 提示
-        flashElement(data.targetId);   // 2. 閃爍
-
-        // 3. 延遲刷新 (解決 Edge 渲染競爭問題)
-        setTimeout(() => refreshItineraryList(), 500);
-    });
-
-    try {
-        await connection.start();
-        // 連線後立即加入群組
-        await connection.invoke("JoinTripGroup", tripId.toString());
-
-        // 【補強】針對 Edge 重連機制：重新連線後要補回群組身分
-        connection.onreconnected(() => {
-            connection.invoke("JoinTripGroup", tripId.toString());
-        });
-    } catch (err) {
-        console.error("SignalR 啟動失敗:", err);
-    }
-}
-
-// 簡單的提示小工具
-function showSimpleToast(msg) {
+export function showSimpleToast(msg) {
     const toastId = 'toast-' + Date.now();
     const html = `
         <div id="${toastId}" class="toast show align-items-center text-white bg-dark border-0 position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
@@ -117,8 +83,7 @@ function showSimpleToast(msg) {
     $('body').append(html);
     setTimeout(() => $(`#${toastId}`).fadeOut(() => $(`#${toastId}`).remove()), 3000);
 }
-
-function flashElement(id) {
+export function flashItineraryElement(id) {
     if (id) {
         const $item = $(`.itinerary-item[data-id="${id}"]`);
         if ($item.length > 0) {
@@ -196,6 +161,7 @@ function handleAddDay() {
         type: 'POST',
         success: function (newDate) {   
             loadTripData();    
+            SignalRManager.broadcast(currentTripId, `往後新增一天的行程`, 0);
         },
         error: function (err) {
             alert("新增天數失敗");
@@ -417,7 +383,7 @@ function renderItinerary(items, dates, accommodations, flights) {
             if (confirm("確定要刪除這筆航班資訊嗎？")) {
                 try {
                     // 傳送 ID 與版本標記
-                    await TripApi.deleteFlight(flightId, rowVersion);
+                    await TripApi.deleteFlight(currentTripId, flightId, rowVersion);
 
                     // 刪除成功後重新載入資料
                     alert("刪除成功！");
@@ -530,9 +496,10 @@ function renderItinerary(items, dates, accommodations, flights) {
 
                     alert("已成功移除住宿");
 
-                    // 成功後執行載入資料的方法 (假設名稱為 loadTripData)
+                    // 成功後執行載入資料的方法
                     if (typeof loadTripData === 'function') {
                         loadTripData();
+                        SignalRManager.broadcast(currentTripId, "刪除住宿", 0); 
                     } else {
                         location.reload(); // 備案：重新整理頁面
                     }
@@ -814,7 +781,9 @@ function bindItemEvents() {
                     url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
                     type: 'DELETE',
                     success: function (result) {
+                        SignalRManager.broadcast(currentTripId, "刪除行程", 0); 
                         refreshItineraryList();
+                                  
 
                     },
                     error: function (xhr, status, error) {
@@ -922,14 +891,8 @@ function saveEditedTime() {
         contentType: 'application/json',
         data: JSON.stringify(updateDto),
         success: function (response) {
-
             refreshItineraryList();
-
-            // 通知成員修改
-            if (connection && connection.state === signalR.HubConnectionState.Connected) {
-                connection.invoke("NotifyUpdate", updateDto.TripId.toString(), updateDto.Id)
-                    .catch(err => console.error("通知失敗: ", err));
-            }            
+            SignalRManager.broadcast(updateDto.TripId, "更新行程時間", response.targetId);              
         },
         error: function (xhr) {
             // 這裡只處理「儲存」這件事發生的錯誤
@@ -1034,7 +997,7 @@ function addQuickPlaceToTrip(place, dayNum) {
     });
 }
 
-// 【新增】儲存住宿資料
+// 儲存住宿資料
 function saveHotelData() {
     if (!selectedHotelPlace) {
         alert("請先搜尋並選擇一間飯店");
@@ -1075,6 +1038,8 @@ function saveHotelData() {
 
                 // 重新整理
                 refreshItineraryList();
+
+                SignalRManager.broadcast(currentTripId, "新增住宿", 0); 
             },
             error: function (xhr) {
                 alert("新增住宿失敗：" + (xhr.responseJSON?.message || "Error"));
@@ -1083,19 +1048,7 @@ function saveHotelData() {
     });
 }
 
-// 【新增】刪除住宿
-function deleteHotel(accommodationId) {
-    $.ajax({
-        url: `/api/TripApi/DeleteAccommodation/${accommodationId}`, // 請確認後端 API
-        type: 'DELETE',
-        success: function () {
-            refreshItineraryList();
-        },
-        error: function (xhr) {
-            alert("刪除失敗");
-        }
-    });
-}
+
 
 // 抽離出一個共用的處理函式 (給餐廳卡片用，也可以給行程卡片用)
 function handleSpotClick(data) {
@@ -1141,6 +1094,8 @@ async function deleteTripDay(dayNum) {
                 refreshItineraryList();
                 // 如果刪除後導致日期變動，建議重新載入頁面確保全域變數同步
                 window.location.reload();
+
+                SignalRManager.broadcast(currentTripId, `刪除第 ${dayNum} 天，後續行程已自動遞補。`, 0);
             },
             error: function (xhr) {
                 const errorMsg = xhr.responseJSON?.message || "刪除天數失敗";
