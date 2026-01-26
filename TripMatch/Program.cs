@@ -104,9 +104,8 @@ namespace TripMatch
                 .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "Keys")))
                 .SetApplicationName("TripMatch");
 
-            // 註冊旅遊資訊服務(目前是假資料)
-            // todo:串外部api要回來改實作類別
-            builder.Services.AddScoped<ITravelInfoService, MockTravelInfoService>();
+            // 註冊旅遊資訊服務
+            builder.Services.AddHttpClient<TravelInfoService>();
 
             // --- 建立應用程式 ---
             var app = builder.Build();

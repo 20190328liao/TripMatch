@@ -205,7 +205,7 @@
             // 邏輯：後端查 DB 發現這個人沒填過資料 -> shouldShowPrompt = true
             var shouldShowPrompt = @((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false");
 
-            const modal = document.getElementById('askCalendarModal');
+            const modal = document.getElementById('calendarModal');
 
             // 2. 顯示 Modal 的判斷 (不再看 localStorage)
             // 只要後端說要顯示 (shouldShowPrompt) 且 Modal 元素存在，就彈出來
@@ -297,7 +297,7 @@
         }
 
         function closeModal() {
-            const modal = document.getElementById('askCalendarModal');
+            const modal = document.getElementById('calendarModal');
             if(modal) modal.classList.remove('active');
         }
         function goToMemberCenter() { window.location.href = '/Auth/MemberCenter#calendar_section'; }

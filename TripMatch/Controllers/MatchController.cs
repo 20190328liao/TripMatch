@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using TripMatch.Models;
 using TripMatch.Models.DTOs.TimeWindow;
 using TripMatch.Services;
@@ -228,80 +229,29 @@ namespace TripMatch.Controllers
         [HttpGet]
         public async Task<IActionResult> Recommendations(int id) // id = GroupId
         {
-            // 1. 驗證登入
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdStr, out int userId))
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(userIdString, out int currentUserId);
+
+            bool hasData = await _context.Recommendations.AnyAsync(r => r.GroupId == id);
+            if (!hasData)
             {
-                return RedirectToAction("Login", "Auth");
+                await _timeWindowService.GenerateRecommendationsAsync(id);
             }
 
-            // 2. 取得群組資訊 (為了 TargetNumber)
-            var group = await _context.TravelGroups.FindAsync(id);
-            if (group == null) return NotFound();
+            var viewModel = await _timeWindowService.GetRecommendationViewModelAsync(id, currentUserId);
 
-            // 3. 呼叫 Service
-            // (A) 取得共同時間段 (Time Ranges)
-            var timeRanges = await _timeWindowService.GetCommonTimeRangesAsync(id);
-
-            // (B) 取得 DB 方案 (這裡必須用舊拼字 Recommandation 接 Service 回傳的資料)
-            List<Recommandation> dbEntities = await _timeWindowService.GenerateRecommendationsAsync(id);
-
-            // 4. 建立 ViewModel (開始使用正確拼字)
-            var viewModel = new RecommendationViewModel
-            {
-                TripId = id,
-                TargetCount = group.TargetNumber,
-                CurrentUserId = userId.ToString()
-            };
-
-            // 5. 轉換 - 時間段篩選器 (TimeSlots)
-            int slotIndex = 1;
-            foreach (var range in timeRanges)
-            {
-                // 產生唯一 ID (e.g. "20250601-20250605")
-                string slotId = $"{range.StartDate:yyyyMMdd}-{range.EndDate:yyyyMMdd}";
-
-                viewModel.TimeSlots.Add(new TimeSlotFilterDto
-                {
-                    Id = slotId,
-                    Label = $"時段 {slotIndex++}",
-                    DateRange = $"{range.StartDate:MM/dd} - {range.EndDate:MM/dd}",
-                    AvailableCount = range.AttendanceCount,
-                    Duration = range.Days
-                });
-            }
-
-            // 6. 轉換 - 方案卡片 (OptionCards)
-            // 將 dbEntities (Recommandation) -> viewModel.OptionCards (OptionCardViewModel)
-            foreach (var entity in dbEntities)
-            {
-                // 用日期反查 TimeSlot 資訊 (為了拿到「幾人參加」)
-                var rangeDto = timeRanges.FirstOrDefault(r =>
-                    r.StartDate == DateOnly.FromDateTime(entity.StartDate) &&
-                    r.EndDate == DateOnly.FromDateTime(entity.EndDate));
-
-                string slotId = rangeDto != null
-                    ? $"{rangeDto.StartDate:yyyyMMdd}-{rangeDto.EndDate:yyyyMMdd}"
-                    : "unknown";
-
-                int attendCount = rangeDto?.AttendanceCount ?? 0;
-
-                viewModel.OptionCards.Add(new OptionCardViewModel
-                {
-                    RecommendationId = entity.Index, // DB Primary Key
-                    PlaceName = entity.Location,
-                    TimeSlotId = slotId,
-                    DateRange = $"{entity.StartDate:MM/dd} - {entity.EndDate:MM/dd}",
-                    AvailableMembersCount = attendCount,
-                    Price = entity.Price,
-                    CurrentVotes = entity.Vote,
-                    // 暫時設為 false，之後做投票功能時再補上查詢邏輯
-                    IsVotedByCurrentUser = false
-                });
-            }
-
-            // 回傳正確命名的 View
             return View(viewModel);
+        }
+
+        // ★ 額外建議：新增一個 Action 讓使用者可以「強制刷新」
+        [HttpPost]
+        public async Task<IActionResult> RefreshRecommendations(int id)
+        {
+            // 強制執行生成 (因為 GenerateRecommendationsAsync 裡面有寫先 Delete 的邏輯)
+            await _timeWindowService.GenerateRecommendationsAsync(id);
+
+            // 重新導向回列表頁
+            return RedirectToAction("Recommendations", new { id });
         }
 
         // [API] 處理投票 (給前端 AJAX 呼叫用)

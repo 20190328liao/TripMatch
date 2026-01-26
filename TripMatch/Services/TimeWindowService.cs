@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using TripMatch.Models;
+using TripMatch.Models.DTOs.External;
 using TripMatch.Models.DTOs.TimeWindow;
 
 namespace TripMatch.Services
@@ -7,9 +11,9 @@ namespace TripMatch.Services
     public class TimeWindowService
     {
         private readonly TravelDbContext _context;
-        private readonly ITravelInfoService _travelInfoService;
+        private readonly TravelInfoService _travelInfoService;
 
-        public TimeWindowService(TravelDbContext context, ITravelInfoService travelInfoService)
+        public TimeWindowService(TravelDbContext context, TravelInfoService travelInfoService)
         {
             _context = context;
             _travelInfoService = travelInfoService;
@@ -305,23 +309,23 @@ namespace TripMatch.Services
         }
 
         // 8. 方案卡
-        public async Task<List<Recommandation>> GenerateRecommendationsAsync(int groupId)
+        public async Task<List<Recommendation>> GenerateRecommendationsAsync(int groupId)
         {
             // 1. 檢查是否已經有生成過的方案
-            var existingRecs = await _context.Recommandations
+            var existingRecs = await _context.Recommendations
         .Where(r => r.GroupId == groupId)
         .ToListAsync();
 
             // ★ 開發階段修改：如果有舊資料，先刪除，強制重新生成 ★
             if (existingRecs.Any())
             {
-                _context.Recommandations.RemoveRange(existingRecs);
+                _context.Recommendations.RemoveRange(existingRecs);
                 await _context.SaveChangesAsync();
             }
 
             // 2. 取得共同時間段
             var timeRanges = await GetCommonTimeRangesAsync(groupId);
-            if (!timeRanges.Any()) return new List<Recommandation>();
+            if (!timeRanges.Any()) return new List<Recommendation>();
 
             // 3. 取得地點偏好 (邏輯不變)
             var rawPlaces = await _context.Preferences
@@ -340,15 +344,26 @@ namespace TripMatch.Services
 
             // ★★★ 修改重點：嚴格讀取資料庫設定，不寫死預設值 ★★★
             var group = await _context.TravelGroups.FindAsync(groupId);
-            if (group == null) return new List<Recommandation>(); // 防呆
+            if (group == null) return new List<Recommendation>(); // 防呆
 
+            // ★★★ 2. 新增這段：統計大家是否接受轉機 (Transfer) ★★★
+            // 先把群組所有人的偏好撈出來
+            var allPreferences = await _context.Preferences
+                .Where(p => p.GroupId == groupId)
+                .ToListAsync();
+            // 統計人數
+            int acceptTransferCount = allPreferences.Count(p => p.Tranfer); // 接受轉機的人數
+            int rejectTransferCount = allPreferences.Count(p => !p.Tranfer); // 不接受的人數
+
+            // 邏輯：如果「接受」的人 >= 「不接受」的人，就設為 True
+            bool allowTransfer = acceptTransferCount >= rejectTransferCount;
             // 直接取用資料庫中的 TravelDays
             int tripDays = group.TravelDays;
 
             // 邏輯防呆：萬一資料庫異常存了 0 或負數，至少要算 1 天，否則日期計算會出錯
             if (tripDays < 1) tripDays = 1;
 
-            var newRecommendations = new List<Recommandation>();
+            var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
             {
@@ -364,9 +379,14 @@ namespace TripMatch.Services
                         priceCheckEnd = range.EndDate;
                     }
 
-                    var travelInfo = await _travelInfoService.GetTravelInfoAsync(place, priceCheckStart, priceCheckEnd);
+                    var travelInfo = await _travelInfoService.GetTravelInfoAsync(
+                                    place,
+                                    priceCheckStart,
+                                    priceCheckEnd,
+                                    allowTransfer // <--- 補上這個參數！
+                                );
 
-                    var rec = new Recommandation
+                    var rec = new Recommendation
                     {
                         GroupId = groupId,
 
@@ -388,12 +408,189 @@ namespace TripMatch.Services
                 }
             }
 
-            await _context.Recommandations.AddRangeAsync(newRecommendations);
+            await _context.Recommendations.AddRangeAsync(newRecommendations);
             await _context.SaveChangesAsync();
 
             return newRecommendations;
         }
 
+        // 8-2 拿畫面
+        public async Task<RecommendationViewModel> GetRecommendationViewModelAsync(int groupId, int currentUserId)
+        {
+            // 1. 取得群組 (不做多餘假設)
+            var group = await _context.TravelGroups.FindAsync(groupId);
+            if (group == null) return new RecommendationViewModel();
+
+            // ★★★ 修正：沒有 JoinedCount，我們直接查資料庫算實際人數 ★★★
+            // 雖然這個變數在下面計算 AvailableMembersCount 時沒用到(是用 TimeSlots 算)，
+            // 但如果您想顯示 "5人中的3人有空"，這個總人數還是需要的。
+            var totalMemberCount = await _context.GroupMembers
+                .CountAsync(m => m.GroupId == groupId);
+
+            // 2. 取得推薦方案
+            var recs = await _context.Recommendations
+                .Where(r => r.GroupId == groupId)
+                .OrderByDescending(r => r.Vote)
+                .ToListAsync();
+
+            // 3. 取得成員的時間表 (用來算人數)
+            var memberIds = await _context.GroupMembers
+                .Where(gm => gm.GroupId == groupId)
+                .Select(gm => gm.UserId)
+                .ToListAsync();
+
+            var allMemberSlots = await _context.MemberTimeSlots
+                .Where(slot => memberIds.Contains(slot.UserId))
+                .ToListAsync();
+
+            var myVotes = new List<int>(); // 暫時給空值
+
+            // 4. 轉換 ViewModel
+            var cards = recs.Select(r =>
+            {
+                // [人數計算] 比對 MemberTimeSlots
+                int availableCount = allMemberSlots
+                    .Where(slot =>
+                        DateOnly.FromDateTime(slot.StartAt) <= DateOnly.FromDateTime(r.StartDate) &&
+                        DateOnly.FromDateTime(slot.EndAt) >= DateOnly.FromDateTime(r.EndDate)
+                    )
+                    .Select(s => s.UserId)
+                    .Distinct()
+                    .Count();
+
+                // [地名解析] 沒有 PlaceName 欄位，直接切 Location
+                var displayName = r.Location.Contains("|")
+                    ? r.Location.Split('|')[0]
+                    : r.Location;
+
+                return new RecommendationCard
+                {
+                    RecommendationId = r.Index,
+                    PlaceName = displayName, // 填入解析後的地名
+                    DateRange = $"{r.StartDate:MM/dd} - {r.EndDate:MM/dd}",
+                    TimeSlotId = $"{r.StartDate:MMdd}-{r.EndDate:MMdd}",
+                    Price = r.Price,
+                    DepartFlight = r.DepartFlight,
+                    ReturnFlight = r.ReturnFlight,
+                    CurrentVotes = r.Vote,
+                    IsVotedByCurrentUser = myVotes.Contains(r.Index),
+                    AvailableMembersCount = availableCount
+                };
+            }).ToList();
+
+            // 5. 製作時間篩選器
+            var timeSlots = recs
+         .GroupBy(r => new { r.StartDate, r.EndDate }) // 依照日期區間分組
+         .OrderBy(g => g.Key.StartDate)                // 依照開始時間排序
+         .Select((g, index) =>
+         {
+             var start = g.Key.StartDate;
+             var end = g.Key.EndDate;
+             var timeSlotId = $"{start:MMdd}-{end:MMdd}";
+
+             // 技巧：直接從已經算好人數的 cards 裡面抓一個代表出來取值
+             // 因為同一個時間區間，有空的人數一定是一樣的，不用重算
+             var representativeCard = cards.FirstOrDefault(c => c.TimeSlotId == timeSlotId);
+             int count = representativeCard?.AvailableMembersCount ?? 0;
+
+             return new TimeSlotFilter
+             {
+                 Id = timeSlotId,
+                 Label = $"區間 {index + 1}",
+                 DateRange = $"{start:MM/dd} - {end:MM/dd}",
+
+                 // ★ 關鍵修正：計算實際天數 (結束減開始 + 1)
+                 Duration = (end - start).Days + 1,
+
+                 AvailableCount = count
+             };
+         })
+         .ToList();
+
+            // 偏好統計結果
+            var allPreferences = await _context.Preferences
+                    .Where(p => p.GroupId == groupId)
+                    .ToListAsync();
+
+            var summary = new GroupPreferenceSummary
+            {
+                MemberCount = allPreferences.Count,
+                TransferAcceptCount = 0,
+                TransferRejectCount = 0,
+                MedianHotelBudget = 0,
+                AvgHotelRating = 0
+            };
+
+            if (allPreferences.Any())
+            {
+                // 1. 計算轉機票數
+                summary.TransferAcceptCount = allPreferences.Count(p => p.Tranfer);
+                summary.TransferRejectCount = allPreferences.Count(p => !p.Tranfer);
+
+                // 2. 計算預算中位數 (先濾掉 null，排序，然後取中間)
+                var budgets = allPreferences
+                    .Where(p => p.HotelBudget.HasValue)
+                    .Select(p => p.HotelBudget.Value)
+                    .OrderBy(b => b)
+                    .ToList();
+
+                if (budgets.Any())
+                {
+                    int midIndex = budgets.Count / 2;
+                    // 如果是偶數個，通常取中間兩個平均，這裡為了簡單直接取中間偏後那一個，或直接取中位數邏輯
+                    summary.MedianHotelBudget = (budgets.Count % 2 != 0)
+                        ? budgets[midIndex]
+                        : (budgets[midIndex - 1] + budgets[midIndex]) / 2;
+                }
+
+                // 3. 計算星級平均 (取到小數點第一位)
+                var ratings = allPreferences
+                    .Where(p => p.HotelRating.HasValue)
+                    .Select(p => p.HotelRating.Value)
+                    .ToList();
+
+                if (ratings.Any())
+                {
+                    summary.AvgHotelRating = Math.Round(ratings.Average(), 1);
+                }
+
+                // ★ 1. 判斷是否全員投票完成
+                bool isVoteCompleted = await CheckIfAllVotedAsync(groupId);
+
+                // ★ 2. 如果完成，找出最高票 (贏家)
+                RecommendationCard winningCard = null;
+                if (isVoteCompleted && cards.Any())
+                {
+                    // 簡單邏輯：票數最高者贏，同票則取第一個 (或依價格/創建時間排序)
+                    var winner = cards.OrderByDescending(c => c.CurrentVotes).First();
+                    winningCard = winner;
+                }
+
+                // 3. 回傳 ViewModel
+                return new RecommendationViewModel
+                {
+                    GroupId = groupId,
+                    TotalOptionsCount = cards.Count,
+                    TimeSlots = timeSlots,
+                    OptionCards = cards,
+                    Summary = summary,
+
+                    // ★ 填入新屬性
+                    IsVoteCompleted = isVoteCompleted,
+                    WinningCard = winningCard
+                };
+            }
+
+            // 4. 回傳 ViewModel
+            return new RecommendationViewModel
+            {
+                GroupId = groupId,
+                TotalOptionsCount = cards.Count,
+                TimeSlots = timeSlots,
+                OptionCards = cards,
+                Summary = summary // ★ 記得把算好的塞進去
+            };
+        }
         // 9. 讀取個人請假/可用日 (LeaveDates)
         public async Task<List<AvailableSlotInput>> GetSuggestedPersonalScheduleAsync(int groupId, int userId)
         {
@@ -440,26 +637,270 @@ namespace TripMatch.Services
 
         // 12. 提交投票
         // 回傳：這些方案投票後的最新票數 (Dictionary<RecommendationId, VoteCount>)
-        public async Task<Dictionary<int, int>> SubmitVotesAsync(int groupId, int userId, List<int> recommendationIds)
+        // 修改 SubmitBatchVotesAsync 方法
+        public async Task<Dictionary<int, int>> SubmitBatchVotesAsync(int groupId, int userId, List<int> recommendationIds)
         {
+            // 1. 驗證成員資格與鎖定狀態
             var member = await _context.GroupMembers
                 .FirstOrDefaultAsync(m => m.GroupId == groupId && m.UserId == userId);
 
             if (member == null) throw new Exception("非成員");
 
-            var targets = await _context.Recommandations
-                .Where(r => r.GroupId == groupId && recommendationIds.Contains(r.Index))
+            // 2.【關鍵修正】先清除該使用者在這個群組的所有舊投票 (Reset)
+            // 這樣可以確保使用者的選擇跟資料庫完全同步
+            var oldVotes = await _context.RecommendationVotes
+                .Where(v => v.GroupId == groupId && v.UserId == userId)
                 .ToListAsync();
 
-            foreach (var rec in targets)
+            if (oldVotes.Any())
             {
-                rec.Vote += 1;
+                _context.RecommendationVotes.RemoveRange(oldVotes);
             }
+
+            // 3. 寫入新的投票紀錄
+            // 過濾掉無效的 ID (防呆)，並建立實體
+            var validRecIds = await _context.Recommendations
+                .Where(r => r.GroupId == groupId && recommendationIds.Contains(r.Index)) // 注意：你的 PK 是 Index
+                .Select(r => r.Index)
+                .ToListAsync();
+
+            var newVoteEntities = validRecIds.Select(recId => new RecommendationVote
+            {
+                GroupId = groupId,
+                UserId = userId,
+                RecommendationId = recId,
+                CreatedAt = DateTime.Now
+            }).ToList();
+
+            await _context.RecommendationVotes.AddRangeAsync(newVoteEntities);
+
+            // 先儲存投票紀錄，確保關聯表正確
+            await _context.SaveChangesAsync();
+
+            // 4. 更新 Recommendation 表上的 Vote 計數 (Denormalization)
+            // 雖然可以即時 Count，但為了列表效能，通常還是會維護一個數字欄位
+            var allGroupRecs = await _context.Recommendations
+                .Where(r => r.GroupId == groupId)
+                .ToListAsync();
+
+            foreach (var rec in allGroupRecs)
+            {
+                // 從 Vote 表重新計算真實票數，確保數據一致
+                rec.Vote = await _context.RecommendationVotes
+                    .CountAsync(v => v.RecommendationId == rec.Index);
+            }
+
+            // 5. 標記使用者已完成投票 (Lock)
 
             await _context.SaveChangesAsync();
 
-            return targets.ToDictionary(k => k.Index, v => v.Vote);
+            // 6. 回傳最新票數給前端更新
+            return allGroupRecs.ToDictionary(k => k.Index, v => v.Vote);
         }
+
+        public async Task<bool> CheckIfAllVotedAsync(int groupId)
+        {
+            var totalMembers = await _context.GroupMembers.CountAsync(m => m.GroupId == groupId);
+
+            // ★ 修改判定邏輯：去查 RecommendationVote 表，看有幾個人投過票 (Distinct User)
+            var votedMembersCount = await _context.RecommendationVotes
+                .Where(v => v.GroupId == groupId)
+                .Select(v => v.UserId)
+                .Distinct()
+                .CountAsync();
+
+            return votedMembersCount >= totalMembers;
+        }
+
+        // 新增：將媒合結果轉為正式行程 (Finalize Trip)
+        public async Task<int> CreateTripFromRecommendationAsync(int groupId, int recommendationId)
+        {
+            // 1. 取得來源資料
+            var group = await _context.TravelGroups.FindAsync(groupId);
+            var rec = await _context.Recommendations.FindAsync(recommendationId);
+
+            if (group == null || rec == null) throw new Exception("資料遺失");
+
+            // 2. 準備 Trip 物件 (利用 Navigation Property 處理關聯)
+            var newTrip = new Trip
+            {
+                Title = group.Title + " (媒合成功)",
+                // DateTime -> DateOnly 轉換
+                StartDate = DateOnly.FromDateTime(rec.StartDate),
+                EndDate = DateOnly.FromDateTime(rec.EndDate),
+                InviteCode = Guid.NewGuid(),
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now
+            };
+
+            _context.Trips.Add(newTrip); // 加入追蹤
+
+            // 3. 建立航班 (Flights)
+            // 邏輯：解析字串 -> 建立物件 (關聯到 newTrip)
+            var flights = new List<Flight>();
+
+            // 去程
+            if (!string.IsNullOrEmpty(rec.DepartFlight))
+            {
+                var flightData = ParseFlightString(rec.DepartFlight, rec.StartDate);
+                if (flightData != null)
+                {
+                    flights.Add(new Flight
+                    {
+                        Trip = newTrip,    // 透過物件關聯
+                        FlightNumber = flightData.Value.FlightNo,
+                        Carrier = flightData.Value.Carrier,
+                        DepartUtc = flightData.Value.Depart,
+                        ArriveUtc = flightData.Value.Arrive,
+                        Price = 0,
+                        CreatedAt = DateTimeOffset.Now
+                    });
+                }
+            }
+
+            // 回程
+            if (!string.IsNullOrEmpty(rec.ReturnFlight))
+            {
+                var flightData = ParseFlightString(rec.ReturnFlight, rec.EndDate);
+                if (flightData != null)
+                {
+                    flights.Add(new Flight
+                    {
+                        Trip = newTrip,
+                        FlightNumber = flightData.Value.FlightNo,
+                        Carrier = flightData.Value.Carrier,
+                        DepartUtc = flightData.Value.Depart,
+                        ArriveUtc = flightData.Value.Arrive,
+                        Price = 0,
+                        CreatedAt = DateTimeOffset.Now
+                    });
+                }
+            }
+            if (flights.Any()) _context.Flights.AddRange(flights);
+
+            // 4. ★★★ 建立住宿 (Accommodation) 與 景點快照 (PlacesSnapshot) ★★★
+            if (!string.IsNullOrEmpty(rec.Hotel))
+            {
+                // 因為 Accommodation 強制要求 SpotId，我們需要先建立一個對應的快照
+                // 由於推薦資料只有名字，我們建立一個基礎快照
+                var hotelSpot = new PlacesSnapshot
+                {
+                    NameZh = rec.Hotel,
+                    NameEn = rec.Hotel,
+                    // 產生一個臨時的 ID 避免與真實 Google Place ID 衝突
+                    ExternalPlaceId = $"REC-TEMP-{Guid.NewGuid()}",
+                    AddressSnapshot = rec.Location,
+                    Lat = 0, // 無經緯度資料，給預設值
+                    Lng = 0,
+                    CreatedAt = DateTimeOffset.Now,
+                    UpdatedAt = DateTimeOffset.Now
+                };
+
+                var accommodation = new Accommodation
+                {
+                    Trip = newTrip,        // 關聯行程
+                    Spot = hotelSpot,      // ★ 關聯快照 (EF 會自動先新增 Spot 取得 ID 再填入這裡)
+
+                    HotelName = rec.Hotel, // 冗餘欄位
+                    Address = rec.Location,
+
+                    // 欄位名稱修正：CheckInDate, CheckOutDate
+                    CheckInDate = rec.StartDate,
+                    CheckOutDate = rec.EndDate,
+
+                    Price = rec.Price,
+                    CreatedAt = DateTimeOffset.Now
+                };
+
+                _context.Accommodations.Add(accommodation);
+            }
+
+            // 5. 轉移成員 (GroupMember -> TripMember)
+            var membersData = await _context.GroupMembers
+               .Where(gm => gm.GroupId == groupId)
+               .Join(_context.Preferences,
+                   gm => new { gm.GroupId, gm.UserId },
+                   p => new { p.GroupId, p.UserId },
+                   (gm, p) => new { gm, p })
+               .ToListAsync();
+
+            var tripMembers = membersData.Select(item => new TripMember
+            {
+                Trip = newTrip,            // 關聯行程
+                UserId = item.gm.UserId,
+
+                // 角色轉換: String -> Byte
+                RoleType = (byte)(item.gm.Role == "Owner" ? 1 : 2),
+
+                // 預算轉換: TotalBudget -> Budget
+                Budget = item.p.TotalBudget,
+
+                // ★ 移除 Status (Model 中無此欄位)
+                JoinedAt = DateTimeOffset.Now
+            }).ToList();
+
+            _context.TripMembers.AddRange(tripMembers);
+
+            // 6. 建立地區關聯 (TripRegions)
+            string searchName = rec.Location.Split('|')[0].Trim();
+            var region = await _context.GlobalRegions
+                .FirstOrDefaultAsync(r => r.Name == searchName || r.NameEn == searchName);
+
+            if (region != null)
+            {
+                _context.TripRegions.Add(new TripRegion
+                {
+                    Trip = newTrip,
+                    RegionId = region.Id
+                });
+            }
+
+            // 7. 更新群組狀態並存檔
+            group.Status = "Converted";
+
+            // 一次性儲存所有關聯變更
+            await _context.SaveChangesAsync();
+
+            return newTrip.Id;
+        }
+
+        // 輔助：解析航班字串 (依照你實際存入的格式實作)
+        private (string FlightNo, string Carrier, DateTimeOffset Depart, DateTimeOffset Arrive)? ParseFlightString(string flightStr, DateTime baseDate)
+        {
+            // Regex: 抓取 "JX800", "08:00", "12:00"
+            var regex = new Regex(@"^(?<no>[\w\d]+)\s*\((?<dep>\d{2}:\d{2})\s*-\s*(?<arr>\d{2}:\d{2})\)");
+            var match = regex.Match(flightStr.Trim());
+
+            if (!match.Success) return null;
+
+            string flightNo = match.Groups["no"].Value; // JX800
+            string depTime = match.Groups["dep"].Value; // 08:00
+            string arrTime = match.Groups["arr"].Value; // 12:00
+
+            // 1. 取得航空公司代號 (前兩碼)
+            // 簡單判斷：通常是前兩個字元，如 BR, CI, JX
+            string carrier = flightNo.Length >= 2 ? flightNo.Substring(0, 2) : "Unknown";
+
+            // 2. 組合 DateTimeOffset
+            // 注意：Flight 資料表用的是 DateTimeOffset
+            if (TimeSpan.TryParse(depTime, out TimeSpan tsDep) && TimeSpan.TryParse(arrTime, out TimeSpan tsArr))
+            {
+                // 組合日期與時間 (使用 baseDate)
+                DateTime dtDep = baseDate.Date + tsDep;
+                DateTime dtArr = baseDate.Date + tsArr;
+
+                // 跨日處理：如果抵達時間比出發時間早，代表是隔天
+                if (dtArr < dtDep)
+                {
+                    dtArr = dtArr.AddDays(1);
+                }
+
+                return (flightNo, carrier, new DateTimeOffset(dtDep), new DateTimeOffset(dtArr));
+            }
+
+            return null;
+        }
+
 
         // --- 私有保護機制 (Guards) ---
 
@@ -483,5 +924,6 @@ namespace TripMatch.Services
 
             return member;
         }
+        
     }
 }

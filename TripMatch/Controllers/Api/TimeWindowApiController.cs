@@ -227,23 +227,59 @@ namespace TripMatch.Controllers.Api
         }
 
         // 12. 投票 (POST)
-        [HttpPost("{groupId}/vote")]
-        public async Task<IActionResult> Vote(int groupId, [FromBody] List<int> Index)
+        [HttpPost("{groupId}/vote-batch")]
+        public async Task<IActionResult> SubmitBatchVotes(int groupId, [FromBody] List<int> selectedRecIds)
         {
             try
             {
                 int userId = User.GetUserId();
-                var newCounts = await _timeWindowService.SubmitVotesAsync(groupId, userId, Index);
+                // 呼叫 Service 進行批次投票並標記完成
+                var newCounts = await _timeWindowService.SubmitBatchVotesAsync(groupId, userId, selectedRecIds);
+
+                // 檢查是否所有人都投完票了 (用來決定前端要不要跳轉)
+                bool isAllMembersVoted = await _timeWindowService.CheckIfAllVotedAsync(groupId);
 
                 return Ok(new
                 {
                     message = "投票成功",
-                    updatedCounts = newCounts
+                    updatedCounts = newCounts,
+                    isAllMembersVoted = isAllMembersVoted
                 });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // 13. 結案並建立行程 (Finalize)
+        [HttpPost("{groupId}/finalize")]
+        public async Task<IActionResult> FinalizeTrip(int groupId)
+        {
+            try
+            {
+                // 1. 再次確認是否已經投票完成 (雙重驗證)
+                bool isCompleted = await _timeWindowService.CheckIfAllVotedAsync(groupId);
+                if (!isCompleted) return BadRequest(new { message = "投票尚未完成，無法建立行程" });
+
+                // 2. 取得贏家 ID (這裡也可以由前端傳入，但後端重算比較安全)
+                var viewModel = await _timeWindowService.GetRecommendationViewModelAsync(groupId, User.GetUserId());
+                if (viewModel.WinningCard == null) return BadRequest(new { message = "找不到贏家方案" });
+
+                // 3. 執行轉換
+                int newTripId = await _timeWindowService.CreateTripFromRecommendationAsync(groupId, viewModel.WinningCard.RecommendationId);
+
+                // 4. 回傳新行程的編輯頁面網址
+                return Ok(new
+                {
+                    message = "行程建立成功！",
+                    tripId = newTripId,
+                    redirectUrl = $"/Trip/Edit/{newTripId}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "建立失敗: " + ex.Message });
             }
         }
     }

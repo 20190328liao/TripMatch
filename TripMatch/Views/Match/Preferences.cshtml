@@ -527,7 +527,7 @@
 		let autocomplete;
 
 		// 這就是 Google API 載入完成後會呼叫的函式
-					function initAutocomplete() {
+		function initAutocomplete() {
 			const input = document.getElementById("newLocationInput");
 			if (!input) return;
 
@@ -694,7 +694,8 @@
 		}
 
 		// 共用的建立卡片邏輯
-						// 修改後的 createAndAppendCard
+		// 修改後的 createAndAppendCard
+		// 修改後的 createAndAppendCard：修復特殊字元 Bug 並加入提示
 		function createAndAppendCard(cityName, countryName) {
 			// 1. 處理參數：如果 countryName 沒傳，就預設 "自訂"
 			// 如果 cityName 裡面包含 "|" (例如 "Tokyo|Japan")，就自動拆解
@@ -704,19 +705,39 @@
 				countryName = parts[1];
 			}
 
-			// 如果還是空的，就給預設值
 			countryName = countryName || "自訂";
-
-			// 2. 建立資料 Key (包含國家以防重複，例如 倫敦|英國 vs 倫敦|加拿大)
 			const dataVal = `${cityName}|${countryName}`;
 
-			// 檢查是否已存在 (避免重複新增)
-			// 這裡同時檢查 "City" 和 "City|Country" 兩種格式
-			if (document.querySelector(`.location-card[data-val='${cityName}']`) ||
-				document.querySelector(`.location-card[data-val='${dataVal}']`)) {
+			// 2. ★ 安全的重複檢查 (修正 Bug 的關鍵)
+			// 我們改用迴圈或 Array.from 來檢查，不要直接把變數塞進 querySelector 字串中
+			// 這樣可以避免像 "Xi'an" 這種有單引號的地名導致程式崩潰
+			const allCards = Array.from(document.querySelectorAll('.location-card'));
+
+			// 檢查邏輯：
+			// (A) 是否有完全一樣的 data-val (例如 "東京|日本")
+			// (B) 或是 data-val 剛好等於城市名 (針對那些預設的熱門地點，data-val 只有 "東京")
+			const isDuplicate = allCards.some(card => {
+				const val = card.getAttribute('data-val');
+				return val === dataVal || val === cityName;
+			});
+
+			if (isDuplicate) {
+				alert(`「${cityName}」已經在清單中了喔！`);
+
+				// 進階 UX：幫使用者捲動到那個已經存在的卡片並閃爍一下 (可選)
+				const existingCard = allCards.find(c => {
+					 const val = c.getAttribute('data-val');
+					 return val === dataVal || val === cityName;
+				});
+				if(existingCard) {
+					existingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					existingCard.classList.add('selected'); // 確保它被選取
+					selectedLocationNames.add(existingCard.getAttribute('data-val')); // 確保資料同步
+				}
 				return;
 			}
 
+			// 3. 建立 DOM 元素
 			const grid = document.getElementById('locationGrid');
 			const newCard = document.createElement('div');
 
@@ -727,10 +748,10 @@
 			// 點擊事件 (取消選取)
 			newCard.onclick = function() { toggleSelection(dataVal, this); };
 
-			// ★ 這裡顯示動態的國家名稱，不再是 "自訂"
+			// 顯示動態的國家名稱
 			newCard.innerHTML = `
-				<div class="loc-city">${cityName}</div>
-				<div class="loc-country">${countryName}</div>
+				<div class="loc-city">${escapeHtml(cityName)}</div>
+				<div class="loc-country">${escapeHtml(countryName)}</div>
 			`;
 
 			// 插入到最前面
@@ -740,6 +761,16 @@
 			selectedLocationNames.add(dataVal);
 		}
 
+		// ★ 補充一個小工具：防止 XSS 攻擊 (如果有人惡意輸入 HTML標籤)
+		function escapeHtml(text) {
+			if (!text) return text;
+			return text
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#039;");
+		}
 		function goToCalendar() {
 			 window.location.href = `/Match/CalendarCheck/${groupId}`;
 		}
