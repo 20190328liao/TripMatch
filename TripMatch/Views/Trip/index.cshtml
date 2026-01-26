@@ -46,72 +46,84 @@
     <!-- 已開團 -->
     <h2 class="section-title">已開團</h2>
 
-    <div class="grid">
-        @foreach(var t in Model.Trips)
-        {
-            var dataText = $"{t.StartDate:yyyy/MM/dd} - {t.EndDate:yyyy/MM/dd}";
-            <article class="card"
-                     data-trip-id="@t.TripId"
-                     data-details-url="@t.DetailsUrl"
-                     data-is-owner="@(t.IsOwner ? "1" : "0")">
+    @if(Model.Trips == null || !Model.Trips.Any())
+    {
+        <div class="empty-hint">目前沒有已開團行程</div>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach(var t in Model.Trips)
+            {
+                var dataText = $"{t.StartDate:yyyy/MM/dd} - {t.EndDate:yyyy/MM/dd}";
+                <article class="card"
+                         data-trip-id="@t.TripId"
+                         data-details-url="@t.DetailsUrl"
+                         data-is-owner="@(t.IsOwner ? "1" : "0")">
 
-                <div class="card-cover"
-                     style="background-image:url(@t.CoverImageUrl);">
+                    <div class="card-cover"
+                         style="background-image:url(@t.CoverImageUrl);">
 
-                </div>
-
-                <div class="card-body">
-                    <div class="card-title">@t.Title</div>
-                    <div class="card-meta">
-                        <div class="card-date">@dataText</div>
-                        <div class="member-pill">@(t.MemberCount)人</div>
                     </div>
-                </div>
 
-                <div class="card-actions">
-                    <button type="button" class="kebab-btn" aria-label="更多">
-                        <span class="kebab-dot"></span>
-                        <span class="kebab-dot"></span>
-                        <span class="kebab-dot"></span>
-                    </button>
+                    <div class="card-body">
+                        <div class="card-title">@t.Title</div>
+                        <div class="card-meta">
+                            <div class="card-date">@dataText</div>
+                            <div class="member-pill">@(t.MemberCount)人</div>
+                        </div>
+                    </div>
 
-                    <div class="menu" role="menu">
-                        <button type="button" class="menu-item" data-action="members">成員</button>
-                        <button type="button" class="menu-item danger" data-action="danger">
-                            @(t.IsOwner ? "刪除" : "退出")
+                    <div class="card-actions">
+                        <button type="button" class="kebab-btn" aria-label="更多">
+                            <span class="kebab-dot"></span>
+                            <span class="kebab-dot"></span>
+                            <span class="kebab-dot"></span>
                         </button>
+
+                        <div class="menu" role="menu">
+                            <button type="button" class="menu-item" data-action="members">成員</button>
+                            <button type="button" class="menu-item danger" data-action="danger">
+                                @(t.IsOwner ? "刪除" : "退出")
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-            </article>
-        }
-    </div>
-
+                </article>
+            }
+        </div>
+    }
     <!-- 媒合中 -->
     <h2 class="section-title mt-24">媒合中</h2>
 
-    <div class="grid">
-        @foreach(var g in Model.MatchingGroups)
-        {
-            <article class="card"
-                data-kind="matching"
-                data-group-id="@g.GroupId"
-                data-status="@g.Status"
-                data-details-url="@g.DetailsUrl">
+    @if(Model.MatchingGroups == null || !Model.MatchingGroups.Any())
+    {
+        <div class="empty-hint">沒有媒合中的行程</div>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach(var g in Model.MatchingGroups)
+            {
+                <article class="card"
+                    data-kind="matching"
+                    data-group-id="@g.GroupId"
+                    data-status="@g.Status"
+                    data-details-url="@g.DetailsUrl">
 
-                @* 圖片 *@
-                <div class="card-cover" style="background-image:url(@g.CoverImageUrl);"></div>
+                    @* 圖片 *@
+                    <div class="card-cover" style="background-image:url(@g.CoverImageUrl);"></div>
                     
-                <div class="card-body">
-                    <div class="card-title">@g.Title</div>
-                    @* 狀態小字 *@
-                    <div class="card-sub">@g.Status</div>
-                </div>
+                    <div class="card-body">
+                        <div class="card-title">@g.Title</div>
+                        @* 狀態小字 *@
+                        <div class="card-sub">@g.Status</div>
+                    </div>
 
-            </article>
-        }
-    </div>
-
+                </article>
+            }
+        </div>
+    }
 </div>
 
 <!-- Members Modal -->

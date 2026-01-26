@@ -1,6 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
     const API_BASE = "/api/TripApi"
-    const grid = document.querySelector(".grid");
+    const grids = document.querySelectorAll(".grid");
 
         // function 關閉選單
         function closeAllMenus(exceptMenu) {
@@ -12,7 +12,9 @@
         // click 點空白處關閉選單
         document.addEventListener('click', () => closeAllMenus(null));
 
-        grid?.addEventListener('click', async (e) => {
+    grids.forEach(grid => {
+        grid?.addEventListener('click', async (e) =>
+        {
             const card = e.target.closest(".card");
             if (!card) {
                 return;
@@ -90,16 +92,17 @@
             }
 
             // 如果選單開著，點卡片先不跳
-            if (menu.classList.contains("open")) {
+            if (menu && menu.classList.contains("open")) {
                 return;
             }
-         
+
             // 點卡片其他區域 -> 跳轉到行程頁
             const detailsUrl = card.dataset.detailsUrl;
             if (detailsUrl && detailsUrl !== "#") {
                 window.location.href = detailsUrl;
             }
         });
+    });
 
 
 
@@ -110,7 +113,7 @@
     const btnCopyIntive = document.getElementById("btnCopyInvite");
     const inviteHint = document.getElementById("inviteHint");
 
-        // 開啟 members modal
+    // 開啟 members modal
     async function openMembersModal(tripId) {
         
         membersList.innerHTML = `<li>載入中...</li>`;

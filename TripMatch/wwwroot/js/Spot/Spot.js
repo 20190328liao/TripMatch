@@ -430,12 +430,12 @@ function fillPanelFromPlaceDetails(place) {
         selectMarker = new google.maps.Marker({
             map,
             position: pos,
-            icon: ICON_SELECTED_PIN,
+            //icon: ICON_SELECTED_PIN,
             zIndex: 9999,
         });
 
         if (window.matchMedia("(min-width: 881px)").matches) {
-            panWithOffset(new google.maps.LatLng(pos.lat, pos.lng), -160, 0);
+            panWithOffset(new google.maps.LatLng(pos.lat, pos.lng), 0, 0);
         }
         else {
             map.panTo(pos);
@@ -720,6 +720,24 @@ function closeModal() {
 
 // ====== Wire UI (events) ======
 function wireUI() {
+    // 抓 layout 高度給 css 用
+    function syncLayoutHeighhts() {
+        const nav = document.querySelector("header, .navbar, nav");
+        const footer = document.querySelector("footer");
+
+        const navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+        const footerH = footer ? Math.round(footer.getBoundingClientRect().height) : 0;
+
+        document.documentElement.style.setProperty("--layoutNavH", `${navH}px`);
+        document.documentElement.style.setProperty("--layoutFooterH", `${footerH}px`);
+    }
+
+    window.addEventListener("load", syncLayoutHeighhts)
+    window.addEventListener("resize", syncLayoutHeighhts)
+
+
+
+
     //tabs
     document.querySelectorAll(".tab").forEach(t => {
         t.addEventListener('click', () => {
@@ -790,24 +808,12 @@ function wireUI() {
         closeFab();
     });
 
-
-
     // 綁定 trip btn
     btnTrip.addEventListener('click', () => {
         if (!currentPlace) return;
         openTripPicker("trip");
         closeFab();
     });
-
-
-
-
-
-
-
-
-
-
 
     // search
     // 綁定 search btn
@@ -860,11 +866,11 @@ function initMap() {
     };
     ICON_STAR = {
         path: "M12 2l2.9 6.4L22 9.3l-5 4.7 1.3 7L12 17.9 5.7 21 7 14 2 9.3l7.1-.9L12 2z",
-        fillColor: "rgba(255,105,180,0.75)",
+        fillColor: "rgb(255, 193, 7)",
         fillOpacity: 1,
         strokeColor: "white",
         strokeWeight: 2,
-        scale: 1.4,
+        scale: 1.3,
         anchor: new google.maps.Point(12, 12),
     };
 

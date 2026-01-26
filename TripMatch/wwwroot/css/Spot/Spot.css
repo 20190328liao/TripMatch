@@ -9,7 +9,6 @@
     --shadow2: 0 10px 18px rgba(0, 0, 0, .16);
     --radius: 16px;
     /* Layout knobs (因為你改用 _Layout navbar，這裡只需要保留 navbar 的高度) */
-    --layoutNavH: 0px; /* 若你的 _Layout navbar 更高/更低，改這個即可 */
     --gutter: 16px;
     /* Left sidebar (Popular + Search) */
     --sideW: 360px; /* 左側欄寬度 */
@@ -17,6 +16,9 @@
     --searchH: 44px;
     /* Right panel */
     --panelW: 360px;
+    /* _Layout navbar、footer 高度，方便內容避開 */
+    /* --layoutNavH: 0px;*/
+    --layoutFooterH: 0px;
 }
 
 /* ========== Base Reset ========== */
@@ -30,7 +32,6 @@ html, body {
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
     color: var(--text);
     background: var(--bg);
-    /* Explore 頁通常不需要 body 捲動；捲動交給側欄/面板內容 */
     overflow: hidden;
 }
 
@@ -46,8 +47,9 @@ body {
 
 .main {
     position: relative;
-    height: 100vh;
-    /* 讓內容避開 _Layout navbar（你說用 _Layout 的就好） */
+    /* 扣掉footer */
+    height: calc(100vh - var(--layoutFooterH));
+    /* 讓內容避開 _Layout navbar */
     padding-top: var(--layoutNavH);
     /* 避免因為內部絕對定位元素造成外層出現卷軸 */
     overflow: hidden;
@@ -58,8 +60,8 @@ body {
     position: absolute;
     left: 0;
     right: 0;
-    top: var(--layoutNavH);
-    bottom: 0;
+    top: 0;
+    bottom: var(--layoutNavH);
     width: 100%;
     height: auto;
     z-index: 1;
@@ -71,10 +73,10 @@ body {
 .popular {
     position: absolute;
     left: var(--gutter);
-    top: calc(var(--layoutNavH) + var(--gutter));
+    top: var(--gutter);
     /* edit var(--gutter)*/
     bottom: auto;
-    height: 85vh;
+    height: 83vh;
     width: var(--sideW);
     z-index: 3200;
     background: rgba(255, 255, 255, .96);
@@ -215,7 +217,7 @@ body {
 .map-search {
     position: absolute;
     left: calc(var(--gutter) + 12px);
-    top: calc(var(--layoutNavH) + var(--gutter) + 12px);
+    top: calc(var(--gutter) + 12px);
     z-index: 3300;
     height: var(--searchH);
     width: calc(var(--sideW) - 12px - 12px - 52px - 10px); /* 留出右側按鈕空間 */
@@ -247,7 +249,7 @@ body {
 #searchBtn.iconBtn,
 .iconBtn#searchBtn {
     position: absolute;
-    top: calc(var(--layoutNavH) + var(--gutter) + 12px);
+    top: calc(var(--gutter) + 12px);
     left: calc(var(--gutter) + 12px + (var(--sideW) - 12px - 12px - 52px - 10px) + 10px);
     z-index: 3301;
     width: 52px;
@@ -298,7 +300,7 @@ body {
 /* ========== Right Info Panel ========== */
 .panel {
     position: absolute;
-    top: calc(var(--layoutNavH) + var(--gutter));
+    top: var(--gutter);
     right: var(--gutter);
     width: var(--panelW);
     max-height: calc(100vh - var(--layoutNavH) - (var(--gutter) * 2));
@@ -311,7 +313,6 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: transform .22s ease, opacity .22s ease;
-
     overflow-y: auto;
 }
 
@@ -500,7 +501,7 @@ body {
     position: absolute;
     left: calc(var(--gutter) + 12px);
     bottom: var(--gutter);
-    top: calc(var(--layoutNavH) + var(--gutter) + 62px);
+    top: calc(var(--gutter) + 62px);
     z-index: 3300;
     width: 44px;
     height: 44px;
@@ -659,7 +660,7 @@ body {
     .map-search {
         position: absolute;
         left: var(--gutter);
-        top: calc(var(--layoutNavH) + var(--gutter));
+        top: var(--gutter);
         width: calc(100vw - (var(--gutter) * 2) - 52px - 10px);
     }
 
@@ -667,7 +668,7 @@ body {
     .iconBtn#searchBtn {
         position: absolute;
         left: calc(var(--gutter) + (100vw - (var(--gutter) * 2) - 52px - 10px) + 10px);
-        top: calc(var(--layoutNavH) + var(--gutter));
+        top: var(--gutter);
     }
 
     /* Panel：改成底部置中浮層 */
@@ -691,5 +692,10 @@ body {
         right: 22px;
         bottom: 22px;
     }
+
+}
+
+footer {
+    display: none !important;
 }
 
