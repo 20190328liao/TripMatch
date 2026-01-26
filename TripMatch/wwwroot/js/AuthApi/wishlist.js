@@ -522,7 +522,7 @@
     function renderEmpty() {
         if (!wishlistContainer) return;
         wishlistContainer.innerHTML = `
-            <div class="col-12 text-center py-5" style="background: #f8f9fa; border-radius: 12px; margin: 20px 0;">
+            <div class="col-12 text-center py-5" style="background: #f8f9fa; border-radius: 12px; margin: 20px 0; width:100%;">
                 <div class="mb-3" style="font-size: 3.5rem; opacity: 0.5;">📍</div>
                 <h5 class="text-muted fw-bold">您的清單目前是空的</h5>
                 <p class="text-muted mb-4">快去探索更多景點並加入清單吧！</p>

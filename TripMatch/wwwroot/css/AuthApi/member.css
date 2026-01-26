@@ -39,15 +39,60 @@ MemberCenter.cshtml
 .memberTitle {
     color: #000;
     font-weight: 700;
-    margin: 3rem 0 1.5rem 0;
+    margin: 2rem 0 1.5rem 0;
+    z-index:10;
 }
+#calendar_section .memberTitle::after {
+    top: 2%;
+}
+.memberTitle::after {
+    content: "";
+    position: absolute;
+    left: 0%;
+    top: 3%;
+    transform: translateY(-50%);
+    width: 90%;
+    height: 20px;
+    border: 8px dashed #e3f7f2;
+    background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
+    border-radius: 2px;
+    animation-name: abc;
+    animation-duration: 2s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+    z-index: -1;
+}
+/*    .memberTitle::before {
+        content: "";
+        position: absolute;
+        left: 10%;
+        top: 12%;
+        transform: translateY(-50%);
+        width: 30%;
+        height: 2px;
+        background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
+        border-radius: 2px;
+        animation: abc ease-in-out 3s infinite;
+    }*/
 
-.current-title {
-    position: relative;
-    padding-left: 22px;
-    margin-bottom: 0;
-    border-left: none;
-}
+    @keyframes abc {
+        0%, 100% {
+            width: 5%;
+        }
+        50% {
+            width: 100%;
+        }
+        100% {
+            width: 100%;
+        }
+    }
+
+    .current-title {
+        position: relative;
+        padding-left: 22px;
+        margin-bottom: 0;
+        border-left: none;
+    }
 
     .current-title::before {
         content: "";
@@ -413,12 +458,9 @@ MemberCenter.cshtml
     margin-bottom: 1rem;
 }
 
-
-
 /* ==========================================================================
    2. TYPOGRAPHY & TITLES (文字排版)
    ========================================================================== */
-
 /* 標題層級設定 */
 .titleWrap.titleH1 {
     font-size: var(--font_H1);

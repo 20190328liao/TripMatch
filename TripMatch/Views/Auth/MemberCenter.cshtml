@@ -84,31 +84,29 @@
                                     <button id="btnSaveName" class="btn btn_light btn-sm d-none">確認</button>
                                     <button id="btnCancelName" class="btn btn_light btn-sm d-none">取消</button>
                                 </div>
+                                <label class="info_label">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
+                                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
+                                    </svg>備援信箱
+                                </label>
+                                <div class="info_value d-flex align-items-center gap-2">
+                                    <span id="displayBackupEmail">example2@gmail.com</span>
+                                    <input id="inputBackupEmail" type="email" class="form-control d-none" />
+                                    <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
+                                    <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
+                                    <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
+                                </div>
+                            <div id="emailHint" class="emailHint d-block "></div>
                             </div>
-
+                         
                         </div>
                     </div>
 
                     <div class="info_row">
-                        <div class="info_item">
-                            <label class="info_label">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
-                                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
-                                </svg>備援信箱
-                            </label>
-                            <div class="info_value d-flex align-items-center gap-2">
-                                <span id="displayBackupEmail">example2@gmail.com</span>
-                                <input id="inputBackupEmail" type="email" class="form-control d-none" />
-                                <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
-                                <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
-                                <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
-                            </div>
 
-                        </div>
-                        <div id="emailHint" class="emailHint d-block "></div>
                         <div class="info_item">
                             <div class="info_item2">
-                                <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link and1">修改密碼</a><span></span><a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
+                                <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link and1">修改密碼</a>｜<a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
                             </div>
                         </div>
                     </div>
@@ -220,18 +218,6 @@
                 </div>
             </div>
 
-            @* 將「目前沒有願望清單」說明移到此處（出現在標題下方、整個欄位外側）
-               當有卡片時不渲染說明（即：有卡片就關閉說明） *@
-            @if (!cards.Any())
-            {
-                <div class="container mt-3">
-                    <div class="row">
-                        <div class="col-12">
-                            <p class="nullWishlist">目前沒有願望清單，快去探索景點吧！</p>
-                        </div>
-                    </div>
-                </div>
-            }
 
             <!-- 分類按鈕群組 (左側面板將顯示此處) -->
             <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">

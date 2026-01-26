@@ -22,16 +22,15 @@
 .info_item2 {
     display: inline;
     text-align: center;
-    margin-left: 40px;
-    margin-top: 25px;
+    min-width: 100%;
+    white-space: nowrap;
 }
 
     .info_item2 a {
         text-decoration: none;
         color: var(--color_Dark);
-        padding-bottom: 20px;
-        max-width: 100%;
-        word-break: break-all;
+        width: 100%;
+        white-space: nowrap;
     }
 
 .info_item {
@@ -230,7 +229,7 @@ align-content:center;
     gap: 10px;
     pointer-events: auto;
     font-size: 14px;
-    line-height: 1.3;
+/*    line-height: 1.3;*/
     transform: translateY(12px);
     opacity: 0;
     transition: transform 240ms ease, opacity 240ms ease;
@@ -280,22 +279,7 @@ align-content:center;
 }
 
 @media (max-width: 991.98px) {
-    .info_item {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        width: 100%;
-        margin-bottom: 1rem;
-        gap: 5px;
-    }
 
-    .info_label {
-        font-size: 18pt;
-        font-weight: 700;
-        color: #555;
-        display: flex;
-        align-items: center;
-    }
 
     .info_value {
         font-size: 16pt;
@@ -303,32 +287,81 @@ align-content:center;
         margin-left: 0;
         padding-left: 45px;
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
+        align-items: flex-start;
         gap: 8px;
         margin-bottom: 10px;
     }
+        .info_value input {
+        flex:1;
+        width: auto !important;
+        min-width:0;
+        }
 
-        .info_value .form-control,
+        .info_value button {
+            flex-shrink: 0;
+            white-space: nowrap;
+            max-width: 20%;
+        }
+    #btnSaveName, #btnCancelName {
+        margin-top: 10px;
+    }
+    #btnSaveBackupEmail {
+        white-space: wrap;
+    }
+
+    /*        .info_value .form-control,
         .info_value input,
         .info_value select,
         .info_value textarea {
             width: 90% !important;
             max-width: 90% !important;
             box-sizing: border-box;
-        }
-    .info_label svg {
+        }*/
+    /*    .info_label svg {
         width: 24px;
         height: 24px;
         margin-right: 10px;
         fill: var(--tm-teal);
-    }
+    }*/
     .edit_link {
+        display: flex;
         margin-left: 0;
+        padding-left: 0;
         padding-top: 5px;
     }
+    .info_row {
+        font-size: 18pt;
+        margin-left: 25px;
+    }
+
+    /* 資料行樣式 */
+    .info_item {
+        padding: 5px 0;
+        min-width: 100%;
+        white-space: normal;
+        overflow: hidden;
+    }
+
+
+}
+.info_item2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center; 
+    width: 100%; 
+    gap: 15px;
 }
 
+/* 裝飾線修正 */
+/*.and1::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background-color: #ccc;
+    margin: 0 10px;*/ /* 裝飾線左右間距 */
+    /*vertical-align: middle;
+}*/
 @media (max-width: 575.98px) {
     .btn-confirm,
     .btn-edit,
@@ -340,9 +373,10 @@ align-content:center;
         flex-wrap: wrap;
         flex-direction: row;
     }
+
 }
 
-@media (max-width: 420px) {
+@media (max-width:575.98px) {
     #importCalendarMessage {
         right: 8px;
         left: 8px;
@@ -350,6 +384,28 @@ align-content:center;
         min-width: 0;
         max-width: calc(100% - 16px);
     }
+    .info_item {
+        width: 90%;
+    }
+
+        .info_value input,
+        .info_value button, .form-control {
+            min-width: 100%;
+            margin: 0;
+            white-space: nowrap;
+        }
+    .info_value {
+        padding-left: 0 !important; /* 釋放左側空間給輸入框 */
+    }
+    .info_item2 {
+        gap: 10px; /* 手機版縮小間距 */
+        justify-content: flex-start; /* 靠左排列 */
+    }
+
+    /* 關鍵：換行後隱飾線，避免重疊 */
+    /*.and1::after {
+        display: none;*/ /* 或者是改為內容不可見但佔位，若需維持排版 */
+    /*}*/
 }
 
 .btn-transparent {
@@ -470,7 +526,7 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
     display: none;
 }
-.and1::after {
+/*.and1::after {
     content: ""; 
     display: inline-block;
     width: 2px;
@@ -480,7 +536,21 @@ input[type="password"]::-ms-clear {
     vertical-align: middle; 
     position: relative;
     top: -1px; 
-}
+}*/
 #forgotemail_security_note {
     font-size: 14pt;
+}
+
+.info_item2 {
+    display: block; /* 或 flex，避免 inline-block 的限制 */
+    line-height: 1.5;
+    font-family: "Segoe UI", sans-serif;
+    vertical-align: middle;
+    white-space: normal; /* 允許換行 */
+    max-width: 100%; /* 限制在容器寬度內 */
+    overflow-wrap: break-word; /* 長字自動斷行 */
+}
+
+#btnEditAvatar {
+    margin-bottom: 10px;
 }

@@ -18,6 +18,16 @@
             @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
 
             .tm-bell-shaking { animation: tm-bell-shake 0.8s ease-in-out infinite; background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
+
+            /* pulse 實作：短暫高亮/放大，供 step4 使用 */
+            @keyframes tm-bell-pulse {
+                0% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,77,64,0.4); }
+                50% { transform: scale(1.14); box-shadow: 0 8px 30px rgba(0,77,64,0.45); }
+                100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,77,64,0.4); }
+            }
+            .tm-bell-pulse {
+                animation: tm-bell-pulse 650ms ease-in-out;
+            }
             
             .tm-modal-overlay { 
                 position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
@@ -51,15 +61,76 @@
         document.head.appendChild(style);
     }
 
+    // Step 管理器：確保步驟依序執行，支援「自動前進」與「等待使用者完成再前進」
+    ns.stepManager = {
+        steps: [],
+        index: -1,
+        running: false,
+        // 允許重啟：若已在跑或已執行過，先 cancel 再啟動新的序列
+        start(stepsArray) {
+            if (!Array.isArray(stepsArray) || stepsArray.length === 0) return;
+            this.cancel();
+            this.steps = stepsArray.slice();
+            this.index = -1;
+            this.running = true;
+            this.next();
+        },
+        next() {
+            if (!this.running) return;
+            this.index++;
+            if (this.index >= this.steps.length) {
+                this.running = false;
+                return;
+            }
+
+            try {
+                const fn = this.steps[this.index];
+                if (typeof fn === 'function') {
+                    const res = fn();
+                    // 如果該 step 回傳 true，代表需等待外部呼叫 stepDone()
+                    if (res === true) {
+                        return;
+                    } else {
+                        setTimeout(() => this.next(), 8);
+                    }
+                } else {
+                    this.next();
+                }
+            } catch (e) {
+                console.warn('stepManager step error', e);
+                this.next();
+            }
+        },
+        stepDone() {
+            // 小延遲讓 UI 轉場完成再下一步
+            setTimeout(() => this.next(), 120);
+        },
+        cancel() {
+            this.running = false;
+            this.steps = [];
+            this.index = -1;
+        }
+    };
+
+    // 方便啟動「pending 流程」：建立鈴鐺 -> 顯示 modal（等待使用者互動）-> 在 modal 完成後觸發搖動
+    ns.startPendingSequence = function (payload = {}) {
+        // cancel 已在 stepManager.start 處理，可重複呼叫
+        ns.stepManager.start([
+            () => ns.createBell(payload, { autoShake: false }), // step1 建立但不震動
+            () => ns.openPendingModal(payload),                 // step2 顯示 modal（回傳 true = 等待）
+            () => ns.shakeBell()                                // step3（在 modal 完成後執行搖動）
+        ]);
+    };
+
     ns.isAllowedPendingPage = function () {
         const path = (location.pathname || '').toLowerCase();
         const hash = location.hash;
         return (path.includes('/membercenter') && hash === '#calendar_section') || path.includes('/match/calendarcheck');
     };
 
+    // openPendingModal：回傳 true 表示 stepManager 要等待（直到呼叫 stepDone）
     ns.openPendingModal = function (payload = {}) {
         ns.closePendingModal();
-        ns.destroyBell();
 
         const html = `
         <div class="tm-modal-overlay" id="${MODAL_ID}">
@@ -88,27 +159,40 @@
 
         document.body.insertAdjacentHTML('beforeend', html);
 
-        document.getElementById('btn-import-save').onclick = () => {
-            document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload }));
-            ns.closePendingModal();
-        };
-
-        document.getElementById('btn-import-close').onclick = () => {
-            const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
-            if (isMatchPage) {
-                window.location.href = '/Auth/MemberCenter#calendar_section';
-            } else {
+        const btnSave = document.getElementById('btn-import-save');
+        if (btnSave) {
+            btnSave.onclick = () => {
+                document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload }));
                 ns.closePendingModal();
-                ns.createBell(payload);
-            }
-        };
+                if (ns.stepManager) ns.stepManager.stepDone();
+            };
+        }
 
-        // ★ 新增：綁定消除指示按鈕事件
-        document.getElementById('btn-dismiss-hints').onclick = () => {
-            document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
-            ns.closePendingModal();
-            ns.createBell(payload);
-        };
+        const btnClose = document.getElementById('btn-import-close');
+        if (btnClose) {
+            btnClose.onclick = () => {
+                const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
+                ns.closePendingModal();
+                if (isMatchPage) {
+                    window.location.href = '/Auth/MemberCenter#calendar_section';
+                } else {
+                    ns.createBell(payload, { autoShake: false });
+                }
+                if (ns.stepManager) ns.stepManager.stepDone();
+            };
+        }
+
+        const btnDismiss = document.getElementById('btn-dismiss-hints');
+        if (btnDismiss) {
+            btnDismiss.onclick = () => {
+                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+                ns.closePendingModal();
+                ns.createBell(payload, { autoShake: false });
+                if (ns.stepManager) ns.stepManager.stepDone();
+            };
+        }
+
+        return true;
     };
 
     ns.showImportSuccess = function (count, groupId) {
@@ -151,18 +235,53 @@
         if (el) el.remove();
     };
 
-    ns.createBell = function (payload) {
-        if (document.getElementById(BELL_ID)) return;
+    // 修改：createBell 現在若 element 已存在會重新綁定 handler 並顯示；若不存在才建立新元素
+    ns.createBell = function (payload, options = {}) {
+        const autoShake = options && options.autoShake === true;
+        let existing = document.getElementById(BELL_ID);
+        if (existing) {
+            // 確保 click handler 與資料是最新的（允許在流程重啟後繼續使用）
+            existing.onclick = () => ns.openPendingModal(payload);
+            existing.style.display = '';
+            if (autoShake) {
+                existing.classList.remove('tm-bell-pulse');
+                void existing.offsetWidth;
+                existing.classList.add('tm-bell-pulse');
+                setTimeout(() => existing.classList.remove('tm-bell-pulse'), 750);
+            }
+            return true;
+        }
+
         const bell = document.createElement('div');
         bell.id = BELL_ID;
         bell.style.cssText = `position:fixed;bottom:30px;right:30px;width:56px;height:56px;background:linear-gradient(135deg, #00695c, #004d40);border-radius:50%;box-shadow:0 4px 15px rgba(0,77,64,0.4);z-index:9990;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,background 0.3s;`;
-
 
         bell.innerHTML = `<svg width="24" height="24" viewBox="0 0 16 16" fill="white"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg><span style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border:2px solid #fff;border-radius:50%;"></span>`;
         bell.onmouseenter = () => bell.style.transform = 'scale(1.1)';
         bell.onmouseleave = () => bell.style.transform = 'scale(1)';
         bell.onclick = () => ns.openPendingModal(payload);
         document.body.appendChild(bell);
+
+        if (autoShake) {
+            bell.classList.remove('tm-bell-pulse');
+            void bell.offsetWidth;
+            bell.classList.add('tm-bell-pulse');
+            setTimeout(() => bell.classList.remove('tm-bell-pulse'), 750);
+        }
+        return true;
+    };
+
+    // pulseBell：輕微動畫，用於 modal 完成後的 step（不震動）
+    ns.pulseBell = function () {
+        const bell = document.getElementById(BELL_ID);
+        if (!bell) return false;
+        bell.classList.remove('tm-bell-pulse');
+        // force reflow to restart animation
+        void bell.offsetWidth;
+        bell.classList.add('tm-bell-pulse');
+        // 清除 class 在動畫結束後
+        setTimeout(() => bell.classList.remove('tm-bell-pulse'), 750);
+        return false;
     };
 
     ns.destroyBell = function () {
@@ -170,15 +289,21 @@
         if (el) el.remove();
     };
 
+    // 恢復 shake 動作：加入 tm-bell-shaking class，並於結束後移除
     ns.shakeBell = function () {
         const bell = document.getElementById(BELL_ID);
-        if (bell) {
+        if (!bell) return false;
 
-            bell.classList.add('guide-hint');
+        // 避免重複加入動畫：先移除再強制 reflow
+        bell.classList.remove('tm-bell-shaking');
+        void bell.offsetWidth;
+        bell.classList.add('tm-bell-shaking');
 
+        // 保持與原本行為相容（2.5s 後移除）
+        setTimeout(() => {
             bell.classList.remove('tm-bell-shaking');
-            void bell.offsetWidth;
-            bell.classList.add('tm-bell-shaking');
-            setTimeout(() => bell.classList.remove('tm-bell-shaking'), 2500);   }
+        }, 2500);
+
+        return false;
     };
 })();

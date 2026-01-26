@@ -22,7 +22,9 @@
     --tm-text-black: #000; /* 標題黑字 */
     --radius-card: 18px;
 }
-
+.profile_avatar_section {
+    height: 560px;
+}
 .main-content2 {
     background-color: #f8fafc;
     overflow-y: auto;
@@ -36,11 +38,14 @@
 .member_section {
     background: linear-gradient(to bottom, rgba(98, 222, 177, 0.15) 0%, #ffffff 80px, #ffffff 100%);
     border-radius: var(--radius-card);
-    padding: 40px;
+    padding: 30px 60px 43px 60px;
+    margin-top: 40px;
     margin-bottom: 60px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
     position: relative;
+    z-index: 0;
 }
+
 .member_center_wrap {
     max-width: var(--mc-max-width);
     margin-left: auto;
@@ -69,11 +74,21 @@
     padding: 20px;
     background-color: var(--color_bk);
     border-radius: 12px;
-    border: 1px solid var(--color_Gray);
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
+    border: 1px solid rgb(188, 204, 219, 0.57);
+    height: 60vh;
+    line-height: 1.65;
 }
 
-@media (min-width: 992px) {
-    .auth-page {
+.profile_info_section {
+    height: 60vh;
+    line-height: 1.65;
+}
+    @media (min-width: 992px) {
+        .auth-page {
         height: 100vh;
     }
 
@@ -97,21 +112,19 @@
         flex: 1 1 320px; /* 固定寬度 */
         max-width: 400px;
         border-radius: 18px;
-        border: 1px solid var(--tm-gray);
         padding: 25px;
         background: #fff;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         align-items: center;
     }
 
     .profile_info_section {
         flex: 999 1 400px;
-        border: 2px solid var(--tm-gray);
         border-radius: 12px;
         padding: 25px;
         background: #fff;
-        border: 1px solid var(--color_Gray);
     }
 
     .profile_info_section {
@@ -119,9 +132,8 @@
         padding: 30px;
         background-color: var(--color_bk);
         border-radius: 18px;
-        border: 1px var(--color_Gray);
         min-width: 10px;
-        height: 35rem;
+/*        height: 35rem;*/
         white-space: normal;
         font-size: 18pt;
     }
@@ -150,6 +162,10 @@
 }
 
 @media (max-width: 991.98px) {
+    .member_section {
+        height: auto;
+        max-height: auto;
+    }
     .auth-page {
         height: auto;
         overflow: auto;
@@ -167,16 +183,18 @@
         width: 100%;
         max-width: none;
         min-width: 0;
-        min-height: 25rem;
+        max-height: 26rem;
         border-radius: 12px;
         box-sizing: border-box;
         align-content: center;
-        border: 1px solid var(--color_Gray);
+        border: 1px solid rgb(188, 204, 219, 0.57);
+        margin-bottom: 30px;
     }
 
     .profile_info_section {
         white-space: normal;
         font-size: 14pt;
+/*        height: 100%;*/
     }
 
     #profile_section .row {
@@ -188,16 +206,7 @@
         margin: 0;
     }
 
-    .info_row {
-        font-size: 18pt;
-        margin-left: 25px;
-    }
 
-    /* 資料行樣式 */
-    .info_item {
-        border-bottom: 1px dashed #eee;
-        padding: 15px 0;
-    }
 
     #profile_section [class*="col-"] {
         width: 100%;
@@ -206,9 +215,4 @@
         padding-right: 0;
     }
 
-    .profile_avatar_section .avatar_frame, .profile_avatar_section .avatar_btns {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
 }
