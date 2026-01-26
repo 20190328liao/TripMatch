@@ -11,10 +11,10 @@
 
     var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
 }
-@section Styles{
-    <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
+@section Styles {
+    @* <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
   
-    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" /> *@
 
     <style>
 
@@ -23,197 +23,185 @@
 
 
 <div class="main-content2">
-<div class="member_center_wrap container">
+    <div class="member_center_wrap container">
 
-    <!-- =============================================
-         區塊一：個人資料
-         ============================================= -->
-    <section class="member_section" id="profile_section">
+        <!-- =============================================
+             區塊一：個人資料
+             ============================================= -->
+        <section class="member_section" id="profile_section">
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            
-            <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
+            <div class="d-flex justify-content-between align-items-center mb-3">
 
-        </div>
+                <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
 
-        @* <!-- 通知列 -->
+            </div>
+
+            @* <!-- 通知列 -->
         <div class="notification_bar">
             <i class="bi bi-bell"></i>
         </div> *@
 
-        <div class="profile_container row g-4">
-            @* g-4 增加左右間距 *@
+            <div class="profile_container">
+                @* g-4 增加左右間距 *@
 
-            <div class="profile_avatar_section col-12 col-md-6 d-flex flex-column align-items-center justify-content-center">
-                <div class="avatar_frame">
-                    <img src="@avatarUrl" alt="會員頭像" id="memberAvatar" class="memberAvatar">
-                </div>
-                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp"
-                       style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" />
+                <div class="profile_avatar_section">
+                    <div class="avatar_frame">
+                        <img src="@avatarUrl" alt="會員頭像" id="memberAvatar" class="memberAvatar">
+                    </div>
+                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp"
+                           style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" />
 
-                <div class="avatar_btns mt-3">
-                    <button type="button" class="btn btn_light btn-sm" id="btnEditAvatar">編輯頭像</button>
-                </div>
+                    <div class="avatar_btns mt-3">
+                        <button type="button" class="btn btn_light btn-sm" id="btnEditAvatar">編輯頭像</button>
+                    </div>
                     <button type="button" class="btn btn_Gray btn-sm" id="btnLogout">登 出</button>
-            </div>
+                </div>
 
-            <div class="profile_info_section col-12 col-md-6">
-                <div class="info_row">
-                    <div class="info_item">
-                        <label class="info_label">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-person" viewBox="0 0 16 16">
-                                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
-                            </svg>帳號
-                        </label>
-                        <div class="info_value d-flex align-items-center gap-1">
-                            <span id="displayEmail">example@gmail.com</span>
-                            <input id="inputEmail" type="email" class="form-control d-none" />
-
-                        </div>
-                      <div class="info_item">
-                            <label class="info_label name_label">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-gear" viewBox="0 0 16 16">
-                                    <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0" />
-                                    <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z" />
-                                </svg>自訂名稱
+                <div class="profile_info_section col-12 col-md-6">
+                    <div class="info_row">
+                        <div class="info_item">
+                            <label class="info_label">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-person" viewBox="0 0 16 16">
+                                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+                                </svg>帳號
                             </label>
-                        <div class="info_value d-flex align-items-center gap-1">
-                            <span id="displayName">example</span>
-                            <input id="inputName" type="text" class="form-control d-none" />
-                            <button id="btnEditName" class="btn btn_link edit_link p-0">編輯</button>
-                            <button id="btnSaveName" class="btn btn_light btn-sm d-none">確認</button>
-                            <button id="btnCancelName" class="btn btn_light btn-sm d-none">取消</button>
-                        </div>
-                    </div>
+                            <div class="info_value d-flex align-items-center gap-1">
+                                <span id="displayEmail">example@gmail.com</span>
+                                <input id="inputEmail" type="email" class="form-control d-none" />
 
-                    </div>
-                </div>
-
-                <div class="info_row">
-                    <div class="info_item">
-                        <label class="info_label">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
-                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
-                            </svg>備援信箱
-                        </label>
-                        <div class="info_value d-flex align-items-center gap-2">
-                            <span id="displayBackupEmail">example2@gmail.com</span>
-                            <input id="inputBackupEmail" type="email" class="form-control d-none" />
-                            <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
-                            <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
-                            <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
-                        </div>
-                        
-                    </div>
+                            </div>
+                            <div class="info_item">
+                                <label class="info_label name_label">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-gear" viewBox="0 0 16 16">
+                                        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0" />
+                                        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z" />
+                                    </svg>自訂名稱
+                                </label>
+                                <div class="info_value d-flex align-items-center gap-1">
+                                    <span id="displayName">example</span>
+                                    <input id="inputName" type="text" class="form-control d-none" />
+                                    <button id="btnEditName" class="btn btn_link edit_link p-0">編輯</button>
+                                    <button id="btnSaveName" class="btn btn_light btn-sm d-none">確認</button>
+                                    <button id="btnCancelName" class="btn btn_light btn-sm d-none">取消</button>
+                                </div>
+                                <label class="info_label">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
+                                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z" />
+                                    </svg>備援信箱
+                                </label>
+                                <div class="info_value d-flex align-items-center gap-2">
+                                    <span id="displayBackupEmail">example2@gmail.com</span>
+                                    <input id="inputBackupEmail" type="email" class="form-control d-none" />
+                                    <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
+                                    <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
+                                    <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
+                                </div>
                             <div id="emailHint" class="emailHint d-block "></div>
-                    <div class="info_item">
-                        <div class="info_item2">
-                            <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link">修改密碼</a><span>｜</span><a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
+                            </div>
+                         
+                        </div>
+                    </div>
+
+                    <div class="info_row">
+
+                        <div class="info_item">
+                            <div class="info_item2">
+                                <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link and1">修改密碼</a>｜<a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- =============================================
-         區塊二：個人行事曆
-         ============================================= -->
-    <section class="member_section" id="calendar_section">
-        <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
-        <div class="calendar_legend mb-3">
-      <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
-        </div>
-
-
-        <div class="container">
-            <div class="row g-3 align-items-start">
-                <!-- 左：月份選擇器 -->
-                <div class="col-sm-12 col-md-3 months-panel">
-                    <header class="year-header d-flex justify-content-between align-items-center">
-                        <button class="year-left btn btn-sm btn-link">◀</button>
-                        <div class="year-display">2026年</div>
-                        <button class="year-right btn btn-sm btn-link">▶</button>
-                    </header>
-
-                    <div class="months-grid mt-2"></div>
-                </div>
-
-                <!-- 中：日曆 -->
-                <div class="col-sm-12 col-md-6 month-panel">
-                    <header class="month-header d-flex justify-content-between align-items-center">
-                        <button class="month-left btn btn-sm btn-link">◀</button>
-                        <div class="month-display">January 2026</div>
-                        <button class="month-right btn btn-sm btn-link">▶</button>
-                    </header>
-
-                    <div class="week mt-2 d-flex justify-content-between small text-muted">
-                        <div>週一</div>
-                        <div>週二</div>
-                        <div>週三</div>
-                        <div>週四</div>
-                        <div>週五</div>
-                        <div>週六</div>
-                        <div>週日</div>
-                    </div>
-
-                    <div class="days mt-2"></div>
-
-                    @* <div class="display-selected mt-3">
-                        <p class="selected"></p>
-                    </div> *@
-                </div>
-
-                <!-- 右：清單（草稿 + 已提交） -->
-                <aside class="col-sm-12 col-md-3 list-panel">
-                    <div class="list-header mb-2">
-                        <h5 class="mb-0">目前選擇</h5>
-                        <small class="text-muted">提示</small>
-                    </div>
-
-                    <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
-                        @* 由 Calendar.js 填入，每列格式如 "2026年1月1日" *@
-                    </div>
-                </aside>
-            </div>
-
-            @* 共用按鈕放在底部一列，手機會縮滿寬度 *@
-
-              
-                <div class="col-12">
-                    <div id="importCalendarMessage" class="alert d-none mt-3" role="alert" style="max-width:600px;"></div>
-                </div>
-            </div>
-            <div class="row mt-3">
-
-        </div>
-            <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100">
-                <button class="confirm btn1 btn-confirm">提交</button>
-                <button class="edit btn1 btn-edit">開始編輯</button>
-                <button class="btn-delete btn1 btn-danger1">刪除</button>
-
-                <!-- 匯入 JSON 日曆 -->
-                <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
-                <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入 JSON 日曆</button>
-            </div>
+        <!-- =============================================
+             區塊二：個人行事曆
+             ============================================= -->
+        <section class="member_section" id="calendar_section">
+            <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
             <div class="calendar_legend mb-3">
-                <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
-                <div class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</div>
-                <div class="legend-item">
-                    <span class="dot range-start"></span>
-                    <span class="dot range-end"></span>
-                    開始：粉藍；結束：橘（範圍選擇）
-                </div>
-                <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
-                <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
+                <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
             </div>
-    </section>
 
-    <!-- =============================================
-         區塊三：願望清單
-         ============================================= -->
+            <div class="container calendar-container">
+                <div class="calendar-three-col">
+                    <!-- 左：月份選擇器 + 已選時段（將原本的 list-panel 移入此處） -->
+                    <div class="month-panel-wrapper">
+                    <div class="months-panel">
+                        <header class="year-header d-flex justify-content-between align-items-center">
+                                <button class="year-left nav-btn">◀</button>
+                            <div class="year-display">2026年</div>
+                            <button class="year-right nav-btn">▶</button>
+                        </header>
 
+                        <div class="months-grid mt-2"></div>
 
+                        <hr style="border-color:#eee" />
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
+                            <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
+                        </div>
+
+                        <div class="list-scroll-area">
+                            <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
+                                @* 由 Calendar.js 填入；若本月無選擇會顯示「本月份尚無選擇的日期」 *@
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    <!-- 右：清單，保留右側如需其他內容可放此處 -->
+                    <div class="months-panel-wrapper">
+                        <!-- 中：日曆 -->
+                    <div class="month-panel">
+                        <header class="month-header d-flex justify-content-between align-items-center">
+                                <button class="month-left nav-btn">◀</button>
+                            <div class="month-display">January 2026</div>
+                                <button class="month-right nav-btn">▶</button>
+                        </header>
+
+                        <div class="week mt-2 d-flex justify-content-between small text-muted">
+                            <div>週一</div>
+                            <div>週二</div>
+                            <div>週三</div>
+                            <div>週四</div>
+                            <div>週五</div>
+                            <div>週六</div>
+                            <div>週日</div>
+                        </div>
+
+                        <div class="days mt-2"></div>
+                    </div>
+                    </div>
+
+                </div>
+                <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100 mt-3">
+                    <button class="confirm btn1 btn-confirm" id="btn-confirm">提交</button>
+                    <button class="edit btn1 btn-edit">開始編輯</button>
+                    <button class="btn-delete btn1 btn-danger1">刪除</button>
+
+                    <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
+                    <button type="button" id="btnExportCalendar" class="btn2 btn-outline2">匯出檔</button>
+                    <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入檔</button>
+                </div>
+
+                <div class="calendar_legend mb-3 mt-3">
+                    <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
+                    <div class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</div>
+                    <div class="legend-item">
+                        <span class="dot range-start"></span>
+                        <span class="dot range-end"></span>
+                        開始：粉藍；結束：橘（範圍選擇）
+                    </div>
+                    <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
+                    <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================
+             區塊三：願望清單
+             ============================================= -->
         <!-- 願望清單卡片容器：由 wishlist.js 動態塞入 -->
         @model IEnumerable<TripMatch.Models.Settings.WishlistCard>
         @{
@@ -224,73 +212,68 @@
 
         <section class="member_section" id="wishlist_section">
             <div class="section_header d-flex align-items-center justify-content-between">
-            <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
+                <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>
             </div>
 
-        <!-- 分類按鈕群組 (左側面板將顯示此處) -->
-        <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">
-            <div class="row g-3">
-                <aside class="col-12 col-lg-3 wishlist-left-panel">
-                    <div id="wishlist_categories" class="wishlist_categories mb-3">
-                        <!-- 由 wishlist.js 動態填充 -->
-                    </div>
-                </aside>
 
-                <div class="col-12 col-lg-9 wishlist-right-panel">
-                    <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                        @if (!cards.Any())
-                        {
-                            <div class="col-12 text-center py-5">
-                                <p class="text-muted">目前沒有願望清單，快去探索景點吧！</p>
-                            </div>
-                        }
-                        else
-                        {
-                            @foreach (var item in cards)
+            <!-- 分類按鈕群組 (左側面板將顯示此處) -->
+            <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">
+                <div class="row g-3">
+                    <aside class="col-12 col-lg-3 wishlist-left-panel">
+                        <div id="wishlist_categories" class="wishlist_categories mb-3">
+                            <!-- 由 wishlist.js 動態填充 -->
+                        </div>
+                    </aside>
+
+                    <div class="col-12 col-lg-9 wishlist-right-panel">
+                        <div id="wishlist_cards" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                            @if (cards.Any())
                             {
-                                var googleId = item.GooglePlaceId ?? item.ExternalPlaceId ?? "";
-                                <div class="col">
-                                    <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
-                                        @* 移除收藏按鈕 (愛心) *@
-                                    <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
-                                                title="從清單移除">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
-                                            <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
-                                        </svg>
-                                        </button>
+                                @foreach (var item in cards)
+                                {
+                                    var googleId = item.GooglePlaceId ?? item.ExternalPlaceId ?? "";
+                                    <div class="col">
+                                        <div class="card h-100 shadow-sm border-0 position-relative wishlist-item">
+                                            @* 移除收藏按鈕 (愛心) *@
+                                            <button type="button" class="btn_remove_wish active" data-spotid="@item.SpotId"
+                                                    title="從清單移除">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-suit-heart-fill" viewBox="0 0 16 16">
+                                                    <path d="M4 1c2.21 0 4 1.755 4 3.92C8 2.755 9.79 1 12 1s4 1.755 4 3.92c0 3.263-3.234 4.414-7.608 9.608a.513.513 0 0 1-.784 0C3.234 9.334 0 8.183 0 4.92 0 2.755 1.79 1 4 1" />
+                                                </svg>
+                                            </button>
 
-                                        <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
-                                             style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                                            <img src="@item.FirstImageUrl" class="card-img-top" alt="@item.Name_ZH"
+                                                 style="height: 180px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
 
-                                        <div class="card-body d-flex flex-column">
-                                            <h5 class="card-title">@item.Name</h5>
-                                            <p class="card-text text-truncate">@item.Address</p>
+                                            <div class="card-body d-flex flex-column">
+                                                <h5 class="card-title">@item.Name</h5>
+                                                <p class="card-text text-truncate">@item.Address</p>
 
 
-                             
-                                        <div class="card-footer bg-transparent border-0 pb-2">
-                                            @* 使用 text-start 讓文字靠左 *@
-                                            <div class="btnSpot btn-view-more w-100 text-start" style="cursor:pointer;">
-                                                View More
+
+                                                <div class="card-footer bg-transparent border-0 pb-2">
+                                                    @* 使用 text-start 讓文字靠左 *@
+                                                    <div class="btnSpot btn-view-more w-100 text-start" style="cursor:pointer;">
+                                                        View More
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        </div>
                                     </div>
-                                </div>
+                                }
                             }
-                        }
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </section>
         @* 全域的 View more 連結移除（每張卡片會由前端產生其 own View more） *@
 
-    
-</div>
+
+    </div>
 </div>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
@@ -300,10 +283,31 @@
     <script src="~/js/AuthApi/Calendar.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/wishlist.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/memberCenter.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/memberCenter-email.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/logout.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/viewSpot.js" asp-append-version="true"></script>
-
+    <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-ui.js" asp-append-version="true"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 監聽 #btn-confirm 的點擊事件
+            const btnConfirm = document.getElementById('btn-confirm');
+
+            if (btnConfirm) {
+                btnConfirm.addEventListener('click', function() {
+                    // 您原本的儲存邏輯會在這裡執行 (例如 AJAX submit)
+                    // 我們額外觸發鈴鐺搖動事件
+
+                    // 為了讓使用者感覺到「儲存後」才提示，可以加一點延遲 (例如 0.5 秒)
+                    setTimeout(() => {
+                        console.log('Triggering bell shake...'); // 除錯用
+                        document.dispatchEvent(new CustomEvent('calendar:saved'));
+                    }, 500);
+                });
+            } else {
+                console.warn('找不到 #btn-confirm 按鈕，請確認 ID 是否正確');
+            }
+        });
     </script>
 }
 

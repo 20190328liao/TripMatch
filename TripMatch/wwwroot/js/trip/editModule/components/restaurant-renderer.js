@@ -24,7 +24,7 @@
         let html = `
             <div class="restaurant-section mb-4 p-3 bg-white rounded shadow-sm border">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold m-0 text-danger"><i class="bi bi-cup-hot-fill me-2"></i>美食行程總覽</h6>
+                    <h6 class="fw-bold m-0 text-success"><i class="bi bi-cup-hot-fill me-2"></i>美食行程總覽</h6>
                     <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill border border-danger border-opacity-25">${restaurants.length} 間</span>
                 </div>
                 <div class="restaurant-list-container d-flex flex-column gap-2">

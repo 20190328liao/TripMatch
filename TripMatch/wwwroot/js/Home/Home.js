@@ -27,11 +27,12 @@ function toggleLogin() {
 
     // 這裡是抓取 Layout 上的導覽列 ID，確保 _Layout.cshtml 裡有 id="navAuth"
     const navAuth = document.getElementById('navAuth');
+    const name = window.currentUserName || '使用者';
 
     if (isLoggedIn) {
         // 更新首頁內容
         if (statusText) {
-            statusText.innerText = "已登入";
+            statusText.innerText = "歡迎您，" + name + " 用戶";
             statusText.style.color = "var(--btn-dark)";
         }
         if (actionBtn) actionBtn.innerText = "下一步 (開始規劃)";
@@ -44,7 +45,7 @@ function toggleLogin() {
                     <div id="userMenu" class="custom-dropdown-menu">
                         <div class="menu-group-title">會員中心</div>
                         <a href="#"><i class="fa-regular fa-circle-user"></i> 個人資料</a>
-                        <a href="#"><i class="fa-regular fa-calendar-check"></i> 媒合行事曆</a>
+                        <a href="#"><i class="fa-regular fa-calendar-check"></i> 個人行事曆</a>
                         <div class="menu-divider"></div>
                         <div class="menu-group-title">我的行程</div>
                         <a href="#"><i class="fa-solid fa-suitcase"></i> 查看所有行程</a>
@@ -67,6 +68,41 @@ function toggleLogin() {
         }
     }
 }
+
+// 更新登入狀態 UI 的可重用函式（歡迎文字）
+function updateAuthUi() {
+  const isAuth = (String(window.isAuthenticated) === 'true') || window.isAuthenticated === true;
+  const name = window.currentUserName || '';
+  const statusEl = document.getElementById('loginStatus');
+  const mainBtn = document.getElementById('mainActionButton');
+
+  if (statusEl) {
+    statusEl.innerText = isAuth ? ('歡迎您，' + name + ' 用戶') : '未登入';
+    statusEl.style.color = isAuth ? 'var(--btn-dark)' : 'white';
+  }
+
+  if (mainBtn) {
+    if (isAuth) {
+      mainBtn.innerText = '下一步 (開始規劃)';
+      // optional: adjust href if server rendered login link
+      if (mainBtn.getAttribute('href') && mainBtn.getAttribute('href').includes('/Auth/Login')) {
+        mainBtn.setAttribute('href', '/Match/Index');
+      }
+    } else {
+      mainBtn.innerText = '請先登入';
+    }
+  }
+}
+
+// 在 DOM ready 時執行一次
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', updateAuthUi, { once: true });
+} else {
+  updateAuthUi();
+}
+
+// 對外暴露，登入後若不重新整理可呼叫此函式同步 UI
+window.updateAuthUi = updateAuthUi;
 
 // 檢查加入行程的輸入框 (控制按鈕顏色變化)
 function checkJoinInput() {
@@ -96,3 +132,113 @@ function joinTrip() {
 function createTrip() {
     window.location.href = '/Match/Create';
 }
+
+
+/* ==========================================
+   吉祥物 Canvas 動畫邏輯 (5組動作 + 尺寸修正版)
+   ========================================== */
+function initMascotAnimation() {
+    const canvas = document.getElementById('mascotCanvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    // 設定互動游標
+    canvas.style.cursor = 'pointer';
+
+    const spriteSheet = new Image();
+    // ★ 請確認您的新圖片檔名與路徑
+    spriteSheet.src = "/img/animate.png";
+
+    // === 參數設定 ===
+    const cols = 5;            // 總共有 5 個動作
+    const rows = 1;            // 直向 1 列
+    const totalFrames = 5;     // 總幀數
+
+    // ★ 精準裁切設定 (解決 1015mm vs 1000mm 的誤差)
+    // 如果圖片右邊有多餘留白，設為 true；如果圖片是剛好切分，設為 false
+    const usePreciseWidth = true;
+    const logicalWidthRatio = 200 / 1015; // 單格 200mm / 總寬 1015mm
+
+    // 動畫顯示設定
+    const animationSpeed = 15; // 速度 (數字越大越慢)
+    const maxDisplayHeight = 250;
+
+    let spriteWidth = 0;
+    let spriteHeight = 0;
+    let currentFrame = 0;
+    let frameDrawn = 0;
+    let isPaused = false;
+    let animationId; // 用於管理 requestAnimationFrame
+
+    // 點擊切換 暫停/播放
+    canvas.addEventListener('click', function () {
+        isPaused = !isPaused;
+    });
+
+    spriteSheet.onload = function () {
+        // 計算單格尺寸
+        if (usePreciseWidth) {
+            // 使用比例計算：總寬 * (200/1015)
+            spriteWidth = spriteSheet.width * logicalWidthRatio;
+        } else {
+            // 標準均分計算
+            spriteWidth = spriteSheet.width / cols;
+        }
+
+        spriteHeight = spriteSheet.height / rows;
+        animate();
+    };
+
+    spriteSheet.onerror = function () {
+        console.error("找不到圖片，請確認路徑：/img/animate.png");
+    };
+
+    function animate() {
+        // 清除畫布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 計算當前幀 (0 ~ 4 循環)
+        let position = currentFrame % totalFrames;
+
+        // 計算裁切 X 座標
+        // 這裡確保每次都精準移動一個 spriteWidth 的距離
+        let srcX = position * spriteWidth;
+        let srcY = 0;
+
+        // === 縮放與置中邏輯 ===
+        // 計算縮放比例 (維持原圖比例)
+        const scaleRatio = maxDisplayHeight / spriteHeight;
+
+        const displayWidth = spriteWidth * scaleRatio;
+        const displayHeight = maxDisplayHeight;
+
+        // 計算置中座標 (在 1600 寬度的 Canvas 中置中)
+        const dx = (canvas.width - displayWidth) / 2;
+        const dy = (canvas.height - displayHeight) / 2;
+
+        // 繪製圖片
+        // drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight)
+        ctx.drawImage(
+            spriteSheet,
+            srcX, srcY, spriteWidth, spriteHeight,
+            dx, dy, displayWidth, displayHeight
+        );
+
+        // 更新下一幀
+        if (!isPaused) {
+            frameDrawn++;
+            if (frameDrawn >= animationSpeed) {
+                currentFrame++;
+                frameDrawn = 0;
+            }
+        }
+
+        animationId = requestAnimationFrame(animate);
+    }
+}
+
+// 執行初始化
+document.addEventListener("DOMContentLoaded", function () {
+    initMascotAnimation();
+});

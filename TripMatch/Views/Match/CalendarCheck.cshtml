@@ -12,39 +12,24 @@
 
 <link rel="stylesheet" href="~/css/Match/CalendarCheck.css" />
 
-<div class="page-wrap">
+<style>
+</style>
 
+<div class="page-wrap">
     <div id="selectionSection" class="@(isSubmitted ? "d-none" : "")">
         <div class="calendar-container">
             <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
             <p class="text-center text-muted mb-4">系統已自動帶入您在會員中心的設定，請確認本次行程的可用時段</p>
 
-            @* <div class="d-flex justify-content-center gap-2 mb-4">
-                <span class="badge bg-white text-dark border">● 今天</span>
-                <span class="badge bg-light text-muted border">░ 非揪團期間</span>
-                <span class="badge" style="background:#dbeafe; color:#1e40af">■ 已選取</span>
-                <span class="badge" style="background:#16a34a; color:white">● 我可以參加</span>
-            </div> *@
+            <div id="groupRangeInfo" class="text-center mb-4 d-none" style="font-size:0.95rem; color:var(--text-muted)">
+                揪團期間：尚未設定
+            </div>
+
             <div class="calendar-legend">
-                <div class="legend-item">
-                    <span class="legend-marker marker-today"></span>
-                    <span>今天</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-locked"></span>
-                    <span>非揪團期間</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-selected"></span>
-                    <span>已選取</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-marker marker-joinable"></span>
-                    <span>我可以參加</span>
-                </div>
+                <div class="legend-item"><span class="legend-marker marker-today"></span><span>今天</span></div>
+                <div class="legend-item"><span class="legend-marker marker-locked"></span><span>非揪團期間</span></div>
+                <div class="legend-item"><span class="legend-marker marker-selected"></span><span>已選取</span></div>
+                <div class="legend-item"><span class="legend-marker marker-joinable"></span><span>我可以參加</span></div>
             </div>
 
             <div class="row g-4">
@@ -55,11 +40,8 @@
                             <div class="year-display">2026</div>
                             <button class="year-right nav-btn">▶</button>
                         </div>
-
                         <div class="months-grid mb-4"></div>
-
                         <hr style="border-color:#eee" />
-
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
                             <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
@@ -76,26 +58,15 @@
                         <div class="month-display">January 2026</div>
                         <button class="month-right nav-btn">▶</button>
                     </div>
-
                     <div class="week-header">
-                        <div>週一</div>
-                        <div>週二</div>
-                        <div>週三</div>
-                        <div>週四</div>
-                        <div>週五</div>
-                        <div>週六</div>
-                        <div style="color:#ef4444">週日</div>
+                        <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div><div style="color:#ef4444">週日</div>
                     </div>
-
                     <div class="days"></div>
                 </div>
             </div>
 
             <div class="row mt-5">
                 <div class="col-12 text-center">
-                    @* <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
-                        確認提交，下一步
-                    </button> *@
                     <button id="btnSubmit" onclick="submitSlots()" class="btn btn-submit-custom btn-lg">
                         <span class="btn-main-text">確認提交</span>
                         <span class="btn-sub-text">下一步</span>
@@ -113,25 +84,18 @@
                 </div>
             </div>
             <h3 class="fw-bold text-dark mb-3">時間已鎖定 🔒</h3>
-            <p class="text-muted mb-4">
-                您已完成提交！正在等待其他夥伴...<br>
-                全員完成後，系統將自動跳轉至結果頁。
-            </p>
+            <p class="text-muted mb-4">您已完成提交！正在等待其他夥伴...<br>全員完成後，系統將自動跳轉至結果頁。</p>
             <div class="bg-light px-4 py-2 rounded-pill d-inline-block mb-4">
                 目前狀態：<span id="progressText" class="fw-bold" style="color:var(--dark-mint)">連線中...</span>
             </div>
         </div>
     </div>
-
 </div>
 
-<div class="modal-overlay active" id="calendarModal">
+<div class="modal-overlay" id="calendarModal">
     <div class="custom-modal">
-
         <div class="modal-top-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z" /></svg>
         </div>
 
         <h2 class="modal-title">設定你的行事曆</h2>
@@ -140,33 +104,25 @@
         <div class="feature-box">
             <div class="feature-item">
                 <div class="feature-icon icon-blue">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" /></svg>
                 </div>
                 <div class="feature-text">
                     <h4>自動偵測可用時間</h4>
                     <p>系統會自動分析您的行事曆，標示出可以出發的日期</p>
                 </div>
             </div>
-
             <div class="feature-item">
                 <div class="feature-icon icon-green">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 6 6.5 9.5 3 12l3.5 2.5L9 18l2.5-3.5L15 12l-3.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 6 6.5 9.5 3 12l3.5 2.5L9 18l2.5-3.5L15 12l-3.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" /></svg>
                 </div>
                 <div class="feature-text">
                     <h4>一次設定，永久使用</h4>
                     <p>之後每次時間媒合都可以直接帶入，省去重複設定的麻煩</p>
                 </div>
             </div>
-
             <div class="feature-item">
                 <div class="feature-icon icon-purple">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
                 </div>
                 <div class="feature-text">
                     <h4>提高協調效率</h4>
@@ -176,14 +132,11 @@
         </div>
 
         <div class="d-grid">
-            <button class="btn btn-primary-mint" onclick="goToMemberCenter()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" />
-                </svg>
-                前往設定行事曆
+            <button id="btnImportFromCheck" class="btn btn-primary-mint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" /></svg>
+                匯入個人行事曆
             </button>
-
-            <button class="btn btn-secondary-light" onclick="closeModal()">
+            <button id="closeModal" class="btn btn-secondary-light">
                 先跳過，稍後再設定
             </button>
         </div>
@@ -191,265 +144,249 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/AuthApi/Datehelper.js"></script>
+    <script src="~/js/AuthApi/Datehelper.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-ui.js" asp-append-version="true"></script>
+    <script src="~/js/AuthApi/calendar-plugin.js" asp-append-version="true"></script>
 
     <script>
         const currentGroupId = '@groupId';
-        const isSubmittedInit = @isSubmittedJs;
-        const hasFilledCalendar = @Json.Serialize(hasData);
+        const currentGroupIdInt = parseInt(currentGroupId || '0', 10);
+        const recommendationsUrlServer = '@Url.Action("Recommendations", "Match", new { id = (ViewData["GroupId"] ?? 0) })';
+        const isSubmittedInit = '@isSubmitted.ToString().ToLower()' === 'true';
+
+        let targetDays = 1;
+        let selectedRanges = [];
         let pollingInterval;
 
-        document.addEventListener("DOMContentLoaded", async function() {
+        function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
 
-            // 1. 讀取後端 ViewData 決定是否顯示 Modal
-            // 邏輯：後端查 DB 發現這個人沒填過資料 -> shouldShowPrompt = true
-            var shouldShowPrompt = @((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false");
+        function goToMemberCenter() {
+            sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
+            window.location.href = '/Auth/MemberCenter#calendar_section';
+        }
 
+        // 修正：確實隱藏 Modal，包含清除 inline style
+        function dismissCalendarModal() {
+            sessionStorage.removeItem('calendar_check_pending');
             const modal = document.getElementById('calendarModal');
-
-            // 2. 顯示 Modal 的判斷 (不再看 localStorage)
-            // 只要後端說要顯示 (shouldShowPrompt) 且 Modal 元素存在，就彈出來
-            if (shouldShowPrompt && modal) {
-                modal.classList.add('active');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none'; // 強制隱藏，覆蓋可能存在的 display:flex
             }
+        }
 
-            // 3. 處理頁面狀態 (這部分保留你原本的邏輯)
-            // 這裡假設 isSubmittedInit 是你原本在上方定義好的變數 (判斷是否已提交)
-            if (typeof isSubmittedInit !== 'undefined' && isSubmittedInit) {
-                showWaitingMode();
+        // --- ★ 修改：引導提示 (改為固定選第一個可用位置) ---
+        function initGuideHints() {
+            document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
+            const availableCells = Array.from(document.querySelectorAll('.day-cell:not(.empty):not(.locked)'));
 
-                // ★★★ 記得加入這行：開始輪詢狀態 ★★★
-                // 這樣在等待頁面才會每幾秒去問後端 "大家填完了沒?"
-                setInterval(checkStatus, 3000);
-                checkStatus();
-
-            } else {
-                // 還沒提交，初始化行事曆讓使用者填寫
-                if (typeof initCalendar === 'function') {
-                    await initCalendar();
-                }
+            if (availableCells.length > 0) {
+                const target = availableCells[0];
+                target.classList.add('guide-highlight');
+                const removeHint = () => {
+                    target.classList.remove('guide-highlight');
+                    target.removeEventListener('mousedown', removeHint);
+                    target.removeEventListener('mouseenter', removeHint);
+                };
+                target.addEventListener('mousedown', removeHint);
+                target.addEventListener('mouseenter', removeHint);
             }
+        }
+
+        document.addEventListener('calendarui:dismissHints', () => {
+            document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
         });
 
+        // --- 渲染清單 ---
+        function renderList() {
+            const $list = document.getElementById('calendarList');
+            const $count = document.getElementById('selectedCount');
+            if (!$list) return;
+
+            selectedRanges.sort((a, b) => a.start.localeCompare(b.start));
+
+            if (selectedRanges.length === 0) {
+                $list.innerHTML = '<div class="text-muted text-center mt-3 fs-7">尚無選取區段</div>';
+                if($count) $count.textContent = '0';
+                return;
+            }
+
+            $list.innerHTML = selectedRanges.map(r => {
+                const isEnough = r.days >= targetDays;
+                return `
+                <div class="calendar-list-item ${isEnough ? '' : 'border-danger'}">
+                    <div>
+                        <div class="fw-bold ${r.valid ? 'text-success' : 'text-danger'}" style="font-size:0.95rem">
+                            ${r.start.slice(5)} ~ ${r.end.slice(5)}
+                        </div>
+                        <small class="${isEnough ? 'text-muted' : 'text-danger fw-bold'}" style="font-size:0.85rem">
+                            ${r.days} 天 (${isEnough ? '符合需求' : '天數不足'})
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onclick="window.removeRange('${r.start}')">✕</button>
+                </div>`;
+            }).join('');
+            if($count) $count.textContent = selectedRanges.filter(r => r.valid).length;
+        }
+
+        window.removeRange = function(startIso) {
+            const idx = selectedRanges.findIndex(r => r.start === startIso);
+            if(idx >= 0) {
+                selectedRanges.splice(idx, 1);
+                if(window._tripmatch_calendar_instance?.render) window._tripmatch_calendar_instance.render();
+                else renderList();
+            }
+        };
+
+        // --- 提交與狀態 ---
         async function submitSlots() {
-             const validRanges = selectedRanges.filter(r => r.valid);
-             if(validRanges.length === 0) { alert("您沒有選擇任何「符合天數要求」的日期區段！"); return; }
-             if(!confirm(`您已選擇 ${validRanges.length} 個有效時段，確定提交嗎？`)) return;
+            if (!hasValidGroupId()) { alert('無效的揪團 ID'); return; }
+            const validRanges = selectedRanges.filter(r => r.valid);
+            if (validRanges.length === 0) { alert("沒有符合天數要求的時段！"); return; }
+            if (!confirm(`提交 ${validRanges.length} 個時段？`)) return;
 
-             const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
-             const btn = document.getElementById('btnSubmit');
-             if(btn) { btn.disabled = true; btn.innerText = "提交中..."; }
+            const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
+            const btn = document.getElementById('btnSubmit');
+            if (btn) btn.disabled = true;
 
-             try {
-                 const res = await fetch(`/api/timewindow/${currentGroupId}/available`, {
-                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(slots)
-                 });
-                 if(res.ok) { showWaitingMode(); }
-                 else {
-                     const err = await res.json(); alert("提交失敗：" + (err.message || "未知錯誤"));
-                     if(btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
-                 }
-             } catch(e) {
-                 console.error(e); alert("連線錯誤");
-                 if(btn) { btn.disabled = false; btn.innerText = "確認提交，下一步"; }
-             }
+            try {
+                const res = await fetch(`/api/timewindow/${encodeURIComponent(currentGroupId)}/available`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(slots)
+                });
+                if (res.ok) {
+                    sessionStorage.removeItem('calendar_draft_ranges');
+                    showWaitingMode();
+                } else {
+                    alert("提交失敗");
+                    if (btn) btn.disabled = false;
+                }
+            } catch (e) { alert("連線錯誤"); if (btn) btn.disabled = false; }
         }
 
         function showWaitingMode() {
-            const sel = document.getElementById('selectionSection');
-            const wait = document.getElementById('waitingSection');
-            if(sel) sel.classList.add('d-none');
-            if(wait) wait.classList.remove('d-none');
-            checkStatus();
-            if(pollingInterval) clearInterval(pollingInterval);
-            pollingInterval = setInterval(checkStatus, 3000);
+            document.getElementById('selectionSection')?.classList.add('d-none');
+            document.getElementById('waitingSection')?.classList.remove('d-none');
+            if (hasValidGroupId()) checkStatus();
+            pollingInterval = setInterval(() => { if (hasValidGroupId()) checkStatus(); }, 3000);
         }
-
-                // 檔案：TripMatch/Views/Match/CalendarCheck.cshtml
 
         async function checkStatus() {
             try {
                 const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
                 if (res.ok) {
-                    const statusData = await res.json();
-
-                    // 這裡現在可以正常顯示人數了 (因為後端補了欄位)
-                    const textEl = document.getElementById('progressText');
-                    if(textEl) textEl.innerText = `${statusData.submittedCount} / ${statusData.memberCount} 人已提交`;
-
-                    // 這裡現在可以讀到 "COMPLETED" 了
-                    if (statusData.status === "COMPLETED") {
+                    const data = await res.json();
+                    document.getElementById('progressText').innerText = `${data.submittedCount} / ${data.memberCount} 人已提交`;
+                    if (data.status === "COMPLETED") {
                         clearInterval(pollingInterval);
-
-                        // ★★★ 修改這裡：跳轉到正確的 Recommandation 頁面 ★★★
-                        // 原本: window.location.href = `/Match/Result/${currentGroupId}`;
                         window.location.href = `/Match/Recommendations/${currentGroupId}`;
-                            }
-                    else {
-                            // 否則更新進度文字，繼續等待
-                         document.getElementById("statusText").innerText =
-                           `等待成員提交中... (${statusData.submittedCount} / ${statusData.memberCount})`;
-                             }
+                    }
                 }
-            } catch (e) {
-                console.error("Polling error", e);
-            }
+            } catch(e) {}
         }
 
-        function closeModal() {
-            const modal = document.getElementById('calendarModal');
-            if(modal) modal.classList.remove('active');
-        }
-        function goToMemberCenter() { window.location.href = '/Auth/MemberCenter#calendar_section'; }
-
-        // 行事曆核心
-        let selectedRanges = [];
-
+        // --- 行事曆核心 ---
         async function initCalendar() {
-             let currentYear = new Date().getFullYear();
-             let currentMonth = new Date().getMonth();
-             let groupStart = null; let groupEnd = null;
-             let targetDays = 1; let myLeaveDates = new Set();
-             let pendingStartDate = null;
+            let currentYear = new Date().getFullYear();
+            let currentMonth = new Date().getMonth();
+            let groupStart = null, groupEnd = null;
+            let myLeaveDates = new Set();
+            let pendingStartDate = null;
+            const todayIso = new Date().toISOString().split('T')[0];
 
-             const getTodayIso = () => {
-                 const d = new Date(); const z = d.getTimezoneOffset() * 60 * 1000;
-                 return new Date(d - z).toISOString().split('T')[0];
-             };
-             const todayIso = getTodayIso();
+            let isDragging = false;
+            let anchorDate = null;
 
-             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
-             document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
+            window._tripmatch_calendar_instance = {
+                render: function() { renderMonth(); renderList(); },
+                importRanges: function(ranges) {
+                    if (!Array.isArray(ranges)) return;
+                    ranges.forEach(r => {
+                        let s = (r.startAt || r.start).slice(0, 10);
+                        let e = (r.endAt || r.end).slice(0, 10);
+                        if (groupStart && s < groupStart) s = groupStart;
+                        if (groupEnd && e > groupEnd) e = groupEnd;
+                        if (s > e) return;
+                        if (checkOverlap(s, e)) return;
 
-             buildMonthPanel();
-             renderMonth();
-             bindCalendarEvents();
+                        const dayCount = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
+                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
+                    });
+                    renderMonth();
+                    renderList();
+                }
+            };
 
-             async function loadGroupInfo() {
-                 try {
-                     const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
-                     if(res.ok) {
-                         const data = await res.json();
-                         const rawStart = data.dateStart || data.DateStart;
-                         const rawEnd = data.dateEnd || data.DateEnd;
-                         if (rawStart) groupStart = rawStart.split('T')[0];
-                         if (rawEnd) groupEnd = rawEnd.split('T')[0];
-                         targetDays = data.travelDays || data.TravelDays || 3;
-                         if (groupStart) {
-                             const d = new Date(groupStart);
-                             currentYear = d.getFullYear(); currentMonth = d.getMonth();
-                         }
-                     }
-                 } catch(e) { console.error(e); }
-             }
+            await Promise.all([loadGroupInfo(), loadMyAvailability()]);
+            await loadMyExistingSlots();
+            loadImportedDraft();
 
-             async function loadMyAvailability() {
-                 try {
-                     const res = await fetch('/api/auth/GetLeaves');
-                     if(res.ok) {
-                         const data = await res.json();
-                         if(data.dates) data.dates.forEach(d => myLeaveDates.add(d));
-                     }
-                 } catch(e) { console.error(e); }
-             }
+            document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
 
-             function isLocked(iso) {
-                 if (!groupStart || !groupEnd) return true;
-                 return iso < groupStart || iso > groupEnd;
-             }
+            buildMonthPanel();
+            renderMonth();
+            bindCalendarEvents();
 
-             function renderMonth() {
-                 const $days = document.querySelector('.days');
-                 const $monthDisplay = document.querySelector('.month-display');
-                 const $yearDisplay = document.querySelector('.year-display');
-                 if (!$days) return;
+            async function loadGroupInfo() {
+                const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
+                if(res.ok) {
+                    const data = await res.json();
+                    groupStart = (data.dateStart || "").split('T')[0];
+                    groupEnd = (data.dateEnd || "").split('T')[0];
+                    targetDays = data.travelDays || 3;
+                    if (groupStart) {
+                        const d = new Date(groupStart);
+                        currentYear = d.getFullYear(); currentMonth = d.getMonth();
+                    }
+                    document.getElementById('groupRangeInfo').innerHTML = `揪團期間：<strong>${groupStart}</strong> ～ <strong>${groupEnd}</strong> • 行程需 ${targetDays} 天`;
+                    document.getElementById('groupRangeInfo').classList.remove('d-none');
+                }
+            }
+            async function loadMyAvailability() {
+                const res = await fetch('/api/auth/GetLeaves');
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data.dates) data.dates.forEach(d => myLeaveDates.add(d));
+                }
+            }
+            async function loadMyExistingSlots() {
+                const res = await fetch(`/api/timewindow/${currentGroupId}/available`, { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.slots && data.slots.length > 0) window._tripmatch_calendar_instance.importRanges(data.slots);
+                }
+            }
+            function loadImportedDraft() {
+                const raw = sessionStorage.getItem('calendar_draft_ranges');
+                if (raw) {
+                    const draft = JSON.parse(raw);
+                    if (draft.groupId == currentGroupId && Array.isArray(draft.ranges)) window._tripmatch_calendar_instance.importRanges(draft.ranges);
+                }
+            }
 
-                 const firstDay = new Date(currentYear, currentMonth, 1);
-                 if($monthDisplay) $monthDisplay.textContent = firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
-                 if($yearDisplay) $yearDisplay.textContent = currentYear;
-                 $days.innerHTML = '';
+            function handleMouseDown(iso, existingRange) {
+                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+                isDragging = true;
+                if (existingRange) {
+                    const idx = selectedRanges.indexOf(existingRange);
+                    if (idx > -1) selectedRanges.splice(idx, 1);
+                    if (iso === existingRange.start) anchorDate = existingRange.end;
+                    else if (iso === existingRange.end) anchorDate = existingRange.start;
+                    else anchorDate = iso;
+                } else {
+                    anchorDate = iso;
+                }
+                renderMonth();
+                handleMouseOver(iso);
+            }
 
-                 const startDay = (firstDay.getDay() + 6) % 7;
-                 const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-                 for(let i=0; i<startDay; i++) { $days.innerHTML += `<div class="day-cell empty"></div>`; }
-
-                 for(let d=1; d<=daysInMonth; d++) {
-                     const date = new Date(currentYear, currentMonth, d);
-                     const z = date.getTimezoneOffset() * 60 * 1000;
-                     const iso = new Date(date - z).toISOString().split('T')[0];
-                     const cell = document.createElement('div');
-                     cell.className = 'day-cell';
-                     cell.textContent = d;
-                     cell.dataset.iso = iso;
-
-                     if (isLocked(iso)) cell.classList.add('locked');
-                     else {
-                         if (iso === todayIso) cell.classList.add('today');
-                         if (myLeaveDates.has(iso)) cell.classList.add('has-leave');
-                         const rangeStatus = getDateRangeStatus(iso);
-                         if (rangeStatus) {
-                             cell.classList.add(rangeStatus.isValid ? 'status-valid' : 'status-invalid');
-                             if (rangeStatus.type === 'start') cell.classList.add('range-start');
-                             if (rangeStatus.type === 'end') cell.classList.add('range-end');
-                             if (rangeStatus.type === 'mid') cell.classList.add('range-mid');
-                             if (rangeStatus.type === 'single') cell.classList.add('status-single');
-                         }
-                         if (pendingStartDate && iso === pendingStartDate) {
-                             cell.classList.add('range-start', 'selecting');
-                         }
-                         cell.onclick = () => handleDateClick(iso);
-                         cell.onmouseenter = () => handleDateHover(iso);
-                     }
-                     $days.appendChild(cell);
-                 }
-                 renderList();
-             }
-
-             function buildMonthPanel() {
-                 const $grid = document.querySelector('.months-grid');
-                 const $yearDisplay = document.querySelector('.year-display');
-                 if(!$grid) return;
-                 if($yearDisplay) $yearDisplay.textContent = currentYear;
-                 $grid.innerHTML = '';
-                 for(let m=0; m<12; m++) {
-                     const btn = document.createElement('div');
-                     btn.className = `month-btn ${m === currentMonth ? 'active' : ''}`;
-                     btn.innerHTML = `<span style="font-size:1.1em">${m+1}</span>月`;
-                     btn.onclick = () => { currentMonth = m; renderMonth(); updateMonthActive(); };
-                     $grid.appendChild(btn);
-                 }
-             }
-             function updateMonthActive() {
-                 document.querySelectorAll('.month-btn').forEach((btn, idx) => {
-                     btn.classList.toggle('active', idx === currentMonth);
-                 });
-             }
-
-             function handleDateClick(iso) {
-                 if (pendingStartDate) {
-                     let start = pendingStartDate < iso ? pendingStartDate : iso;
-                     let end = pendingStartDate < iso ? iso : pendingStartDate;
-                     if (checkOverlap(start, end)) { alert("區段重疊！"); return; }
-                     if (checkRangeHasLocked(start, end)) { alert("包含鎖定日期"); return; }
-                     const dayCount = calculateDays(start, end);
-                     const isValid = dayCount >= targetDays;
-                     selectedRanges.push({ start, end, days: dayCount, valid: isValid });
-                     pendingStartDate = null; clearPreview(); renderMonth(); return;
-                 }
-                 const existingIdx = selectedRanges.findIndex(r => iso >= r.start && iso <= r.end);
-                 if (existingIdx >= 0) {
-                     selectedRanges.splice(existingIdx, 1);
-                     pendingStartDate = null; clearPreview(); renderMonth(); return;
-                 }
-                 pendingStartDate = iso; renderMonth();
-             }
-
-             function handleDateHover(hoverIso) {
-                if (!pendingStartDate) return;
+            function handleMouseOver(hoverIso) {
+                if (!isDragging || !anchorDate) return;
                 clearPreview();
-                const start = pendingStartDate < hoverIso ? pendingStartDate : hoverIso;
-                const end = pendingStartDate < hoverIso ? hoverIso : pendingStartDate;
+                const start = anchorDate < hoverIso ? anchorDate : hoverIso;
+                const end = anchorDate < hoverIso ? hoverIso : anchorDate;
                 const dayCount = calculateDays(start, end);
                 const isOverlap = checkOverlap(start, end);
                 const hasLocked = checkRangeHasLocked(start, end);
@@ -464,73 +401,190 @@
                     }
                 });
             }
+
+            function handleGlobalMouseUp() {
+                if (!isDragging) return;
+                isDragging = false;
+                const startCell = document.querySelector('.day-cell.preview-start');
+                const endCell = document.querySelector('.day-cell.preview-end');
+                if (startCell && endCell) {
+                    const s = startCell.dataset.iso;
+                    const e = endCell.dataset.iso;
+                    if (!checkOverlap(s, e) && !checkRangeHasLocked(s, e)) {
+                        const dayCount = calculateDays(s, e);
+                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
+                    }
+                }
+                anchorDate = null;
+                clearPreview();
+                renderMonth();
+            }
+
             function clearPreview() {
-                 document.querySelectorAll('.day-cell').forEach(cell => {
-                     cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
-                 });
-             }
-             function checkOverlap(newStart, newEnd) { return selectedRanges.some(r => !(newEnd < r.start || newStart > r.end)); }
-             function getDateRangeStatus(iso) {
-                 for (let range of selectedRanges) {
-                     if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid };
-                     if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid };
-                     if (iso === range.start) return { type: 'start', isValid: range.valid };
-                     if (iso === range.end) return { type: 'end', isValid: range.valid };
-                 }
-                 return null;
-             }
-             function calculateDays(start, end) { const s = new Date(start); const e = new Date(end); return Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1; }
-             function checkRangeHasLocked(start, end) {
-                 let curr = new Date(start); const last = new Date(end);
-                 while(curr <= last) {
-                     const z = curr.getTimezoneOffset() * 60 * 1000;
-                     const iso = new Date(curr - z).toISOString().split('T')[0];
-                     if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
-                 }
-                 return false;
-             }
+                document.querySelectorAll('.day-cell').forEach(cell => {
+                    cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
+                });
+            }
 
-             // ★★★ 配合新 CSS 樣式的清單 HTML (邏輯沒變，只改樣式) ★★★
-             function renderList() {
-                 const $list = document.getElementById('calendarList');
-                 const $count = document.getElementById('selectedCount');
-                 if(!$list) return;
-                 selectedRanges.sort((a, b) => a.start.localeCompare(b.start));
-                 if (selectedRanges.length === 0) {
-                     $list.innerHTML = '<div class="text-muted text-center mt-3 fs-7">尚無選取區段</div>';
-                     if($count) $count.textContent = '0';
-                     return;
-                 }
-                 $list.innerHTML = selectedRanges.map(r => `
-                     <div class="calendar-list-item">
-                         <div>
-                             <div class="fw-bold ${r.valid ? 'text-success' : 'text-danger'}" style="font-size:0.9rem">
-                                 ${r.start.slice(5)} ~ ${r.end.slice(5)}
-                             </div>
-                             <small class="text-muted">${r.days} 天 ${r.valid ? 'OK' : '不足'}</small>
-                         </div>
-                         <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onclick="window.removeRange('${r.start}')">✕</button>
-                     </div>
-                 `).join('');
-                 const validCount = selectedRanges.filter(r => r.valid).length;
-                 if($count) $count.textContent = validCount;
-             }
-             window.removeRange = function(startIso) {
-                 const idx = selectedRanges.findIndex(r => r.start === startIso);
-                 if(idx >= 0) { selectedRanges.splice(idx, 1); renderMonth(); }
-             };
+            function isLocked(iso) {
+                if (!groupStart || !groupEnd) return true;
+                return iso < groupStart || iso > groupEnd;
+            }
+            function checkOverlap(start, end) {
+                return selectedRanges.some(r => !(end < r.start || start > r.end));
+            }
+            function calculateDays(start, end) { return Math.round((new Date(end) - new Date(start)) / 86400000) + 1; }
+            function checkRangeHasLocked(start, end) {
+                let curr = new Date(start); const last = new Date(end);
+                while(curr <= last) {
+                    const z = curr.getTimezoneOffset() * 60 * 1000;
+                    const iso = new Date(curr - z).toISOString().split('T')[0];
+                    if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
+                }
+                return false;
+            }
+            function getDateRangeStatus(iso) {
+                for (let range of selectedRanges) {
+                    if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid, range: range };
+                    if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid, range: range };
+                    if (iso === range.start) return { type: 'start', isValid: range.valid, range: range };
+                    if (iso === range.end) return { type: 'end', isValid: range.valid, range: range };
+                }
+                return null;
+            }
 
-             function bindCalendarEvents() {
-                 const yearLeft = document.querySelector('.year-left');
-                 const yearRight = document.querySelector('.year-right');
-                 const monthLeft = document.querySelector('.month-left');
-                 const monthRight = document.querySelector('.month-right');
+            function renderMonth() {
+                const $days = document.querySelector('.days');
+                const $monthDisplay = document.querySelector('.month-display');
+                const $yearDisplay = document.querySelector('.year-display');
+                if (!$days) return;
 
-                 if(yearLeft) yearLeft.onclick = () => { currentYear--; buildMonthPanel(); renderMonth(); };
-                 if(yearRight) yearRight.onclick = () => { currentYear++; buildMonthPanel(); renderMonth(); };
-                 if(monthLeft) monthLeft.onclick = () => { currentMonth--; if(currentMonth < 0) { currentMonth = 11; currentYear--; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
-                 if(monthRight) monthRight.onclick = () => { currentMonth++; if(currentMonth > 11) { currentMonth = 0; currentYear++; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
-             }
+                const firstDay = new Date(currentYear, currentMonth, 1);
+                if($monthDisplay) $monthDisplay.textContent = firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
+                if($yearDisplay) $yearDisplay.textContent = currentYear;
+                $days.innerHTML = '';
+
+                const startDay = (firstDay.getDay() + 6) % 7;
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+                for(let i=0; i<startDay; i++) { $days.innerHTML += `<div class="day-cell empty"></div>`; }
+
+                for(let d=1; d<=daysInMonth; d++) {
+                    const date = new Date(currentYear, currentMonth, d);
+                    const z = date.getTimezoneOffset() * 60 * 1000;
+                    const iso = new Date(date - z).toISOString().split('T')[0];
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    cell.textContent = d;
+                    cell.dataset.iso = iso;
+
+                    if (isLocked(iso)) cell.classList.add('locked');
+                    else {
+                        if (iso === todayIso) cell.classList.add('today');
+                        if (myLeaveDates.has(iso)) cell.classList.add('has-leave');
+
+                        const status = getDateRangeStatus(iso);
+                        if (status) {
+                            cell.classList.add(status.isValid ? 'status-valid' : 'status-invalid');
+                            if (status.type === 'start') cell.classList.add('range-start');
+                            if (status.type === 'end') cell.classList.add('range-end');
+                            if (status.type === 'mid') cell.classList.add('range-mid');
+
+                            const dot = document.createElement('div');
+                            dot.className = 'dot';
+                            cell.appendChild(dot);
+                        }
+
+                        cell.onmousedown = (e) => {
+                            e.preventDefault();
+                            handleMouseDown(iso, status ? status.range : null);
+                        };
+                        cell.onmouseenter = () => handleMouseOver(iso);
+                    }
+                    $days.appendChild(cell);
+                }
+                renderList();
+            }
+
+            function buildMonthPanel() {
+                const $grid = document.querySelector('.months-grid');
+                const $yearDisplay = document.querySelector('.year-display');
+                if(!$grid) return;
+                if($yearDisplay) $yearDisplay.textContent = currentYear;
+                $grid.innerHTML = '';
+                for(let m=0; m<12; m++) {
+                    const btn = document.createElement('div');
+                    btn.className = `month-btn ${m === currentMonth ? 'active' : ''}`;
+                    btn.innerHTML = `<span style="font-size:1.1em">${m+1}</span>月`;
+                    btn.onclick = () => { currentMonth = m; renderMonth(); updateMonthActive(); };
+                    $grid.appendChild(btn);
+                }
+            }
+            function updateMonthActive() {
+                document.querySelectorAll('.month-btn').forEach((btn, idx) => {
+                    btn.classList.toggle('active', idx === currentMonth);
+                });
+            }
+            function bindCalendarEvents() {
+                const yearLeft = document.querySelector('.year-left');
+                const yearRight = document.querySelector('.year-right');
+                const monthLeft = document.querySelector('.month-left');
+                const monthRight = document.querySelector('.month-right');
+                if(yearLeft) yearLeft.onclick = () => { currentYear--; buildMonthPanel(); renderMonth(); };
+                if(yearRight) yearRight.onclick = () => { currentYear++; buildMonthPanel(); renderMonth(); };
+                if(monthLeft) monthLeft.onclick = () => { currentMonth--; if(currentMonth < 0) { currentMonth = 11; currentYear--; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
+                if(monthRight) monthRight.onclick = () => { currentMonth++; if(currentMonth > 11) { currentMonth = 0; currentYear++; buildMonthPanel(); } else { updateMonthActive(); } renderMonth(); };
+            }
         }
+
+        // --- 6. 頁面入口 ---
+        document.addEventListener("DOMContentLoaded", async function() {
+            const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
+            const shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
+
+            // 綁定事件：避免 HTML onclick 找不到函式
+            const importBtn = document.getElementById('btnImportFromCheck');
+            if (importBtn) importBtn.addEventListener('click', goToMemberCenter);
+
+            // ★ 修改：手動綁定「先跳過」按鈕，確保事件正確觸發
+            const closeBtn = document.getElementById('closeModal');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', dismissCalendarModal);
+            }
+
+            let isDraftValid = false;
+            if (draftRaw) {
+                try {
+                    const draft = JSON.parse(draftRaw);
+                    if (draft.groupId == currentGroupId) isDraftValid = true;
+                } catch(e) {}
+            }
+
+            if (isDraftValid) {
+                const modal = document.getElementById('calendarModal');
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                }
+            } else if (shouldShowPrompt) {
+                const modal = document.getElementById('calendarModal');
+                if (modal) {
+                    modal.classList.add('active');
+                    modal.style.display = 'flex';
+                }
+            }
+
+            if (!hasValidGroupId()) return;
+
+            if (isSubmittedInit) {
+                showWaitingMode();
+                document.getElementById('calendarModal')?.classList.remove('active');
+            } else {
+                if (typeof initCalendar === 'function') {
+                    await initCalendar();
+                    setTimeout(initGuideHints, 600);
+                }
+            }
+        });
     </script>
 }

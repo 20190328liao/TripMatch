@@ -1,4 +1,7 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
     ViewData["Title"] = "信箱驗證";
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 
@@ -25,6 +28,9 @@
         btnLink = Url.Action("Signup", "Auth");
         titleColor = "color: #FF6B6B;";
     }
+
+    var dataNextUrl = ViewData["NextUrl"] as string 
+        ?? (HttpContextAccessor.HttpContext?.Request.Query["next"].FirstOrDefault() ?? btnLink);
 }
 @section Styles {
 
@@ -49,7 +55,7 @@
         <div id="verifyStatus" class="mb-3"></div>
 
         <!-- 下一步由前端控制（checkEmail.js 會啟用或自動導向） -->
-        <a id="btn_next_step" class="checkEmailBtn btn btn_light" href="javascript:void(0);" role="button">@btnText</a>
+        <a id="btn_next_step" class="checkEmailBtn btn btn_light" href="javascript:void(0);" role="button" data-next-url="@dataNextUrl">@btnText</a>
     </div>
 </div>
 

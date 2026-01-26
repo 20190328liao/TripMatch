@@ -3,11 +3,12 @@
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
 @section Styles {
-    <link rel="stylesheet" href="~/css/AuthApi/forgotemail.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AuthApi/forgot.css" asp-append-version="true" />
 }
-
+<div class="forgotLineWrap">
+    <h1 class="forgotLine loginH1 titleWrap titleH1">忘記帳號</h1>
+</div>
 <div class="forgot_wrap">
-    <h1 class="titleH1 mb-4">忘記帳號</h1>
 
     <!-- 步驟指示器：起始皆未完成 -->
     <div class="step_indicators mb-5">
@@ -17,7 +18,7 @@
         </div>
         <div class="step_item step_incomplete" id="step2_indicator">
             <div class="step_badge"><span class="step_number">2</span></div>
-            <div class="step_label">登入或重設密碼</div>
+            <div class="step_label">登入</div>
         </div>
     </div>
 
@@ -25,8 +26,8 @@
         <!-- Step 1: 輸入 BackupEmail -->
         <div id="step1_content">
             <div class="text_start_align mx-auto forgot_form">
-                <label class="fw-bold d-flex align-items-center gap-2 mb-3">
-                    <i class="bi bi-person fs-3"></i> 輸入備援信箱
+                <label class="account d-flex align-items-center gap-2 mb-3">
+                    輸入備援信箱 *
                 </label>
                 <div class="input_row">
                     <div class="input_group_custom flex-grow-1">
@@ -54,16 +55,17 @@
                 <button type="button" class="btn_next_step mt-4" id="btn_next_step" disabled>下一步</button>
             </div> <!-- ★ 補上這個缺失的 div (結束 forgot_form) -->
         </div> <!-- 結束 step1_content -->
-        <div><a href="@Url.Action("Login", "Auth")" class="forgotEmailDisplay">回到登入</a></div>
-        <div><a href="@Url.Action("ForgotPassword", "Auth")" class="forgotEmailDisplay">忘記密碼</a></div>
+        <div class="backEmailbtn">
+            <a href="@Url.Action("Login", "Auth")" class="forgotEmailDisplay and1">回到登入</a>｜<a href="@Url.Action("ForgotPassword", "Auth")" class="forgotEmailDisplay">忘記密碼</a>
+        </div>
+       
         <!-- Step 2: 完成 -->
-        <div id="step3_content" class="d-none text-center">
+        <div id="step2_content" class="d-none text-center">
             <div class="mb-5">
                 <div class="display-1 text-success mb-3">✓</div>
                 <h3>成功找回帳號：您的帳號是：</h3>
             </div>
-            <button type="button" class="btn_next_step mt-4" id="btn_next_step1" disabled onclick="location.href='@Url.Action("Login","Auth")'">登入</button>
-            <button type="button" class="btn_next_step mt-4" id="btn_next_step2" disabled>重設密碼</button>
+    <button type="button" class="btn_next_step mt-3 btn_Gray" id="btnClearAndNew">重新註冊</button>
         </div>
     </div>
 </div>

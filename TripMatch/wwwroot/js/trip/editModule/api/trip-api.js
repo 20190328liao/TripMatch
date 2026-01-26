@@ -1,4 +1,6 @@
-﻿function sendRequest(url, method, data = null) {
+﻿import { SignalRManager } from '../signalr-manager.js';
+
+function sendRequest(url, method, data = null) {
 
     return new Promise((resolve, reject) => {
 
@@ -66,15 +68,19 @@ export const TripApi = {
     },
 
     // 新增航班
-    addFlight: (dto) => {
-        return sendRequest('/api/TripApi/AddFlight', 'POST', dto);
+    addFlight: async (dto) => {
+        const res = await sendRequest('/api/TripApi/AddFlight', 'POST', dto);
+        SignalRManager.broadcast(dto.tripId, "新增了航班", res.id);
+        return res;
     },
 
     // 刪除航班
-    deleteFlight: (id, rowVersion) => {
-        // 使用 encodeURIComponent 確保 Base64 中的特殊字元 (如 + / =) 不會破壞網址結構
+    deleteFlight: async (tripId, id, rowVersion) => {
         const url = `/api/TripApi/DeleteFlight/${id}?rowVersion=${encodeURIComponent(rowVersion)}`;
-        return sendRequest(url, 'DELETE');
+        const res = await sendRequest(url, 'DELETE');
+        SignalRManager.broadcast(tripId, "刪除了航班", 0);
+
+        return res;
     },
 
     // 加入住宿
@@ -82,10 +88,10 @@ export const TripApi = {
         return sendRequest('/api/TripApi/AddAccommodation', 'POST', dto);
     },    
 
-    // 刪除住宿
-    deleteAccommodation: (id) => {
-        return sendRequest(`/api/TripApi/DeleteAccommodation/${id}`, 'DELETE');
-    },  
+    deleteAccommodation: (id, rowVersion) => {
+        const url = `/api/TripApi/DeleteAccommodation/${id}?rowVersion=${encodeURIComponent(rowVersion)}`;
+        return sendRequest(url, 'DELETE');
+    },
 
     // 儲存快照
     addSnapshot: (dto) => {

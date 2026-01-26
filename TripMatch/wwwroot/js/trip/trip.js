@@ -1,6 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
     const API_BASE = "/api/TripApi"
-    const grid = document.querySelector(".grid");
+    const grids = document.querySelectorAll(".grid");
 
         // function 關閉選單
         function closeAllMenus(exceptMenu) {
@@ -12,7 +12,9 @@
         // click 點空白處關閉選單
         document.addEventListener('click', () => closeAllMenus(null));
 
-        grid?.addEventListener('click', async (e) => {
+    grids.forEach(grid => {
+        grid?.addEventListener('click', async (e) =>
+        {
             const card = e.target.closest(".card");
             if (!card) {
                 return;
@@ -22,8 +24,8 @@
             const kebab = e.target.closest(".kebab-btn");
             const menuItem = e.target.closest(".menu-item");
 
-            // 三點選單
-            if (kebab) {
+            // 三點選單 (只處理有menu的卡片)
+            if (kebab && menu) {
                 // 防止冒泡到父層(卡片層)
                 e.stopPropagation();
                 // willOpen -> true -> menu 是 close
@@ -34,8 +36,8 @@
                 return;
             }
 
-            // 點選單內項目
-            if (menuItem && menu.contains(menuItem)) {
+            // 點選單內項目 (只處理有menu的卡片)
+            if (menu && menuItem && menu.contains(menuItem)) {
                 e.stopPropagation();
                 closeAllMenus(null);
 
@@ -53,7 +55,7 @@
 
                     if (isOwner) {
                         // 團主 => 刪除
-                        const ok = confirm("確定刪除此行程? 此操作無法還原。");
+                        const ok = confirm("分帳紀錄將一併刪除，確定刪除此行程? 此操作無法還原。");
                         if (!ok) return;
 
                         try {
@@ -82,23 +84,25 @@
                             card.remove();
                         } catch (err) {
                             console.error(err);
-                            alert("退出失敗，請稍後再試。");
+                            alert("退出失敗 : 您在此行程仍有分帳或結算紀錄，請先刪除相關記帳紀錄後再試一次。");
                         }
                     }
                     return;
                 }
             }
 
-            // 點卡片其他區域 -> 跳轉到行程頁
-            if (menu.classList.contains("open")) {
+            // 如果選單開著，點卡片先不跳
+            if (menu && menu.classList.contains("open")) {
                 return;
             }
-         
+
+            // 點卡片其他區域 -> 跳轉到行程頁
             const detailsUrl = card.dataset.detailsUrl;
             if (detailsUrl && detailsUrl !== "#") {
                 window.location.href = detailsUrl;
             }
         });
+    });
 
 
 
@@ -109,7 +113,7 @@
     const btnCopyIntive = document.getElementById("btnCopyInvite");
     const inviteHint = document.getElementById("inviteHint");
 
-        // 開啟 members modal
+    // 開啟 members modal
     async function openMembersModal(tripId) {
         
         membersList.innerHTML = `<li>載入中...</li>`;
@@ -150,7 +154,7 @@
 
             btnCopyIntive.onclick = async () => {
                 await copyTextToClipboard(fullUrl);
-                inviteHint.textContent = "已複製邀請連結！";
+                inviteHint.textContent = "已複製邀請連結";
                 setTimeout(() => { inviteHint.textContent = ""; }, 1500);
             }
         } catch (err) {

@@ -1,10 +1,43 @@
 ﻿@using Microsoft.Extensions.Configuration
+@using System.Security.Claims
 @inject IConfiguration Configuration
 @{
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
-    // 修改這裡：將轉型改為 int?
+
     var taggedUserId = ViewBag.TaggedUserId as int?;
+
+    // 1. 嘗試取得 FullName (對應 ClaimTypes.GivenName)
+    var fullName = User.FindFirstValue(ClaimTypes.GivenName);
+
+    // 2. 嘗試取得 UserName (對應 ClaimTypes.Name)
+    var userName = User.Identity?.Name;
+
+    // 3. 嘗試取得 Email
+    var email = User.FindFirstValue(ClaimTypes.Email);
+
+    // 4. 決定顯示名稱的優先順序
+    string displayName = "使用者";
+
+    if (!string.IsNullOrWhiteSpace(fullName))
+    {
+        displayName = fullName; 
+    }
+    else if (!string.IsNullOrWhiteSpace(userName))
+    {
+        if (userName.Contains("@"))
+        {
+            displayName = userName.Split('@')[0];
+        }
+        else
+        {
+            displayName = userName;
+        }
+    }
+    else if (!string.IsNullOrWhiteSpace(email))
+    {
+        displayName = email.Split('@')[0];
+    }
 }
 
 @section Styles {
@@ -27,7 +60,26 @@
 }
 
 <header class="hero-section">
-    <span class="status-indicator" id="loginStatus">未登入</span>
+    <div class="glow-ball ball-1"></div>
+    <div class="glow-ball ball-2"></div>
+    <div class="glow-ball ball-3"></div>
+
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <div class="star-cluster" style="top: 15%; left: 22%;">
+            <div class="star-part p1"></div><div class="star-part p2"></div>
+            <div class="star-part p3"></div><div class="star-part p4"></div>
+        </div>
+        <div class="star-cluster" style="top: 20%; left: 75%;">
+            <div class="star-part2 p1"></div><div class="star-part2 p2"></div>
+            <div class="star-part2 p3"></div><div class="star-part2 p4"></div>
+        </div>
+    }
+
+    <!-- 把 status 用 server-side 初始值渲染 -->
+    <span class="status-indicator" id="loginStatus">
+        @(User?.Identity?.IsAuthenticated == true ? "歡迎您，" + Html.Encode(displayName) + " 用戶" : "未登入")
+    </span>
     <h1 class="hero-title">輕鬆規劃您的旅遊行程</h1>
 
     <div class="hero-btns">
@@ -191,9 +243,22 @@
         </div>
     </div>
 </section>
+<div style="width: 100%; display: flex; justify-content: center; margin-bottom: 20px;">
+    <canvas id="mascotCanvas" width="1015" height="400" style="max-width: 100%; height: auto; cursor: pointer;"></canvas>
+</div>
 
 
 @section Scripts {
+    <script>
+        // 在 Home.js 載入前設定 flag 與名稱（避免閃爍）
+        window.isAuthenticated = "@(User?.Identity?.IsAuthenticated == true ? "true" : "false")";
+        window.currentUserName = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(displayName));
+
+            document.addEventListener("DOMContentLoaded", function() {
+            initMascotAnimation();
+        });
+    </script>
+
     <script src="~/js/Home/Home.js" asp-append-version="true"></script>
     <script src="~/js/Home/CreateNewTrip.js" asp-append-version="true"></script>
     <!-- 使用官方 loader，透過 Razor 注入 Key-->

@@ -9,8 +9,8 @@
         let html = `
         <div class="flight-section mb-3 p-3 bg-white rounded shadow-sm border">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold m-0 text-primary"><i class="bi bi-airplane-engines me-2"></i>航班資訊</h6>
-                <button class="btn btn-sm btn-outline-primary rounded-pill" id="btn-add-flight-trigger">
+                <h6 class="fw-bold m-0 text-success"><i class="bi bi-airplane-engines me-2"></i>航班資訊</h6>
+                <button class="btn btn-sm btn-outline-mint rounded-pill" id="btn-add-flight-trigger">
                     <i class="bi bi-plus-lg"></i> 新增
                 </button>
             </div>

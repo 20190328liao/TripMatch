@@ -27,6 +27,7 @@ namespace TripMatch.Controllers.Api
         private readonly SignInManager<ApplicationUser> _signInManager;
         // 新增私有欄位：ApplicationDbContext
         private readonly ApplicationDbContext _appDbContext;
+        private readonly IHostEnvironment _env;
 
 
         public MemberCenterApiController(
@@ -39,7 +40,8 @@ namespace TripMatch.Controllers.Api
     UrlEncoder urlEncoder,
     IDataProtectionProvider dataProtectionProvider,
     SignInManager<ApplicationUser> signInManager,
-    ApplicationDbContext appDbContext) // 新增注入
+    ApplicationDbContext appDbContext, // 新增注入
+    IHostEnvironment env) // 新增
         {
             _dbContext = dbContext;
             _configuration = configuration;
@@ -51,6 +53,7 @@ namespace TripMatch.Controllers.Api
             _backupEmailProtector = dataProtectionProvider.CreateProtector("BackupEmailChange:v1");
             _signInManager = signInManager;
             _appDbContext = appDbContext; // 設定
+            _env = env; // 設定
         }
         public class RequestChangeEmailModel
         {
@@ -85,7 +88,7 @@ namespace TripMatch.Controllers.Api
 
             // 2. 計算該 user 每個分類的 wishlist 數量（含 Spot.LocationCategoryId 為 null 的情況）
             var counts = await _dbContext.Wishlists
-                .AsNoTracking()
+                // .AsNoTracking()
                 .Where(w => w.UserId == userId)
                 .Include(w => w.Spot)
                 .GroupBy(w => w.Spot != null ? w.Spot.LocationCategoryId : null)
@@ -279,54 +282,187 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        // Replace the existing DeleteAccount method with this version
         [HttpPost("DeleteAccount")]
         [Authorize]
-        public async Task<IActionResult> DeleteAccount()
+        public async Task<IActionResult> DeleteAccount([FromBody] int? targetUserId = null)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized(new { message = "找不到使用者" });
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized(new { message = "未授權或找不到使用者" });
+
+            if (targetUserId.HasValue && !User.IsInRole("Admin"))
+            {
+                return Forbid("沒有權限刪除其他使用者");
+            }
+
+            ApplicationUser userToDelete;
+            if (targetUserId.HasValue)
+            {
+                userToDelete = await _userManager.FindByIdAsync(targetUserId.Value.ToString());
+                if (userToDelete == null) return NotFound(new { message = "目標使用者不存在" });
+            }
+            else
+            {
+                userToDelete = currentUser;
+            }
+
+            // detect AJAX/JSON request
+            var acceptHeader = Request.Headers["Accept"].ToString() ?? "";
+            var xrw = Request.Headers["X-Requested-With"].ToString() ?? "";
+            bool isAjax = xrw.Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                          || acceptHeader.IndexOf("application/json", StringComparison.OrdinalIgnoreCase) >= 0;
 
             try
             {
-                var userId = user.Id;
+                var userId = userToDelete.Id;
 
-                // 增加少量 timeout 容錯（長成本操作）
+                // 延長 timeout
                 _dbContext.Database.SetCommandTimeout(60);
                 _appDbContext.Database.SetCommandTimeout(60);
 
-                // 先刪應用資料（使用 TravelDbContext）
+                // 1) 先處理該使用者為 Owner 的 TravelGroups
+                var ownedGroups = await _dbContext.TravelGroups
+                    .Where(tg => tg.OwnerUserId == userId)
+                    .ToListAsync();
+
+                var rng = new Random();
+
+                foreach (var group in ownedGroups)
+                {
+                    try
+                    {
+                        var memberIds = await _dbContext.GroupMembers
+                            .Where(m => m.GroupId == group.GroupId && m.UserId != userId)
+                            .Select(m => m.UserId)
+                            .ToListAsync();
+
+                        if (memberIds != null && memberIds.Count > 0)
+                        {
+                            var idx = rng.Next(memberIds.Count);
+                            var newOwnerId = memberIds[idx];
+
+                            group.OwnerUserId = newOwnerId;
+                            _dbContext.TravelGroups.Update(group);
+
+                            var newOwnerMember = await _dbContext.GroupMembers
+                                .FirstOrDefaultAsync(m => m.GroupId == group.GroupId && m.UserId == newOwnerId);
+
+                            if (newOwnerMember != null)
+                            {
+                                newOwnerMember.Role = "Owner";
+                                _dbContext.GroupMembers.Update(newOwnerMember);
+                            }
+
+                            _logger.LogInformation("Group {GroupId}: ownership transferred from User {OldOwner} to User {NewOwner}", group.GroupId, userId, newOwnerId);
+                        }
+                        else
+                        {
+                            var gid = group.GroupId;
+                            await _dbContext.Preferences.Where(p => p.GroupId == gid).ExecuteDeleteAsync();
+                            await _dbContext.MemberTimeSlots.Where(ms => ms.GroupId == gid).ExecuteDeleteAsync();
+                            await _dbContext.GroupMembers.Where(gm => gm.GroupId == gid).ExecuteDeleteAsync();
+                            await _dbContext.Recommendations.Where(r => r.GroupId == gid).ExecuteDeleteAsync();
+                            await _dbContext.TravelGroups.Where(tg => tg.GroupId == gid).ExecuteDeleteAsync();
+
+                            _logger.LogInformation("Group {GroupId}: deleted because no other members exist (owner {OwnerId})", gid, userId);
+                        }
+
+                        await _dbContext.SaveChangesAsync();
+                    }
+                    catch (Exception exGrp)
+                    {
+                        _logger.LogWarning(exGrp, "處理群組轉移/刪除時發生例外：GroupId={GroupId}, OwnerUserId={Owner}", group.GroupId, userId);
+                    }
+                }
+
+                // 2) 刪除使用者相關資料
                 await _dbContext.LeaveDates.Where(l => l.UserId == userId).ExecuteDeleteAsync();
                 await _dbContext.Wishlists.Where(w => w.UserId == userId).ExecuteDeleteAsync();
                 await _dbContext.TripMembers.Where(tm => tm.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.MemberTimeSlots.Where(m => m.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Preferences.Where(p => p.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.GroupMembers.Where(g => g.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.RecommendationVotes.Where(rv => rv.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.ExpenseParticipants.Where(ep => ep.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Settlements.Where(s => s.FromUserId == userId || s.ToUserId == userId).ExecuteDeleteAsync();
 
-                // 再用 ApplicationDbContext（同一個 Identity DbContext）在單一 transaction 中刪除 Identity 子表與使用者
+                var ownsGroupsAfter = await _dbContext.TravelGroups.AnyAsync(tg => tg.OwnerUserId == userId);
+                if (ownsGroupsAfter)
+                {
+                    _logger.LogWarning("DeleteAccount: ownership transfer incomplete for UserId={UserId}", userId);
+                    if (isAjax) return BadRequest(new { success = false, message = "部分群組擁有權未成功轉移，請聯絡管理員。" });
+                    return BadRequest(new { message = "無法刪除帳號：部分群組擁有權未成功轉移，請聯絡管理員。" });
+                }
+
+                // 清除 Identity row 與相關表（transaction）
                 await using (var tx = await _appDbContext.Database.BeginTransactionAsync())
                 {
-                    // 逐一刪除 Identity 關聯表，避免 EF 在刪除時產生複雜的 cascade/lock
+                    await _appDbContext.Database.ExecuteSqlInterpolatedAsync($@"
+                UPDATE AspNetUsers
+                SET Email = NULL,
+                    NormalizedEmail = NULL,
+                    EmailConfirmed = 0,
+                    BackupEmail = NULL,
+                    BackupEmailConfirmed = 0,
+                    UserName = NULL,
+                    NormalizedUserName = NULL
+                WHERE UserId = {userId};
+            ");
+
                     await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserTokens WHERE UserId = {userId};");
                     await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserLogins WHERE UserId = {userId};");
                     await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserClaims WHERE UserId = {userId};");
                     await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUserRoles WHERE UserId = {userId};");
-
-                    // 最後刪除 AspNetUsers（單筆）
                     await _appDbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM AspNetUsers WHERE UserId = {userId};");
 
                     await tx.CommitAsync();
                 }
 
-                // 清理 session / cookie
-                await _signInManager.SignOutAsync();
-                HttpContext.Session.Clear();
-                Response.Cookies.Delete("AuthToken");
-                Response.Cookies.Delete("AuthCookie");
-                Response.Cookies.Delete("PendingEmail");
+                // 若刪除的是目前登入帳號，清理 session/cookies
+                if (!targetUserId.HasValue || targetUserId.Value == currentUser.Id)
+                {
+                    await _signInManager.SignOutAsync();
+                    HttpContext.Session.Clear();
+                    Response.Cookies.Delete("AuthToken");
+                    Response.Cookies.Delete("AuthCookie");
+                    Response.Cookies.Delete("PendingEmail");
 
-                var redirect = Url.Action("Signup", "Auth");
-                return Ok(new { message = "帳號已刪除", redirect });
+                    var redirect = Url.Action("Signup", "Auth") ?? "/Auth/Signup";
+
+                    if (isAjax)
+                    {
+                        // AJAX: 回傳 JSON，前端會顯示成功提示再導向
+                        return Ok(new { success = true, message = "帳號已刪除", redirect });
+                    }
+
+                    // 非 AJAX: 原有行為，直接 Redirect
+                    return Redirect(redirect);
+                }
+
+                // 刪除非當前目標帳號（管理員或代刪），回傳 JSON（或原本的 Ok）
+                if (isAjax)
+                    return Ok(new { success = true, message = "使用者已刪除" });
+
+                return Ok(new { message = "使用者已刪除" });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "DeleteAccount 失敗 (DB constraint)，UserId={UserId}", userToDelete.Id);
+                if (Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase) ||
+                    Request.Headers["Accept"].ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase))
+                {
+                    return StatusCode(500, new { success = false, message = "刪除帳號失敗：有關聯資料未處理，請先移除或轉移相關資料。" });
+                }
+                return StatusCode(500, new { message = "刪除帳號失敗：有關聯資料未處理，請先移除或轉移相關資料。" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "DeleteAccount 失敗，UserId={UserId}", user.Id);
+                _logger.LogError(ex, "DeleteAccount 例外，UserId={UserId}", userToDelete.Id);
+                if (Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase) ||
+                    Request.Headers["Accept"].ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase))
+                {
+                    return StatusCode(500, new { success = false, message = "刪除帳號時發生錯誤。" });
+                }
                 return StatusCode(500, new { message = "刪除帳號時發生錯誤。" });
             }
         }
@@ -604,7 +740,7 @@ namespace TripMatch.Controllers.Api
                                          ?.FirstOrDefault() ?? "/img/placeholder.jpg";
                         created.Add(new { snapshot.SpotId, name = snapshot.NameZh, image = firstPhoto });
                     }
-                   
+                  
                 }
 
                 await tx.CommitAsync();
@@ -793,6 +929,52 @@ namespace TripMatch.Controllers.Api
             }
 
             return Ok(new { seeded = true, updated });
+        }
+
+        // 新增此 API 方法於同一 controller 類別內（開發/管理用）
+        [HttpPost("DeleteAccountForce")]
+        [Authorize(Roles = "Admin")] // 或移除角色限制，改以 env.IsDevelopment 檢查
+        public async Task<IActionResult> DeleteAccountForce([FromBody] int userId)
+        {
+            if (!_env.IsDevelopment() && !User.IsInRole("Admin"))
+                return Forbid("僅開發環境或管理員可呼叫");
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return NotFound(new { message = "找不到使用者" });
+
+            try
+            {
+                // 延長 timeout
+                _dbContext.Database.SetCommandTimeout(60);
+
+                // 刪除關聯資料（根據你的 schema 加上需要的表）
+                await _dbContext.LeaveDates.Where(l => l.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Wishlists.Where(w => w.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.TripMembers.Where(tm => tm.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.MemberTimeSlots.Where(m => m.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Preferences.Where(p => p.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.GroupMembers.Where(g => g.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.RecommendationVotes.Where(rv => rv.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.ExpenseParticipants.Where(ep => ep.UserId == userId).ExecuteDeleteAsync();
+                await _dbContext.Settlements.Where(s => s.FromUserId == userId || s.ToUserId == userId).ExecuteDeleteAsync();
+
+                // 依需求加入你專案還遺漏的 FK 表刪除
+
+                // 最後刪除 Identity user（會觸發 UserManager 的 internal cleanup）
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                {
+                    _logger.LogWarning("DeleteAccountForce: UserManager.DeleteAsync failed for {UserId}: {Errors}", userId, string.Join(",", result.Errors.Select(e => e.Description)));
+                    return StatusCode(500, new { message = "無法刪除使用者 (Identity)" });
+                }
+
+                return Ok(new { message = "使用者已強制刪除 (開發模式)" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DeleteAccountForce 失敗, UserId={UserId}", userId);
+                return StatusCode(500, new { message = "刪除失敗，請查看日誌" });
+            }
         }
     }
 }

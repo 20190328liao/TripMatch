@@ -5,6 +5,7 @@ import { FlightRenderer } from './components/flight-renderer.js';
 import { RestaurantRenderer } from './components/restaurant-renderer.js';
 import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
 import { RecommendationModal } from './components/recommendation-modal.js';
+import { SignalRManager } from './signalr-manager.js';
 
 
 const currentTripId = document.getElementById('current-trip-id').value;
@@ -14,6 +15,11 @@ let recModal;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
+
+
+
+
+
 
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
@@ -28,10 +34,7 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
         'itinerary-nav-container',
         'place-list',
         handleAddDay
-    );
-
-
-  
+    );  
 
     // [新增] 監聽導覽列發出的事件
     const navContainer = document.getElementById('itinerary-nav-container');
@@ -54,18 +57,6 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     addFlightModal = new AddFlightModal();
     flightRenderer = new FlightRenderer('flight-wrapper'); 
     restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
@@ -73,13 +64,36 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     initHotelEditModal();
     loadTripData();
 }
-
 export function refreshItineraryList() {
     loadTripData();
 }
-
 export function GetDateStrings() {
     return DateStrings;
+}
+export function showSimpleToast(msg) {
+    const toastId = 'toast-' + Date.now();
+    const html = `
+        <div id="${toastId}" class="toast show align-items-center text-white bg-dark border-0 position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">${msg}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+    $('body').append(html);
+    setTimeout(() => $(`#${toastId}`).fadeOut(() => $(`#${toastId}`).remove()), 3000);
+}
+export function flashItineraryElement(id) {
+    if (id) {
+        const $item = $(`.itinerary-item[data-id="${id}"]`);
+        if ($item.length > 0) {
+            $item.css({
+                'transition': 'background-color 0.5s',
+                'background-color': '#fff3cd'
+            });
+            // 2秒後移除黃色背景
+            setTimeout(() => $item.css('background-color', ''), 2000);
+        }
+    }
 }
 
 function handleAddSpotFromModal(googlePlaceId, dayNum) {
@@ -146,6 +160,7 @@ function handleAddDay() {
         type: 'POST',
         success: function (newDate) {   
             loadTripData();    
+            SignalRManager.broadcast(currentTripId, `往後新增一天的行程`, 0);
         },
         error: function (err) {
             alert("新增天數失敗");
@@ -169,6 +184,7 @@ function initTimeEditModal() {
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="edit-item-id">
+                    <input type="hidden" id="edit-item-rowVersion">
                     <div class="mb-3">
                         <label class="form-label small text-muted">開始時間</label>
                         <input type="time" id="edit-start-time" class="form-control">
@@ -180,7 +196,7 @@ function initTimeEditModal() {
                 </div>                
 
                 <div class="modal-footer py-2 d-flex flex-nowrap w-100 gap-2">
-                    <button type="button" class="btn btn-sm btn_gray flex-grow-1" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-sm btn_Gray flex-grow-1" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-sm btn_light flex-grow-1" id="save-time-btn">儲存</button>
                 </div>
 
@@ -233,8 +249,8 @@ function initHotelEditModal() {
                 </div>                
 
                 <div class="modal-footer py-2 d-flex flex-nowrap w-100 gap-2">
-                    <button type="button" class="btn btn-sm btn-secondary flex-grow-1" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-sm btn-primary flex-grow-1" id="save-hotel-btn">加入行程</button>
+                    <button type="button" class="btn btn-sm btn_gray flex-grow-1" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-sm btn_light flex-grow-1" id="save-hotel-btn">加入行程</button>
                 </div>
             </div>
         </div>
@@ -366,7 +382,7 @@ function renderItinerary(items, dates, accommodations, flights) {
             if (confirm("確定要刪除這筆航班資訊嗎？")) {
                 try {
                     // 傳送 ID 與版本標記
-                    await TripApi.deleteFlight(flightId, rowVersion);
+                    await TripApi.deleteFlight(currentTripId, flightId, rowVersion);
 
                     // 刪除成功後重新載入資料
                     alert("刪除成功！");
@@ -396,8 +412,8 @@ function renderItinerary(items, dates, accommodations, flights) {
     // 住宿區塊 Header
     let hotelHtml = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold m-0 text-primary"><i class="bi bi-building me-2"></i>住宿安排</h6>
-            <button class="btn btn-sm btn-outline-primary rounded-pill" id="btn-add-hotel">
+            <h6 class="fw-bold m-0 text-success"><i class="bi bi-building me-2"></i>住宿安排</h6>
+            <button class="btn btn-sm btn-outline-mint rounded-pill" id="btn-add-hotel">
                 <i class="bi bi-plus-lg"></i> 新增
             </button>
         </div>
@@ -435,7 +451,7 @@ function renderItinerary(items, dates, accommodations, flights) {
                         </div>
                     </div>
                     <!-- 刪除按鈕 -->
-                    <button class="btn btn-link text-danger p-0 position-absolute top-0 end-0 mt-1 me-2 hotel-delete-btn" data-id="${hotel.id}">
+                    <button class="btn btn-link text-danger p-0 position-absolute top-0 end-0 mt-1 me-2 hotel-delete-btn" data-id="${hotel.id}" data-version="${hotel.rowVersion}">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
@@ -463,9 +479,36 @@ function renderItinerary(items, dates, accommodations, flights) {
 
     // 綁定「刪除住宿」按鈕
     hotelSection.querySelectorAll('.hotel-delete-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', async function () { // 加入 async
+            const hotelId = this.dataset.id;
+            const version = this.dataset.version;
+
+            if (!hotelId || !version) {
+                console.error("缺少 ID 或版本標記 (RowVersion)");
+                return;
+            }
+
             if (confirm("確定移除此住宿？")) {
-                deleteHotel(this.dataset.id);
+                try {
+                    // 呼叫 API 並帶入版本印章
+                    await TripApi.deleteAccommodation(hotelId, version);
+
+                    alert("已成功移除住宿");
+
+                    // 成功後執行載入資料的方法
+                    if (typeof loadTripData === 'function') {
+                        loadTripData();
+                        SignalRManager.broadcast(currentTripId, "刪除住宿", 0); 
+                    } else {
+                        location.reload(); // 備案：重新整理頁面
+                    }
+                } catch (error) {
+                    // 這裡會抓到 API 回傳的 409 或其他錯誤訊息
+                    alert("無法移除住宿：" + error);
+
+                    // 如果是並行衝突，通常需要刷新的資料以取得正確狀態
+                    if (typeof loadTripData === 'function') loadTripData();
+                }
             }
         });
     });
@@ -551,7 +594,7 @@ function renderItinerary(items, dates, accommodations, flights) {
         <div class="quick-add-section p-3 border-top">
             <!-- 狀態 A: 顯示 + 按鈕 -->
             <div class="quick-add-btn-wrapper text-center">
-                <button class="btn btn-outline-primary btn-sm w-100 rounded-pill quick-add-btn">
+                <button class="btn btn-outline-mint btn-sm w-100 rounded-pill quick-add-btn">
                     <i class="bi bi-plus-lg me-1"></i> 新增景點
                 </button>
             </div>
@@ -614,6 +657,7 @@ function renderItinerary(items, dates, accommodations, flights) {
                                 style="cursor: pointer;"
                                 title="點擊編輯時間"
                                 data-id="${item.id}" 
+                                data-version="${item.rowVersion}"
                                 data-start="${rawStart}" 
                                 data-end="${rawEnd}">     
                                 
@@ -681,14 +725,13 @@ function bindItemEvents() {
             if (timeTrigger) {
                 e.stopPropagation(); // 阻止事件冒泡 (不要觸發地圖移動)
 
-                // 取得資料
-                const itemId = timeTrigger.dataset.id;
-                // input type="time" 需要格式 HH:mm，如果後端給 HH:mm:ss 要截斷
+                const itemId = timeTrigger.dataset.id;             
+                const rowVersion = timeTrigger.dataset.version;
                 const start = (timeTrigger.dataset.start || "").substring(0, 5);
                 const end = (timeTrigger.dataset.end || "").substring(0, 5);
 
-                // 填入彈窗
-                document.getElementById('edit-item-id').value = itemId;
+                document.getElementById('edit-item-id').value = itemId;         
+                document.getElementById('edit-item-rowVersion').value = rowVersion;
                 document.getElementById('edit-start-time').value = start;
                 document.getElementById('edit-end-time').value = end;
 
@@ -737,7 +780,9 @@ function bindItemEvents() {
                     url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
                     type: 'DELETE',
                     success: function (result) {
+                        SignalRManager.broadcast(currentTripId, "刪除行程", 0); 
                         refreshItineraryList();
+                                  
 
                     },
                     error: function (xhr, status, error) {
@@ -812,6 +857,7 @@ function formatTime(timeString) {
 
 function saveEditedTime() {
     const id = document.getElementById('edit-item-id').value;
+    const rowVersion = document.getElementById('edit-item-rowVersion').value;
     const start = document.getElementById('edit-start-time').value; // 格式 "08:30"
     const end = document.getElementById('edit-end-time').value;     // 格式 "09:30"
 
@@ -824,6 +870,8 @@ function saveEditedTime() {
     // 準備 DTO (根據您的後端需求調整，通常需要補上秒數)
     const updateDto = {
         Id: parseInt(id),
+        TripId: currentTripId,
+        RowVersion: rowVersion, // 如果需要版本控制，請在此填入正確的值
         StartTime: start + ":00", // 補上秒數
         EndTime: end ? (end + ":00") : null
     };
@@ -835,19 +883,28 @@ function saveEditedTime() {
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
     modalInstance.hide();
 
-    // 發送 API
+ 
     $.ajax({
         url: '/api/TripApi/UpdateSpotTime',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(updateDto),
         success: function (response) {
-            // 重新整理列表以顯示新時間
             refreshItineraryList();
+            SignalRManager.broadcast(updateDto.TripId, "更新行程時間", response.targetId);              
         },
         error: function (xhr) {
-            console.error(xhr);
-            alert('更新時間失敗');
+            // 這裡只處理「儲存」這件事發生的錯誤
+            if (xhr.status === 409) {
+                const errorMsg = xhr.responseJSON?.message || "此行程已被其他成員修改";
+                alert(errorMsg); // 告知衝突原因
+            } else {
+                alert('更新時間失敗：' + (xhr.responseText || '未知錯誤'));
+            }
+
+            // 關鍵：儲存失敗後的 refreshItineraryList 是為了把正確的資料抓回來
+            // 確保 refreshItineraryList 內部只負責「渲染畫面」，不要在它裡面再寫 alert
+            refreshItineraryList();
         }
     });
 }
@@ -939,7 +996,7 @@ function addQuickPlaceToTrip(place, dayNum) {
     });
 }
 
-// 【新增】儲存住宿資料
+// 儲存住宿資料
 function saveHotelData() {
     if (!selectedHotelPlace) {
         alert("請先搜尋並選擇一間飯店");
@@ -980,6 +1037,8 @@ function saveHotelData() {
 
                 // 重新整理
                 refreshItineraryList();
+
+                SignalRManager.broadcast(currentTripId, "新增住宿", 0); 
             },
             error: function (xhr) {
                 alert("新增住宿失敗：" + (xhr.responseJSON?.message || "Error"));
@@ -988,19 +1047,7 @@ function saveHotelData() {
     });
 }
 
-// 【新增】刪除住宿
-function deleteHotel(accommodationId) {
-    $.ajax({
-        url: `/api/TripApi/DeleteAccommodation/${accommodationId}`, // 請確認後端 API
-        type: 'DELETE',
-        success: function () {
-            refreshItineraryList();
-        },
-        error: function (xhr) {
-            alert("刪除失敗");
-        }
-    });
-}
+
 
 // 抽離出一個共用的處理函式 (給餐廳卡片用，也可以給行程卡片用)
 function handleSpotClick(data) {
@@ -1046,6 +1093,8 @@ async function deleteTripDay(dayNum) {
                 refreshItineraryList();
                 // 如果刪除後導致日期變動，建議重新載入頁面確保全域變數同步
                 window.location.reload();
+
+                SignalRManager.broadcast(currentTripId, `刪除第 ${dayNum} 天，後續行程已自動遞補。`, 0);
             },
             error: function (xhr) {
                 const errorMsg = xhr.responseJSON?.message || "刪除天數失敗";

@@ -9,11 +9,23 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/trip/trip.css" />
 }
+
+@if (TempData["UnauthorizedMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3 d-flex align-items-center justify-content-between" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span>@TempData["UnauthorizedMessage"]</span>
+        </div>
+        <button type="button" class="btn-close custom-alert-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <div class="container">
     <div class="mytrip-header">
         <h1 class="mytrip-title memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>我的行程</h1>
-        <a asp-controller="Trip" asp-action="Create" class="btn btn_light">
-            + 建立新行程
+        <a asp-controller="Trip" asp-action="Create" class="create-btn">
+            + 建立新旅程
         </a>
     </div>
 
@@ -31,44 +43,87 @@
     } *@
     
 
+    <!-- 已開團 -->
+    <h2 class="section-title">已開團</h2>
 
-    <div class="grid">
-        @foreach(var t in Model.Trips)
-        {
-            var dataText = $"{t.StartDate:yyyy/MM/dd} - {t.EndDate:yyyy/MM/dd}";
-            <article class="card"
-                     data-trip-id="@t.TripId"
-                     data-details-url="@t.DetailsUrl"
-                     data-is-owner="@(t.IsOwner ? "1" : "0")">
+    @if(Model.Trips == null || !Model.Trips.Any())
+    {
+        <div class="empty-hint">目前沒有已開團行程</div>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach(var t in Model.Trips)
+            {
+                var dataText = $"{t.StartDate:yyyy/MM/dd} - {t.EndDate:yyyy/MM/dd}";
+                <article class="card"
+                         data-trip-id="@t.TripId"
+                         data-details-url="@t.DetailsUrl"
+                         data-is-owner="@(t.IsOwner ? "1" : "0")">
 
-                <div class="card-cover"
-                     style="background-image:url(@t.CoverImageUrl);">
+                    <div class="card-cover"
+                         style="background-image:url(@t.CoverImageUrl);">
 
-                </div>
-
-                <div class="card-body">
-                    <div class="card-title">@t.Title</div>
-                    <div class="card-date">@dataText</div>
-                </div>
-
-                <div class="card-actions">
-                    <button type="button" class="kebab-btn" aria-label="更多">
-                        <span class="kebab-dot"></span>
-                        <span class="kebab-dot"></span>
-                        <span class="kebab-dot"></span>
-                    </button>
-
-                    <div class="menu" role="menu">
-                        <button type="button" class="menu-item" data-action="members">成員</button>
-                        <button type="button" class="menu-item danger" data-action="danger">
-                            @(t.IsOwner ? "刪除" : "退出")
-                        </button>
                     </div>
-                </div>
 
-            </article>
-        }
-    </div>
+                    <div class="card-body">
+                        <div class="card-title">@t.Title</div>
+                        <div class="card-meta">
+                            <div class="card-date">@dataText</div>
+                            <div class="member-pill">@(t.MemberCount)人</div>
+                        </div>
+                    </div>
+
+                    <div class="card-actions">
+                        <button type="button" class="kebab-btn" aria-label="更多">
+                            <span class="kebab-dot"></span>
+                            <span class="kebab-dot"></span>
+                            <span class="kebab-dot"></span>
+                        </button>
+
+                        <div class="menu" role="menu">
+                            <button type="button" class="menu-item" data-action="members">成員</button>
+                            <button type="button" class="menu-item danger" data-action="danger">
+                                @(t.IsOwner ? "刪除" : "退出")
+                            </button>
+                        </div>
+                    </div>
+
+                </article>
+            }
+        </div>
+    }
+    <!-- 媒合中 -->
+    <h2 class="section-title mt-24">媒合中</h2>
+
+    @if(Model.MatchingGroups == null || !Model.MatchingGroups.Any())
+    {
+        <div class="empty-hint">沒有媒合中的行程</div>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach(var g in Model.MatchingGroups)
+            {
+                <article class="card"
+                    data-kind="matching"
+                    data-group-id="@g.GroupId"
+                    data-status="@g.Status"
+                    data-details-url="@g.DetailsUrl">
+
+                    @* 圖片 *@
+                    <div class="card-cover" style="background-image:url(@g.CoverImageUrl);"></div>
+                    
+                    <div class="card-body">
+                        <div class="card-title">@g.Title</div>
+                        @* 狀態小字 *@
+                        <div class="card-sub">@g.Status</div>
+                    </div>
+
+                </article>
+            }
+        </div>
+    }
 </div>
 
 <!-- Members Modal -->
@@ -86,17 +141,20 @@
             <div class="invite-row">
                 <div class="invite-label">邀請碼</div>
 
-                <div class="">
-                    <code id="inviteCodetext" class="invite-code">載入中...</code>
-                    <button type="button" id="btnCopyInvite" class="btn btn_light btn-copy" disabled>copy</button>
+                <div class="invite-line">
+                    <div class="inviteCodeShell" aria-label="橫向捲動邀請連結">
+                        <code id="inviteCodetext" class="invite-code" title="">載入中...</code>
+                    </div>
+                    
+                    <button type="button" id="btnCopyInvite" class="invite-btn invite-btn-copy" disabled>copy</button>
                 </div>
                 <div id="inviteHint" class="invite-hint"></div>
             </div>
 
         </div>
-        <div class="modal-footer">
-            <button class="btn-close btn btn_light">關閉</button>
-        </div>
+        @* <div class="modal-footer">
+            <button type="button" class="invite-btn invite-btn-close">關閉</button>
+        </div> *@
     </div>
 </div>
 
@@ -111,4 +169,22 @@
 
 @section Scripts {
     <script src="~/js/trip/trip.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 找到頁面上的 alert 元素
+            const alertElement = document.querySelector(".alert");
+
+            if (alertElement) {
+                // 設定 5000 毫秒 (5秒) 後執行
+                        setTimeout(() => {
+            const alert = document.querySelector(".alert");
+            if (alert) {
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = "0";
+                setTimeout(() => alert.remove(), 500); // 變透明後再從 DOM 移除
+            }
+        }, 10000);
+            }
+        });
+    </script>
 }

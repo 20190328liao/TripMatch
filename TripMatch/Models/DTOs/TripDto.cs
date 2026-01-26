@@ -88,6 +88,7 @@ namespace TripMatch.Models.DTOs
         public string Address { get; set; } = string.Empty;
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class ItineraryItemDto
@@ -100,6 +101,7 @@ namespace TripMatch.Models.DTOs
         public TimeOnly EndTime { get; set; }
         public int SortOrder { get; set; }
         public SpotProfileDto Profile { get; set; } = new SpotProfileDto();
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class SpotProfileDto
@@ -118,8 +120,10 @@ namespace TripMatch.Models.DTOs
     public class SpotTimeDto
     {
         public int Id { get; set; }
+        public int TripId { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
+        public string RowVersion { get; set; } = string.Empty;
     }
 
     public class TripCreateDto
@@ -168,6 +172,7 @@ namespace TripMatch.Models.DTOs
         public bool IsOwner { get; set; }
         public string DetailsUrl { get; set; } = "#";
         public string MembersUrl { get; set; } = "#";
+        public int MemberCount { get; set; }
     }
 
     // 最外層：接收 Google API 的完整回應
@@ -248,4 +253,15 @@ namespace TripMatch.Models.DTOs
         [JsonPropertyName("width")]
         public int Width { get; set; }
     }
+
+    // 我的行程 -> "媒合中"卡片
+    public class MatchingGroupCardDto
+    {
+        public int GroupId { get; set; }
+        public string Title { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string? CoverImageUrl { get; set; }
+        public string DetailsUrl { get; set; } = "#";
+    }
+
 }

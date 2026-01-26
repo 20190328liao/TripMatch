@@ -39,7 +39,7 @@ nav.navbar {
 
 /* 展開時的樣式：置頂、白底、陰影、可捲動 */
     .navbar-collapse.collapse.show {
-        height: 18rem !important;
+        height: 27rem !important;
         position: absolute !important;
         top: 100% !important; /* 緊貼 navbar 底部 */
         left: 0 !important;
@@ -341,6 +341,7 @@ nav.navbar .dropdown-menu {
 
 /* desktop rules */
 @media (min-width: 992px) {
+
     .navbar-toggler {
         display: none;
     }

@@ -7,6 +7,7 @@ namespace TripMatch.Models.DTOs
     public class MyTripsDto
     {
         public List<TripCardDto> Trips { get; set; } = new();
+        public List<MatchingGroupCardDto> MatchingGroups { get; set; } = new();
     }
 
     public static class SpotDto
@@ -19,8 +20,14 @@ namespace TripMatch.Models.DTOs
             [JsonPropertyName("name")]
             public string Name { get; set; } = "";
 
+            [JsonPropertyName("nameEn")]
+            public string? NameEn { get; set; } = "";
+
             [JsonPropertyName("rating")]
             public decimal? Rating { get; set; }
+
+            [JsonPropertyName("userRatingsTotal")]
+            public int? UserRatingsTotal { get; set; }
 
             [JsonPropertyName("address")]
             public string? Address { get; set; }
@@ -39,6 +46,9 @@ namespace TripMatch.Models.DTOs
 
             [JsonPropertyName("lng")]
             public decimal? Lng { get; set; }
+
+            [JsonPropertyName("types")]
+            public string[]? Types { get; set; }
         }
 
         /// <summary>

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TripMatch.Extensions;
+using TripMatch.Hubs;
 using TripMatch.Models;
 using TripMatch.Services;
 using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
-using System.Security.Claims;
 
 namespace TripMatch
 {
@@ -33,7 +35,8 @@ namespace TripMatch
 
             // 註冊身分驗證基礎設施
             builder.Services.AddIdentityInfrastructure(builder.Configuration);
-
+            // 
+            builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaims>();
             // 註冊各個模組的services
             builder.Services.AddScoped<MatchServices>();
             builder.Services.AddScoped<TripServices>();
@@ -54,11 +57,14 @@ namespace TripMatch
 
             // 註冊身分驗證基礎設施
 
+            builder.Services.AddSignalR();
+     
 
 
             // Swagger 與 授權
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
+
 
             // 配置 Session 服務
             builder.Services.AddSession(options =>
@@ -107,6 +113,7 @@ namespace TripMatch
             // 註冊旅遊資訊服務
             builder.Services.AddHttpClient<TravelInfoService>();
 
+
             // --- 建立應用程式 ---
             var app = builder.Build();
 
@@ -126,6 +133,8 @@ namespace TripMatch
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
+
             app.UseHttpsRedirection();
             app.UseDefaultFiles(); // 支援 wwwroot/signup.html 等靜態檔案
 
@@ -166,6 +175,8 @@ namespace TripMatch
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseTagUserId();  // 假設你有 extension 方法註冊 Middleware
+
+            app.MapHub<TripHub>("/tripHub");
 
             app.MapControllerRoute(
                 name: "default",

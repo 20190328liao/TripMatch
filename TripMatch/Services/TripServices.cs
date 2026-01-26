@@ -247,7 +247,7 @@ namespace TripMatch.Services
                     ArrTimeUtc = flight.ArriveUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
 
                     // 將 byte[] 轉換為 Base64 字串
-                    RowVersion = flight.RowVersion != null ? Convert.ToBase64String(flight.RowVersion) : null
+                    RowVersion = Convert.ToBase64String(flight.RowVersion!)
                 };
                 tripDetailDto.Flights.Add(flightDto);
             }
@@ -266,7 +266,8 @@ namespace TripMatch.Services
                     HotelName = accom.HotelName ?? "",
                     Address = accom.Address ?? "",
                     CheckInDate = accom.CheckInDate,
-                    CheckOutDate = accom.CheckOutDate
+                    CheckOutDate = accom.CheckOutDate,
+                    RowVersion = Convert.ToBase64String(accom.RowVersion!)
                 };
                 tripDetailDto.Accomadations.Add(accomDto);
             }
@@ -353,8 +354,8 @@ namespace TripMatch.Services
                     StartTime = item.StartTime ?? new TimeOnly(0, 0),
                     EndTime = item.EndTime ?? new TimeOnly(0, 0),
                     SortOrder = item.SortOrder,
-                    Profile = spotProfile
-
+                    Profile = spotProfile,
+                    RowVersion = Convert.ToBase64String(item.RowVersion!)
                 };
                 tripDetailDto.ItineraryItems.Add(itemDto);
             }
@@ -388,20 +389,17 @@ namespace TripMatch.Services
             }
         }
         // 刪除住宿
-        public async Task<bool> DeleteAccommodation(int Id)
+        public async Task<bool> DeleteAccommodation(int id, string rowVersion)
         {
-            var existing = await _context.Accommodations
-                    .FirstOrDefaultAsync(It => It.Id == Id);
-            if (existing != null)
-            {
-                _context.Accommodations.Remove(existing);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            var accommodation = await _context.Accommodations.FindAsync(id);
+            if (accommodation == null) return false;
+
+            // 使用泛型方法設定版本
+            ApplyRowVersion(accommodation, rowVersion);
+
+            _context.Accommodations.Remove(accommodation);
+            await _context.SaveChangesAsync();
+            return true;
         }
         // 新增景點
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
@@ -423,7 +421,7 @@ namespace TripMatch.Services
                 .OrderByDescending(x => x.SortOrder)
                 .FirstOrDefaultAsync();
 
-            if (lastItem == null || lastItem.EndTime==null)
+            if (lastItem == null || lastItem.EndTime == null)
             {
                 // 如果當天沒有任何景點，預設時間為 09:00 - 10:00
                 lastItem = new ItineraryItem
@@ -476,22 +474,22 @@ namespace TripMatch.Services
             }
         }
         // 更新景點時間
-        public async Task<bool> UpdateSpotTime(SpotTimeDto Dto)
+        public async Task<bool> UpdateSpotTime(SpotTimeDto dto)
         {
-            if (Dto.Id <= 0)
-                return false;
+            // 1. 抓取目前資料庫的實體
+            var spot = await _context.ItineraryItems.FindAsync(dto.Id);
+            if (spot == null) return false;
 
-            var existing = await _context.ItineraryItems
-                    .FirstOrDefaultAsync(It => It.Id == Dto.Id);
+            // 2. 套用版本檢查：告訴 EF 這一筆資料的「原始版本」是 dto 傳過來的那個
+            ApplyRowVersion(spot, dto.RowVersion);
 
-            if (existing != null)
-            {
-                existing.StartTime = Dto.StartTime;
-                existing.EndTime = Dto.EndTime;
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            return false;
+            // 3. 修改欄位
+            spot.StartTime = dto.StartTime;
+            spot.EndTime = dto.EndTime;
+
+            // 4. 存檔。如果此時資料庫版本與 dto.RowVersion 不符，會噴出 DbUpdateConcurrencyException
+            await _context.SaveChangesAsync();
+            return true;
         }
         // 新增一天(往後)
         public async Task<bool> AddTripDay(int tripId)
@@ -751,6 +749,7 @@ namespace TripMatch.Services
         // 抓我自己的行程
         public async Task<MyTripsDto> GetMyTripsAsync(int? userId = null)
         {
+            // 已開團 Trips
             var trips = await _context.TripMembers
                 .AsNoTracking()
                 .Where(tm => tm.UserId == userId)
@@ -766,10 +765,77 @@ namespace TripMatch.Services
                     IsOwner = (tm.RoleType == 1),
                     DetailsUrl = $"/Trip/Edit?id={tm.TripId}",
                     MembersUrl = $"/Trip/Members?tripId={tm.Trip.Id}",
+                    // 新增: 顯示該團人數
+                    MemberCount = _context.TripMembers.Count(x => x.TripId == tm.TripId)
                 })
                 .ToListAsync();
-            return new MyTripsDto { Trips = trips };
+
+
+
+
+            // 2. 在記憶體中逐一處理圖片 (這會比較慢，因為要跑迴圈 call API)        
+
+            foreach (var item in trips)
+            {
+                var firstPlaceId = await _context.GlobalRegions
+                            .Where(gr => gr.TripRegions.Any(tr => tr.TripId == item.TripId))
+                            .Select(gr => gr.PlaceId) // 優化：只從資料庫撈 PlaceId
+                            .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrEmpty(firstPlaceId))
+                {       
+                    string googleImageUrl = await _googlePlacesClient.GetPlaceCoverImageUrlAsync(firstPlaceId);
+                    if (!string.IsNullOrWhiteSpace(googleImageUrl))
+                        item.CoverImageUrl = googleImageUrl;
+                }
+            }
+
+        
+
+            // 媒合中 groups
+            var matchingGroupsRaw = await _context.TravelGroups
+                .AsNoTracking()
+                .Where(g => g.OwnerUserId == userId
+                            && g.Status != "JOINING"
+                            && (g.Status == "AAA" || g.Status == "BBB" || g.Status == "CCC" || g.Status == "DDD"))
+                .OrderByDescending(g => g.CreatedAt)
+                .Select(g => new
+                {
+                    g.GroupId,
+                    g.Title,
+                    g.Status
+                })
+                .ToListAsync();
+
+            // 再投影成 DTO (要用 helper)
+            var matchingGroups = matchingGroupsRaw.Select(g => new MatchingGroupCardDto
+            {
+                GroupId = g.GroupId,
+                Title = g.Title,
+                Status = g.Status,
+                CoverImageUrl = $"https://picsum.photos/seed/GROUP-{g.GroupId}/800/400",
+                DetailsUrl = MapStatusToUrl(g.Status ?? "", g.GroupId)
+            }).ToList();
+
+            return new MyTripsDto { 
+                Trips = trips,
+                MatchingGroups = matchingGroups
+            };
         }
+
+        // 依照 Status 轉換 Url
+        private static string MapStatusToUrl(string status, int groupId)
+        {
+            return status switch
+            {
+                "AAA" => $"/Trip/aaa?groupId={groupId}",
+                "BBB" => $"/Trip/bbb?groupId={groupId}",
+                "CCC" => $"/Trip/ccc?groupId={groupId}",
+                "DDD" => $"/Trip/ddd?groupId={groupId}",
+                _ => "#"
+            };
+        }
+
 
 
         // return 成員名單
@@ -806,17 +872,57 @@ namespace TripMatch.Services
                 .Select(x => (byte?)x.RoleType)
                 .FirstOrDefaultAsync();
 
-            if (myRole is null) throw new UnauthorizedAccessException("Not a trip member.");
-            if (myRole != 1) throw new UnauthorizedAccessException("Only owner can delete.");
+            if (myRole is null) throw new UnauthorizedAccessException("不是該行程成員。");
+            if (myRole != 1) throw new UnauthorizedAccessException("只有團主有權刪除行程。");
 
-            // 刪除策略:
-            // -> 若 DB 有 cascade，直接刪 Trip
-            // -> 若沒有 cascade，需先刪 TripMembers/關聯表，再刪 Trip
             var trip = await _context.Trips.FindAsync(tripId);
             if (trip == null) return;
 
-            _context.Trips.Remove(trip);
-            await _context.SaveChangesAsync();
+            // 用 Transaction 防止刪到一半斷掉
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // === 先清記帳資料 ===
+                // 1. 找出該 trip 底下的 expenses
+                var expenseIds = await _context.Expenses
+                    .Where(e => e.TripId == tripId)
+                    .Select(e => e.ExpenseId)
+                    .ToListAsync();
+
+                if (expenseIds.Count > 0)
+                {
+                    // 2. 刪 ExpenseParticipants
+                    var eps = _context.ExpenseParticipants.Where(ep => expenseIds.Contains(ep.ExpenseId));
+                    _context.ExpenseParticipants.RemoveRange(eps);
+
+                    // 3. 刪 ExpensePayers
+                    var payers = _context.ExpensePayers.Where(p => expenseIds.Contains(p.ExpenseId));
+                    _context.ExpensePayers.RemoveRange(payers);
+
+                    // 4. 刪 Expenses
+                    var expenses = _context.Expenses.Where(e => e.TripId == tripId);
+                    _context.Expenses.RemoveRange(expenses);
+                }
+
+                // 5. 刪 Settlements
+                var settlements = _context.Settlements.Where(s => s.TripId == tripId);
+                _context.Settlements.RemoveRange(settlements);
+
+                // 再刪 Trip 子表
+                var members = _context.TripMembers.Where(tm => tm.TripId == tripId);
+                _context.TripMembers.RemoveRange(members);
+
+                // 刪 Trip
+                _context.Trips.Remove(trip);
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         // 離開行程
@@ -830,11 +936,31 @@ namespace TripMatch.Services
             // owner 不允許直接 leave
             if (tm.RoleType == 1) throw new InvalidCastException("Owner cannot leave.");
 
+            // === 記帳關聯檢查 ===
+            // 1. ExpenseParticipant
+            bool hasParticipant = await _context.ExpenseParticipants
+                .AnyAsync(ep => ep.TripId == tripId && ep.UserId == userId);
+            // 2. ExpensePayer
+            bool hasPayer = await _context.ExpensePayers
+                .AnyAsync(p => p.Member.UserId == userId && p.Member.TripId == tripId);
+
+            // 3. Settlement
+            bool hasSettlement = await _context.Settlements
+                .AnyAsync(s => s.TripId == tripId && (s.FromUserId == userId || s.ToUserId == userId));
+
+            // 檢查條件後才刪除
+            if (hasParticipant || hasPayer || hasSettlement)
+            {
+                throw new InvalidOperationException(
+                    "退出失敗: 您在此行程仍有分帳或結算紀錄，請先刪除相關記帳紀錄後再試一次。"
+                );
+            }
+
             _context.TripMembers.Remove(tm);
             await _context.SaveChangesAsync();
         }
 
-        // 取得驗證碼
+        // 取得邀請碼
         public async Task<Guid> GetInviteCodeAsync(int userId, int tripId)
         {
             var isMember = await _context.TripMembers
@@ -914,28 +1040,17 @@ namespace TripMatch.Services
         }
 
 
-        public async Task<bool> DeleteFlight(int flightId, string rowVersionStr)
+        public async Task<bool> DeleteFlight(int id, string rowVersion)
         {
-            var flight = await _context.Flights.FindAsync(flightId);
+            var flight = await _context.Flights.FindAsync(id);
             if (flight == null) return false;
 
-            try
-            {
-                // 將前端傳回的印章轉回二進位
-                byte[] clientVersion = Convert.FromBase64String(rowVersionStr);
+            // 使用泛型方法設定版本
+            ApplyRowVersion(flight, rowVersion);
 
-                // 告訴 EF：比對這個版本號
-                _context.Entry(flight).Property("RowVersion").OriginalValue = clientVersion;
-
-                _context.Flights.Remove(flight);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // 抓到衝突：代表資料庫的版本號已經變了
-                return false;
-            }
+            _context.Flights.Remove(flight);
+            await _context.SaveChangesAsync();
+            return true;
         }
         #endregion
 
@@ -952,23 +1067,13 @@ namespace TripMatch.Services
             if (trip == null) return null;
 
 
+            var firstPlaceId = await _context.GlobalRegions
+                            .Where(gr => gr.TripRegions.Any(tr => tr.TripId == trip.Id))
+                            .Select(gr => gr.PlaceId) // 優化：只從資料庫撈 PlaceId
+                            .FirstOrDefaultAsync();
 
-            //取得tripRegions
-            var tripRegions = await _context.GlobalRegions
-                .Where(gr => gr.TripRegions.Any(tr => tr.TripId == trip.Id))
-                .ToListAsync();
-
-            // 透過place id 取得 cover image url    
-            string coverImageUrl = "";
-            _googlePlacesClient.GetPlaceDetailsAsync(
-                tripRegions.FirstOrDefault()?.PlaceId ?? "", "zh-TW").ContinueWith(task =>
-                {
-                    var dto = task.Result;
-                    if (dto != null && dto.Result.Photos != null && dto.Result.Photos.Count > 0)
-                    {
-                        coverImageUrl = _googlePlacesClient.GetPhotoUrl(dto.Result.Photos[0].PhotoReference);
-                    }
-                }).Wait();  
+            // 4. 呼叫剛封裝好的方法（直接取得 URL）
+            string coverImageUrl = await _googlePlacesClient.GetPlaceCoverImageUrlAsync(firstPlaceId ?? "");
 
 
             return new TripSimpleDto
@@ -1012,6 +1117,31 @@ namespace TripMatch.Services
         }
 
         #endregion
+
+        /// <summary>
+        /// 統一處理樂觀並行控制的版本設定
+        /// </summary>
+        private void ApplyRowVersion<TEntity>(TEntity entity, string rowVersion) where TEntity : class
+        {
+            if (string.IsNullOrEmpty(rowVersion)) return;
+
+            // 將 Base64 字串轉回 byte[]
+            byte[] versionBytes = Convert.FromBase64String(rowVersion);
+
+            // 告訴 EF Core：這個實體的 RowVersion 原始值應該是 versionBytes
+            // EF 會在 SaveChangesAsync 時自動產生 WHERE RowVersion = ...
+            _context.Entry(entity).Property("RowVersion").OriginalValue = versionBytes;
+        }
+
+
+        public async Task<bool> IsUserTripMember(int? userId, int tripId)
+        {
+            if (userId == null) return false;
+
+            // 檢查該使用者是否在該行程的成員名單中
+            return await _context.TripMembers
+                .AnyAsync(tm => tm.TripId == tripId && tm.UserId == userId);
+        }
 
     }
 }

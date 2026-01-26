@@ -517,7 +517,18 @@
     }
 
     function checkEmpty() { if (wishlistContainer.querySelectorAll('.col').length === 0) renderEmpty(); }
-    function renderEmpty() { wishlistContainer.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">目前沒有願望清單</p></div>'; }
+
+    // 補上遺失的 renderEmpty 函式
+    function renderEmpty() {
+        if (!wishlistContainer) return;
+        wishlistContainer.innerHTML = `
+            <div class="col-12 text-center py-5" style="background: #f8f9fa; border-radius: 12px; margin: 20px 0; width:100%;">
+                <div class="mb-3" style="font-size: 3.5rem; opacity: 0.5;">📍</div>
+                <h5 class="text-muted fw-bold">您的清單目前是空的</h5>
+                <p class="text-muted mb-4">快去探索更多景點並加入清單吧！</p>
+                <a href="/Spot" class="btn btn-primary-mint px-4">去逛逛景點</a>
+            </div>`;
+    }
 
     function escapeHtml(s) {
         if (!s) return '';

@@ -201,6 +201,8 @@ namespace TripMatch.Services
                 options.AddSecurityRequirement(securityRequirement);
             });
 
+            services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaims>();
+
             return services;
         }
 
@@ -232,16 +234,18 @@ namespace TripMatch.Services
                 var now = DateTime.UtcNow;
                 var expires = now.AddDays(30);
 
+                // 在 GenerateJwtToken 的 claims 清單加入 FullName
                 var claims = new List<Claim>
                 {
-                    // 標準 sub + 明確的 NameIdentifier (整數 ID)
-                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                    new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                    new Claim("Avatar", user.Avatar ?? string.Empty)
+                    new (System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                    new (ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new (System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new (System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                    new (System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                    new (ClaimTypes.Name, user.UserName ?? string.Empty),
+                    new ("Avatar", user.Avatar ?? string.Empty),
+                    // 新增：把 FullName 放到 JWT
+                    new (ClaimTypes.GivenName, user.FullName ?? string.Empty)
                 };
 
                 var descriptor = new SecurityTokenDescriptor

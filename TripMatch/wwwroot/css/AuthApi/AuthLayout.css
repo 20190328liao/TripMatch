@@ -1,0 +1,218 @@
+﻿
+:root {
+    --mc-max-width: 1340px;
+    --theme-teal-600: #0ea5a4;
+    --theme-teal-500: #14b8a6;
+    --theme-cyan-500: #06b6d4;
+    --theme-blue-600: #0284c7;
+    --theme-emerald-500: #10b981;
+    /* fallback UI tokens */
+    --btn-transparent-border-alpha: rgba(2, 132, 199, 0.14);
+    --btn-transparent-hover-alpha: rgba(2, 132, 199, 0.06);
+    /*wishlist*/
+    --category-blue: #0284C7;
+    --category-teal: #0EA5A4;
+    --category-green: #10B981;
+    --tm-mint: #62DEB1; /* 亮綠色 */
+    --tm-teal: #00968A; /* 深綠色 */
+    --tm-bg-blue: #DAF3F3; /* 淡藍色 */
+    --tm-contrast: #ED5F00; /* 橘紅色 */
+    --tm-gray: linear-gradient(125deg, #e0eae9, #e0f1f3);
+    /* 灰色線條 */
+    --tm-text-black: #000; /* 標題黑字 */
+    --radius-card: 18px;
+}
+.profile_avatar_section {
+    height: 560px;
+}
+.main-content2 {
+    background-color: #f8fafc;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+    padding-bottom: 24px;
+}
+/* 浮島式主要容器 */
+.member_section {
+    background: linear-gradient(to bottom, rgba(98, 222, 177, 0.15) 0%, #ffffff 80px, #ffffff 100%);
+    border-radius: var(--radius-card);
+    padding: 30px 60px 43px 60px;
+    margin-top: 40px;
+    margin-bottom: 60px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    position: relative;
+    z-index: 0;
+}
+
+.member_center_wrap {
+    max-width: var(--mc-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+.member_center_wrap {
+    box-sizing: border-box;
+}
+
+.profile_info_section .info_value {
+    display: flex;
+    flex-wrap: wrap; /* 允許子項在需要時換行 */
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 45px; /* 保留原本左內距 */
+    min-width: 0; /* 防止 flex 項撐破父容器 */
+    white-space: normal !important; /* 允許文字換行（覆寫先前的 nowrap） */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+/* 1. 會員中心專用標題與裝飾 */
+.profile_avatar_section,
+.profile_info_section {
+    padding: 20px;
+    background-color: var(--color_bk);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
+    border: 1px solid rgb(188, 204, 219, 0.57);
+    height: 60vh;
+    line-height: 1.65;
+}
+
+.profile_info_section {
+    height: 60vh;
+    line-height: 1.65;
+}
+    @media (min-width: 992px) {
+        .auth-page {
+        height: 100vh;
+    }
+
+    .member_center_wrap {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-left: 40px;
+    }
+    /* Profile 區塊：avatar 固定寬度、info 區撐滿剩餘空間 */
+    .profile_container {
+        display: flex;
+        gap: 1.5rem;
+        gap: 30px;
+        align-items: flex-start;
+        box-sizing: border-box;
+    }
+
+
+    .profile_avatar_section {
+        flex: 1 1 320px; /* 固定寬度 */
+        max-width: 400px;
+        border-radius: 18px;
+        padding: 25px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .profile_info_section {
+        flex: 999 1 400px;
+        border-radius: 12px;
+        padding: 25px;
+        background: #fff;
+    }
+
+    .profile_info_section {
+        flex: 1;
+        padding: 30px;
+        background-color: var(--color_bk);
+        border-radius: 18px;
+        min-width: 10px;
+/*        height: 35rem;*/
+        white-space: normal;
+        font-size: 18pt;
+    }
+
+        .profile_info_section .info_value {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 45px;
+            min-width: 0;
+            width: 100%;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            margin-bottom: 10px;
+        }
+
+            .profile_info_section .info_value .form-control,
+            .profile_info_section .info_value input,
+            .profile_info_section .info_value select,
+            .profile_info_section .info_value textarea {
+                width: 40% !important;
+                max-width: 40% !important;
+                box-sizing: border-box;
+            }
+}
+
+@media (max-width: 991.98px) {
+    .member_section {
+        height: auto;
+        max-height: auto;
+    }
+    .auth-page {
+        height: auto;
+        overflow: auto;
+    }
+
+    .main-content2 {
+        padding: 0 56px 80px 56px;
+    }
+
+    .member-page .profile_container .info_row {
+        padding-left: 30px;
+    }
+
+    .profile_avatar_section, .profile_info_section {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        max-height: 26rem;
+        border-radius: 12px;
+        box-sizing: border-box;
+        align-content: center;
+        border: 1px solid rgb(188, 204, 219, 0.57);
+        margin-bottom: 30px;
+    }
+
+    .profile_info_section {
+        white-space: normal;
+        font-size: 14pt;
+/*        height: 100%;*/
+    }
+
+    #profile_section .row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin: 0;
+    }
+
+
+
+    #profile_section [class*="col-"] {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+}

@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using TripMatch.Models;
 using TripMatch.Services;
+using TripMatch.Filters;
 
 namespace TripMatch.Controllers
 {
@@ -33,7 +32,8 @@ namespace TripMatch.Controllers
             return View();
         }
 
-       
+        [Authorize]
+        [TripMemberAuthorize]
         public IActionResult Edit(int id)
         {
             return View(id);

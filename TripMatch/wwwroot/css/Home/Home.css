@@ -19,6 +19,7 @@ body {
 }
 
 /* --- 2. 主視覺區 Hero Section --- */
+
 /*綠色漸層背景、圓弧底部造型*/
 .hero-section {
     padding: 50px 20px 80px;
@@ -89,6 +90,12 @@ body {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     position: relative;
     z-index: 10;
+}
+@media screen and (max-width: 991.98px) {
+    .main-card {
+        padding: 25px;
+        height: auto;
+    }
 }
 /*切換顯示「計畫」或「媒合」內容的區塊*/
 .mode-content {
@@ -525,3 +532,231 @@ body {
         opacity: 0.8;
         font-size: 12px;
     }*/
+
+/* --- 視差滾動與背景基礎設定 --- */
+.hero-section {
+    position: relative;
+    overflow: hidden; /* 確保動畫不溢出 */
+    background-attachment: fixed; /* 基礎視差效果：背景固定 */
+}
+
+/* --- 城市圖片變換層 (3種城市, 透明度30%) --- */
+.city-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.3; /* 透明度 30% */
+    z-index: 1;
+    background-size: cover;
+    background-position: center;
+    /* 這裡使用 Keyframes 輪播圖片 */
+    animation: citySlide 15s infinite;
+}
+
+@keyframes citySlide {
+    0%, 30% {
+        background-image: url('/img/city1.jpg');
+    }
+    /* 請更換為你的圖片路徑 */
+    33%, 63% {
+        background-image: url('/img/city2.jpg');
+    }
+
+    66%, 100% {
+        background-image: url('/img/city3.jpg');
+    }
+}
+
+/* --- 星星動畫：四個矩形聚合成菱形 --- */
+.star-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* 讓滑鼠可以穿透點擊後方按鈕 */
+}
+
+.star {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+}
+
+    /* 建立星星的四個角落（矩形） */
+    .star::before, .star::after {
+        content: '';
+        position: absolute;
+        background: white;
+        width: 50%;
+        height: 50%;
+        transition: all 0.5s ease;
+    }
+
+/* 使用傳統 Keyframes 組合：縮放、旋轉 45 度形成菱形、位移 */
+.star {
+    animation: starTwinkle 4s infinite ease-in-out;
+}
+
+@keyframes starTwinkle {
+    0%, 100% {
+        transform: scale(0.5) rotate(0deg);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.2) rotate(45deg); /* 旋轉45度讓矩形看起來像菱形 */
+        opacity: 0.8;
+    }
+}
+
+/* 讓內部四個角有「聚合收放」感 */
+.star::before {
+    top: 0;
+    left: 0;
+    box-shadow: 10px 10px white;
+}
+
+.star::after {
+    bottom: 0;
+    right: 0;
+    box-shadow: -10px -10px white;
+}
+
+/* --- 內容層級提升 --- */
+.status-indicator, .hero-title, .hero-btns, .main-card {
+    position: relative;
+    z-index: 10; /* 確保在背景之上 */
+}
+
+/*==========測試=============*/
+
+
+
+/* --- 星星：四個矩形聚合動畫 --- */
+.star-cluster {
+    position: absolute;
+    width: 10px;
+    height:10px;
+    filter:blur(2px);
+    z-index: 2;
+    transform: rotate(45deg); /* 讓組合看起來像菱形 */
+}
+
+.star-part {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    box-shadow: 0 0 8px white;
+    animation: starCombine 3s infinite ease-in-out;
+}
+
+.star-part2 {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: white;
+    box-shadow: 0 0 2px white;
+    animation: starCombine 2.5s infinite ease-in-out;
+}
+
+/* 四個矩形的初始偏離位置 */
+.p1 {
+    top: 0;
+    left: 0;
+}
+
+.p2 {
+    top: 0;
+    right: 0;
+}
+
+.p3 {
+    bottom: 0;
+    left: 0;
+}
+
+.p4 {
+    bottom: 0;
+    right: 0;
+}
+
+@keyframes starCombine {
+    0%, 100% {
+        transform: translate(0, 0) scale(0.5);
+        opacity: 0.2;
+    }
+
+    50% {
+        transform: translate(5px, 5px) scale(1.2);
+        opacity: 1;
+    }
+}
+/* 針對不同方位微調聚合方向 */
+.p1 {
+    animation-name: p1Anim;
+}
+
+.p2 {
+    animation-name: p2Anim;
+}
+
+.p3 {
+    animation-name: p3Anim;
+}
+
+.p4 {
+    animation-name: p4Anim;
+}
+
+@keyframes p1Anim {
+    0%,100% {
+        transform: translate(0,0) scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translate(10px,10px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes p2Anim {
+    0%,100% {
+        transform: translate(0,0) scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translate(-10px,10px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes p3Anim {
+    0%,100% {
+        transform: translate(0,0) scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translate(10px,-10px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes p4Anim {
+    0%,100% {
+        transform: translate(0,0) scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translate(-10px,-10px) scale(1.2);
+        opacity: 1;
+    }
+}

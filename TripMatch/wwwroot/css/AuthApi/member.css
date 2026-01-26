@@ -1,250 +1,98 @@
-﻿.main-content2 {
-    background-color: #f8fafc;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-left: 24px;
-    padding-right: 24px;
-    box-sizing: border-box;
-    padding-bottom:24px;
+﻿/* ==========================================================================
+   PROFILE SECTION (個人資料區塊)
+   ========================================================================== */
+/* 虛線圓形頭像框 */
+.avatar_frame {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    padding: 8px;
+    border: 3px dashed var(--tm-gray);
+    margin-bottom: 25px;
 }
-
-.member_center_wrap {
-    box-sizing: border-box;
-}
-
-.list-header.text-muted {
-    color: var(--color_Dark);
-}
-.legend-hint {
+/* 修改/編輯文字連結按鈕 */
+.edit_link {
     font-size: 18pt;
-    margin-left:15px;
-    margin-bottom:15px;
+    color: var(--tm-teal);
+    background: transparent;
+    border: none;
+    cursor: pointer;
 }
-.wishlist_categories {
-    margin-left: 30px;
-    margin-bottom: 15px
+    .edit_link:hover {
+        text-decoration: underline;
+    }
+.bi-person, .bi-gear, .bi-envelope {
+    margin-right: 8px;
+    width: 25px;
+    height: 25px;
 }
 #displayName, #displayBackupEmail {
-    width: 25vh;
+    width: 50%;
 }
-.card-title, .year-header {
-    text-align: center;
-    font-size: 18pt;
-}
-.edit_cards_link {
-    font-size: 14pt;
-}
-.section_header {
-margin-right:20px;
-}
-.info_item svg {
-    position: relative;
-    fill: var(--color_Dark);
-    bottom: 2px;
-}
-.info_item2 {
-    display: inline;
-    text-align: center;
-    margin-left:40px;
-    margin-top:25px;
-}
-.info_item2 a {
-    text-decoration: none;
-    color: var(--color_Dark);
-    padding-bottom: 20px;
-    max-width: 100%;
-    word-break: break-all;
-   
-}
-
-.info_item {
-    display: flex;
-    flex-wrap: wrap; /* 小螢幕時自動換行 */
-    margin-bottom: 0rem;
-    margin-top: 0rem;
-}
-    .info_item .info_label {
-        flex: 0 0 140px; /* 可依需求改成 120 / 160 */
-        min-width: 120px;
-        box-sizing: border-box;
-        justify-content: center;
-    }
-.info_value button {
-    justify-content: center;
-    margin-bottom:10px;
-}
-.info_value {
-    position: static;
-    left: auto;
-    flex: 1 1 auto;
-    width: 100%;
-    box-sizing: border-box;
-    min-width: 0; /* 允許在窄螢幕內縮 */
-    margin-bottom: 10px;
-}
-    .info_value .form-control,
-    .info_value input,
-    .info_value select,
-    .info_value textarea {
-        width: 100%;
-        max-width: 46vh;
-        box-sizing: border-box;
-        padding-bottom: 0;
-    }
+/* ==========================================================================
+MemberCenter.cshtml
+為會員中心 (Profile / Calendar / Wishlist) 
+   ========================================================================== */
 
 
-.profile_info_section label {
-    color: var(--color_Dark);
-    font-weight: 600;
-}
-.info_value {
-    padding-left: 45px;
-}
-#btnEditName, #btnEditBackupEmail {
-    color: var(--color_link);
-    font-weight:600;
-}
-
-.form-control {
-    height: 48px;
-    font-size:18pt;
-}
-.btn_view_more {
-    text-align: center;
-    font-size:18px;
-}
-/* =============================
-   Browser Default Override
-   ⚠ 不可刪除
-============================= */
-
-
-.signContent {
-    background: white;
-}
 
 .memberTitle {
     color: #000;
     font-weight: 700;
-    margin: 3rem 0 1.5rem 0;
+    margin: 2rem 0 1.5rem 0;
+    z-index:10;
 }
-
-.inputLine,
-.inputNone,
-.backIndex,
-.back-home-link,
-.back-home-link a {
-    text-decoration: none;
+#calendar_section .memberTitle::after {
+    top: 2%;
 }
-
-input,
-button,
-select,
-textarea {
-    appearance: none;
-    -webkit-appearance: none;
-    outline: none;
+.memberTitle::after {
+    content: "";
+    position: absolute;
+    left: 0%;
+    top: 3%;
+    transform: translateY(-50%);
+    width: 90%;
+    height: 20px;
+    border: 8px dashed #e3f7f2;
+    background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
+    border-radius: 2px;
+    animation-name: abc;
+    animation-duration: 2s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+    z-index: -1;
 }
+/*    .memberTitle::before {
+        content: "";
+        position: absolute;
+        left: 10%;
+        top: 12%;
+        transform: translateY(-50%);
+        width: 30%;
+        height: 2px;
+        background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
+        border-radius: 2px;
+        animation: abc ease-in-out 3s infinite;
+    }*/
 
-    /* IE/Edge 舊版密碼框按鈕 */
-    input[type="password"]::-ms-reveal,
-    input[type="password"]::-ms-clear {
-        display: none;
+    @keyframes abc {
+        0%, 100% {
+            width: 5%;
+        }
+        50% {
+            width: 100%;
+        }
+        100% {
+            width: 100%;
+        }
     }
 
-/* ================================
-   Button
-================================ */
-.btnSpot {
-    font-size: 18pt;
-    text-decoration: none;
-}
-
-.calendarBtnWrap .btn {
-    width: 15rem;
-    border: none;
-    border-radius: 10px;
-}
-
-.calendarBtnWrap .btn1 {
-    width: 10rem;
-    border: none;
-    border-radius: 10px;
-}
-.calendarBtnWrap .btn2 {
-    width: 15rem;
-    border: none;
-    border-radius: 10px;
-}
-
-.btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .edit_link, .info_label {
-    height: 48px;
-    font-size: 18pt;
-    margin: 10px;
-    white-space: nowrap;
-}
-
-.btn-confirm {
-    background-color: #ccf1fe;
-    border: 1px solid #82c1f6a6;
-    color: black;
-}
-    .btn-confirm:focus {
-        background-color: #6be1f6;
-        border: 1px solid #82c1f6a6;
-        color: black;
+    .current-title {
+        position: relative;
+        padding-left: 22px;
+        margin-bottom: 0;
+        border-left: none;
     }
-
-.btn-edit {
-    background-color: var(--color_Gray);
-    color: black;
-}
-    .btn-edit:focus {
-        background-color:#ffc083;
-    }
-
-    .btn-danger1 {
-        background-color: var(--color_nav, #ff6b6b);
-        color: black;
-    }
-.btn-danger1:focus {
-    background-color: #6dfbbe;
-    color: black;
-}
-
-.btn-primary2 {
-    background-color: #7ca8e5;
-    color: black;
-}
-
-/* verify / step buttons */
-#btn_next_step {
-    height: 48px;
-    width: 30rem;
-    justify-content: center;
-}
-
-/* branding */
-.logoContent {
-    font-weight: normal;
-    font-family: 'Noto Sans', sans-serif;
-    font-size: 18pt;
-    padding-top: 25px;
-    margin-left: 10px;
-}
-
-
-.logoImg {
-    width: 20rem;
-}
-
-/* ---------- Current title marker ---------- */
-.current-title {
-    position: relative;
-    padding-left: 22px;
-    margin-bottom: 0;
-    border-left: none;
-}
 
     .current-title::before {
         content: "";
@@ -258,402 +106,62 @@ textarea {
         border-radius: 2px;
     }
 
-/* icon sizing */
-.bi-person, .bi-gear, .bi-envelope {
-    margin-right: 8px;
-    width: 25px;
-    height: 25px;
+.list-header.text-muted {
+    color: var(--color_Dark);
 }
 
-/* display email spacing */
-#displayEmail {
-    margin-top: 15px;
-    margin-bottom: 15px;
-}
-
-/* ---------- Global utilities ---------- */
-#btnLogin {
-    font-size: 16pt;
-    min-width: 20rem;
-    max-width: 30rem;
-    padding: .5rem 1.2rem;
-    display: inline-block;
-}
-
-.backIndex {
-    margin: 0;
-}
-
-.link {
-    padding-top: 15px;
-    padding-bottom: 15px;
-    font-size: 14pt;
-    text-align: right;
-}
-
-/* decorative line */
-.lineBlackWrap {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.lineStroke {
-    display: block;
-    position: relative;
-    z-index: 0;
-    height: 2px;
-    border: none;
-    background: linear-gradient( to right, transparent 5%, var(--color_Gray, #ccc) 15%, var(--color_Gray, #ccc) 90%, transparent 95% );
-    width: 100%;
-    margin: 15px 0;
-    min-width: 0;
-}
-
-.lineBlack {
+.list-header small {
     font-size: 18pt;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--color_bk);
-    padding: 0 50px;
-    z-index: 1;
-    pointer-events: none;
-}
-.wishlist_categories {
-    display: flex;
-    flex-direction: column;
-}
-/* ---------- Responsive / layout rules (mobile first) ---------- */
-@media (max-width: 991.98px) {
-    .main-content2 {
-        padding: 0 56px 80px 56px;
-    }
-    .wishlist_categories {
-        flex-direction: row !important;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 6px;
-        gap: 0.75rem;
-    }
-
-        /* 每個分類按鈕在行動版維持寬度不被壓扁 */
-        .wishlist_categories .wishlist-cat-btn {
-            flex: 0 0 auto;
-            white-space: nowrap;
-        }
-
-        /* 隱藏橫向捲軸的視覺（若不要可移除） */
-        .wishlist_categories::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .wishlist_categories::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.08);
-            border-radius: 6px;
-        }
-
-    .member_center_wrap {
-        display: block;
-        margin-left: 0;
-
-        box-sizing: border-box;
-    }
-
-    .profile_container {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        width: 100%;
-        box-sizing: border-box;
-        
-    }
-        .profile_container .info_row {
-            padding-left: 30px;
-        }
-   
-
-    .profile_avatar_section,
-    .profile_info_section {
-        padding: 20px;
-        background-color: var(--color_bk);
-        width: 100%;
-        max-width: none;
-        min-width: 0;
-        min-height: 25rem;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-        border-radius: 12px;
-        box-sizing: border-box;
-        align-content: center;
-    }
-
-
-    .profile_info_section {
-        white-space: normal;
-        font-size: 14pt;
-    }
-
-
-    /* 讓 container 的直式項目置中 */
-    .profile_container {
-        align-items: center;
-    }
-    /* 1. 讓區塊父容器水平置中 */
-    #profile_section .row {
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* 讓子元素（col）在 row 裡面水平置中 */
-        justify-content: center;
-        width: 100%;
-        margin: 0;
-    }
-
-
-    /* 確保容器內的項目也跟著對齊 */
-    .info_item {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start; /* 確保內部元件靠左 */
-    }
-
-    /* 4. 針對 Bootstrap Col 的修正 */
-    #profile_section [class*="col-"] {
-        width: 100%;
-        max-width: 100%;
-        padding-left: 0;
-        padding-right: 0;
-    }
-    /* 確保頭像框內容水平置中 */
-    .profile_avatar_section .avatar_frame,
-    .profile_avatar_section .avatar_btns {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+    padding-top: 10px;
+    color: #24a1f3;
 }
 
-/* ---------- Form elements & inputs ---------- */
-.input_group_custom {
-    position: relative;
-    display: flex;
-    height: 48px;
-    padding: 0 12px;
-    margin-bottom: 1rem;
-    border: 1px solid var(--color_Border);
-    border-radius: 6px;
-    background-color: var(--color_bk);
+.list-header h5 {
+    font-size: 20pt;
 }
 
-    .input_group_custom input {
-        width: 100%;
-        border: none;
-        outline: none;
-        background: transparent;
-        height: 100%;
-        font-size: var(--fontBody);
-        padding-right: 40px;
-    }
-
-    .input_group_custom:focus-within {
-        border-color: var(--color_Primary);
-    }
-
-    .input_group_custom .label1 {
-        font-size: var(--fontBody);
-        color: var(--color_font);
-        margin-bottom: .5rem;
-        display: block;
-    }
-
-/* toggle pwd */
-.btn-toggle-pwd {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-}
-
-    .btn-toggle-pwd img {
-        width: 20px;
-        height: 20px;
-        object-fit: contain;
-    }
-
-/* input hints */
-.inputHint, .goodHint {
-    display: block;
-    min-height: 1.2em;
-    font-size: 16pt;
-    line-height: 1.4;
-    width: 100%;
-    max-width: 28rem;
-    box-sizing: border-box;
-}
-
-    .inputHint.success {
-        color: var(--color_Green);
-    }
-
-    .inputHint.error {
-        color: var(--color_Contrast);
-    }
-
-/* email row */
-.email_row {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
-    width: 100%;
-    margin-bottom: .5rem;
-}
-
-    .email_row input.email2 {
-        flex: 1;
-        min-height: 48px;
-        padding: 0 12px;
-        font-size: var(--fontBody);
-        border: 1px solid var(--color_Border);
-        border-radius: 4px;
-        background-color: var(--color_bk);
-        box-sizing: border-box;
-    }
-
-    .email_row button.eLabel {
-        height: 48px;
-        padding: 0 16px;
-        font-size: var(--fontBody);
-        border-radius: 4px;
-    }
-
-/* action buttons */
-#btnRegister, .btn_next_step {
-    width: 100%;
-    max-width: 30rem;
-    box-sizing: border-box;
-}
-
-.btn_next_step {
-    background: var(--color_Gray);
-    color: var(--color_font);
-    border: none;
-    border-radius: 8px;
-    padding: .9rem 1.5rem;
-    font-size: 1.05rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .2s;
-    margin-top: 1.5rem;
-}
-
-/* avatar */
-.memberAvatar {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #ddd;
-}
-
-/* popup / modal */
-.popup_overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9998;
-}
-
-.reg_popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    background: var(--color_bk);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    z-index: 9999;
-    min-width: 320px;
+.card-title,
+.year-header {
     text-align: center;
+    font-size: 18pt;
 }
 
-.popup_title {
-    font-size: var(--font_H4);
-    font-weight: bold;
+.nullWishlist {
+    font-size: 18pt;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.legend-hint {
+    font-size: 18pt;
+    margin-left: 15px;
     margin-bottom: 15px;
-    display: block;
 }
 
-.btn_popup_close {
-    margin-top: 20px;
-    padding: 8px 25px;
-    background-color: var(--color_Dark);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.logoContent {
+    font-weight: normal;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 18pt;
+    padding-top: 25px;
+    margin-left: 10px;
 }
 
-/* misc small utilities */
-.privacy {
-    font-size: 14pt;
-    margin-top: 25px;
-}
-
-.systemMessage {
-    border-radius: 4px;
-}
-
-.incomplete {
-    color: var(--color_Contrast);
-    font-size: var(--f_small);
-    font-weight: bold;
-}
-
-/* autofill fixes */
-input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
-    transition: background-color 5000s ease-in-out 0s, font-size 5000s ease-in-out 0s;
-    -webkit-box-shadow: 0 0 0 1000px var(--color_bk) inset;
-    -webkit-text-fill-color: var(--color_font);
-    height: auto;
-    font-size: var(--fontBody);
-}
-
-    input:-webkit-autofill::first-line {
-        font-size: 24px;
-    }
-
-input:is(:-webkit-autofill, :autofill) {
-    font-size: var(--fontBody);
-}
-
-/* Google button */
-.GoogleWrap {
-    width: 100%;
-    text-align: center;
-    display: flex;
-    justify-content: center;
+.logoImg {
+    width: 20rem;
 }
 
 
 
-/* 忘記密碼：步驟指示器 */
+/* ==========================================================================
+   步驟指示器 (Step Indicators)
+   用於：註冊流程、忘記密碼
+   ========================================================================== */
+
 .step_indicators {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    max-width: 450px;
+    max-width: 500px; /* 稍微加大適配更多頁面 */
     margin: 2rem auto;
     padding: 0 1rem;
     gap: 1rem;
@@ -668,9 +176,10 @@ input:is(:-webkit-autofill, :autofill) {
     text-align: center;
 }
 
+/* 圓圈數字樣式 */
 .step_badge {
-    width: 3rem;
-    height: 3rem;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -678,6 +187,7 @@ input:is(:-webkit-autofill, :autofill) {
     font-size: 1.5rem;
     font-weight: bold;
     transition: all 0.3s ease;
+    border: 2px solid transparent;
 }
 
 .step_number {
@@ -685,1508 +195,286 @@ input:is(:-webkit-autofill, :autofill) {
 }
 
 .step_label {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 500;
+    margin-top: 5px;
 }
 
+/* 狀態 1：未完成 (Incomplete) */
 .step_item.step_incomplete .step_badge {
-    background-color: var(--color_Gray);
+    background-color: var(--color_Gray, #C0C0C0);
     color: white;
 }
-
 .step_item.step_incomplete .step_label {
-    color: var(--color_DarkGray);
+    color: var(--color_DarkGray, #464646);
 }
 
+/* 狀態 2：已完成 (Completed) */
 .step_item.step_completed .step_badge {
-    background-color: var(--color_Light);
+    background-color: var(--color_Light, #62DEB1);
     color: white;
 }
-
 .step_item.step_completed .step_label {
-    color: var(--color_DarkGray);
+    color: var(--color_Dark, #00968A);
 }
 
+/* 狀態 3：當前步驟 (Active) */
 .step_item.step_active .step_badge {
-    background-color: var(--color_Contrast);
-    color: var(--color_DarkGray);
+    background-color: var(--color_Contrast, #ED5F00);
+    color: white;
+    box-shadow: 0 0 12px rgba(237, 95, 0, 0.3);
 }
-
 .step_item.step_active .step_label {
-    color: var(--color_font);
-    font-weight: 600;
+    color: var(--color_font, #000);
+    font-weight: 700;
+}
+/* ==========================================================================
+   方案 A：行事曆引導樣式 (CSS Only)
+   說明：配合原本的 JS 邏輯，針對不同按鈕顯示深綠色虛線與步驟文字
+   ========================================================================== */
+
+/* 1. 定義深綠色虛線與呼吸動畫 */
+.guide-hint {
+    border: 2px dashed #009651 !important; /* 深綠色虛線 */
+    box-shadow: 0 0 10px rgba(0, 150, 81, 0.2);
+    position: relative;
+    z-index: 50;
+    cursor: pointer;
+/*    animation: guide-pulse 2s infinite;*/
 }
 
-/* 新增 .pwdChange 兼容 */
-.input_group_custom .pwdChange,
-.input_group_custom input.pwdChange {
-    flex: 1;
-    border: none;
-    outline: none;
-    box-shadow: none;
-    appearance: none;
-    background: transparent;
-    height: 100%;
-    font-size: var(--fontBody);
-    padding-right: 48px;
-    box-sizing: border-box;
-    z-index: 1;
+/*@keyframes guide-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(0, 150, 81, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 81, 0);
+    }
+}*/
+
+/* 2. 定義通用浮窗 (Tooltip) 外觀 - 黑底白字 */
+.guide-hint::after {
+    /* content 由下方的個別設定決定 */
+    position: absolute;
+    bottom: 125%; /* 顯示在按鈕上方 */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #222; /* 黑底 */
+    color: #fff; /* 白字 */
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    pointer-events: none; /* 讓滑鼠可以穿透浮窗點擊按鈕 */
+    opacity: 0;
+    animation: tooltip-fade-in 0.3s forwards;
+    z-index: 100;
 }
 
-/* undo-toast */
+/* 浮窗下方的小三角形 */
+.guide-hint::before {
+    content: "";
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #222 transparent transparent transparent; /* 同黑底色 */
+    opacity: 0;
+    animation: tooltip-fade-in 0.3s forwards;
+    z-index: 100;
+}
+
+@keyframes tooltip-fade-in {
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-5px);
+    }
+}
+
+/* ==========================================================================
+   3. 針對不同按鈕設定不同的「步驟提示文字」
+   (即便 JS 給的 class 都一樣，CSS 還是能認出是哪個按鈕)
+   ========================================================================== */
+
+/* 第一步：編輯按鈕 (.btn-edit) */
+.btn-edit.guide-hint::after {
+    content: "Step 1: 點擊這裡開始編輯";
+}
+
+/* 第二步：月份切換箭頭 (.nav-btn) */
+.month-header .nav-btn.guide-hint::after,
+.nav-btn.guide-hint::after {
+    content: "Step 2: 切換月份並點擊日期";
+    position: absolute; /* 固定定位 */
+    top: 130%; /* 放在箭頭下方 */
+    left: 50%; /* 水平置中 */
+    transform: translateX(-50%);
+    background: black; 
+    align-content:center;
+    padding: 10px 8px 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    /*animation: none !important;*/ /* 禁止動畫 */
+    /*transition: none !important;*/ /* 禁止過渡 */
+}
+/* 調整箭頭提示的三角形方向 (指向上方) */
+.month-header .nav-btn.guide-hint::before,
+.nav-btn.guide-hint::before {
+    bottom: auto;
+    top: 110%;
+    border-color: transparent transparent #222 transparent;
+}
+
+/* 第三步：提交按鈕 (#btn-confirm 或 #btnSubmit) */
+#btn-confirm.guide-hint::after,
+#btnSubmit.guide-hint::after {
+    content: "Step 3: 確認後請點擊提交";
+    background-color: #009651; /* 提交按鈕特別用綠底白字 */
+}
+
+#btn-confirm.guide-hint::before,
+#btnSubmit.guide-hint::before {
+    border-top-color: #009651;
+}
+
+/* 第四步：一般的日期格子 (如果有加上提示的話) */
+.day-cell.guide-hint::after {
+    content: "點擊此處選擇";
+}
+#tm-pending-bell.guide-hint::after {
+    content: "Step 4: 點擊鈴鐺匯入行事曆";
+    /* 覆蓋原本的置中設定，改為顯示在左側 */
+    left: auto;
+    right: 125%; /* 顯示在鈴鐺的左邊 */
+    bottom: auto; /* 取消上方定位 */
+    top: 50%; /* 垂直置中 */
+    transform: translateY(-50%); /* 只做垂直修正 */
+    /* 增加一點寬度防止文字換行 */
+    width: max-content;
+}
+
+/* 調整箭頭方向 (指向右邊的鈴鐺) */
+#tm-pending-bell.guide-hint::before {
+    /* 位置調整到右側 */
+    left: auto;
+    right: 110%;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    /* 畫出指向右邊的三角形 */
+    border-color: transparent transparent transparent #222; /* 只有左邊框有顏色(箭頭向右) */
+}
+
+/* (選用) 為了避免綠色虛線和鈴鐺本身的圓角不合，強制圓角 */
+#tm-pending-bell.guide-hint {
+    border-radius: 50% !important;
+}
+/* ==========================================================================
+   行事曆通知鈴鐺 (Pending Bell UI)
+   用於：會員中心、行事曆確認流程
+   ========================================================================== */
+
+#tm-pending-bell {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+#tm-pending-bell:hover {
+    transform: translateY(-4px) scale(1.05);
+}
+
+#tm-pending-bell .badge-notify {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--color_Contrast, #ED5F00);
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10pt;
+}
+
+
+/* ==========================================================================
+   其他遺漏的系統組件 (System Components)
+   ========================================================================== */
+
+/* 復原操作提示 (Undo Toast) - 願望清單或行事曆刪除時使用 */
 .undo-toast {
     position: fixed;
-    bottom: 20px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
     background: #333;
     color: #fff;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 50px;
-    z-index: 9999;
+    z-index: 10001;
     display: flex;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    animation: fadeInUp 0.3s ease;
+    gap: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeInUp 0.4s ease;
+}
+
+.undo-toast button {
+    background: var(--color_Light, #62DEB1);
+    border: none;
+    color: #000;
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
 }
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translate(-50%,20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate(-50%,0);
-    }
+    from { opacity: 0; transform: translate(-50%, 30px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-
-
-/* 讓 .inputLine / .inputNone 使用固定寬度（顯示為 inline-block 以維持並排）*/
-.loginWrap .inputLine,
-.loginWrap .inputNone {
-    width: auto;
-    padding: 0 4.5rem; /* 桌機原本值 */
-    white-space: nowrap;
+/* 狀態標籤 */
+.incomplete {
+    color: var(--color_Contrast, #ED5F00);
+    font-weight: bold;
+    font-size: 14pt;
 }
 
-/* 讓表單內的輸入欄位、提示與按鈕與上方標題寬度一致並置中 */
-#loginForm .input_group_custom,
-#loginForm .inputHint,
-#loginForm .goodHint,
-#loginForm .btn_next_step,
-#loginForm #btnRegister {
-    width: 100%;
-    max-width: 600px;
-    min-width: 320px;
-    margin-left: auto;
-    margin-right: auto;
-    box-sizing: border-box;
-}
-
-/* Login 表單左右留白對齊 .inputLine / .inputNone */
-#loginForm {
-    padding-left: 8rem; /* 與 .inputLine 同步 */
-    padding-right: 8rem;
-    box-sizing: border-box;
-    width: 80%;
-    max-width: 100%;
-    white-space: normal;
-}
-
-    /* 讓欄位與提示滿寬，跟著 form 的內距收斂 */
-    #loginForm .input_group_custom,
-    #loginForm .inputHint,
-    #loginForm .goodHint {
-        max-width: 600px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* 確保按鈕也對齊（btn_next_step / btnRegister） */
-    #loginForm .btn_next_step,
-    #loginForm #btnRegister {
-        max-width: none;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-.inputHint {
-    margin-top: 0.5rem; /* 視需要改為 0.25rem / 8px / 12px 等 */
-    display: block;
-    box-sizing: border-box;
-}
-
-.name_hint {
-    display: block;
-}
-
-#emailHint {
-    margin-top: 0.5rem;
-}
-.info_row #emailHint {
-    margin-left: 40px;
-    margin-bottom:15px;
-}
-
-#pwdHint {
-    margin-top: 0.5rem;
-}
-
-/* RWD: desktop */
-@media (min-width: 992px) {
-    #wishlist_cards > .col {
-        display: flex;
-        min-width: 350px !important;
-    }
-    .auth-page .loginWrap > .inputLine,
-    .auth-page .loginWrap > .inputNone,
-    .auth-page #loginWrap > .inputLine,
-    .auth-page #loginWrap > .inputNone {
-        padding: 0 4.5rem;
-        display: inline-flex;
-        white-space: nowrap;
-    }
-
-
-    .auth-page #loginForm,
-    .auth-page .signContent.s2 .formWrap {
-        width: 100%;
-        max-width: 480px;
-        padding-left: 0;
-        padding-right: 0;
-        margin: 20px auto;
-        box-sizing: border-box;
-    }
-    /* Profile 區塊：avatar 固定寬度、info 區撐滿剩餘空間 */
-    .profile_container {
-        display: flex;
-        gap: 1.5rem;
-        align-items: flex-start;
-        box-sizing: border-box;
-    }
-
-
-    .profile_avatar_section {
-        flex: 0 0 320px; /* 固定寬度 */
-        max-width: 320px;
-        background-color: var(--color_bk);
-        border-radius: 18px;
-        border: 1px var(--color_Gray);
-        width: 35%;
-        height: 40rem;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-        margin-left:15px;
-    }
-    .profile_info_section {
-        flex: 1 1 auto;
-        min-width: 0; /* 防止內容撐破 */
-    }
- 
-    /* 日曆（三欄）保留既有順序，但以 flex 控制寬度 */
-/*    .member_center_wrap #calendar_section > .container > .row {
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-    }*/
-
-
-
-    .member_center_wrap #calendar_section 
-    {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .member_center_wrap #calendar_section .list-panel {
-/*        flex: 0 0 300px;*/
-        max-width: 300px;
-/*        box-sizing: border-box;*/
-    }
-
-
-    /* 使 container 下的直接 .row 成為不換行的 flex row，避免 Bootstrap 或其他規則導致換行 */
-    .wishlist_cards_container > .row {
-        display: flex !important;
-        flex-wrap: nowrap !important; /* 關鍵：不要換行，避免左側被推到上面 */
-        align-items: flex-start;
-        gap: 1rem;
-        box-sizing: border-box;
-    }
-
-    /* 左側選單固定寬度並允許捲動 */
-    .wishlist_cards_container .wishlist-left-panel {
-        position: relative;
-        left: -40px;
-        flex: 0 0 280px !important;
-        max-width: 280px !important;
-        box-sizing: border-box;
-        align-self: stretch;
-        max-height: calc(100vh - 140px);
-        overflow-y: auto;
-    }
-
-    /* 右側卡片區撐滿剩餘空間 */
-    .wishlist_cards_container .wishlist-right-panel {
-        flex: 1 1 auto !important;
-        min-width: 0; /* 防止內容撐破 */
-        box-sizing: border-box;
-    }
-
-        /* 右側內層 #wishlist_cards 使用 grid/row 行為維持 3 欄顯示 */
-        .wishlist_cards_container .wishlist-right-panel #wishlist_cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            align-items: start;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-    /* 確保每張卡片可等高 */
-    .wishlist_cards_container #wishlist_cards > .col,
-    .wishlist_cards_container #wishlist_cards .col {
-        display: flex;
-    }
-
-
-
-
-
-    .auth-page .loginWrap,
-    .auth-page #loginWrap {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 0.5rem;
-        justify-content: center;
-        align-items: center;
-        max-width: 480px;
-        margin: 20px auto;
-        padding: 0;
-    }
-
-        .auth-page .loginWrap > .inputLine,
-        .auth-page .loginWrap > .inputNone,
-        .auth-page #loginWrap > .inputLine,
-        .auth-page #loginWrap > .inputNone {
-            display: inline-flex;
-            padding: 0 4.5rem;
-            white-space: nowrap;
-        }
-
-    .auth-page #loginForm,
-    .auth-page .signContent.s2 .formWrap {
-        width: 100%;
-        max-width: 480px;
-        padding-left: 0;
-        padding-right: 0;
-        margin: 20px auto;
-    }
-  
-
-    /*==個人資料===*/
-    .profile_container {
-        width: 100%;
-    }
-
-    .member_center_wrap {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        margin-left: 200px;
-        padding-left: 40px;
-    }
-
-    .profile_info_section {
-        flex: 1;
-        position: relative;
-        padding: 30px;
-        background-color: var(--color_bk);
-        border-radius: 18px;
-        border: 1px var(--color_Gray);
-        min-width: 10px;
-        height: 40rem;
-        white-space: nowrap;
-        font-size: 18pt;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        left: 30px;
-    }
-
-
- 
-    /* 只鎖登入 / 註冊頁 */
-    .auth-page {
-        height: 100vh;
-    }
-
-    .titleWrap.titleH4 {
-        font-size: var(--f_h4);
-    }
-
-    #loginForm {
-        width: 100%;
-        max-width: 480px; /* 桌機區塊最大寬度，視需要調整 */
-        margin: 20px auto; /* 垂直間距與水平置中 */
-        padding-left: 0; /* 移除偏移，讓區塊可水平置中 */
-        padding-right: 0;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* 使內部欄位與按鈕水平置中 */
-        gap: 0.75rem;
-    }
-
-        /* 確保內部欄位與按鈕在區塊內撐滿寬度但不超過區塊 max-width */
-        #loginForm .input_group_custom,
-        #loginForm .btn_next_step,
-        #loginForm #btnRegister,
-        #loginForm .email_row,
-        #loginForm .GoogleWrap {
-            width: 100%;
-            max-width: none; /* 由父區塊 max-width 控制 */
-            margin: 0;
-            box-sizing: border-box;
-        }
-
-
-
-
-    /* 右側內容（表單）在自身區塊滾動，避免推高整頁高度 */
-    .signContent.s2,
-    .signContent.s2 .formWrap,
-    #loginForm {
-        box-sizing: border-box;
-    }
-
-    .confirmCheck {
-        position: relative;
-        box-sizing: border-box;
-        min-width: 20rem;
-        height: 48px;
-        justify-content: center;
-    }
-
-    .eLabel {
-        width: 100%;
-        left: -2%;
-    }
-
-    .titleWrap.titleH1 {
-        font-size: var(--font_H1);
-    }
-
-    .titleWrap.titleH4 {
-        font-size: var(--font_H4);
-    }
-
-
-
-    .loginForm {
-        display: flex;
-        justify-content: center;
-    }
-
-    .formWrap {
-        margin-top: 30px;
-    }
-}
-
-.wishlist_cards_container > .row {
-    display: block !important;
-}
-
-.wishlist_cards_container .wishlist-left-panel,
-.wishlist_cards_container .wishlist-right-panel,
-.wishlist_cards_container #wishlist_cards {
-    width: 100%;
-    max-width: none;
-    display: block;
-}
-
-
-
-
-/* Wishlist 左右欄位：左側固定、右側撐滿
-       注意：這裡僅覆寫寬度，不改變已有 Bootstrap col_* 結構 */
-
-
-
-/* FIX: 正確還原 .inputLine / .inputNone 在手機（並列/不換行）與極窄螢幕下換行行為 */
-/* 僅針對 auth/login 區塊增加優先度，不改顏色或設計 */
-.auth-page .loginWrap > .inputLine,
-.auth-page .loginWrap > .inputNone,
-.auth-page #loginWrap > .inputLine,
-.auth-page #loginWrap > .inputNone,
-.loginWrap > .inputLine,
-.loginWrap > .inputNone,
-#loginWrap > .inputLine,
-#loginWrap > .inputNone {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap; /* 手機/平板預設不換行 */
-    width: auto;
-    flex: 1 1 50%;
-    max-width: calc(50% - 0.5rem);
-    padding: 0.45rem 1rem;
-}
-
-
-
-
-
-/* 調整：收斂「回到首頁」區塊間距與連結樣式 */
-.backIndexWrap {
-    text-align: center;
-    color: var(--color_Dark);
-    margin-top: 0.5rem; /* 原本過大的間距改小 */
-    padding: 0;
-    box-sizing: border-box;
-    text-decoration: none;
-}
-
-.backIndex {
-    color: var(--color_Dark);
-    margin: 0;
-    padding: 0.25rem 0;
-    text-decoration: none;
-}
-
-.back-home-link {
-    display: inline-block;
-    margin: 0;
-    padding: 0.25rem 0;
-    font-size: 16pt;
-    color: var(--color_Dark);
-    text-decoration: none;
-}
-
-    .back-home-link a {
-        color: var(--color_Dark);
-        text-decoration: none;
-    }
-
-    .back-home-link:hover,
-    .back-home-link:focus {
-        text-decoration: none;
-        color: var(--color_Dark);
-    }
-
-/* Signup: 讓 formWrap 與 Login 的 #loginForm 對齊並統一寬度，email row 同排 */
-.signContent.s2 .formWrap {
-    width: 100%;
-    max-width: 480px; /* 與 Login 桌機版一致 */
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 0;
-    padding-right: 0;
-    box-sizing: border-box;
-}
-
-/* email_row：水平排列，input 填滿剩餘空間，按鈕維持較小寬度 */
-.signContent.s2 .email_row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-    flex-wrap: nowrap;
-}
-
-    /* input 同 Login 欄位尺寸 */
-    .signContent.s2 .email_row input.email2 {
-        flex: 1 1 auto;
-        min-width: 0; /* 重要，允許 flex 正確收縮 */
-        height: 48px;
-        padding: 0 12px;
-        box-sizing: border-box;
-    }
-
-    /* 寄驗證信按鈕：縮小寬度但保留可點擊區域 */
-    .signContent.s2 .email_row button.eLabel {
-        flex: 0 0 auto; /* 不撐滿剩餘空間 */
-        min-width: 80px;
-        height: 48px;
-        padding: 0 14px;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-
-
-
-/* 若螢幕非常窄，改用換行避免溢出（按鈕仍保持小寬度） */
-@media (max-width: 420px) {
-    .signContent.s2 .email_row {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-        .signContent.s2 .email_row input.email2,
-        .signContent.s2 .email_row button.eLabel {
-            width: 100%;
-            max-width: none;
-        }
-
-        .signContent.s2 .email_row button.eLabel {
-            padding: 0.6rem 1rem;
-        }
-
-    .btn_light.eLabel {
-        height: 48px;
-    }
-
-    body .lineBlackWrap .lineBlack {
-        padding: 0 0.6rem;
-        font-size: 1rem;
-    }
-}
-
-
-
-.confirmCheck.eLabel {
-    font-size: 16pt;
-}
-/* =============================
-   註冊頁 Email row：輸入框寬、按鈕窄（最終覆蓋）
-============================= */
-.signContent.s2 .email_row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-    /* 信箱輸入框：吃滿剩餘寬度 */
-    .signContent.s2 .email_row input.email2 {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    /* 寄驗證信按鈕：固定窄寬 */
-    .signContent.s2 .email_row button.eLabel {
-        flex: 0 0 10rem; /* 關鍵 */
-        max-width: 10rem;
-        padding: 0;
-        white-space: nowrap;
-    }
-
-
-.GoogleWrap {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.googleBtn {
-    width: 80%;
-}
-
-/* Policy modal: 白底黑字、響應式、可滾動 */
-.policy-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.policy-modal {
-    background: #fff;
-    color: #111;
-    width: 100%;
-    max-width: 900px;
-    max-height: 85vh;
-    border-radius: 12px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    outline: none;
-}
-
-.policy-modal__header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.policy-modal__title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin: 0;
-    color: #111;
-}
-
-.policy-modal__close {
-    background: transparent;
-    border: none;
-    font-size: 1.25rem;
-    cursor: pointer;
-    color: #333;
-    padding: 0.25rem;
-    line-height: 1;
-}
-
-.policy-modal__body {
-    padding: 1rem 1.25rem;
-    overflow: auto;
-    font-size: 0.98rem;
-    line-height: 1.6;
-    color: #111;
-}
-
-    /* 分段標題 */
-    .policy-modal__body h3 {
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-    }
-
-    /* 文字小調整，確保可讀性 */
-    .policy-modal__body p {
-        margin: 0 0 0.75rem 0;
-    }
-
-/* footer 可放按鈕（目前只放關閉） */
-.policy-modal__footer {
+.systemMessage {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
     padding: 0.75rem 1.25rem;
-    border-top: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   2. TYPOGRAPHY & TITLES (文字排版)
+   ========================================================================== */
+/* 標題層級設定 */
+.titleWrap.titleH1 {
+    font-size: var(--font_H1);
+}
+
+.titleWrap.titleH4 {
+    font-size: var(--font_H4);
+}
+
+/* 文字連結與隱私權 */
+.link {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    font-size: 14pt;
     text-align: right;
 }
 
-.policy-modal__btn {
-    background: var(--color_Light, #222);
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-
-/* Restore policy modal header color & contrast */
-.policy-modal__header {
-    background: white; /* 可改為你想要的主色 */
-    color: #111;
-    border-bottom: none; /* 移除淡邊使色帶連續 */
-    padding: 1rem 1.25rem;
-}
-
-.policy-modal__title {
-    color: #111; /* 確保標題為白色以利對比 */
-}
-
-.policy-modal__close {
-    color: var(--color_Light); /* 白色的關閉按鈕 */
-    background: transparent;
-    border: none;
-}
-
-/* footer 按鈕樣式反差調整（選用） */
-.policy-modal__footer {
-    background: transparent;
-    border-top: 1px solid rgba(0,0,0,0.06);
-}
-
-.policy-modal__btn {
-    background: var(--color_Light);
-    color: #111;
-}
-
-/* Popup: 只改文字顏色（成功 = --color_Light，錯誤 = --color_Contrast），不改背景 */
-.reg_popup .popup_title {
-    /* 移除之前可能設定的色帶背景 */
-    background-color: transparent;
-    background-image: none;
-    /* 如需保留少量內距，維持現有 padding */
-    padding: 0.6rem 1rem;
-    /* 若先前為白字，改回預設深色以配合新的文字色 */
-    color: inherit;
-}
-
-    /* 成功文字色 */
-    .reg_popup .popup_title.popup_success {
-        color: var(--color_Light);
-        background-color: transparent;
-    }
-
-    /* 錯誤文字色 */
-    .reg_popup .popup_title.popup_error {
-        color: var(--color_Contrast);
-        background-color: transparent;
-    }
-
-/* 確保內文維持可讀性（白底黑字） */
-.reg_popup .popH5 {
-    color: #111;
-}
-
-
-
-:root {
-    --mc-max-width: 1340px;
-}
-
-/* 全站會員中心容器：固定最大寬度並置中（取代過大左側偏移） */
-.member_center_wrap {
-    max-width: var(--mc-max-width);
-    margin-left: auto;
-    margin-right: auto;
-    box-sizing: border-box;
-}
-
-.signContent.s2 {
-    padding: 50px 0;
-}
-
-
-
-/* End of APPEND block */
-
-/* RESTORE: .inputLine / .inputNone — 還原原始底線樣式與 Mobile 行為（僅覆寫/追加） */
-
-/* 基本顯示與底線（桌機主要樣式，與原設計一致） */
-.inputLine,
-.inputNone {
-    display: inline-block;
-    padding-bottom: 0.28rem;
-    line-height: 1;
-    box-sizing: border-box;
-    cursor: pointer;
-}
-
-/* 選取 / 强調（原本醒目的底線）*/
-.inputLine {
-    border-bottom: 4.5px solid var(--color_Light);
-    font-weight: 700;
-    color: var(--color_Dark);
-    white-space: nowrap;
-}
-
-/* 次要未選取樣式 */
-.inputNone {
-    border-bottom: 3px solid var(--color_Gray);
-    font-weight: 500;
-    color: var(--color_DarkGray);
-    white-space: nowrap;
-}
-
-/* 確保在 .loginWrap 中維持 inline 行為（覆蓋可能的先前簡化） */
-.loginWrap .inputLine,
-.loginWrap .inputNone {
-    width: auto;
-    padding: 0 4.5rem; /* 保留桌機內距 */
-    white-space: nowrap;
-}
-
-/* 手機 / 平板：改為直列、滿寬並保留底線視覺（與原 mobile UX 一致） */
-@media (max-width: 991.98px) {
-
-    .carousel, .carousel-item img {
-        height: 650px;
-        object-fit: cover;
-    }
-    /* #loginForm：手機置中區塊，內部元素填滿父寬度 */
-    #loginForm {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto 30px;
-        padding-left: 0;
-        padding-right: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
-        box-sizing: border-box;
-    }
-
-        #loginForm .input_group_custom,
-        #loginForm .btn_next_step,
-        #loginForm #btnRegister,
-        #loginForm .email_row,
-        #loginForm .GoogleWrap {
-            width: 100%;
-            max-width: none;
-            margin: 0;
-            box-sizing: border-box;
-        }
-
-        /* email_row 在窄螢幕改為直列 */
-        #loginForm .email_row {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        /* Google 按鈕在手機全寬 */
-        #loginForm .GoogleWrap .googleBtn,
-        #loginForm .GoogleWrap {
-            width: 95%;
-            max-width: none;
-        }
-
-    /* 手機按鈕：登入按鈕可與輸入欄對齊（滿寬） */
-    #btnLogin,
-    .btn.confirmCheck.eLabel,
-    button.btn.confirmCheck.eLabel {
-        font-size: 16pt;
-        width: 100%;
-        max-width: none;
-        min-width: 0;
-        box-sizing: border-box;
-        padding: 0rem 1rem;
-        display: block;
-        margin-left: 0;
-        margin-right: 0;
-        height: 48px;
-        border-radius: 6px;
-    }
-
-    .account.titleWrap.titleH4 {
-        font-size: var(--f_h3); /* 約 18px，視需要可調為 1.25rem */
-        line-height: 1.2;
-        margin-bottom: 0.35rem; /* 與輸入欄距離微調 */
-    }
-
-    .auth-page {
-        height: auto;
-        overflow: auto;
-    }
-
-    /* loginWrap / #loginWrap：手機維持左右並列（如需等分可啟用註解區塊） */
-    .loginWrap,
-    #loginWrap {
-        margin: 30px auto;
-        width: 100%;
-        max-width: 420px;
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap; /* 若需換行改為 wrap 或註解此行 */
-        justify-content: center;
-        gap: 0.5rem;
-        align-items: center;
-        padding: 0 0.75rem;
-        box-sizing: border-box;
-    }
-
-        /* 切換按鈕（登入 / 註冊）維持 inline-flex，自適應寬度 */
-        .loginWrap > .inputLine,
-        .loginWrap > .inputNone,
-        #loginWrap > .inputLine,
-        #loginWrap > .inputNone {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-            width: auto;
-            padding: 0.5rem 7.5rem;
-            margin: 0;
-            box-sizing: border-box;
-            cursor: pointer;
-            white-space: normal;
-        }
-
-
-
-        .loginWrap > .inputLine,
-        .loginWrap > .inputNone {
-            flex: 1 1 50%;
-            max-width: calc(50% - 0.5rem);
-        }
-
-    .auth-page .loginWrap,
-    .auth-page #loginWrap {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: center;
-        gap: 0.5rem;
-        max-width: 420px;
-        margin: 30px auto;
-        padding: 0 0.75rem;
-    }
-
-        .auth-page .loginWrap > .inputLine,
-        .auth-page .loginWrap > .inputNone,
-        .auth-page #loginWrap > .inputLine,
-        .auth-page #loginWrap > .inputNone {
-            flex: 1 1 50%;
-            max-width: calc(50% - 0.5rem);
-            padding: 0.5rem 7.5rem;
-        }
-
-    .auth-page #loginForm {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto 30px;
-        padding-left: 0;
-        padding-right: 0;
-    }
-
-    .loginWrap .inputLine,
-    .loginWrap .inputNone {
-        display: block;
-        width: 100%;
-        padding: 0.6rem 1rem;
-        margin: 0.25rem 0;
-        text-align: center;
-        white-space: normal;
-        box-sizing: border-box;
-    }
-
-    /* 如設計需，讓底線顯示但不太佔空間 */
-    .loginWrap .inputLine {
-        border-bottom-width: 4px;
-    }
-
-    .loginWrap .inputNone {
-        border-bottom-width: 3px;
-    }
-}
-
-/* 極窄裝置細節微調 */
-@media (max-width: 420px) {
-    .loginWrap .inputLine,
-    .loginWrap .inputNone {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.98rem;
-    }
-}
-
-/* keyboard / focus accessibility */
-.inputLine:focus-visible,
-.inputNone:focus-visible,
-.loginWrap .inputLine:focus-visible,
-.loginWrap .inputNone:focus-visible {
-    outline: 3px solid rgba(2,132,199,0.14);
-    outline-offset: 2px;
-}
-
-/* 若頁面使用 decorative line (.lineStroke/.lineBlack)，確保其優先權未被覆蓋 */
-.lineStroke {
-    height: 2px;
-    background: linear-gradient(to right, transparent 5%, var(--color_Gray, #ccc) 15%, var(--color_Gray, #ccc) 90%, transparent 95%);
-}
-
-.lineBlack {
-    pointer-events: none;
-}
-
-/* End restore: .inputLine / .inputNone */
-/* FIX: 還原 Login / Signup 版面（僅作用於 .auth-page，避免影響 member_center） */
-
-.auth-page .signContent.s2 .formWrap,
-.auth-page #loginForm,
-.auth-page .loginWrap,
-.auth-page #loginWrap {
-    margin-left: auto;
-    margin-right: auto;
-    box-sizing: border-box;
-}
-
-
-    /* focus 可見性（accessibility）保留 */
-    .auth-page .inputLine:focus-visible,
-    .auth-page .inputNone:focus-visible,
-    .auth-page .loginWrap .inputLine:focus-visible,
-    .auth-page .loginWrap .inputNone:focus-visible {
-        outline: 3px solid rgba(2,132,199,0.14);
-        outline-offset: 2px;
-    }
-/* RESTORE: decorative line (.lineStroke / .lineBlack) 位置與寬度還原
-   僅修正位置/寬度/堆疊，不改顏色/設計 */
-body .lineBlackWrap {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-    /* 底線（漸層）應填滿可用寬度，移除過大的 min-width */
-    body .lineBlackWrap .lineStroke {
-        display: block;
-        position: relative;
-        z-index: 0;
-        height: 2px;
-        border: none;
-        background: linear-gradient(to right, transparent 5%, var(--color_Gray, #ccc) 15%, var(--color_Gray, #ccc) 90%, transparent 95%);
-        width: 100%;
-        margin: 15px 0;
-        min-width: 0; /* 允許在窄畫面時收斂 */
-        box-sizing: border-box;
-    }
-
-    /* 中央遮蓋塊（標題文字覆蓋底線）保持在正中央並在上層 */
-    body .lineBlackWrap .lineBlack {
-        display: inline-block;
-        font-size: 18pt;
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--color_bk, #fff);
-        padding: 0 1rem; /* 保持可見遮蓋 */
-        z-index: 1;
-        pointer-events: none;
-        box-sizing: border-box;
-    }
-/* Theme variables: 藍綠色系備援與透明按鈕樣式 */
-:root {
-    --theme-teal-600: #0ea5a4;
-    --theme-teal-500: #14b8a6;
-    --theme-cyan-500: #06b6d4;
-    --theme-blue-600: #0284c7;
-    --theme-emerald-500: #10b981;
-    /* fallback UI tokens */
-    --btn-transparent-border-alpha: rgba(2, 132, 199, 0.14);
-    --btn-transparent-hover-alpha: rgba(2, 132, 199, 0.06);
-}
-
-/* 透明按鈕（主用）：透明背景、微邊框、藍綠色系作為邊框/文字 */
-.btn-transparent {
-    background: transparent !important;
-    border: 1px solid var(--btn-transparent-border-alpha);
-    color: var(--theme-blue-600);
-    padding: .45rem .9rem;
-    border-radius: 10px;
-    transition: background .12s ease, box-shadow .12s ease, transform .08s ease;
-    box-shadow: none;
-}
-
-    /* 當按鈕使用分類色時，會被 JS inline 設定背景與文字色，這裡僅為 hover/focus 規則 */
-    .btn-transparent:hover,
-    .btn-transparent:focus {
-        background: var(--btn-transparent-hover-alpha);
-        transform: translateY(-1px);
-        outline: none;
-    }
-
-    /* 小按鈕變體 */
-    .btn-transparent.btn-sm {
-        border-radius: 15px;
-        font-size: 18pt;
-    }
-
-
-
-    .wishlist-cat-btn:hover {
-        
-        box-shadow: 0 8px 18px rgba(8,15,25,0.06);
-        transform: translateY(-2px);
-    }
-
-    /* 小縮圖風格（如果有） */
-    .wishlist-cat-btn .cat-thumb {
-        width: 44px;
-        height: 44px;
-        border-radius: 6px;
-        object-fit: cover;
-        flex: 0 0 44px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        border: 1px solid rgba(255,255,255,0.06);
-    }
-
-
-
-    /* small utility for outline when focused by keyboard */
-    .wishlist-cat-btn:focus-visible {
-        outline: 3px solid rgba(2,132,199,0.14);
-        outline-offset: 3px;
-    }
-
-:root {
-    --category-blue: #0284C7;
-    --category-teal: #0EA5A4;
-    --category-green: #10B981;
-}
-
-
-
-/* 分類按鈕：當 JS 設定背景色時使用圓角與圖文排版 */
-.wishlist-cat-btn {
-    font-size: 18pt;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.04);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    transition: box-shadow .12s ease, transform .08s ease;
-}
-    .wishlist-cat-btn .cat-thumb {
-        width: 48px;
-        height: 48px;
-        object-fit: cover;
-        border-radius: 6px;
-        flex: 0 0 48px;
-        border: 1px solid rgba(0,0,0,0.06);
-    }
-
-.wishlist_cards_container {
-    margin-top: 1rem;
-}
-
-
-.wishlist-right-panel {
-    background: transparent;
-}
-
-
-
-#wishlist_cards .card {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-}
-
-#wishlist_cards .card-body {
-    flex: 1 1 auto;
-}
-
-#wishlist_cards .card-footer {
-    flex: 0 0 auto;
-}
-
-
-
-#wishlist_cards img.card-img-top,
-#wishlist_cards img.wishlist-img {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}
-
-.wishlist-left-panel,
-#wishlist_cards .card {
-    background-clip: padding-box;
-}
-
-
-
-
-
-.wishlist-cat-btn.active {
-    border-color: var(--bs-primary);
-    background-color: rgba(13,110,253,0.06);
-}
-
-.member-detail-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 10000;
-    display: none;
-    justify-content: flex-end; /* 右側彈出 */
-}
-
-.btn_remove_wish {
-    z-index: 999;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 10;
-    border: none;
-    background: rgba(255,255,255,0.8);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    color: #dc3545;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.member-detail-panel {
-    background: #fff;
-    width: 100%;
-    max-width: 400px;
-    height: 100%;
-    position: relative;
-    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-}
-
-.panel-img {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-}
-
-.panel-content {
-    padding: 25px;
-}
-
-.panel-close-btn {
-    position: absolute;
-    top: 15px;
-    left: -45px; /* 浮在左邊的關閉鈕 */
-    background: #fff;
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 24px;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-
-@media (max-width: 576px) {
-    .panel-close-btn {
-        left: 15px;
-        background: rgba(255,255,255,0.8);
-    }
-}
-
-/* ===== Wishlist：強制桌機左選單 + 右側三欄卡片（覆蓋舊規則） =====
-   將此段附到檔案尾端以確保覆寫既有樣式（包含先前可能的 `display:block !important`）。
-*/
-
-/* Mobile-first: 預設單欄（保留你原有 Grid 行為） */
-#wishlist_cards {
-    display: grid !important;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    align-items: start;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Small devices and up: 2 columns */
-@media (min-width: 576px) {
-    #wishlist_cards {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-}
-
-/* Desktop and up: 3 columns (被更高優先度覆寫時會再以 !important 強制) */
-@media (min-width: 992px) {
-    #wishlist_cards {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-
-    /* 強制 wrapper row 在桌機為左右兩欄（不換行）*/
-    .member_center_wrap .wishlist_cards_container > .row,
-    .wishlist_cards_container > .row {
-        display: flex !important;
-        flex-wrap: nowrap !important; /* 關鍵：不要換行，避免左側被推到上面 */
-        gap: 1rem;
-        align-items: flex-start;
-        box-sizing: border-box;
-    }
-
-    /* 左側選單固定寬度並允許捲動 */
-    .wishlist_cards_container .wishlist-left-panel,
-    #wishlist_cards_wrapper .wishlist-left-panel {
-        flex: 0 0 190px !important;
-        max-width: 190px !important;
-        box-sizing: border-box;
-        align-self: stretch;
-        max-height: calc(100vh - 140px);
-        overflow-y: auto;
-        overflow-x:hidden;
-    }
-
-    /* 右側卡片區撐滿剩餘空間 */
-    .wishlist_cards_container .wishlist-right-panel,
-    #wishlist_cards_wrapper .wishlist-right-panel {
-        flex: 1 1 auto !important;
-        min-width: 0; /* 防止內容撐破 */
-        box-sizing: border-box;
-    }
-
-        /* 右側內層 #wishlist_cards 使用 grid（保證 3 欄、gap） */
-        .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
-        #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 1rem !important;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-    /* 每張卡片外層 .col 以 flex 呈現，讓內部 .card 可等高 */
-    .wishlist_cards_container #wishlist_cards > .col,
-    #wishlist_cards_wrapper #wishlist_cards > .col,
-    .wishlist_cards_container #wishlist_cards .col,
-    #wishlist_cards_wrapper #wishlist_cards .col {
-        display: flex;
-        box-sizing: border-box;
-        min-width: 350px;
-    }
-}
-.btn-sm {
-    width: 10rem;
-    font-size: 18pt;
-    border-radius: 15px;
-    margin-top: 15px;
-    height: 48px;
-    white-space: nowrap;
-    font-size: 18pt;
-}
-/* 小螢幕回復單欄、左側變橫向（原有行為保留） */
-@media (max-width: 991.98px) {
-
-    .wishlist_cards_container #wishlist_cards > .col,
-    #wishlist_cards_wrapper #wishlist_cards > .col,
-    .wishlist_cards_container #wishlist_cards .col,
-    #wishlist_cards_wrapper #wishlist_cards .col {
-        min-width: 335px;
-    }
-    
-    .wishlist_cards_container > .row,
-    #wishlist_cards_wrapper > .row {
-        display: block !important;
-    }
-
-    .wishlist_cards_container .wishlist-left-panel,
-    .wishlist_cards_container .wishlist-right-panel,
-    #wishlist_cards_wrapper .wishlist-left-panel,
-    #wishlist_cards_wrapper .wishlist-right-panel,
-    #wishlist_cards {
-        width: 100%;
-        max-width: none;
-        display: block;
-        box-sizing: border-box;
-    }
-    /* 1. 強制讓項目垂直排列，並佔滿寬度 */
-    .info_item {
-        display: flex;
-        flex-direction: column; /* 轉為垂直排版  */
-        align-items: flex-start;
-        width: 100%;
-        margin-bottom: 1rem;
-        gap: 5px; /* 標籤與內容的間距 */
-    }
-
-        /* 2. 重設標籤寬度，不再固定為 140px */
-        .info_item .info_label {
-            flex: 0;
-            width: 100%;
-            min-width: 0;
-            margin-bottom: 0px;
-        }
-
-    /* 3. 確保內容容器完全填滿父容器 */
-    .info_value {
-        font-size: 16pt;
-        width: 100% !important;
-        margin-left: 0;
-        padding-left: 45px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-
-        .info_value .form-control,
-        .info_value input,
-        .info_value select,
-        .info_value textarea {
-            width: 90% !important; /* 確保輸入框與容器等寬  */
-            max-width: 90% !important; /* 覆蓋 max-width: 46vh  */
-            box-sizing: border-box; /* 確保 Padding 不會撐破寬度  */
-
-            
-        }
-
-    /* 5. 調整編輯按鈕與文字對齊 */
-    .edit_link {
-        margin-left: 0;
-        padding-top: 5px;
-    }
-
-}
-/* 1200px ~ 1399.98px：兩欄但 list-panel 獨佔下一列（滿版） */
-@media (min-width: 1200px) and (max-width: 1399.98px) {
-
-    .member_center_wrap #calendar_section > .container > .row {
-        display: block; /* 允許 Calendar.css 在各斷點改為 grid */
-        box-sizing: border-box;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-
-    }
-    .member_center_wrap #calendar_section .list-panel {
-        width: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        box-sizing: border-box;
-        align-self: start;
-    }
-    .member_center_wrap #calendar_section > .container > .row {
-        display: grid !important;
-        grid-template-columns: 320px 1fr;
-        grid-template-areas:
-            "months main"
-            "list list";
-        gap: 1rem;
-        align-items: start;
-        box-sizing: border-box;
-        width: 100%;
-    }
-
-    .member_center_wrap #calendar_section .months-panel {
-        grid-area: months;
-    }
-
-    .member_center_wrap #calendar_section .month-panel {
-        grid-area: main;
-    }
-
-}
-/* 覆寫 wishlist 欄數：992px~1399.98px 強制 2 欄，>=1400px 為 3 欄 */
-@media (min-width: 992px) and (max-width: 1399.98px) {
-    /* 同時覆寫多個可能的選擇器以提高覆蓋率 */
-    #wishlist_cards,
-    .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
-    #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 1rem !important;
-        box-sizing: border-box;
-    }
-}
-
-/* 1400px 起顯示 3 欄 */
-@media (min-width: 1400px) {
-    #wishlist_cards,
-    .wishlist_cards_container .wishlist-right-panel #wishlist_cards,
-    #wishlist_cards_wrapper .wishlist-right-panel #wishlist_cards {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 1rem !important;
-        box-sizing: border-box;
-    }
-
-    /* 若你對 calendar 的 grid-template-areas 有需求，也可在此斷點明確恢復 */
-    .member_center_wrap #calendar_section > .container > .row {
-        width: 100%;
-        box-sizing: border-box;
-    }
-}

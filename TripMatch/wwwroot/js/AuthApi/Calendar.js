@@ -1,4 +1,8 @@
-﻿(async function () {
+﻿/* Calendar.js
+   修改重點：在 MemberCenter 頁面（含 .member_center_wrap）隱藏英文月份，
+*/
+
+(async function () {
 
     async function fetchLockedRanges() {
         // 優先使用 jQuery.ajax（可利用 helper.js 的全域設定），無 jQuery 時 fallback 到 fetch
@@ -9,12 +13,8 @@
                     method: 'GET',
                     xhrFields: { withCredentials: true },
                     headers: { 'RequestVerificationToken': window.csrfToken || '' },
-                    success(data) {
-                        resolve(data?.ranges || []);
-                    },
-                    error() {
-                        resolve([]);
-                    }
+                    success(data) { resolve(data?.ranges || []); },
+                    error() { resolve([]); }
                 });
             });
         } else {
@@ -52,6 +52,25 @@
     }
 
     const DH = window.DateHelper;
+
+    // 永遠不顯示英文月份（你已移除英文月份）
+    let showEnglishMonths = false;
+
+    // 用於去重與排序日期陣列，避免在其他函式找不到定義
+    function dedupeDates(arr) {
+        if (!Array.isArray(arr)) return [];
+        try {
+            // 移除空值、trim 並使用 Set 去重，再以字串排序（yyyy-MM-dd 的字典排序即時間排序）
+            const normalized = arr
+                .filter(Boolean)
+                .map(s => String(s).trim())
+                .filter(s => s.length > 0);
+            return Array.from(new Set(normalized)).sort();
+        } catch (e) {
+            console.warn('dedupeDates error', e);
+            return [];
+        }
+    }
 
     /* =============================
   * 狀態
@@ -214,6 +233,20 @@
             }
         });
 
+        // 更新 badge（左側面板的 selectedCount）
+        try {
+            const count = filtered.length;
+            const badge = document.getElementById('selectedCount');
+            if (badge) {
+                badge.textContent = String(count);
+                badge.setAttribute('title', `${count} 個已選日期（本月）`);
+                // 對於輕量提示，同時顯示 list header 的暫時訊息（3 秒）
+                setListHeaderMessage(`已選 ${count} 個時段`, 3);
+            }
+        } catch (e) {
+            console.warn('update selectedCount failed', e);
+        }
+
         if (!filtered.length) {
             const emptyHtml = '<div class="text-muted">本月份尚無選擇的日期</div>';
             if ($list.length) $list.html(emptyHtml);
@@ -277,6 +310,14 @@
         const all = Array.from(new Set(getAllDraftDates().concat(submittedDates || [])));
         if (!all.length) {
             $el.html(''); // 清空
+            // update selectedCount as 0 when range-only rendering used
+            try {
+                const badge = document.getElementById('selectedCount');
+                if (badge) {
+                    badge.textContent = '0';
+                    badge.setAttribute('title', `0 個已選日期（本月）`);
+                }
+            } catch { }
             return;
         }
 
@@ -286,12 +327,6 @@
 
         const html = all.map(iso => `<div class="calendar-range-item">${formatIsoToLabel(iso)}</div>`).join('');
         $el.html(html);
-    }
-
-    // 去重 helper
-    function dedupeDates(arr) {
-        if (!Array.isArray(arr)) return [];
-        return Array.from(new Set(arr)).sort();
     }
 
     /* 從後端載入已儲存的請假日（加入去重） */
@@ -377,6 +412,11 @@
         currentMonth = options.month ?? today.getMonth();
         lockedRanges = options.lockedRanges ?? [];
 
+        // 允許呼叫端用 options 覆寫是否顯示英文月份
+        if (typeof options.showEnglishMonths !== 'undefined') {
+            showEnglishMonths = !!options.showEnglishMonths;
+        }
+
         const draft = loadDraftFromSession();
 
         if (draft && ((draft.singles && draft.singles.length) || (draft.ranges && draft.ranges.length)) && !_calendarDraftPromptShown) {
@@ -401,6 +441,7 @@
 
         buildMonthPanel();
         bindEvents();
+        bindImportHandlers(); // <- 新增：綁定匯入按鈕 / input 行為
         renderMonth();
         renderSubmittedList();
     }
@@ -545,10 +586,12 @@
 
         for (let m = 0; m < 12; m++) {
             const d = new Date(currentYear, m, 1);
+            // 依 showEnglishMonths 決定是否產生英文月份節點
+            const enHtml = showEnglishMonths ? `<div class="en">${d.toLocaleString('en-US', { month: 'long' })}</div>` : '';
             const $btn = $(`
                 <div class="month-btn" data-month="${m}">
                     <div class="mn">${m + 1} 月</div>
-                    <div class="en">${d.toLocaleString('en-US', { month: 'long' })}</div>
+                    ${enHtml}
                 </div>
             `);
             $grid.append($btn);
@@ -669,8 +712,14 @@
         const d = DH.fromIso(iso);
         const today = DH.startOfToday();
 
+        // ★ 鎖定邏輯 1：過去的時間
+        // 這一行是寫死在 JS 裡的。只要日期在「今天之前」，就會回傳 true (鎖定)。
+        // 即使後端 API 沒回傳任何資料，這裡也會生效。
         if (DH.isBefore(d, today)) return true;
 
+        // ★ 鎖定邏輯 2：後端指定的區間 (Locked Ranges)
+        // 這裡會比對 fetchLockedRanges() 從 API 拿到的資料。
+        // 因為剛剛改了後端回傳空清單，所以這段目前永遠回傳 false。
         return lockedRanges.some(r =>
             DH.isBetweenInclusive(d, DH.fromIso(r.start), DH.fromIso(r.end))
         );
@@ -796,10 +845,250 @@
     }
 
     /* =============================
+     * Import modal & file handling (新增)
+     * ============================= */
+    function ensureImportModal() {
+        if (document.getElementById('importCalendarModal')) return document.getElementById('importCalendarModal');
+
+        const html = `
+<div class="modal fade" id="importCalendarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">匯入行事曆：預覽並確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="importCalendarPreview" class="mb-3"></div>
+        <div id="importCalendarError" class="alert alert-danger d-none" role="alert"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="importCalendarConfirm" class="btn btn-primary">確認匯入</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        return document.getElementById('importCalendarModal');
+    }
+
+    function showImportPreview(parsed, filename) {
+        const modalEl = ensureImportModal();
+        const previewEl = modalEl.querySelector('#importCalendarPreview');
+        const errorEl = modalEl.querySelector('#importCalendarError');
+        errorEl.classList.add('d-none');
+        previewEl.innerHTML = '';
+
+        // 簡單驗證資料形態（接受陣列或物件含 dates 欄位）
+        let dates = null;
+        if (Array.isArray(parsed)) {
+            dates = parsed;
+        } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.dates)) {
+            dates = parsed.dates;
+        }
+
+        if (!dates || dates.length === 0) {
+            errorEl.textContent = '找不到可匯入的日期資料。請確認檔案格式。';
+            errorEl.classList.remove('d-none');
+            previewEl.innerHTML = `<p>檔名：<strong>${filename}</strong></p><p>解析結果找不到日期陣列。</p>`;
+            return null;
+        }
+
+        // 限制預覽項目數量，避免巨大檔案塞爆 modal
+        const MAX_PREVIEW = 200;
+        const previewItems = dates.slice(0, MAX_PREVIEW).map(d => `<li>${String(d)}</li>`).join('');
+        const moreNote = dates.length > MAX_PREVIEW ? `<p class="small text-muted">僅顯示前 ${MAX_PREVIEW} 筆，共 ${dates.length} 筆。</p>` : '';
+
+        previewEl.innerHTML = `
+            <p>檔名：<strong>${filename}</strong></p>
+            <p>偵測到 <strong>${dates.length}</strong> 筆日期（格式視實際資料而定）。</p>
+            <ul style="max-height:280px; overflow:auto; padding-left:1rem;">${previewItems}</ul>
+            ${moreNote}
+        `;
+
+        // 建立 bootstrap modal 實例（若已存在則重用）
+        const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+
+        // cleanup 保證只執行一次（避免多次 remove/hide 導致視窗閃爍）
+        let _closed = false;
+        function cleanup() {
+            if (_closed) return;
+            _closed = true;
+            try { bs.hide(); } catch { }
+            // 等待 hidden 事件再移除 DOM（避免直接移除導致 bootstrap 錯誤）
+            // 若 hidden 已經發生，直接移除
+            const onHidden = () => {
+                try { modalEl.remove(); } catch (e) { /* ignore */ }
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            };
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            // 如果 modal 目前沒有顯示（bs.hide 不觸發 hidden），則移除延遲執行
+            setTimeout(() => {
+                if (!document.body.contains(modalEl)) return;
+                try { modalEl.remove(); } catch { }
+            }, 700);
+        }
+
+        // 顯示 modal
+        bs.show();
+
+        // 綁定確認匯入按鈕（用 once 保證只執行一次）
+        const btnConfirm = modalEl.querySelector('#importCalendarConfirm');
+        const newBtn = btnConfirm.cloneNode(true);
+        btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+
+        newBtn.addEventListener('click', function () {
+            const detail = { fileName: filename, raw: parsed, dates: dates };
+            document.dispatchEvent(new CustomEvent('calendar:import', { detail }));
+
+            // UI 更新
+            const msgEl = document.getElementById('importCalendarMessage');
+            if (msgEl) {
+                msgEl.classList.remove('d-none', 'alert-danger');
+                msgEl.classList.add('alert', 'alert-success');
+                msgEl.textContent = `已將 ${dates.length} 筆資料送交匯入，處理結果請稍候。`;
+            }
+
+            // 關閉 modal（使用 cleanup，以確保只執行一次）
+            cleanup();
+        }, { once: true });
+
+        // 綁定取消按鈕與 close icon：只呼叫 cleanup（一次）
+        modalEl.querySelectorAll('[data-bs-dismiss="modal"], .btn-close').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                cleanup();
+            }, { once: true });
+        });
+
+        // 若使用者點 overlay（bootstrap 預設會處理 backdrop），也只執行一次 cleanup
+        modalEl.addEventListener('click', function (e) {
+            if (e.target === modalEl) {
+                cleanup();
+            }
+        }, { once: true });
+
+        return dates;
+    }
+
+    function handleImportFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const text = e.target.result;
+                const parsed = JSON.parse(text);
+                const dates = showImportPreview(parsed, file.name);
+                const modalEl = ensureImportModal();
+                const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                bs.show();
+
+                const btnConfirm = modalEl.querySelector('#importCalendarConfirm');
+                btnConfirm.replaceWith(btnConfirm.cloneNode(true));
+                const newConfirm = modalEl.querySelector('#importCalendarConfirm');
+
+                newConfirm.addEventListener('click', function () {
+                    const detail = { fileName: file.name, raw: parsed, dates: dates };
+
+                    // 1. 發送原本的匯入事件
+                    document.dispatchEvent(new CustomEvent('calendar:import', { detail }));
+
+                    // 2. 【新增】清除 Session 中的待處理狀態，這樣鈴鐺才不會再出來
+                    sessionStorage.removeItem('calendar_check_pending');
+                    sessionStorage.removeItem('calendar_draft_ranges');
+
+                    // 3. 【新增】如果畫面上正掛著鈴鐺，直接把它拔掉
+                    if (window.CalendarUI && typeof window.CalendarUI.destroyBell === 'function') {
+                        window.CalendarUI.destroyBell();
+                    }
+
+                    // 4. 更新訊息提示（您原本的程式碼）
+                    const msgEl = document.getElementById('importCalendarMessage');
+                    if (msgEl) {
+                        msgEl.classList.remove('d-none', 'alert-danger');
+                        msgEl.classList.add('alert', 'alert-success');
+                        msgEl.textContent = `已將 ${detail.dates.length} 筆資料送交匯入，處理結果請稍候。`;
+                    }
+
+                    bs.hide();
+
+                    // 5. 【建議】視情況重新導向或刷新
+                    // 如果您希望匯入後立刻看到行事曆更新，可以加這一行：
+                     location.reload(); 
+
+                }, { once: true });
+
+            } catch (ex) {
+                console.error('匯入檔案解析失敗', ex);
+                const modalEl = ensureImportModal();
+                const errorEl = modalEl.querySelector('#importCalendarError');
+                errorEl.textContent = '解析 JSON 失敗，請確認檔案內容格式正確。';
+                errorEl.classList.remove('d-none');
+                const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                bs.show();
+            }
+        };
+        reader.onerror = function () {
+            console.error('FileReader error');
+            const modalEl = ensureImportModal();
+            const errorEl = modalEl.querySelector('#importCalendarError');
+            errorEl.textContent = '讀取檔案失敗，請重新嘗試。';
+            errorEl.classList.remove('d-none');
+            const bs = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+            bs.show();
+        };
+        reader.readAsText(file, 'utf-8');
+    }
+
+    function bindImportHandlers() {
+        // 綁定現有頁面上的匯入按鈕與隱藏 input（MemberCenter.cshtml 有）
+        try {
+            const importBtn = document.getElementById('btnImportCalendar');
+            const importInput = document.getElementById('importCalendarInput');
+
+            if (!importBtn || !importInput) return;
+
+            importBtn.addEventListener('click', function () {
+                importInput.value = null;
+                importInput.click();
+            });
+
+            importInput.addEventListener('change', function (e) {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                handleImportFile(f);
+            }, false);
+        } catch (ex) {
+            console.warn('bindImportHandlers failed', ex);
+        }
+    }
+
+    // 提供一個範例監聽器：當收到 calendar:import 時，執行實際匯入（使用者可在 Calendar.js 實作）
+    document.addEventListener('calendar:import', function (ev) {
+        // ev.detail => { fileName, raw, dates }
+        console.info('calendar:import 事件收到：', ev.detail);
+        try {
+            if (window.Calendar && typeof window.Calendar.importDates === 'function') {
+                // 若 raw 為物件包含 dates 則傳遞，否則嘗試 raw 本身
+                const d = Array.isArray(ev.detail.dates) ? ev.detail.dates : (Array.isArray(ev.detail.raw) ? ev.detail.raw : []);
+                window.Calendar.importDates(d, []);
+            }
+        } catch (ex) {
+            console.error('處理匯入資料時發生錯誤', ex);
+        }
+    }, false);
+
+    /* =============================
      * 對外 API
      * ============================= */
     window.Calendar = {
         init,
+        importDates: (singles, ranges) => {
+            if (Array.isArray(singles)) selectedSingles = singles;
+            if (Array.isArray(ranges)) selectedRanges = ranges;
+            renderMonth();
+        },
         startRange() {
             rangeDraftStart = null;
         },
@@ -841,3 +1130,4 @@
 
 
 })(window.jQuery);
+
