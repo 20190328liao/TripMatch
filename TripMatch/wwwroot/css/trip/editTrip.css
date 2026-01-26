@@ -663,3 +663,25 @@ footer {
 .rec-item:hover {
     background-color: #f8f9fa; /* 淺灰背景 */
 }
+
+
+/* 自定義外框按鈕 */
+.btn-outline-mint {
+    background-color: transparent; /* 初始背景透明 */
+    color: black;
+    font-weight:bold;
+    transition: all 0.3s ease; /* 讓顏色切換平滑 */
+    font-weight: 600;
+}
+
+/* 滑鼠移過去 (Hover) */
+.btn-outline-mint:hover {
+    background-color: var(--primary-mint); /* 背景變色 */
+    color: #ffffff; /* 文字變白色 */
+    box-shadow: 0 4px 12px rgba(98, 222, 177, 0.3); /* 加入一點發光感 */
+}
+
+/* 針對按鈕內的圖示，確保它也跟著變色 */
+.btn-outline-mint:hover i {
+    color: #ffffff;
+}

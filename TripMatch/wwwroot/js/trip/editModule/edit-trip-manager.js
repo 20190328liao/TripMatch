@@ -34,10 +34,7 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
         'itinerary-nav-container',
         'place-list',
         handleAddDay
-    );
-
-
-  
+    );  
 
     // [新增] 監聽導覽列發出的事件
     const navContainer = document.getElementById('itinerary-nav-container');
@@ -58,6 +55,8 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
 
         handleAddSpotFromModal(placeId, dayNum);
     });
+
+
     addFlightModal = new AddFlightModal();
     flightRenderer = new FlightRenderer('flight-wrapper'); 
     restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
@@ -197,7 +196,7 @@ function initTimeEditModal() {
                 </div>                
 
                 <div class="modal-footer py-2 d-flex flex-nowrap w-100 gap-2">
-                    <button type="button" class="btn btn-sm btn_gray flex-grow-1" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-sm btn_Gray flex-grow-1" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-sm btn_light flex-grow-1" id="save-time-btn">儲存</button>
                 </div>
 
@@ -250,8 +249,8 @@ function initHotelEditModal() {
                 </div>                
 
                 <div class="modal-footer py-2 d-flex flex-nowrap w-100 gap-2">
-                    <button type="button" class="btn btn-sm btn-secondary flex-grow-1" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-sm btn-primary flex-grow-1" id="save-hotel-btn">加入行程</button>
+                    <button type="button" class="btn btn-sm btn_gray flex-grow-1" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-sm btn_light flex-grow-1" id="save-hotel-btn">加入行程</button>
                 </div>
             </div>
         </div>
@@ -413,8 +412,8 @@ function renderItinerary(items, dates, accommodations, flights) {
     // 住宿區塊 Header
     let hotelHtml = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold m-0 text-primary"><i class="bi bi-building me-2"></i>住宿安排</h6>
-            <button class="btn btn-sm btn-outline-primary rounded-pill" id="btn-add-hotel">
+            <h6 class="fw-bold m-0 text-success"><i class="bi bi-building me-2"></i>住宿安排</h6>
+            <button class="btn btn-sm btn-outline-mint rounded-pill" id="btn-add-hotel">
                 <i class="bi bi-plus-lg"></i> 新增
             </button>
         </div>
@@ -595,7 +594,7 @@ function renderItinerary(items, dates, accommodations, flights) {
         <div class="quick-add-section p-3 border-top">
             <!-- 狀態 A: 顯示 + 按鈕 -->
             <div class="quick-add-btn-wrapper text-center">
-                <button class="btn btn-outline-primary btn-sm w-100 rounded-pill quick-add-btn">
+                <button class="btn btn-outline-mint btn-sm w-100 rounded-pill quick-add-btn">
                     <i class="bi bi-plus-lg me-1"></i> 新增景點
                 </button>
             </div>

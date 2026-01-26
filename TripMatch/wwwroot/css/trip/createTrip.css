@@ -3,12 +3,12 @@
 .chip {
     display: flex;
     align-items: center;
-    background: #e8f0fe;
-    color: #1a73e8;
+    background: var(--primary-mint) !important;
+    color: black !important;
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: bold;
     animation: fadeIn 0.2s ease-in;
 }
 
