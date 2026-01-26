@@ -195,10 +195,10 @@ MemberCenter.cshtml
     position: relative;
     z-index: 50;
     cursor: pointer;
-    animation: guide-pulse 2s infinite;
+/*    animation: guide-pulse 2s infinite;*/
 }
 
-@keyframes guide-pulse {
+/*@keyframes guide-pulse {
     0% {
         box-shadow: 0 0 0 0 rgba(0, 150, 81, 0.4);
     }
@@ -210,7 +210,7 @@ MemberCenter.cshtml
     100% {
         box-shadow: 0 0 0 0 rgba(0, 150, 81, 0);
     }
-}
+}*/
 
 /* 2. 定義通用浮窗 (Tooltip) 外觀 - 黑底白字 */
 .guide-hint::after {
@@ -224,7 +224,6 @@ MemberCenter.cshtml
     padding: 6px 12px;
     border-radius: 4px;
     font-size: 13px;
-    font-weight: 500;
     white-space: nowrap;
     pointer-events: none; /* 讓滑鼠可以穿透浮窗點擊按鈕 */
     opacity: 0;
@@ -268,8 +267,19 @@ MemberCenter.cshtml
 .month-header .nav-btn.guide-hint::after,
 .nav-btn.guide-hint::after {
     content: "Step 2: 切換月份並點擊日期";
-    bottom: auto; /* 箭頭的提示改在下方，避免擋住 */
-    top: 130%;
+    position: absolute; /* 固定定位 */
+    top: 130%; /* 放在箭頭下方 */
+    left: 50%; /* 水平置中 */
+    transform: translateX(-50%);
+    background: black; 
+    align-content:center;
+    padding: 10px 8px 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    /*animation: none !important;*/ /* 禁止動畫 */
+    /*transition: none !important;*/ /* 禁止過渡 */
 }
 /* 調整箭頭提示的三角形方向 (指向上方) */
 .month-header .nav-btn.guide-hint::before,
@@ -425,3 +435,4 @@ MemberCenter.cshtml
     font-size: 14pt;
     text-align: right;
 }
+
