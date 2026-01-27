@@ -86,6 +86,7 @@ namespace TripMatch.Models.DTOs
         public int SpotId { get; set; }
         public string HotelName { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
+        public string PhotoUrl { get; set; } = string.Empty;
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
         public string RowVersion { get; set; } = string.Empty;

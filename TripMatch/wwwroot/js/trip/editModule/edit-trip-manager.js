@@ -3,7 +3,7 @@ import { ItineraryNavigator } from './components/itinerary-navigator.js';
 import { AddFlightModal } from './components/add-flight-modal.js';
 import { FlightRenderer } from './components/flight-renderer.js';
 import { RestaurantRenderer } from './components/restaurant-renderer.js';
-import { savePlaceToDatabase, showPlaceByGoogleId } from './edit-map-manager.js';
+import { savePlaceToDatabase, showPlaceByGoogleId, renderPlaceOnMap } from './edit-map-manager.js';
 import { RecommendationModal } from './components/recommendation-modal.js';
 import { SignalRManager } from './signalr-manager.js';
 
@@ -168,10 +168,6 @@ function handleAddDay() {
     });
 }
 
-
-
-
-
 // 【新增函式】插入彈窗 HTML 到頁面底部
 function initTimeEditModal() {
     const modalHtml = `
@@ -249,7 +245,7 @@ function initHotelEditModal() {
                 </div>                
 
                 <div class="modal-footer py-2 d-flex flex-nowrap w-100 gap-2">
-                    <button type="button" class="btn btn-sm btn_gray flex-grow-1" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-sm btn_Gray flex-grow-1" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-sm btn_light flex-grow-1" id="save-hotel-btn">加入行程</button>
                 </div>
             </div>
@@ -368,7 +364,7 @@ function renderItinerary(items, dates, accommodations, flights) {
     }
 
     // 綁定「刪除航班」按鈕
-    document.querySelectorAll('.delete-flight-btn').forEach(btn => {
+    document.querySelectorAll('.flight-delete-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             // 取得按鈕上的資料 (建議在渲染 HTML 時補上 data-version)
             const flightId = e.currentTarget.dataset.id;
@@ -412,10 +408,7 @@ function renderItinerary(items, dates, accommodations, flights) {
     // 住宿區塊 Header
     let hotelHtml = `
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold m-0 text-success"><i class="bi bi-building me-2"></i>住宿安排</h6>
-            <button class="btn btn-sm btn-outline-mint rounded-pill" id="btn-add-hotel">
-                <i class="bi bi-plus-lg"></i> 新增
-            </button>
+            <h6 class="fw-bold m-0 text-success"><i class="bi bi-building me-2"></i>住宿安排</h6>          
         </div>
         <div class="hotel-list-container">
     `;
@@ -434,13 +427,17 @@ function renderItinerary(items, dates, accommodations, flights) {
             const address = hotel.address || "";
             const checkIn = hotel.checkInDate ? new Date(hotel.checkInDate).toLocaleDateString() : "--";
             const checkOut = hotel.checkOutDate ? new Date(hotel.checkOutDate).toLocaleDateString() : "--";
+            const photoUrl = hotel.photoUrl || 'https://via.placeholder.com/70?text=No+Image';
 
             hotelHtml += `
                 <div class="hotel-card d-flex gap-3 mb-2 p-2 border rounded position-relative">
-                    <div class="d-flex flex-column justify-content-center text-center bg-light rounded px-2" style="min-width: 60px;">
-                        <i class="bi bi-moon-stars-fill text-primary mb-1"></i>
-                        <small class="text-muted" style="font-size: 0.7rem;">${checkIn}</small>
+
+                    <div class="hotel-img" style="min-width: 60px; width: 60px; height: 60px;">
+                        <img src="${photoUrl}" 
+                         class="rounded object-fit-cover w-100 h-100" 
+                         alt="${hotelName}">
                     </div>
+
                     <div class="flex-grow-1 overflow-hidden">
                         <div class="fw-bold text-truncate" title="${hotelName}">${hotelName}</div>
                         <div class="text-muted small text-truncate"><i class="bi bi-geo-alt me-1"></i>${address}</div>
@@ -450,16 +447,28 @@ function renderItinerary(items, dates, accommodations, flights) {
                             </span>
                         </div>
                     </div>
-                    <!-- 刪除按鈕 -->
-                    <button class="btn btn-link text-danger p-0 position-absolute top-0 end-0 mt-1 me-2 hotel-delete-btn" data-id="${hotel.id}" data-version="${hotel.rowVersion}">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+
+                    <button class="hotel-delete-btn"
+                            data-id="${hotel.id}" 
+                            data-version="${hotel.rowVersion || ''}"
+                            title="移除住宿">
+                        <i class="bi bi-trash"></i>
+                    </button>                 
                 </div>
             `;
         });
-    }
+    }  
+
+    hotelHtml +=`
+        <div class="quick-add-section p-3 border-top">
+            <button id="btn-add-hotel" class="btn btn-outline-mint btn-sm w-100 rounded-pill">
+                <i class="bi bi-plus-lg me-1"></i> 新增住宿
+            </button>
+        </div>
+    `;
 
     hotelHtml += `</div>`; // Close container
+    
     hotelSection.innerHTML = hotelHtml;
     container.appendChild(hotelSection);
 
@@ -683,14 +692,15 @@ function renderItinerary(items, dates, accommodations, flights) {
                                     </div>
                                 </div>
                                 
-                            </div>                        
+                            </div>   
+                            
 
-                            <div class="place-action ms-auto d-flex flex-column justify-content-between align-items-end">
-                                <div class="drag-handle text-muted"><i class="bi bi-grip-vertical"></i></div>
-                                <button class="btn btn-link text-danger p-0 delete-btn" style="font-size: 0.9rem;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
+                            <button class="spot-delete-btn" title="移除景點">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
+
+                           
                         </div>
                     </div>
                 `;
@@ -716,7 +726,7 @@ function bindItemEvents() {
         item.addEventListener('click', function (e) {
 
             // 0. 排除刪除與拖曳按鈕的點擊事件
-            if (e.target.closest('.delete-btn') || e.target.closest('.drag-handle')) return;
+            if (e.target.closest('.spot-delete-btn') || e.target.closest('.drag-handle')) return;
 
 
 
@@ -764,7 +774,7 @@ function bindItemEvents() {
     });
 
     // 刪除按鈕
-    document.querySelectorAll('.delete-btn').forEach(btn => {
+    document.querySelectorAll('.spot-delete-btn').forEach(btn => {
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             const card = this.closest('.itinerary-item');
@@ -983,11 +993,18 @@ function addQuickPlaceToTrip(place, dayNum) {
                 // 成功後重新整理列表
                 refreshItineraryList();
 
-                // 選用：移動地圖到該點
-                if (window.currentMapInstance && place.geometry.location) {
+                // 【關鍵修改】：呼叫地圖渲染功能，顯示標記與 InfoWindow
+                if (typeof renderPlaceOnMap === 'function') {
+                    // 傳入 Google Place 物件與剛產生的 spotId
+                    renderPlaceOnMap(place, spotId);
+                } else if (window.currentMapInstance && place.geometry.location) {
+                    // 備案邏輯
                     window.currentMapInstance.panTo(place.geometry.location);
                     window.currentMapInstance.setZoom(16);
                 }
+
+                // 提示使用者 (可選)
+                showSimpleToast(`已加入 Day ${dayNum}`);
             },
             error: function (xhr) {
                 alert('加入失敗：' + (xhr.responseJSON?.message || "伺服器錯誤"));

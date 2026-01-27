@@ -9,10 +9,7 @@
         let html = `
         <div class="flight-section mb-3 p-3 bg-white rounded shadow-sm border">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold m-0 text-success"><i class="bi bi-airplane-engines me-2"></i>航班資訊</h6>
-                <button class="btn btn-sm btn-outline-mint rounded-pill" id="btn-add-flight-trigger">
-                    <i class="bi bi-plus-lg"></i> 新增
-                </button>
+                <h6 class="fw-bold m-0 text-success"><i class="bi bi-airplane-engines me-2"></i>航班資訊</h6>              
             </div>
             <div class="flight-list">
         `;
@@ -90,14 +87,23 @@
                         </div>
 
                     </div>
-
-                    <!-- 刪除按鈕 -->
-                    <button class="flight-delete-btn delete-flight-btn" data-id="${f.id}" data-version="${f.rowVersion}" title="移除航班">
+                   <button class="flight-delete-btn"
+                            data-id="${f.id}" 
+                            data-version="${f.rowVersion || ''}"
+                            title="移除航班">
                         <i class="bi bi-trash"></i>
-                    </button>
+                    </button>   
                 </div>`;
             });
         }
+
+        html += `
+            <div class="quick-add-section p-3 border-top">
+                <button id="btn-add-flight-trigger" class="btn btn-outline-mint btn-sm w-100 rounded-pill">
+                    <i class="bi bi-plus-lg me-1"></i> 新增航班
+                </button>
+            </div>
+        `;
 
         html += `</div></div>`; // 結束標籤
 
