@@ -34,11 +34,11 @@ MemberCenter.cshtml
 .memberTitle {
     color: #000;
     font-weight: 700;
-    margin: 2rem 0 1.5rem 0;
+    margin: 3.2rem 0 1.5rem 0;
     z-index: 10;
 }
 #calendar_section::after {
-    top: 0.5%;
+    top: 0%;
 }
 #calendar_section::before {
     top: 1%;

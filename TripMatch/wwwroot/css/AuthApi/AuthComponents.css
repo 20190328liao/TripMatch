@@ -323,12 +323,7 @@ align-content:center;
             max-width: 90% !important;
             box-sizing: border-box;
         }*/
-    /*    .info_label svg {
-        width: 24px;
-        height: 24px;
-        margin-right: 10px;
-        fill: var(--tm-teal);
-    }*/
+
    
     .edit_link {
         display: flex;
@@ -591,7 +586,67 @@ input[type="password"]::-ms-clear {
     .info_value span {
         margin-left: 19px;
     }
-    #inputName, #inputBackupEmail, #btnCancelName, #btnSaveName, #btnSaveBackupEmail, #btnCancelBackupEmail {
-        margin-left: 0px;
+
+}
+
+
+#inputName,
+#inputBackupEmail {
+    box-sizing: border-box;
+    display: block;
+    margin-left: auto;
+    width: clamp(180px, 40%, 420px);
+    max-width: 100%;
+ 
+}
+
+/* margin-left:auto 推到右側，並允許彈性縮放 */
+#btnCancelName,
+#btnSaveName,
+#btnSaveBackupEmail,
+#btnCancelBackupEmail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    box-sizing: border-box;
+    white-space: nowrap;
+    flex: 0 1 auto;
+    min-width: 8rem;
+    max-width: 48%;
+    padding: .45rem .9rem;
+    font-size: 16pt;
+
+}
+#displayBackupEmail {
+    white-space: nowrap;
+}
+.info_item,
+.info_value {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+/* 小螢幕調整：在窄版時讓輸入與按鈕佔滿並改為垂直堆疊（避免擠壓） */
+@media (max-width: 800px) {
+    #inputName,
+    #inputBackupEmail {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    #btnCancelName,
+    #btnSaveName,
+    #btnSaveBackupEmail,
+    #btnCancelBackupEmail {
+        width: 48%;
+        max-width: 48%;
+        margin-left: 0;
+    }
+
+    .info_item,
+    .info_value {
+        flex-wrap: wrap;
     }
 }

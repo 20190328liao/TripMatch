@@ -358,3 +358,45 @@ function ensureBellOnAllowedPage() {
 
 document.addEventListener('DOMContentLoaded', ensureBellOnAllowedPage);
 window.addEventListener('hashchange', () => { setTimeout(ensureBellOnAllowedPage, 50); });
+
+(function () {
+    'use strict';
+
+    function dismissHints() {
+        try { localStorage.setItem('tm_hints_dismissed', '1'); } catch (e) { /* ignore */ }
+
+        // 移除頁面上所有 guide 提示樣式
+        document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
+
+        // 移除鈴鐺上的提示（若存在）
+        const bell = document.getElementById('tm-pending-bell');
+        if (bell) bell.classList.remove('guide-hint');
+
+        // 通知其它模組（原有程式可監聽此事件）
+        document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+
+        // 若 CalendarUI 提供關閉 modal 的方法，呼叫它以確保 modal 被關閉
+        try {
+            if (window.CalendarUI && typeof window.CalendarUI.closePendingModal === 'function') {
+                window.CalendarUI.closePendingModal();
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // 支援動態產生的按鈕：使用事件委派
+    document.addEventListener('click', function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest('#btn-dismiss-hints') : null;
+        if (!btn) return;
+        ev.preventDefault();
+        dismissHints();
+    });
+
+    // 頁面載入時若已關閉過（localStorage），自動移除提示
+    try {
+        if (localStorage.getItem('tm_hints_dismissed') === '1') {
+            document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
+            const bell = document.getElementById('tm-pending-bell');
+            if (bell) bell.classList.remove('guide-hint');
+        }
+    } catch (e) { /* ignore */ }
+})();

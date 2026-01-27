@@ -135,7 +135,7 @@ function createTrip() {
 
 
 /* ==========================================
-   吉祥物 Canvas 動畫邏輯 (5組動作 + 尺寸修正版)
+   1. 吉祥物 Canvas 動畫函數定義
    ========================================== */
 function initMascotAnimation() {
     const canvas = document.getElementById('mascotCanvas');
@@ -151,17 +151,16 @@ function initMascotAnimation() {
     spriteSheet.src = "/img/animate.png";
 
     // === 參數設定 ===
-    const cols = 5;            // 總共有 5 個動作
-    const rows = 1;            // 直向 1 列
-    const totalFrames = 5;     // 總幀數
+    const cols = 9;             // 總共有 9 個動作
+    const rows = 1;             // 直向 1 列
+    const totalFrames = 9;      // 總幀數
 
-    // ★ 精準裁切設定 (解決 1015mm vs 1000mm 的誤差)
-    // 如果圖片右邊有多餘留白，設為 true；如果圖片是剛好切分，設為 false
+    // ★ 精準裁切設定
     const usePreciseWidth = true;
-    const logicalWidthRatio = 200 / 1015; // 單格 200mm / 總寬 1015mm
+    const logicalWidthRatio = 200 / 1800; // 單格 200mm / 總寬 1800mm (修正為 1800 以符合您的圖片)
 
     // 動畫顯示設定
-    const animationSpeed = 15; // 速度 (數字越大越慢)
+    const animationSpeed = 30; // 速度 (數字越大越慢)
     const maxDisplayHeight = 250;
 
     let spriteWidth = 0;
@@ -169,7 +168,7 @@ function initMascotAnimation() {
     let currentFrame = 0;
     let frameDrawn = 0;
     let isPaused = false;
-    let animationId; // 用於管理 requestAnimationFrame
+    let animationId;
 
     // 點擊切換 暫停/播放
     canvas.addEventListener('click', function () {
@@ -179,10 +178,8 @@ function initMascotAnimation() {
     spriteSheet.onload = function () {
         // 計算單格尺寸
         if (usePreciseWidth) {
-            // 使用比例計算：總寬 * (200/1015)
             spriteWidth = spriteSheet.width * logicalWidthRatio;
         } else {
-            // 標準均分計算
             spriteWidth = spriteSheet.width / cols;
         }
 
@@ -198,27 +195,23 @@ function initMascotAnimation() {
         // 清除畫布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 計算當前幀 (0 ~ 4 循環)
+        // 計算當前幀
         let position = currentFrame % totalFrames;
 
         // 計算裁切 X 座標
-        // 這裡確保每次都精準移動一個 spriteWidth 的距離
         let srcX = position * spriteWidth;
         let srcY = 0;
 
         // === 縮放與置中邏輯 ===
-        // 計算縮放比例 (維持原圖比例)
         const scaleRatio = maxDisplayHeight / spriteHeight;
-
         const displayWidth = spriteWidth * scaleRatio;
         const displayHeight = maxDisplayHeight;
 
-        // 計算置中座標 (在 1600 寬度的 Canvas 中置中)
+        // 計算置中座標 (在 Canvas 中置中)
         const dx = (canvas.width - displayWidth) / 2;
         const dy = (canvas.height - displayHeight) / 2;
 
         // 繪製圖片
-         //drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight)
         ctx.drawImage(
             spriteSheet,
             srcX, srcY, spriteWidth, spriteHeight,
@@ -238,7 +231,38 @@ function initMascotAnimation() {
     }
 }
 
-// 執行初始化
+/* ==========================================
+   2. 主程式初始化 (合併執行)
+   ========================================== */
 document.addEventListener("DOMContentLoaded", function () {
+
+    // --- 執行 A: 吉祥物動畫 ---
     initMascotAnimation();
+
+    // --- 執行 B: 飛機卷軸動畫 ---
+    const plane = document.getElementById('airplane');
+    const trigger = document.getElementById('plane-trigger');
+
+
+    if (plane && trigger) {
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.5 // 當區塊出現一半時觸發
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // 進入視窗：起飛
+                    plane.classList.add('take-off');
+                } else {
+                    // 離開視窗：重置 (下次捲動會再飛一次)
+                    plane.classList.remove('take-off');
+                }
+            });
+        }, observerOptions);
+
+        observer.observe(trigger);
+    }
 });

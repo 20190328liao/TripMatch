@@ -79,6 +79,7 @@ body {
     background: linear-gradient(135deg, var(--primary-mint), var(--dark-mint));
     border: none;
     box-shadow: 0 2px 5px rgba(54, 179, 140, 0.3);
+
 }
 
 .marker-joinable {
@@ -311,11 +312,12 @@ body {
         z-index: 1;
     }
 
-    .day-cell.status-single {
-        background: linear-gradient(135deg,#62DEB1,#36b38c);
-        color: white;
-        border-radius: 50%;
-    }
+.day-cell.status-single {
+    background: linear-gradient(135deg,#62DEB1,#36b38c);
+    color: white;
+    border-radius: 50%;
+ 
+}
 
 .preview-valid {
     background-color: #ecfdf5 !important;
@@ -724,15 +726,10 @@ body {
         font-weight: 500;
     }
 
-    /* 選取時文字變白 */
-    .day-cell.range-start .day-label,
-    .day-cell.range-end .day-label,
+    /* 選取時文字灰 */
     .day-cell.range-mid .day-label,
-    .day-cell.status-single .day-label,
-    .day-cell.preview-start .day-label,
-    .day-cell.preview-end .day-label {
-        color: white !important;
-        font-weight: bold;
+    .day-cell.status-single .day-label {
+        color: darkcyan;
     }
 
     /* ★ 新增：調整邊界游標提示 */

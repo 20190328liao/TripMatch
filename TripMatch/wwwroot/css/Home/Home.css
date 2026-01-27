@@ -96,9 +96,7 @@ body {
         padding: 25px;
         height: auto;
     }
-    #mascotCanvas {
-    width:100vw;
-    }
+
     .input-row {
         display: flex;
         flex-direction: column;
@@ -362,6 +360,7 @@ body {
 .join-input-area {
     width: 100%;
     max-width: 280px; /* 限制寬度讓視覺集中 */
+    
 }
 
 .create-btn-area {
@@ -795,8 +794,8 @@ body {
         position: absolute;
         bottom: 0;
         right: 0;
-        width: 80%;
-        height: 30%;
+        width: 100%;
+        height: 40%;
         background-image: url('/img/cityimg.png');
         background-size: contain;
         background-repeat: no-repeat;
@@ -819,4 +818,73 @@ body {
         filter:brightness(1.12);
         transform: translateY(0);
     }
+}
+.form-control {
+
+margin-left: 8px;
+}
+.plane-section {
+    height: 300px; /* 增加高度讓飛行的仰角更明顯 */
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    background: transparent;
+}
+
+.airplane {
+    position: absolute;
+    bottom: -50px; /* 初始藏在下方一點 */
+    left: -150px; /* 初始藏在左側畫面外 */
+    z-index: 10;
+    /* 飛機朝向右上，通常 fly.png 是水平的，所以要旋轉 */
+    transform: rotate(-15deg);
+    opacity: 0;
+}
+
+    .airplane img {
+        /* 也可以在這裡統一控制圖片大小 */
+        width: 100px;
+        filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2)); /* 加上陰影增加立體感 */
+    }
+
+/* 飛行定義 */
+@keyframes flyUpRight {
+    0% {
+        left: -150px;
+        bottom: 20px;
+        opacity: 0;
+        transform: rotate(-15deg) scale(0.8);
+    }
+
+    15% {
+        opacity: 1;
+        transform: rotate(-15deg) scale(1);
+    }
+
+    100% {
+        left: 110%; /* 飛出右側 */
+        bottom: 400px; /* 飛向右上 */
+        opacity: 1;
+        transform: rotate(-10deg) scale(1.1); /* 飛近感 */
+    }
+}
+
+.airplane.take-off {
+    animation: flyUpRight 3s ease-in-out forwards;
+}
+
+.mascot-container {
+    width: 300px; /* 你希望在網頁上看到的實際寬度 */
+    height: 150px; /* 你希望在網頁上看到的實際高度 */
+    position: relative;
+    overflow: hidden; /* 隱藏超出 300x150 以外的 Canvas 部分 */
+    margin-left: auto; /* 將整個容器推向網頁右側 */
+}
+
+#mascotCanvas {
+    position: absolute;
+    bottom: 0; /* 底部對齊 */
+    right: 0; /* 右側對齊 */
+    transform-origin: bottom right;
+    transform: scale(0.5); /* 視覺上縮小 50%，不影響繪圖邏輯 */
 }
