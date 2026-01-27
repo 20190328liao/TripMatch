@@ -19,19 +19,54 @@
     <div class="left-panel">
         <input type="hidden" id="current-trip-id" value="@Model" />
 
-        <div class="itinerary-nav p-3 bg-white border-bottom d-flex flex-column gap-2">
-            <!-- 標題區塊 -->
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 id="current-trip-title" class="m-0 fw-bold text-truncate pe-2"></h5>
-                <!-- 您原本的行程/總覽切換按鈕可以留著或隱藏，看需求 -->
-            </div>
+        <div class="itinerary-nav-container">
+            <div class="segmented-control">
 
-            <!-- [新增] 導覽列容器，JS 會在這裡渲染兩個按鈕 -->
-            <div id="itinerary-nav-container"></div>
+                <div class="dropdown seg-dropdown">
+                    <button class="seg-item dropdown-toggle" id="dayJumpBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-calendar3"></i>
+                        <span>快速跳轉</span>
+
+                    </button>
+                    <ul class="dropdown-menu shadow border-0 mt-2" id="day-jump-list">
+                        <li><a class="dropdown-item active" href="#">Day 1</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-primary" href="#" id="btn-add-day-nav"><i class="bi bi-plus-circle me-1"></i>新增天數</a></li>
+                    </ul>
+                </div>
+
+                <button class="seg-item active" id="tab-itinerary" onclick="switchTab('itinerary')">
+                    <i class="bi bi-list-task"></i>
+                    <span>行程</span>
+                </button>
+
+                <button class="seg-item" id="tab-explore" onclick="switchTab('explore')">
+                    <i class="bi bi-compass"></i>
+                    <span>探索</span>
+                </button>
+
+                <button class="seg-item" id="tab-favorites" onclick="switchTab('favorites')">
+                    <i class="bi bi-heart"></i>
+                    <span>收藏</span>
+                </button>
+
+            </div>
         </div>
 
-        <div class="itinerary-content p-0 overflow-auto" id="place-list">
-            @* JS 會將渲染後的 HTML 填入此處 *@           
+
+        <div class="tab-content-wrapper">
+            <div id="itinerary-tab-content" class="itinerary-content tab-content-active">
+                <div id="place-list" class="p-0">
+                </div>
+            </div>
+
+            <div id="explore-tab-content" class="itinerary-content" style="display: none;">
+                <div class="text-center p-5 text-muted">點擊上方按鈕開始探索</div>
+            </div>
+
+            <div id="favorites-tab-content" class="itinerary-content" style="display: none;">
+                <div class="text-center p-5 text-muted">載入收藏中...</div>
+            </div>
         </div>
     </div>
 
