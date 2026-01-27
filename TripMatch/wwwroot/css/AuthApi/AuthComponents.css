@@ -59,7 +59,7 @@
     position: static;
     left: auto;
     flex: 1 1 auto;
-    text-indent: 2em;
+    text-indent: 2.5em;
     border-bottom: 2px dashed rgba(42, 157, 143, 0.3);
     box-sizing: border-box;
     min-width: 0;
@@ -279,9 +279,12 @@ align-content:center;
             padding: 0px;
         }
 }
-
+@media (min-width:992px) {
+    #inputName, #inputBackupEmail {
+        margin-left: 45px;
+    }
+}
 @media (max-width: 991.98px) {
-
 
 
     .info_value {
@@ -574,4 +577,21 @@ input[type="password"]::-ms-clear {
     justify-content: center;
     margin-top: 10px;
     font-size: 18pt;
+}
+@media  (max-width: 991.98px)  {
+    .info_item {
+        width: 100%;
+    }
+
+    #inputName, #inputBackupEmail, #btnCancelName, #btnSaveName, #btnSaveBackupEmail, #btnCancelBackupEmail {
+        margin-left: 55px;
+    }
+}
+@media (max-width: 800px) {
+    .info_value span {
+        margin-left: 19px;
+    }
+    #inputName, #inputBackupEmail, #btnCancelName, #btnSaveName, #btnSaveBackupEmail, #btnCancelBackupEmail {
+        margin-left: 0px;
+    }
 }
