@@ -37,13 +37,15 @@ MemberCenter.cshtml
     margin: 2rem 0 1.5rem 0;
     z-index: 10;
 }
-
-#calendar_section .memberTitle::before {
-    /*    top: 2%;*/
-    bottom: 2%;
+#calendar_section:::after {
+    top: 0.5%;
+}
+#calendar_section::before {
+    top: 1%;
+    /*    bottom: 2%;*/
 }
 
-.memberTitle::before {
+/*.memberTitle::before {
     content: "";
     position: absolute;
     opacity: 50%;
@@ -51,28 +53,37 @@ MemberCenter.cshtml
     bottom: 5%;
     transform: translateY(-50%);
     width: 90%;
-    height: 10px;
+    height: 10px;*/
     /*    border: 8px dashed #e3f7f2;*/
-    background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
+    /*background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
     border-radius: 2px;
     animation-name: abc;
     animation-duration: 2s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
     z-index: -1;
+}*/
+.member_section::after {
+    content: "";
+    position: absolute;
+    left: 0%;
+    top: 0%;
+    height: 20px;
+    width:35px;
+    background-color:aquamarine;
 }
-/*    .memberTitle::before {
-        content: "";
-        position: absolute;
-        left: 10%;
-        top: 12%;
-        transform: translateY(-50%);
-        width: 30%;
-        height: 2px;
-        background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
-        border-radius: 2px;
-        animation: abc ease-in-out 3s infinite;
-    }*/
+.member_section::before {
+    content: "";
+    position: absolute;
+    left: 2%;
+    top: 2%;
+    transform: translateY(-50%);
+    width: 30%;
+    height: 2px;
+    background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
+    border-radius: 2px;
+    animation: abc ease-in-out 3s infinite;
+}
 
 @keyframes abc {
     0%, 100% {
