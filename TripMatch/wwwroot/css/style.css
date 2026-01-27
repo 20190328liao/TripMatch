@@ -151,16 +151,20 @@
 	box-sizing: border-box; /*解決百分比寬度破版擠壓*/
 }
 
-.footerWrap,.footer-inner {
-	padding: 10px 0;
+.footerWrap,.footer-inner,footer a {
+	padding: 15px 0;
 	text-align: center;
 	font-size: 16pt;
+	text-decoration:none;
+}
+footer a {
+color:var(--color_Dark);
 }
 
-html,
-body {
-	height: 100%;
-}
+	html,
+	body {
+		height: 100%;
+	}
 
 body {
 	position: relative;

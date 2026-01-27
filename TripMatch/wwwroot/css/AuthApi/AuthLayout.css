@@ -68,23 +68,24 @@
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+
 /* 1. 會員中心專用標題與裝飾 */
 .profile_avatar_section,
 .profile_info_section {
     padding: 20px;
-    background-color: var(--color_bk);
+/*    background-color: var(--color_bk);*/
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     justify-content: left;
     align-items: center;
-    border: 1px solid rgb(188, 204, 219, 0.57);
-    height: 60vh;
+    /*    border: 1px solid rgb(188, 204, 219, 0.57);*/
+    height: 80vh;
     line-height: 1.65;
 }
 
 .profile_info_section {
-    height: 60vh;
+    height: 80vh;
     line-height: 1.65;
 }
     @media (min-width: 992px) {
@@ -162,6 +163,9 @@
 }
 
 @media (max-width: 991.98px) {
+    .avatar_frame img {
+        left:80px;
+    }
     .member_section {
         height: auto;
         max-height: auto;
@@ -187,7 +191,7 @@
         border-radius: 12px;
         box-sizing: border-box;
         align-content: center;
-        border: 1px solid rgb(188, 204, 219, 0.57);
+/*        border: 1px solid rgb(188, 204, 219, 0.57);*/
         margin-bottom: 30px;
     }
 
@@ -216,3 +220,91 @@
     }
 
 }
+/* ==========================================================================
+           Style A
+           ========================================================================== */
+:root {
+    --geo-bg: #F0F4F8;
+    --geo-card: #FFFFFF;
+    --geo-teal: #009688;
+    --geo-accent: #FFAB91; /* 暖橘色跳色 */
+    --folder-bg: #E0E5EC;
+    --folder-card: #FAFAFA;
+    --folder-tab: #00897B;
+    --folder-text: #fff;
+}
+
+
+.member_section {
+    background: var(--folder-card);
+    border-radius: 0 0 10px 10px;
+    box-shadow: 5px 5px 15px rgba(163,177,198, 0.6), -5px -5px 15px rgba(255,255,255, 0.5); /* 輕擬物陰影 */
+    margin-top: 40px;
+    padding: 2rem;
+    position: relative;
+    border-top: 5px solid var(--folder-tab);
+    overflow:
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    border: none;
+}
+
+/* --- SVG 裝飾定位 --- */
+.art-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* 讓滑鼠可以穿透點擊 */
+    z-index: 0;
+}
+
+.shape-circle {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    color: rgba(0, 150, 136, 0.1); /* 淡淡的藍綠色 */
+}
+
+.shape-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    color: var(--color_nav); 
+}
+
+/* 內容層級提升，確保壓在圖形上 */
+.profile_container, .calendar-container, .wishlist_cards_container, .memberTitle {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* --- 檔案夾標籤 --- */
+.folder-tab {
+    position: absolute;
+    top: -40px; /* 往上突出 */
+    left: 0;
+    background: var(--folder-tab);
+    color: var(--folder-text);
+    padding: 10px 25px;
+    border-radius: 10px 10px 0 0;
+    font-weight: bold;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+    .folder-tab::after {
+        /* 標籤右側的斜角裝飾 */
+        content: '';
+        position: absolute;
+        right: -20px;
+        bottom: 0;
+        border-bottom: 40px solid var(--folder-tab);
+        border-right: 20px solid transparent;
+    }

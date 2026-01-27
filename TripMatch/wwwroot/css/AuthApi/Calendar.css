@@ -23,7 +23,8 @@
 
 /* 右側：日曆主體面板 */
 .months-panel-wrapper {
-    border: 1px solid #cccccc7f;
+/*    border: 1px solid #cccccc7f;*/
+background-color:white;
     flex: 2 1 500px;
     border-radius: 12px;
     padding: 20px;
@@ -35,8 +36,9 @@
     padding: 0;
     box-sizing: border-box;
 }
+
 .months-panel {
-background-color: var(--tm-header-bg); /* 灰色背景 */
+    background-color: var(--tm-header-bg); /* 灰色背景 */
 }
 /* 三大面板通用樣式 (月份選單、主日曆、右側清單) */
 .months-panel,
@@ -98,17 +100,14 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
     .month-header button,
     .nav-btn {
         background: transparent !important;
-        border: none !important; /* 移除方形邊框 */
-        border-radius: 0 !important; /* 移除圓角 */
-        box-shadow: none !important; /* 移除陰影 */
-        /* 箭頭本體顏色：深藍綠色 */
-        color: #2DA78B !important;
-        /* 利用文字陰影模擬「白色三角邊框」效果 */
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        color: #0b618d !important;
         text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
-        /* 調整大小與位置 */
-        font-size: 24pt; /* 稍微放大箭頭 */
-        width: 40px; /* 確保有足夠點擊範圍 */
-        height: 40px;
+        font-size: 30pt;
+        width: 45px;
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -116,7 +115,7 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
         padding: 0;
         margin: 0;
         line-height: 1;
-        transition: transform 0.2s; /* 增加一點點互動動畫 */
+        transition: transform 0.2s;
     }
 
         /* 滑鼠移過去時的微互動 (例如稍微放大) */
@@ -164,7 +163,6 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 
     .month-btn .mn {
         font-size: 14pt;
-        font-weight: 600;
         color: #333;
     }
 
@@ -180,10 +178,11 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
     display: flex;
     justify-content: space-between;
 }
+
     .week div:nth-child(7) {
         color: var(--color_Contrast) !important;
     }
-/*.week {
+    /*.week {
     display: flex;
     justify-content: space-between;
     font-size: 16pt;
@@ -235,7 +234,7 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 :root {
     --cal-dot-size: 18px;
     --cal-border-width: 1px;
-    --cal-font-normal: 16pt;
+    --cal-font-normal: 14pt;
 }
 
 .day-cell .day-label {
@@ -284,44 +283,33 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 }
 
 .day-cell.locked {
-    opacity: 0.5;
     pointer-events: none;
-    background-color: #e9ecef;
-    color: #adb5bd;
+    background-color: #f1f5f9;
+    color: #cbd5e1;
 }
 
-    .day-cell.locked .day-label {
-        background: linear-gradient(180deg,#9ca3af,#6b7280);
-        color: white;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-    }
+
 
 .day-cell.today .day-label {
-    background: linear-gradient(180deg,#3b82f6,#2563eb);
-    color: white;
-    width: 3rem;
-    height: 3rem;
+    border: 1.5px solid #24a1f3;
+    background: linear-gradient(135deg, var(--color_nav) 0%, #fff 100%);
+    color: #24a1f3;
+    font-weight: bold;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
 }
 
 /* 提交狀態 (圓圈) */
 .day-cell.submitted-old {
-    background: linear-gradient(95deg, #cffff0,#e4faff);
+    background: linear-gradient(95deg, #f0fdf4,#f0fcff);
     color: var(--color_Dark, #333);
-    border: 1px solid #48e6c92c;
+    border: 1px solid #5bd4bea2;
 }
 
-    .day-cell.submitted-old .day-label {
-        border: var(--cal-border-width) solid #48e6c92c;
-        width: var(--cal-dot-size);
-        height: var(--cal-dot-size);
-        border-radius: 50%;
-    }
-
 .day-cell.submitted-new {
-    background: linear-gradient(90deg,#2DA78B, #79e9a4);
+    background: linear-gradient(125deg,#21dc6f, #c8fbd9);
+    border: 1px solid rgba(13,71,161,0.12);
     color: #fff;
 }
 
@@ -334,24 +322,28 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 
 /* 範圍選擇狀態 (圓圈) */
 .day-cell.range-start .day-label {
-    background: linear-gradient(180deg,#bfe8ff,#a7ddff);
-    color: #04253a;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+    background: linear-gradient(135deg,#56ebd5,#36b38c) !important;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50% 0 0 50% !important;
 }
 
 .day-cell.range-end .day-label {
-    background: linear-gradient(180deg,#ffb86b,#ff974d);
+    background: linear-gradient(135deg,#ffb86b,#ff974d) !important;
     color: white;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    border-radius: 0 50% 50% 0 !important;
 }
 
 .day-cell.selected-range {
-    background: linear-gradient(90deg, #e9fffa, #e9fffd);
-    border-radius: 8px;
+    background: linear-gradient(90deg, #e8fff2, #fff8ea);
+    border-radius: 0;
+    color: #166534;
+    max-width: 3.3rem;
+    max-height: 3.3rem;
+    border-radius: 12px;
 }
 
 /* --- 2. 清單條目樣式 (List Item States) --- */
@@ -370,15 +362,16 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 /* 清單內：舊提交 (淺藍綠色) */
 .calendar-list .submitted-old,
 #calendarRange .submitted-old {
-    background: linear-gradient(95deg, #cffff0, #e4faff);
-    border: 1px solid #48e6c92c;
+    background: linear-gradient(95deg, #f0fdf4,#f0fcff);
     color: var(--color_Dark, #333);
+    border: 1px solid #5bd4bea2;
 }
 
 /* 清單內：新提交 (深綠色) */
 .calendar-list .submitted-new,
 #calendarRange .submitted-new {
-    background: linear-gradient(90deg, #2DA78B, #79e9a4);
+    background: linear-gradient(125deg,#21dc6f, #c8fbd9);
+    border: 1px solid rgba(13,71,161,0.12);
     color: #fff;
 }
 
@@ -438,7 +431,6 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
         max-width: 320px !important;
         width: 320px !important;
         margin: 0 !important;
-        
     }
 
     /* 3. 中間：主日曆 (吃掉剩餘所有空間) */
@@ -447,7 +439,6 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
         width: auto !important;
         max-width: none !important;
         margin: 0 !important;
-        
     }
 
     /* 4. 右側：隱藏原本 HTML 中空的第三欄，達成兩欄佈局 */
@@ -458,6 +449,10 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 
 /* --- 手機版：修正無法滿版與對齊的問題 --- */
 @media (max-width: 991.98px) {
+    .week {
+        font-size:10px;
+        white-space:normal;
+    }
     /* 1. 強制切換為垂直排列，並修正間距 */
     .member_center_wrap #calendar_section > .container > .calendar-three-col {
         display: flex !important;
@@ -533,37 +528,45 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
         margin-right: 8px;
         flex-shrink: 0;
     }
-
+.calendar_legend .dot {
+    width: 24px;
+    height: 24px;
+}
 /* 圖例圓點顏色映射 */
-.calendar_legend .dot.today {
-    background: #0d6efd;
-}
+    .calendar_legend .dot.today {
+        border: 1.5px solid #24a1f3;
+        background: linear-gradient(135deg, var(--color_nav) 0%, #fff 100%);
+        color: #24a1f3;
+    }
 
-.calendar_legend .dot.locked {
-    background: #6c757d;
-}
+    .calendar_legend .dot.locked {
+        background-color: #f1f5f9;
+        color: #cbd5e1;
+    }
 
 .calendar_legend .dot.single {
     background: linear-gradient(180deg,#36c5a9,#1fa08a);
 }
 
-.calendar_legend .dot.range-start {
-    background: #bfe8ff;
-}
+    .calendar_legend .dot.range-start {
+        background: linear-gradient(135deg,#56ebd5,#36b38c) !important;
+    }
 
-.calendar_legend .dot.range-end {
-    background: #ffb86b;
-}
 
-.calendar_legend .dot.old-submit {
-    background: linear-gradient(95deg, #cffff0,#e4faff);
-    border: 1px solid rgba(31,160,138,0.12);
-}
+    .calendar_legend .dot.range-end {
+        background: linear-gradient(135deg,#ffb86b,#ff974d) !important;
+    }
 
-.calendar_legend .dot.new-submit {
-    background: linear-gradient(90deg,#2DA78B, #79e9a4);
-    border: 1px solid rgba(13,71,161,0.12);
-}
+    .calendar_legend .dot.old-submit {
+        background: linear-gradient(95deg, #f0fdf4,#f0fcff);
+        color: var(--color_Dark, #333);
+        border: 1px solid #5bd4bea2;
+    }
+
+    .calendar_legend .dot.new-submit {
+        background: linear-gradient(125deg,#21dc6f, #c8fbd9);
+        border: 1px solid rgba(13,71,161,0.12);
+    }
 
 /* 修改：膠囊標籤統一為深藍綠色 */
 .rounded-pill {
@@ -577,4 +580,35 @@ background-color: var(--tm-header-bg); /* 灰色背景 */
 .month-btn.active {
     color: #2DA78B; /* 深藍綠色 */
     outline: 2px solid #62DEB1;
+}
+
+.calendar-arrow {
+    background: transparent; /* 移除藍底 */
+    color: black; /* 改成黑色符號 */
+    border: none; /* 移除邊框 */
+    cursor: pointer; /* 滑鼠移過去有手型 */
+    font-size: 20px; /* 調整大小 */
+}
+
+    .calendar-arrow:focus {
+        outline: none; /* 移除點擊後的藍框 */
+    }
+
+.rounded-pill {
+    background: var(--color_Dark);
+    font-size: 14pt;
+}
+
+.months-panel h6 {
+    color: var(--color_Dark);
+    font-size: 16pt;
+}
+
+.months-panel hr {
+    border-color:#eee;
+    margin-top:25px;
+}
+
+.text-muted {
+    font-size:16px;
 }

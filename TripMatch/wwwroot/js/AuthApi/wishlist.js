@@ -210,13 +210,13 @@
             const dataTitle = `data-title="${escapeHtml(currentSpotTitle)}"`;
 
             return `
-<div class="col" data-spot-col="${escapeHtml(currentSpotId)}">
+<div class="col" data-spot-col="${escapeHtml(currentSpotId)}" style="z-index:1;">
   <div class="card w-100 h-100 shadow-sm border-0 position-relative wishlist-item" ${extId ? `data-place-id="${escapeHtml(extId)}"` : ''} ${dataTitle}>
     <button type="button"
             class="btn_remove_wish active"
             data-spotid="${escapeHtml(currentSpotId)}"
             title="從清單移除"
-            style="position: absolute; top: 10px; right: 10px; z-index: 10; border: none; background: rgba(255,255,255,0.8); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #dc3545; transition: all 0.2s;">
+            style="position: absolute; top: 10px; right: 10px; z-index: 10; border: none; background: rgba(255,255,255,0.8); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #dc3545; transition: all 0.2s; margin-top:25px;">
         <i class="bi bi-trash-fill"></i>
     </button>
 
@@ -225,7 +225,7 @@
            data-spot-id="${escapeHtml(currentSpotId)}"
            ${dataPlaceAttr}
            data-needs-fetch="${needsGoogleFetch}"
-           style="height: 250px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+           style="height: 250px; object-fit: cover; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-top:25px;">
     </a>
 
     <div class="card-body">
@@ -233,7 +233,7 @@
     </div>
 
     <div class="card-footer bg-transparent border-0 pb-3">
-      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:center;" data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
+      <a href="${finalHref}" class="btn_view_more btn_member_detail w-100" style="text-decoration:none; display:inline-block; text-align:center; " data-spot-id="${escapeHtml(currentSpotId)}" ${dataPlaceAttr} ${dataTitle}>
         View More
       </a>
     </div>
