@@ -142,10 +142,22 @@
              ============================================= -->
             <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
             <div class="calendar_legend mb-3">
-                <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
+               
             </div>
         <section class="member_section" id="calendar_section">
-
+                <div class="frame"></div>
+            <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
+            <div class="calendar_legend mb-3 mt-3">
+                <div class="legend-item"><span class="dot today"></span>今天</div>
+                <div class="legend-item"><span class="dot locked"></span>非揪團期間</div>
+                <div class="legend-item">
+                    <span class="dot range-start"></span>
+                    <span class="dot range-end"></span>
+                    選擇範圍
+                </div>
+                <div class="legend-item"><span class="dot old-submit"></span>舊提交</div>
+                <div class="legend-item"><span class="dot new-submit"></span>新提交</div>
+            </div>
             <div class="container calendar-container">
                 <div class="calendar-three-col">
                     <!-- 左：月份選擇器 + 已選時段（將原本的 list-panel 移入此處） -->
@@ -208,17 +220,7 @@
                     <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入檔</button>
                 </div>
 
-                <div class="calendar_legend mb-3 mt-3">
-                    <div class="legend-item"><span class="dot today"></span>今天</div>
-                    <div class="legend-item"><span class="dot locked"></span>非揪團期間</div>
-                    <div class="legend-item">
-                        <span class="dot range-start"></span>
-                        <span class="dot range-end"></span>
-                        選擇範圍
-                    </div>
-                    <div class="legend-item"><span class="dot old-submit"></span>舊提交</div>
-                    <div class="legend-item"><span class="dot new-submit"></span>新提交</div>
-                </div>
+
             </div>
         </section>
 
@@ -237,6 +239,7 @@
                 <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
             </div>
         <section class="member_section" id="wishlist_section">
+            <div class="folder-tab"></div>
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>

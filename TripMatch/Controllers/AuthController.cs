@@ -399,7 +399,100 @@ namespace TripMatch.Controllers
             return RedirectToAction("MemberCenter");
         }
 
+        // 新增：匯入 JSON 日曆功能
+        [HttpPost]
+        [Authorize] // 確保只有登入的使用者可以呼叫
+        public async Task<IActionResult> ImportCalendarJson(IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { success = false, message = "請選擇檔案。" });
+            }
 
+            // 1. 取得當前使用者 ID
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized(new { success = false, message = "未登入或無法識別使用者。" });
+            }
+
+            try
+            {
+                // 2. 讀取並解析 JSON 檔案
+                using var stream = file.OpenReadStream();
+                using var doc = await JsonDocument.ParseAsync(stream);
+                var root = doc.RootElement;
+
+                // 檢查 JSON 結構是否包含 "submitted" 陣列
+                if (!root.TryGetProperty("submitted", out var submittedElement) || submittedElement.ValueKind != JsonValueKind.Array)
+                {
+                    return BadRequest(new { success = false, message = "檔案格式錯誤：找不到 submitted 日期清單。" });
+                }
+
+                // 3. 提取日期字串並轉換為 DateOnly
+                var newDates = new HashSet<DateOnly>();
+                foreach (var item in submittedElement.EnumerateArray())
+                {
+                    if (DateOnly.TryParse(item.GetString(), out var d))
+                    {
+                        newDates.Add(d);
+                    }
+                }
+
+                if (newDates.Count == 0)
+                {
+                    return Ok(new { success = true, message = "檔案中沒有有效的日期，未進行任何變更。", acceptedDates = new string[] { } });
+                }
+
+                // 4. 資料庫操作：覆蓋邏輯 (使用交易確保安全)
+                using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                try
+                {
+                    // A. 刪除該使用者所有的 LeaveDate (全部覆蓋)
+                    // 注意：這裡假設您只希望覆蓋「LeaveDate1」有值的紀錄
+                    await _dbContext.Set<LeaveDate>()
+                        .Where(l => l.UserId == userId && l.LeaveDate1.HasValue)
+                        .ExecuteDeleteAsync();
+
+                    // B. 插入新日期
+                    var entities = newDates.Select(d => new LeaveDate
+                    {
+                        UserId = userId,
+                        LeaveDate1 = d,
+                        LeaveDateAt = DateTime.Now
+                    });
+
+                    await _dbContext.Set<LeaveDate>().AddRangeAsync(entities);
+                    await _dbContext.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw; // 拋出給外層 catch 處理
+                }
+
+                // 5. 回傳成功訊息與接受的日期 (供前端更新 UI)
+                var acceptedDateStrings = newDates.Select(d => d.ToString("yyyy-MM-dd")).OrderBy(d => d).ToArray();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"匯入成功！已覆蓋並儲存 {newDates.Count} 筆日期。",
+                    acceptedDates = acceptedDateStrings
+                });
+            }
+            catch (JsonException)
+            {
+                return BadRequest(new { success = false, message = "JSON 格式解析失敗，請確認檔案內容。" });
+            }
+            catch (Exception ex)
+            {
+                // 實際專案中請記錄 Log
+                return StatusCode(500, new { success = false, message = "伺服器發生錯誤：" + ex.Message });
+            }
+        }
 
         // Google 登入跳轉
         [HttpGet]

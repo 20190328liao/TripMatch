@@ -333,7 +333,7 @@ body {
 }
 
 .selecting {
-    background-color: #3b82f6 !important;
+    background-color: #6affd1 !important;
     color: white;
 }
 
@@ -647,31 +647,140 @@ body {
     }
 }
 
-.guide-highlight {
-    border: 2px dashed #009651 !important; /* 藍綠色虛線 */
-    animation: dash-pulse 2s infinite;
-    position: relative;
-    z-index: 20;
+
+/* =========================================
+   4. 匯入後的引導提示 (Dashed Guide)
+   ========================================= */
+
+
+/* 預設隱藏偽元素 */
+.day-cell.range-start::after,
+.day-cell.preview-start::after,
+.day-cell.status-single::after {
+    content: none;
 }
-    /* 提示文字 */
-    .guide-highlight::after {
-        content: "點擊此處拖曳選擇範圍";
-        position: absolute;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #333;
-        color: #fff;
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        white-space: nowrap;
-        pointer-events: none;
-        opacity: 0.95;
-        z-index: 21;
-    }
+
+/* ★ 啟動狀態：當父容器 .days 擁有 .guide-active 時顯示 
+   預設形狀：左半圓 (對應 range-start)
+*/
+.days.guide-active .day-cell.range-start::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px dashed #FF5722; /* 橘色虛線 */
+    border-radius: 50% 0 0 50%; /* 左半圓 */
+    z-index: 10;
+    pointer-events: none;
+    animation: dash-spin 8s linear infinite;
+}
+
+
+.days.guide-active .day-cell.range-start.range-end::after,
+.days.guide-active .day-cell.preview-start::after,
+.days.guide-active .day-cell.status-single::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px dashed #FF5722;
+    border-radius: 50%; /* 正圓形 */
+    z-index: 10;
+    pointer-events: none;
+    animation: dash-spin 8s linear infinite;
+}
 
 
 .border-danger {
     border-color: #ed5f00 !important;
+}
+#tm-pending-bell {
+    position: relative;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* --- 游標互動樣式 (Resize 版) --- */
+.day-cell {
+    cursor: pointer; /* 空白處預設手指 (點擊/框選) */
+    position: relative;
+}
+
+    /* 確保日期數字置中且不被遮擋 */
+    .day-cell .day-label {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+        pointer-events: none;
+        font-weight: 500;
+    }
+
+    /* 選取時文字變白 */
+    .day-cell.range-start .day-label,
+    .day-cell.range-end .day-label,
+    .day-cell.range-mid .day-label,
+    .day-cell.status-single .day-label,
+    .day-cell.preview-start .day-label,
+    .day-cell.preview-end .day-label {
+        color: white !important;
+        font-weight: bold;
+    }
+
+    /* ★ 新增：調整邊界游標提示 */
+    /* 起點可以往左拉 */
+    .day-cell.range-start {
+        cursor: w-resize;
+    }
+    /* 終點可以往右拉 */
+    .day-cell.range-end {
+        cursor: e-resize;
+    }
+    /* 如果是單日 (既是頭也是尾)，可以雙向拉 */
+    .day-cell.status-single {
+        cursor: ew-resize;
+    }
+
+/* 刪除按鈕 (X) */
+.delete-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 22px;
+    height: 22px;
+    background-color: #ff5252;
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+    .delete-btn:hover {
+        background-color: #d32f2f;
+        transform: scale(1.15);
+    }
+
+    .delete-btn:active {
+        transform: scale(0.95);
+    }
+
+/* 虛線層級 */
+.days.guide-active .day-cell::after {
+    z-index: 10;
 }

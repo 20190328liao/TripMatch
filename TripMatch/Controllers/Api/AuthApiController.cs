@@ -308,6 +308,7 @@ namespace TripMatch.Controllers.Api
 
         // 寄送驗證信 API
         // Replace the existing SendConfirmation method with this one
+        // 寄送驗證信 API
         [HttpPost("SendConfirmation")]
         public async Task<IActionResult> SendConfirmation([FromBody] string email)
         {
@@ -315,46 +316,35 @@ namespace TripMatch.Controllers.Api
                 return BadRequest(new { message = "請提供 Email" });
 
             email = email.Trim();
-            var lower = email.ToLowerInvariant();
 
-            // 1. 先從資料庫查是否存在此使用者 (同時檢查主信箱與備援信箱)
-            var existing = await _userManager.Users
-                .FirstOrDefaultAsync(u =>
-                    (u.Email != null && u.Email.ToLower() == lower) ||
-                    (u.BackupEmail != null && u.BackupEmail.ToLower() == lower));
+            // ★ 修改重點：只檢查主信箱 (FindByEmailAsync)，忽略備援信箱
+            // 這樣即使該 Email 已被用作備援信箱，仍可註冊為主帳號
+            var existing = await _userManager.FindByEmailAsync(email);
 
             if (existing != null)
             {
-                // 情況 A：如果是主信箱匹配
-                if (!string.IsNullOrEmpty(existing.Email) && string.Equals(existing.Email.Trim(), email, StringComparison.OrdinalIgnoreCase))
-                {
-                    // 已設定密碼 -> 已註冊，叫他去登入
-                    if (!string.IsNullOrEmpty(existing.PasswordHash))
-                        return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
+                // 情況 A：主信箱已存在
 
-                    // 已驗證但尚未設定密碼 -> 直接通關！不用寄信
-                    if (await _userManager.IsEmailConfirmedAsync(existing))
-                    {
-                        _authService.SetPendingCookie(HttpContext, existing.Email);
-                        return Ok(new
-                        {
-                            action = "already_confirmed",
-                            message = "此信箱已完成驗證，請直接設定密碼。",
-                            email = existing.Email
-                        });
-                    }
-                    // 尚未驗證：則繼續執行後面的寄信流程
-                }
-                else // 情況 B：如果是備援信箱匹配
+                // 1. 已設定密碼 -> 代表已完成註冊，提示登入
+                if (!string.IsNullOrEmpty(existing.PasswordHash))
+                    return Conflict(new { action = "redirect_login", message = "Email 已註冊，請直接登入。" });
+
+                // 2. 已驗證但尚未設定密碼 -> 直接通關，不用再寄信
+                if (await _userManager.IsEmailConfirmedAsync(existing))
                 {
-                    if (existing.BackupEmailConfirmed)
+                    _authService.SetPendingCookie(HttpContext, existing.Email);
+                    return Ok(new
                     {
-                        return Ok(new { action = "backup_already_confirmed", message = "此信箱已作為備援信箱驗證過。" });
-                    }
+                        action = "already_confirmed",
+                        message = "此信箱已完成驗證，請直接設定密碼。",
+                        email = existing.Email
+                    });
                 }
+
+                // 3. 尚未驗證 -> 繼續執行下方的寄信流程 (使用現有 user 物件)
             }
 
-            // 2. 若找不到現存紀錄，才建立新的暫存使用者
+            // 2. 若找不到現存的主帳號紀錄，建立新的暫存使用者
             ApplicationUser? userToUse = existing;
             if (userToUse == null)
             {
@@ -363,7 +353,7 @@ namespace TripMatch.Controllers.Api
                 if (!createResult.Succeeded) return BadRequest(new { message = "系統錯誤，請重新發送" });
             }
 
-            // 3. 執行寄信流程 (只有沒驗證過的人才會走到這裡)
+            // 3. 執行寄信流程
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(userToUse);
             var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var callbackUrl = Url.Action("ConfirmEmail", "Auth", new { userId = userToUse.Id, code = encodedCode }, Request.Scheme);

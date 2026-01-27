@@ -59,11 +59,10 @@
     position: static;
     left: auto;
     flex: 1 1 auto;
-    padding-left: 45px;
-    border-bottom: 1px dashed rgba(42, 157, 143, 0.3);
+    text-indent: 2em;
+    border-bottom: 2px dashed rgba(42, 157, 143, 0.3);
     box-sizing: border-box;
     min-width: 0;
-    margin-bottom: 10px;
 }
 
     .info_value .form-control,
@@ -129,6 +128,7 @@
 .edit_link {
     font-size: 18pt;
     white-space: nowrap;
+    padding-bottom: 20px;
 }
 
 .btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .btn-outline2, .btn-Login {
@@ -283,6 +283,7 @@ align-content:center;
 @media (max-width: 991.98px) {
 
 
+
     .info_value {
         font-size: 16pt;
         width: 100% !important;
@@ -331,6 +332,7 @@ align-content:center;
         margin-left: 0;
         padding-left: 0;
         padding-top: 5px;
+        padding-bottom:20px;
     }
     .info_row {
         font-size: 18pt;
@@ -344,10 +346,10 @@ align-content:center;
         white-space: normal;
         overflow: hidden;
     }
-
-    . .avatar_btns {
-        flex:1 1 auto;
-        display:flex;
+ 
+     .avatar_btns {
+        flex: 1 1 auto;
+        display: flex;
     }
 
 
@@ -384,7 +386,7 @@ align-content:center;
 
 }
 
-@media (max-width:575.98px) {
+@media (max-width:1200px) {
     #importCalendarMessage {
         right: 8px;
         left: 8px;
@@ -396,12 +398,13 @@ align-content:center;
         width: 90%;
     }
 
-        .info_value input,
-        .info_value button, .form-control {
-            min-width: 100%;
-            margin: 0;
-            white-space: nowrap;
-        }
+    .info_value input,
+    .info_value button, .form-control {
+        min-width: 100%;
+        margin: 0;
+        white-space: nowrap;
+        font-size: 16pt;
+    }
     .info_value {
         padding-left: 0 !important; /* 釋放左側空間給輸入框 */
     }
@@ -563,3 +566,12 @@ input[type="password"]::-ms-clear {
     margin-bottom: 10px;
 }
 
+#btnLogout, #btnEditAvatar {
+    font-size: 16pt;
+}
+
+.info_value button {
+    justify-content: center;
+    margin-top: 10px;
+    font-size: 18pt;
+}
