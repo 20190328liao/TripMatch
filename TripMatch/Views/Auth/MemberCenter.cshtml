@@ -17,7 +17,9 @@
     <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" /> *@
 
     <style>
+   
 
+ 
     </style>
 }
 
@@ -28,14 +30,23 @@
         <!-- =============================================
              區塊一：個人資料
              ============================================= -->
-        <section class="member_section" id="profile_section">
-
             <div class="d-flex justify-content-between align-items-center mb-3">
 
                 <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
 
             </div>
-
+        <section class="member_section" id="profile_section">
+            <div class="folder-tab">
+        <span class="tab-text"></span>
+    </div>
+            <div class="art-decoration">
+                <svg class="shape-circle" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="50" fill="currentColor" />
+                </svg>
+                <svg class="shape-wave" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="currentColor" d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                </svg>
+            </div>
             @* <!-- 通知列 -->
         <div class="notification_bar">
             <i class="bi bi-bell"></i>
@@ -44,17 +55,25 @@
             <div class="profile_container">
                 @* g-4 增加左右間距 *@
 
-                <div class="profile_avatar_section">
-                    <div class="avatar_frame">
+                <div class="profile_avatar_section position-relative">
+
+                    <button type="button" id="btnToggleStyle" class="btn-style-toggle" title="切換頭像風格">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera" viewBox="0 0 16 16">
+                            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a1 1 0 0 1-.707-.293l-.828-.828A5 5 0 0 0 7.828 3H6.172a5 5 0 0 0-3.536 1.464L1.808 5.293A1 1 0 0 1 1 5.5V6h1v-.5a.5.5 0 0 1 1 0V6" />
+                            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                        </svg>
+                    </button>
+
+                    <div class="avatar_frame circle-style" id="avatarFrame">
                         <img src="@avatarUrl" alt="會員頭像" id="memberAvatar" class="memberAvatar">
                     </div>
-                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp"
-                           style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" />
 
-                    <div class="avatar_btns mt-3">
+                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" />
+
+                    <div class="avatar_btns_container d-flex gap-3 mt-4">
                         <button type="button" class="btn btn_light btn-sm" id="btnEditAvatar">編輯頭像</button>
+                        <button type="button" class="btn btn_Gray btn-sm" id="btnLogout">登 出</button>
                     </div>
-                    <button type="button" class="btn btn_Gray btn-sm" id="btnLogout">登 出</button>
                 </div>
 
                 <div class="profile_info_section col-12 col-md-6">
@@ -105,8 +124,12 @@
                     <div class="info_row">
 
                         <div class="info_item">
-                            <div class="info_item2">
-                                <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link and1">修改密碼</a>｜<a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶 </a>
+                            <div class="info_item2 avatar_btns_container">
+                                <div class="mobile-inline-links" role="group" aria-label="帳戶操作">
+                                    <a href="@Url.Action("ChangePassword", "Auth")" class="info_label edit_link and1">修改密碼</a>
+                                    <span class="mx-sep" aria-hidden="true">｜</span>
+                                    <a href="#" id="btnResetEmail" role="button" class="info_label edit_link" data-action="delete-account" aria-label="重設帳戶">重設帳戶</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -117,11 +140,11 @@
         <!-- =============================================
              區塊二：個人行事曆
              ============================================= -->
-        <section class="member_section" id="calendar_section">
             <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
             <div class="calendar_legend mb-3">
                 <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
             </div>
+        <section class="member_section" id="calendar_section">
 
             <div class="container calendar-container">
                 <div class="calendar-three-col">
@@ -129,18 +152,18 @@
                     <div class="month-panel-wrapper">
                     <div class="months-panel">
                         <header class="year-header d-flex justify-content-between align-items-center">
-                                <button class="year-left nav-btn">◀</button>
+                                <button class="year-left nav-btn">◂</button>
                             <div class="year-display">2026年</div>
-                            <button class="year-right nav-btn">▶</button>
+                                <button class="year-right nav-btn">▸</button>
                         </header>
 
                         <div class="months-grid mt-2"></div>
 
-                        <hr style="border-color:#eee" />
+                        <hr/>
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
-                            <span class="badge rounded-pill" style="background:var(--accent); font-size:0.9rem" id="selectedCount">0</span>
+                            <span class="badge rounded-pill" id="selectedCount">0</span>
                         </div>
 
                         <div class="list-scroll-area">
@@ -155,9 +178,9 @@
                         <!-- 中：日曆 -->
                     <div class="month-panel">
                         <header class="month-header d-flex justify-content-between align-items-center">
-                                <button class="month-left nav-btn">◀</button>
+                                <button class="month-left nav-btn">◂</button>
                             <div class="month-display">January 2026</div>
-                                <button class="month-right nav-btn">▶</button>
+                                <button class="month-right nav-btn">▸</button>
                         </header>
 
                         <div class="week mt-2 d-flex justify-content-between small text-muted">
@@ -186,15 +209,15 @@
                 </div>
 
                 <div class="calendar_legend mb-3 mt-3">
-                    <div class="legend-item"><span class="dot today"></span>藍色圈：今天</div>
-                    <div class="legend-item"><span class="dot locked"></span>灰色圈：已有行程（不可選）</div>
+                    <div class="legend-item"><span class="dot today"></span>今天</div>
+                    <div class="legend-item"><span class="dot locked"></span>非揪團期間</div>
                     <div class="legend-item">
                         <span class="dot range-start"></span>
                         <span class="dot range-end"></span>
-                        開始：粉藍；結束：橘（範圍選擇）
+                        選擇範圍
                     </div>
-                    <div class="legend-item"><span class="dot old-submit"></span>藍綠色：舊提交</div>
-                    <div class="legend-item"><span class="dot new-submit"></span>深藍色：新提交</div>
+                    <div class="legend-item"><span class="dot old-submit"></span>舊提交</div>
+                    <div class="legend-item"><span class="dot new-submit"></span>新提交</div>
                 </div>
             </div>
         </section>
@@ -210,13 +233,13 @@
             var cards = Model ?? Enumerable.Empty<TripMatch.Models.Settings.WishlistCard>();
         }
 
-        <section class="member_section" id="wishlist_section">
             <div class="section_header d-flex align-items-center justify-content-between">
                 <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
+            </div>
+        <section class="member_section" id="wishlist_section">
                 <div class="edit_cards_link text-muted small">
                     <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
                 </div>
-            </div>
 
 
             <!-- 分類按鈕群組 (左側面板將顯示此處) -->

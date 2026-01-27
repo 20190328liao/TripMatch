@@ -861,3 +861,43 @@
         handleBackupVerifiedQuery();
     }); // end DOMReady
 })();
+// [Script 區塊]
+const btnToggle = document.getElementById('btnToggleStyle');
+const avatarFrame = document.getElementById('avatarFrame');
+const toggleIcon = btnToggle.querySelector('svg'); // 取得按鈕內的圖示
+
+// 定義兩個圖示的 HTML (Bootstrap Icons)
+const iconCamera = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-camera" viewBox="0 0 16 16"><path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a1 1 0 0 1-.707-.293l-.828-.828A5 5 0 0 0 7.828 3H6.172a5 5 0 0 0-3.536 1.464L1.808 5.293A1 1 0 0 1 1 5.5V6h1v-.5a.5.5 0 0 1 1 0V6"/><path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/></svg>`;
+const iconCircle = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/></svg>`;
+
+if (btnToggle && avatarFrame) {
+    // 檢查是否有儲存過的使用者偏好
+    const savedStyle = localStorage.getItem('avatarStyle');
+    if (savedStyle === 'polaroid') {
+        setPolaroidStyle();
+    }
+
+    btnToggle.addEventListener('click', function () {
+        if (avatarFrame.classList.contains('circle-style')) {
+            setPolaroidStyle();
+        } else {
+            setCircleStyle();
+        }
+    });
+
+    function setPolaroidStyle() {
+        avatarFrame.classList.remove('circle-style');
+        avatarFrame.classList.add('polaroid-style');
+        btnToggle.innerHTML = iconCircle; // 切換按鈕圖示變成「圓形」，提示可切回
+        btnToggle.title = "切換回圓形風格";
+        localStorage.setItem('avatarStyle', 'polaroid'); // 記住選擇
+    }
+
+    function setCircleStyle() {
+        avatarFrame.classList.remove('polaroid-style');
+        avatarFrame.classList.add('circle-style');
+        btnToggle.innerHTML = iconCamera; // 切換按鈕圖示變成「相機」
+        btnToggle.title = "切換成拍立得風格";
+        localStorage.setItem('avatarStyle', 'circle');
+    }
+}

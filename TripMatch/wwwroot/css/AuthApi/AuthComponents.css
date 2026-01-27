@@ -60,6 +60,7 @@
     left: auto;
     flex: 1 1 auto;
     padding-left: 45px;
+    border-bottom: 1px dashed rgba(42, 157, 143, 0.3);
     box-sizing: border-box;
     min-width: 0;
     margin-bottom: 10px;
@@ -247,7 +248,8 @@ align-content:center;
     }
 
     #importCalendarMessage.error {
-        border-left: 4px solid #ef4444;
+/*        border-left: 4px solid #ef4444;*/
+        border-left: 4px solid #ed5f00;
     }
 
     #importCalendarMessage.info {
@@ -323,6 +325,7 @@ align-content:center;
         margin-right: 10px;
         fill: var(--tm-teal);
     }*/
+   
     .edit_link {
         display: flex;
         margin-left: 0;
@@ -340,6 +343,11 @@ align-content:center;
         min-width: 100%;
         white-space: normal;
         overflow: hidden;
+    }
+
+    . .avatar_btns {
+        flex:1 1 auto;
+        display:flex;
     }
 
 
@@ -554,3 +562,4 @@ input[type="password"]::-ms-clear {
 #btnEditAvatar {
     margin-bottom: 10px;
 }
+
