@@ -37,7 +37,7 @@ MemberCenter.cshtml
     margin: 2rem 0 1.5rem 0;
     z-index: 10;
 }
-#calendar_section:::after {
+#calendar_section::after {
     top: 0.5%;
 }
 #calendar_section::before {

@@ -127,6 +127,11 @@
 
                     if (!res.ok) throw new Error("加入失敗");
 
+                   // 加入成功，導向行程列表或該行程編輯頁
+                    if (window.InviteReturn && typeof window.InviteReturn.consume === 'function') {
+                         window.InviteReturn.consume(); // 呼叫 consume 函式取得值並刪除 Cookie
+                    }
+
                     // 加入成功，導向行程列表或該行程編輯頁
                     alert("成功加入行程！");
                     window.location.href = "/Trip"; // 或直接進編輯頁

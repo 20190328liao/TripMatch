@@ -368,3 +368,24 @@
     .account-row:last-child {
         border-bottom: none;
     }
+
+
+.forgotWrap {
+    display: flex; /* 改為 flex 配合 width: 100% 效果更佳 */
+    flex-direction: row;
+    justify-content: center; /* 水平置中核心 */
+    align-items: center; /* 垂直置中核心 */
+    gap: 0.4rem;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.forgotEmailDisplay {
+    color: var(--color_Dark);
+    justify-content: center;
+    align-items:center;
+    text-align: center;
+    font-size: 16pt;
+    display: inline-block;
+    padding: 0;
+}

@@ -218,7 +218,7 @@ function initMascotAnimation() {
         const dy = (canvas.height - displayHeight) / 2;
 
         // 繪製圖片
-        // drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight)
+         //drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight)
         ctx.drawImage(
             spriteSheet,
             srcX, srcY, spriteWidth, spriteHeight,

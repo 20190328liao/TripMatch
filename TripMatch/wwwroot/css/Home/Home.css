@@ -99,6 +99,10 @@ body {
     #mascotCanvas {
     width:100vw;
     }
+    .input-row {
+        display: flex;
+        flex-direction: column;
+    }
 }
 /*切換顯示「計畫」或「媒合」內容的區塊*/
 .mode-content {
@@ -766,7 +770,7 @@ body {
 
 
 
-/*.mascotWrap {
+.mascotWrap {
     width: 100%;
     display: flex;
     justify-content: center;
@@ -774,48 +778,45 @@ body {
     max-width: 100%;
     height: auto;
     cursor: pointer;
-}*/
+}
 
 
-/* 1. 設定容器定位 */
-/*.goSpot {
+
+.goSpot {
     position: relative;
     overflow: hidden;
     z-index: 1;
-    min-height: 500px;*/ /* 確保容器有足夠高度顯示背景 */
-/*}*/
+    min-height: 500px;
+}
 
-    /* 2. 建立右下角背景層 */
-    /*.goSpot::before {
+
+    .goSpot::before {
         content: "";
-        position: absolute;*/
-        /* 關鍵：只佔據右下角區域 (寬高可依需求調整，例如 60% 比較大氣) */
-        /*bottom: 0;
+        position: absolute;
+        bottom: 0;
         right: 0;
-        width: 60%;
-        height: 60%;*/
-        /* 設定背景圖片 */
-        /*background-image: url('/img/cityimg.png');*/ /* 建議確認副檔名為 jpg */
-        /*background-size: contain;*/ /* 使用 contain 確保城市建築不被切斷 */
-        /*background-repeat: no-repeat;
-        background-position: right bottom;*/
-        /* 初始狀態：完全透明且位於下方 100px 處 */
-        /*opacity: 0;
+        width: 80%;
+        height: 30%;
+        background-image: url('/img/cityimg.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: right bottom;
         transform: translateY(100px);
-        z-index: -1;*/
-        /* 設定上升動畫：持續 3 秒，平滑結束 */
-        /*animation: cityRiseUp 3s ease-out forwards;
-    }*/
+        z-index: -1;
+        animation: cityRiseUp 3s ease-out forwards;
+    }
 
-/* 3. 定義由下往上上升動畫 */
-/*@keyframes cityRiseUp {
+
+@keyframes cityRiseUp {
     0% {
         opacity: 0;
+        filter: brightness(5);
         transform: translateY(100px);
     }
 
     100% {
-        opacity: 0.8;*/ /* 最終透明度 */
-        /*transform: translateY(0);*/ /* 回到原位 */
-    /*}
-}*/
+        opacity: 1.2;
+        filter:brightness(1.12);
+        transform: translateY(0);
+    }
+}
