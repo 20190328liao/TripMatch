@@ -1,4 +1,7 @@
-﻿@{
+﻿@using TripMatch.Models
+@model TravelGroup
+
+@{
     ViewData["Title"] = "建立新團";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
 }
@@ -164,6 +167,30 @@
         .rules-list li {
             margin-bottom: 4px;
         }
+
+    /* Autocomplete 樣式整合 */
+    .autocomplete-results {
+        position: absolute;
+        z-index: 1000;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-top: 2px;
+        padding-left: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .position-relative-container {
+        position: relative;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
 </style>
 
 <div class="page-wrap">
@@ -190,11 +217,17 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="form-floating">
-                        <input type="text" class="form-control check-input" id="departFrom" placeholder="出發地" value="台北" required>
-                        <label for="departFrom">出發地</label>
+                    <div class="form-floating mb-3 position-relative-container">
+
+                        @Html.EditorFor(model => model.DepartFrom, new { htmlAttributes = new { @class = "form-control check-input", @id = "OriginInput", @placeholder = "輸入機場代碼" } })
+
+                        <label for="OriginInput" class="text-muted">出發地 / 機場代碼</label>
+
+                        @Html.ValidationMessageFor(model => model.DepartFrom, "", new { @class = "text-danger" })
+                        <ul id="OriginResults" class="autocomplete-results list-group"></ul>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <div class="form-floating">
                         <input type="number" class="form-control check-input" id="targetNumber" value="4" min="2" max="50" placeholder="人數" required>
@@ -247,8 +280,17 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/flight-autocomplete.js"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // 初始化自動補全
+            if (typeof initFlightAutocomplete === 'function') {
+                initFlightAutocomplete('OriginInput', 'OriginResults');
+            } else {
+                console.warn("flight-autocomplete.js 未正確載入");
+            }
+
             const dateStartInput = document.getElementById('dateStart');
             const dateEndInput = document.getElementById('dateEnd');
             const btnSubmit = document.getElementById('btnSubmit');
@@ -290,7 +332,10 @@
                 e.preventDefault();
 
                 const title = document.getElementById('groupTitle').value.trim();
-                const departFrom = document.getElementById('departFrom').value.trim();
+
+                // 從 HTML Helper 產生的 input 抓值 (ID: OriginInput)
+                const departFrom = document.getElementById('OriginInput').value.trim();
+
                 const targetNumber = parseInt(document.getElementById('targetNumber').value);
                 const travelDays = parseInt(document.getElementById('travelDays').value);
                 const dateStart = dateStartInput.value;
@@ -305,7 +350,15 @@
                     return;
                 }
 
-                const payload = { title, departFrom, targetNumber, travelDays, dateStart, dateEnd };
+                // ★ 修改：Payload Key 改為 DepartFrom 配合後端 Model
+                const payload = {
+                    Title: title,
+                    DepartFrom: departFrom,
+                    TargetNumber: targetNumber,
+                    TravelDays: travelDays,
+                    DateStart: dateStart,
+                    DateEnd: dateEnd
+                };
 
                 const originalText = btnSubmit.innerHTML;
                 btnSubmit.disabled = true;
@@ -320,6 +373,7 @@
 
                     if (response.ok) {
                         const data = await response.json();
+                        // 假設後端回傳包含 GroupId，跳轉到邀請頁
                         window.location.href = `/Match/Invite/${data.groupId}`;
                     } else {
                         const error = await response.json();
