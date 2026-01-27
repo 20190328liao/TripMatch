@@ -68,7 +68,7 @@ export class AddFlightModal {
                                 <label class="form-label small fw-bold">航班編號</label>
                                 <input type="text" id="f-no" class="form-control text-uppercase" placeholder="例如: BR198">
                             </div>
-                            <button id="btn-search-flight" class="btn btn_light w-100 py-2 fw-bold">搜尋航班資訊</button>
+                            <button id="btn-search-flight" class="btn btn_light w-100 py-2">搜尋航班資訊</button>
                         </div>
 
                         <div id="flight-loading" class="text-center py-4 d-none">

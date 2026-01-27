@@ -387,6 +387,31 @@
 				display: none;
 			}
 		}
+		/* Autocomplete 樣式整合 */
+		.autocomplete-results {
+			position: absolute;
+			z-index: 1000;
+			width: 100%;
+			max-height: 300px;
+			overflow-y: auto;
+			display: none;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+			margin-top: 2px;
+			padding-left: 0;
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 0 0 8px 8px;
+		}
+
+		/* 修改：加入 flex: 1 確保在 input-group 裡佔滿剩餘空間 */
+		.position-relative-container {
+			position: relative;
+			flex: 1;
+		}
+
+		.cursor-pointer {
+			cursor: pointer;
+		}
 	</style>
 </head>
 <body>
@@ -446,28 +471,94 @@
 			</div>
 
 			<div class="input-group">
-				<input type="text"
-					   id="newLocationInput"
-					   class="input-field"
-					   placeholder="輸入城市（例如：巴黎、紐約）"
-					   autocomplete="off">
+				<div class="position-relative-container">
+					<input type="text"
+						   id="newLocationInput"
+						   class="input-field"
+						   style="width: 100%; border-radius: 12px 0 0 12px;"
+						   placeholder="搜尋機場代碼 (如：TPE)"
+						   autocomplete="off">
 
-				<button type="button" class="btn btn-success" onclick="addCustomLocation()">
+					<ul id="LocationResults" class="autocomplete-results list-group"></ul>
+				</div>
+
+				<button type="button" class="btn btn-success" onclick="addCustomLocation()" style="border-radius: 0 12px 12px 0;">
 					新增
 				</button>
 			</div>
 
 			<div id="locationGrid" class="location-grid">
-				@if (Model.HotLocations != null && Model.HotLocations.Count > 0)
-				{
-					foreach (var loc in Model.HotLocations)
-					{
-						<div class="location-card" onclick="toggleSelection('@loc.City', this)" data-val="@loc.City">
-							<div class="loc-country">@loc.City</div>
-							<div class="loc-country">@loc.CountryCode</div>
-						</div>
-					}
-				}
+
+				<div class="location-card" onclick="toggleSelection('TPE', this)" data-val="TPE">
+					<div class="loc-city">台北</div>
+					<div class="loc-country">台灣 (桃園 TPE)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('NRT', this)" data-val="NRT">
+					<div class="loc-city">東京</div>
+					<div class="loc-country">成田機場 (NRT)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('KIX', this)" data-val="KIX">
+					<div class="loc-city">大阪</div>
+					<div class="loc-country">關西機場 (KIX)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('ICN', this)" data-val="ICN">
+					<div class="loc-city">首爾</div>
+					<div class="loc-country">仁川機場 (ICN)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('BKK', this)" data-val="BKK">
+					<div class="loc-city">曼谷</div>
+					<div class="loc-country">蘇凡納布 (BKK)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('SIN', this)" data-val="SIN">
+					<div class="loc-city">新加坡</div>
+					<div class="loc-country">樟宜機場 (SIN)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('HKG', this)" data-val="HKG">
+					<div class="loc-city">香港</div>
+					<div class="loc-country">赤鱲角機場 (HKG)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('LHR', this)" data-val="LHR">
+					<div class="loc-city">倫敦</div>
+					<div class="loc-country">希斯洛 (LHR)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('JFK', this)" data-val="JFK">
+					<div class="loc-city">紐約</div>
+					<div class="loc-country">甘迺迪機場 (JFK)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('LAX', this)" data-val="LAX">
+					<div class="loc-city">洛杉磯</div>
+					<div class="loc-country">洛杉磯機場 (LAX)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('SFO', this)" data-val="SFO">
+					<div class="loc-city">舊金山</div>
+					<div class="loc-country">舊金山機場 (SFO)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('AMS', this)" data-val="AMS">
+					<div class="loc-city">阿姆斯特丹</div>
+					<div class="loc-country">史基浦機場 (AMS)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('SYD', this)" data-val="SYD">
+					<div class="loc-city">雪梨</div>
+					<div class="loc-country">金斯福德 (SYD)</div>
+				</div>
+
+				<div class="location-card" onclick="toggleSelection('DXB', this)" data-val="DXB">
+					<div class="loc-city">杜拜</div>
+					<div class="loc-country">杜拜機場 (DXB)</div>
+				</div>
+
 			</div>
 		</div>
 
@@ -522,259 +613,199 @@
 		</div>
 	</div>
 
-	<script>
-				// --- Google Places Autocomplete 相關變數 ---
-		let autocomplete;
+	@section Scripts {
+		<script src="~/js/flight-autocomplete.js"></script>
 
-		// 這就是 Google API 載入完成後會呼叫的函式
-		function initAutocomplete() {
-			const input = document.getElementById("newLocationInput");
-			if (!input) return;
+		<script>
+			const groupId = '@Model.GroupId';
+			let selectedLocationNames = new Set();
 
-			const options = {
-				types: ['(cities)'],
-				fields: ['name', 'geometry', 'address_components']
-			};
+			document.addEventListener("DOMContentLoaded", function() {
+				// 2. 初始化自動補全 (對應上面的 ID)
+				if (typeof initFlightAutocomplete === 'function') {
+					initFlightAutocomplete('newLocationInput', 'LocationResults');
+				}
 
-			autocomplete = new google.maps.places.Autocomplete(input, options);
-
-			autocomplete.addListener("place_changed", function() {
-				const place = autocomplete.getPlace();
-				if (!place.geometry || !place.geometry.location) return;
-
-				// 1. 呼叫剛剛改好的函式抓國家名稱
-				const countryName = getCountryName(place);
-
-				input.value = place.name;
-
-				// 2. ★ 把國家名稱暫存到 dataset.country 裡
-				input.dataset.country = countryName;
+				// 還原已儲存的地點
+				const savedLocs = @Html.Raw(Json.Serialize(Model.MySelectedLocations));
+				if (savedLocs && savedLocs.length > 0) {
+					savedLocs.forEach(cityName => {
+						selectedLocationNames.add(cityName);
+						// 嘗試找到對應的熱門卡片
+						const existingCard = document.querySelector(`.location-card[data-val='${cityName}']`);
+						if (existingCard) {
+							existingCard.classList.add('selected');
+						} else {
+							// 如果不是熱門地點，就作為自訂卡片還原
+							restoreCustomCard(cityName);
+						}
+					});
+				}
 			});
-		}
 
-		// ★ 新增這個 Helper 函式來解析 Google 的複雜結構
-				// 修改這個 Helper 函式，改抓 long_name
-		function getCountryName(place) {
-			if (!place.address_components) return "";
+			function switchTab(tabId) {
+				document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+				document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+				document.getElementById('btn-' + tabId).classList.add('active');
+				document.getElementById(tabId).classList.add('active');
+			}
 
-			for (const component of place.address_components) {
-				if (component.types.includes("country")) {
-					// ★ 關鍵：改成 return long_name (例如 "Japan")
-					return component.long_name;
+			function toggleSelection(cityName, cardElement) {
+				if (cardElement.classList.contains('selected')) {
+					cardElement.classList.remove('selected');
+					selectedLocationNames.delete(cityName);
+				} else {
+					cardElement.classList.add('selected');
+					selectedLocationNames.add(cityName);
 				}
 			}
-			return ""; // 真的找不到才回傳空字串
-		}
 
-		const groupId = '@Model.GroupId';
-		let selectedLocationNames = new Set();
+			function addCustomLocation() {
+				const input = document.getElementById('newLocationInput');
+				const code = input.value.trim(); // 這是 TPE
 
-		document.addEventListener("DOMContentLoaded", function() {
+				if (!code) { alert("請輸入地點或代碼"); return; }
 
-			const savedLocs = @Html.Raw(Json.Serialize(Model.MySelectedLocations));
+				// ★ 修改開始：優先從 dataset 讀取 API 查到的名稱
+				// 如果 dataset 有值 (代表是從選單點選的)，就用 dataset.name (例如 "台北")
+				// 如果 dataset 沒值 (代表是使用者手打的)，就用輸入框的值 (例如 "TPE")
+				let displayCity = input.dataset.name || code;
+				let displayCountry = input.dataset.country || "自訂";
 
-			if (savedLocs && savedLocs.length > 0) {
-				savedLocs.forEach(cityName => {
-					selectedLocationNames.add(cityName);
-
-					const existingCard = document.querySelector(`.location-card[data-val='${cityName}']`);
-
-					if (existingCard) {
-						existingCard.classList.add('selected');
-					} else {
-						restoreCustomCard(cityName);
-					}
-				});
-				console.log("已還原地點:", Array.from(selectedLocationNames));
-			}
-		});
-
-		function switchTab(tabId) {
-			document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-			document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-			document.getElementById('btn-' + tabId).classList.add('active');
-			document.getElementById(tabId).classList.add('active');
-		}
-
-		function toggleSelection(cityName, cardElement) {
-			if (cardElement.classList.contains('selected')) {
-				cardElement.classList.remove('selected');
-				selectedLocationNames.delete(cityName);
-			} else {
-				cardElement.classList.add('selected');
-				selectedLocationNames.add(cityName);
-			}
-			console.log("目前已選地點:", Array.from(selectedLocationNames));
-		}
-
-		function addCustomLocation() {
-			const input = document.getElementById('newLocationInput');
-			const cityName = input.value.trim();
-
-			// ★ 關鍵：從 dataset 拿出 Google 查到的國家 (上一回合教您的 initAutocomplete 裡存的)
-			// 如果 dataset 裡沒有 (例如使用者純手打沒選選單)，就維持 "自訂"
-			const countryName = input.dataset.country || "自訂";
-
-			if(!cityName) { alert("請輸入地點"); return; }
-
-			// 呼叫剛剛改好的函式，把國家傳進去
-			createAndAppendCard(cityName, countryName);
-
-			// 清空輸入框
-			input.value = "";
-			input.dataset.country = "";
-		}
-
-		function restoreCustomCard(val) {
-			// 直接呼叫 createAndAppendCard，它現在已經會自動處理 "City|Country" 的字串拆解了
-			createAndAppendCard(val);
-		}
-
-				async function savePreferences(event) {
-			event.preventDefault();
-
-			// 1. 取得 DOM 元素值
-			const budgetVal = document.getElementById('budget').value;
-			const transferVal = document.getElementById('transfer').value;
-			const starsVal = document.getElementById('stars').value;
-			const totalBudgetVal = document.getElementById('totalBudget').value;
-
-			// 2. 必填檢查
-			if (!budgetVal || !transferVal || !starsVal || !totalBudgetVal) {
-				alert("請完成所有必填選項！");
-				return;
-			}
-
-			// 3. 資料轉換邏輯
-			const hotelBudget = parseInt(budgetVal);
-			const isTransfer = (transferVal === "true");
-			const hotelRating = (starsVal === "flex") ? null : parseInt(starsVal);
-			const placesString = Array.from(selectedLocationNames).join(",");
-			const totalBudget = totalBudgetVal ? parseInt(totalBudgetVal) : null;
-
-			// 4. 組裝 Payload
-			const payload = {
-				HotelBudget: hotelBudget,
-				Transfer: isTransfer,
-				HotelRating: hotelRating,
-				PlacesToGo: placesString,
-				TotalBudget: totalBudget
-			};
-
-			// 5. UI 鎖定與送出
-			const btn = document.getElementById('btnSubmit');
-			const originalText = btn.innerText;
-			btn.disabled = true;
-			btn.innerText = "儲存中...";
-
-			try {
-				const response = await fetch(`/api/timewindow/${groupId}/preferences`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(payload)
-				});
-
-				if (response.ok) {
-					alert("偏好儲存成功！");
-					window.location.href = `/Match/CalendarCheck/${groupId}`;
+				// 為了顯示清楚，我們可以組合成 "台灣 (TPE)" 這樣的格式
+				// 只有當 displayCountry 不是 "自訂" 時才加上代碼，避免重複顯示
+				if (input.dataset.country) {
+					displayCountry = `${displayCountry} (${code})`;
 				} else {
-					const errData = await response.json();
-					alert("儲存失敗: " + (errData.message || "未知錯誤"));
+					// 如果是手打的，為了卡片資料一致性，這裡也可以處理一下
+					displayCountry = `自訂 (${code})`;
+				}
+
+				// 呼叫建立卡片 (這裡傳入的是漂亮的名字)
+				// 注意：我們雖然顯示漂亮名字，但 data-val 還是要用 code 避免重複
+				createAndAppendCard(displayCity, displayCountry, code);
+
+				// ★ 重要：清空輸入框的同時，也要清空 dataset，避免下一次輸入殘留舊資料
+				input.value = "";
+				delete input.dataset.name;
+				delete input.dataset.country;
+			}
+
+			function restoreCustomCard(val) {
+				createAndAppendCard(val);
+			}
+
+						function createAndAppendCard(cityName, countryName, code) {
+				// 如果沒有傳入 code (例如是還原舊資料時)，就用 cityName 當作 code 的防呆
+				// 但通常我們在 addCustomLocation 都會傳 code 進來
+				const dataVal = code || cityName;
+
+				// 檢查重複 (使用 dataVal / Code 來檢查)
+				const allCards = Array.from(document.querySelectorAll('.location-card'));
+				const isDuplicate = allCards.some(card => {
+					const val = card.getAttribute('data-val');
+					return val === dataVal;
+				});
+
+				if (isDuplicate) {
+					alert(`這個地點 (${dataVal}) 已經在清單中了！`);
+					return;
+				}
+
+				// 建立 DOM
+				const grid = document.getElementById('locationGrid');
+				const newCard = document.createElement('div');
+				newCard.className = "location-card selected";
+
+				// ★ 這裡存的是純代碼 (TPE)，給後端用的
+				newCard.setAttribute("data-val", dataVal);
+
+				newCard.onclick = function() { toggleSelection(dataVal, this); };
+
+				// ★ 這裡顯示的是漂亮的中文字
+				newCard.innerHTML = `
+					<div class="loc-city">${escapeHtml(cityName)}</div>
+					<div class="loc-country">${escapeHtml(countryName)}</div>
+				`;
+
+				// 插入到最前面
+				if (grid.firstChild) {
+					grid.insertBefore(newCard, grid.firstChild);
+				} else {
+					grid.appendChild(newCard);
+				}
+
+				selectedLocationNames.add(dataVal);
+			}
+
+			async function savePreferences(event) {
+				event.preventDefault();
+
+				const budgetVal = document.getElementById('budget').value;
+				const transferVal = document.getElementById('transfer').value;
+				const starsVal = document.getElementById('stars').value;
+				const totalBudgetVal = document.getElementById('totalBudget').value;
+
+				if (!budgetVal || !transferVal || !starsVal || !totalBudgetVal) {
+					alert("請完成所有必填選項！");
+					return;
+				}
+
+				const hotelBudget = parseInt(budgetVal);
+				const isTransfer = (transferVal === "true");
+				const hotelRating = (starsVal === "flex") ? null : parseInt(starsVal);
+
+				// 將 Set 轉為字串，用逗號分隔
+				const placesString = Array.from(selectedLocationNames).join(",");
+				const totalBudget = parseInt(totalBudgetVal);
+
+				const payload = {
+					HotelBudget: hotelBudget,
+					// ★ 注意：你的 C# Model 屬性是 Tranfer (少個 s)，前端必須配合後端
+					Tranfer: isTransfer,
+					HotelRating: hotelRating,
+					PlacesToGo: placesString,
+					TotalBudget: totalBudget
+				};
+
+				const btn = document.getElementById('btnSubmit');
+				const originalText = btn.innerText;
+				btn.disabled = true;
+				btn.innerText = "儲存中...";
+
+				try {
+					const response = await fetch(`/api/timewindow/${groupId}/preferences`, {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload)
+					});
+
+					if (response.ok) {
+						alert("偏好儲存成功！");
+						window.location.href = `/Match/CalendarCheck/${groupId}`;
+					} else {
+						const errData = await response.json();
+						alert("儲存失敗: " + (errData.message || "未知錯誤"));
+						btn.disabled = false;
+						btn.innerText = originalText;
+					}
+				} catch(e) {
+					console.error(e);
+					alert("連線錯誤");
 					btn.disabled = false;
 					btn.innerText = originalText;
 				}
-			} catch(e) {
-				console.error(e);
-				alert("網路連線錯誤，請稍後再試");
-				btn.disabled = false;
-				btn.innerText = originalText;
-			}
-		}
-
-		// 共用的建立卡片邏輯
-		// 修改後的 createAndAppendCard
-		// 修改後的 createAndAppendCard：修復特殊字元 Bug 並加入提示
-		function createAndAppendCard(cityName, countryName) {
-			// 1. 處理參數：如果 countryName 沒傳，就預設 "自訂"
-			// 如果 cityName 裡面包含 "|" (例如 "Tokyo|Japan")，就自動拆解
-			if (!countryName && cityName.includes('|')) {
-				const parts = cityName.split('|');
-				cityName = parts[0];
-				countryName = parts[1];
 			}
 
-			countryName = countryName || "自訂";
-			const dataVal = `${cityName}|${countryName}`;
-
-			// 2. ★ 安全的重複檢查 (修正 Bug 的關鍵)
-			// 我們改用迴圈或 Array.from 來檢查，不要直接把變數塞進 querySelector 字串中
-			// 這樣可以避免像 "Xi'an" 這種有單引號的地名導致程式崩潰
-			const allCards = Array.from(document.querySelectorAll('.location-card'));
-
-			// 檢查邏輯：
-			// (A) 是否有完全一樣的 data-val (例如 "東京|日本")
-			// (B) 或是 data-val 剛好等於城市名 (針對那些預設的熱門地點，data-val 只有 "東京")
-			const isDuplicate = allCards.some(card => {
-				const val = card.getAttribute('data-val');
-				return val === dataVal || val === cityName;
-			});
-
-			if (isDuplicate) {
-				alert(`「${cityName}」已經在清單中了喔！`);
-
-				// 進階 UX：幫使用者捲動到那個已經存在的卡片並閃爍一下 (可選)
-				const existingCard = allCards.find(c => {
-					 const val = c.getAttribute('data-val');
-					 return val === dataVal || val === cityName;
-				});
-				if(existingCard) {
-					existingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					existingCard.classList.add('selected'); // 確保它被選取
-					selectedLocationNames.add(existingCard.getAttribute('data-val')); // 確保資料同步
-				}
-				return;
+			function escapeHtml(text) {
+				if (!text) return text;
+				return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 			}
 
-			// 3. 建立 DOM 元素
-			const grid = document.getElementById('locationGrid');
-			const newCard = document.createElement('div');
-
-			// 加上 selected 樣式
-			newCard.className = "location-card selected";
-			newCard.setAttribute("data-val", dataVal);
-
-			// 點擊事件 (取消選取)
-			newCard.onclick = function() { toggleSelection(dataVal, this); };
-
-			// 顯示動態的國家名稱
-			newCard.innerHTML = `
-				<div class="loc-city">${escapeHtml(cityName)}</div>
-				<div class="loc-country">${escapeHtml(countryName)}</div>
-			`;
-
-			// 插入到最前面
-			grid.insertBefore(newCard, grid.firstChild);
-
-			// 加入已選取清單
-			selectedLocationNames.add(dataVal);
-		}
-
-		// ★ 補充一個小工具：防止 XSS 攻擊 (如果有人惡意輸入 HTML標籤)
-		function escapeHtml(text) {
-			if (!text) return text;
-			return text
-				.replace(/&/g, "&amp;")
-				.replace(/</g, "&lt;")
-				.replace(/>/g, "&gt;")
-				.replace(/"/g, "&quot;")
-				.replace(/'/g, "&#039;");
-		}
-		function goToCalendar() {
-			 window.location.href = `/Match/CalendarCheck/${groupId}`;
-		}
-	</script>
-	<script src="https://maps.googleapis.com/maps/api/js?key=@Configuration["GoogleMaps:ApiKey"]&libraries=places&callback=initAutocomplete" async defer></script>
+			function goToCalendar() {
+				 window.location.href = `/Match/CalendarCheck/${groupId}`;
+			}
+		</script>
+	}
 </body>
 </html>

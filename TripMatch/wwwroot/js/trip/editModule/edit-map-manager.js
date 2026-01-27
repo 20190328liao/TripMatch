@@ -8,9 +8,6 @@ let currentSearchMarker = null;
 let tripDates = [];
 let inputElement = null;
 
-
-// 匯出初始化函式
-// 參數化：傳入 HTML ID，這樣以後 ID 變了不用改這裡的邏輯
 export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
 
     // 檢查 Google API 是否載入
@@ -27,8 +24,7 @@ export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
         console.warn(`找不到地圖容器: #${mapElementId}`);
         return;
     }
-
-    console.log("行程簡易AAAAAAAAAAAAAAAAAAAAAAAA資訊:", tripSimpleInfo);
+  
     
     // 使用邏輯或運算子，同時處理 null, undefined, 0
     // 只要 latitude 是「虛值」(Falsy)，就採用後面的預設值
@@ -49,6 +45,21 @@ export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
 
     placesService = new google.maps.places.PlacesService(map);
 
+    // --- 新增：監聽地圖上的景點點擊 ---
+    map.addListener("click", (event) => {
+        // 如果點擊的是地圖內建的景點，event 會包含 placeId
+        if (event.placeId) {
+            console.log("點擊了地圖景點，PlaceId:", event.placeId);
+
+            // 阻止地圖預設的景點視窗彈出
+            event.stop();
+
+            // 呼叫你現有的詳細查詢函式
+            // 因為是新點擊的地點，現有 spotId 傳 null
+            showPlaceByGoogleId(event.placeId, null);
+        }
+    });
+
     // 2. 如果有搜尋框才綁定 Autocomplete
     if (inputElement) {
         setupAutocomplete();
@@ -57,14 +68,13 @@ export function initGoogleMap(mapElementId, searchInputId, tripSimpleInfo) {
     // 回傳地圖實體，方便外部使用
     return map;
 }
-// 【新增】匯出給外部使用的函式：透過 Google Place ID 顯示地點
 export function showPlaceByGoogleId(googlePlaceId, spotId) {
     if (!googlePlaceId) return;
 
     const request = {
         placeId: googlePlaceId,
         // 指定需要的欄位，節省成本並確保資料一致
-        fields: ['place_id', 'geometry', 'name', 'types', 'formatted_address', 'photos', 'rating', 'user_ratings_total']
+        fields: ['place_id', 'geometry', 'name', 'types', 'formatted_address', 'photos', 'rating', 'user_ratings_total', 'editorial_summary']
     };
 
     placesService.getDetails(request, (place, status) => {
@@ -109,43 +119,7 @@ export function savePlaceToDatabase(place) {
         });
     });
 }
-// 內部私有函式：設定自動完成 (不需匯出)
-function setupAutocomplete() {
-
-    const options = {
-        // 限制搜尋類型
-        types: ['establishment', 'geocode'],
-        // 擴充回傳欄位，確保包含後端所需的所有資料
-        fields: [
-            'place_id',
-            'geometry',
-            'name',
-            'types',
-            'formatted_address',
-            'photos',
-            'rating',               // 加入評分
-            'user_ratings_total'    // 加入評分總人數
-        ]
-    };
-
-    autocomplete = new google.maps.places.Autocomplete(inputElement, options);
-    autocomplete.bindTo("bounds", map);
-
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-
-        console.log("選擇的地點資料：", place); // 除錯用
-
-        if (!place.geometry || !place.geometry.location) {
-            window.alert("找不到地點資訊：" + place.name);
-            return;
-        }
-
-        renderPlaceOnMap(place, null);
-    }); 
-}
-// existingSpotId: 如果是從左側列表點擊，會傳入已知的 DB ID；如果是搜尋，則為 null
-function renderPlaceOnMap(place, existingSpotId) {
+export function renderPlaceOnMap(place, existingSpotId) {
 
     // 1. 決定 Spot ID 的來源 (Promise)
     // 如果是從列表點來的，我們已經有 ID 了，直接回傳；否則就要去 Call API 存檔
@@ -195,34 +169,53 @@ function renderPlaceOnMap(place, existingSpotId) {
 
     const dayMenuItems = getDayMenuItems(); // 記得把 getDayMenuItems 搬到這裡能存取的地方，或是放在下面
 
-    const contentString = `
-     <div class="info-window-content" style="width: ${targetWidth}px;">
-         ${imageHtml}
-         
-  
-         <div class="p-3"> 
-             <div class="d-flex justify-content-between align-items-start">               
-                 <div style="max-width: 85%;">
-                     <h6 class="fw-bold mb-1 text-truncate" title="${place.name}">${place.name}</h6>
-                     <p class="text-muted small mb-0 info-window-address">${place.formatted_address || ''}</p>
-                 </div>
-                 <div id="add-to-wishlist-btn" class="wishlist-heart text-danger ms-2" style="cursor:pointer; font-size: 1.2rem;">
-                     <i class="bi bi-heart"></i> 
-                 </div>
-             </div>
-         </div> 
-       
+    const ratingHtml = place.rating
+        ? `<div class="d-flex align-items-center mb-1">
+            <span class="text-warning me-1 fw-bold">${place.rating}</span>
+            <span class="text-dark small">(${place.user_ratings_total?.toLocaleString() || 0})</span>
+           </div>`
+        : '<div class="text-dark small mb-1">暫無評分</div>';
 
-        <div class="dropdown">
-            <button class="btn btn_light btn-sm w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-plus-lg"></i> 加入行程
-            </button>
-             <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
-                 ${dayMenuItems}
-             </ul>
-         </div>
-     </div>
- `;
+    // 處理簡介 (Google 可能不一定會提供每個地點的簡介)
+    const summary = place.editorial_summary
+        ? `<p class="mt-2 mb-0 small text-dark italic" style="border-left: 3px solid #dee2e6; padding-left: 8px;">
+            ${place.editorial_summary.overview}
+           </p>`
+        : '';
+
+    const contentString = `
+        <div class="info-window-content" style="width: ${targetWidth}px; font-family: sans-serif;">
+            ${imageHtml}
+
+            <div class="p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div style="max-width: 85%;">
+                        <h6 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">${place.name}</h6>
+                        ${ratingHtml}
+                        <p class="text-dark small mb-0" style="line-height: 1.4;">
+                            <i class="bi bi-geo-alt"></i> ${place.formatted_address || ''}
+                        </p>
+                        ${summary}
+                    </div>
+                    <div id="add-to-wishlist-btn" class="wishlist-heart text-danger ms-2" style="cursor:pointer; font-size: 1.4rem;">
+                        <i class="bi bi-heart"></i>
+                    </div>
+               </div>
+            </div>
+
+            <div class="px-3 pb-3">
+                <div class="dropdown">
+                    <button class="btn btn_light btn-sm w-100 rounded-1" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-plus-lg"></i> 加入行程
+                    </button>
+                    <ul class="dropdown-menu w-100 shadow border-0" style="max-height: 200px; overflow-y: auto;">
+                        ${dayMenuItems}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    `;
 
     infoWindow.setContent(contentString);
     infoWindow.setContent(contentString);
@@ -270,6 +263,42 @@ function renderPlaceOnMap(place, existingSpotId) {
                 if (spotId) handleAddPlaceToWishlist(btnElement, spotId);
             } catch (err) { console.error(err); }
         });
+    });
+}
+function setupAutocomplete() {
+
+    const options = {
+        // 限制搜尋類型
+        types: ['establishment', 'geocode'],
+
+        // 擴充回傳欄位，確保包含後端所需的所有資料
+        fields: [
+            'place_id',
+            'geometry',
+            'name',
+            'types',
+            'formatted_address',
+            'photos',
+            'rating',             
+            'user_ratings_total',
+            'editorial_summary'
+        ]
+    };
+
+    autocomplete = new google.maps.places.Autocomplete(inputElement, options);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+
+        console.log("選擇的地點資料：", place); // 除錯用
+
+        if (!place.geometry || !place.geometry.location) {
+            window.alert("找不到地點資訊：" + place.name);
+            return;
+        }
+
+        renderPlaceOnMap(place, null);
     });
 }
 function getDayMenuItems() {
@@ -325,8 +354,6 @@ function handleAddPlaceToItinerary(spotId, place, day) {
         }
     });
 }
-//將搜尋到的景點儲存到景點快照資料庫
-// 儲存景點快照 (回傳 Promise)
 function handleAddPlaceToWishlist(btnElement, spotId) {
 
     console.log("願望清單 spotID:" + spotId)

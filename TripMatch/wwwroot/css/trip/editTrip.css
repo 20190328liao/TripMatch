@@ -39,7 +39,7 @@ footer {
 
 /* 左側面板 - 行程列表 */
 .left-panel {
-    width: 45vw;
+    width: 35vw;
     min-width: 320px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
@@ -121,6 +121,7 @@ footer {
 .itinerary-item {
     /* 【修改 4】加大左右內距：原本是 15px 20px */
     /* 改成 15px 30px，這裡要跟上面的 header 保持一致，視覺才會整齊 */
+    position: relative; /* 【新增】確保刪除按鈕能正確定位在卡片內 */
     padding: 15px 30px;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
@@ -251,137 +252,8 @@ footer {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-    .search-box:focus-within .input-group-text i {
-        color: #0d6efd !important; /* Bootstrap Primary Blue */
-    }
-
-/* =========================================
-   5. Google Maps InfoWindow 自定義樣式
-   ========================================= */
-
-.info-window-content {
-    overflow: hidden;
-    font-family: var(--bs-body-font-family);
-}
-
-.info-window-img {
-    width: 100%;
-    height: 180px; /* 稍微縮小高度以適配小螢幕 */
-    object-fit: cover;
-    display: block;
-}
-
-.info-window-address {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-top: 4px;
-    line-height: 1.4;
-}
-
-.info-window-content .dropdown {
-    /* 確保按鈕上方有一點點間隔線，視覺上比較分明 */
-    border-top: 1px solid rgba(0,0,0,0.08);
-}
-
-/* 針對底部按鈕的特別設定 */
-.info-window-content .dropdown .btn {
-    border-radius: 5px; /* 去除圓角，讓它貼齊視窗底部 */
-    width: 100%; /* 強制滿版 */
-    border: none; /* 移除邊框 */
-    /* [解決文字太靠邊]：增加上下 padding，讓按鈕變高，文字置中更舒服 */
-    padding-top: 14px;
-    padding-bottom: 14px;
-    /* 字體排版優化 */
-    display: flex; /* 使用 flex 讓圖示與文字垂直置中 */
-    align-items: center;
-    justify-content: center;
-    gap: 6px; /* 圖示跟文字之間的距離 */
-    font-size: 1rem; /* 字體大小適中 */
-    font-weight: 500; /* 稍微加粗 */
-    /* [解決陰影問題]：預設狀態移除所有陰影 */
-    box-shadow: none !important;
-    outline: none !important;
-    transition: background-color 0.2s, box-shadow 0.1s; /* 加入過渡動畫 */
-}
-
-/* 3. 點擊狀態 (Active) - 按下去時才出現陰影 */
-.info-window-content .dropdown .btn:active,
-.info-window-content .dropdown .btn.show { /* Dropdown 打開時也算 active */
-    
-    /* 這裡設定「內陰影」或是「外部陰影」，讓它有按下去的感覺 */
-    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* 移除 Bootstrap 預設的 Focus 光暈 (藍色外框) */
-/*.info-window-content .dropdown .btn:focus {
-    box-shadow: none !important;
-}*/
-
-
-/* 修正下拉選單的位置，避免擋住按鈕 */
-.info-window-content .dropdown-menu {
-    border-radius: 4px; /* 選單圓角 */
-    margin-top: 2px !important; /* 讓選單跟按鈕稍微有點距離 */
-}
-
-
-/* 愛心收藏按鈕 (修正版) */
-.wishlist-heart {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    font-size: 1.4rem;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: transform 0.2s, background-color 0.2s;
-    border-radius: 50%;
-    margin-left: 8px;
-}
-
-.wishlist-heart:hover {
-    background-color: rgba(220, 53, 69, 0.1);
-    transform: scale(1.1);
-}
-
-.wishlist-heart:active {
-    transform: scale(0.9);
-}
-
-/* 愛心選中狀態 */
-.wishlist-heart.active i {
-    color: #dc3545; /* Bootstrap Danger Red */
-    /* 這裡由 JS 切換 class 為 bi-heart-fill，不需要 font-weight */
-}
-
-
-/* 1. 預設將刪除按鈕隱藏 */
-.itinerary-item .delete-btn {
-    opacity: 0; /* 完全透明 */
-    visibility: hidden; /* 不佔據互動空間 (避免誤觸) */
-    transition: all 0.2s; /* 加入一點漸變動畫，看起來比較順暢 */
-}
-
-/* 2. 當滑鼠移到卡片 (.itinerary-item) 上時，顯示按鈕 */
-.itinerary-item:hover .delete-btn {
-    opacity: 1; /* 變為不透明 */
-    visibility: visible; /* 可見並可點擊 */
-}
-
-.delete-btn {
-    /* 移除點擊時的藍色外框 */
-    box-shadow: none !important;
-    border: none !important;
-    outline: none !important;
-    /* 確保文字顏色正確 (Bootstrap 預設 btn-link 會是藍色，這裡強制為 danger 紅色) */
-    text-decoration: none;
-}
-
-/* 確保 Focus 狀態下也不要有框 */
-.delete-btn:focus, .delete-btn:active {
-    box-shadow: none !important;
-    outline: none !important;
+.search-box:focus-within .input-group-text i {
+    color: #0d6efd !important; /* Bootstrap Primary Blue */
 }
 
 /* 時間區塊 Hover 效果 */
@@ -532,46 +404,6 @@ footer {
     margin-top: 4px;
 }
 
-/* --- 右上角刪除按鈕 --- */
-.flight-delete-btn {
-    position: absolute;
-    top: 10px;
-    right: 30px;
-    color: #adb5bd;
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.flight-delete-btn:hover {
-    color: #dc3545; /* 懸停變紅色 */
-}
-
-
-
-/* 1. 預設將刪除按鈕隱藏 */
-.flight-delete-btn {
-    opacity: 0; /* 完全透明 */
-    visibility: hidden; /* 不佔據互動空間 (避免誤觸) */
-    transition: all 0.2s; /* 加入一點漸變動畫，看起來比較順暢 */
-}
-
-/* 2. 當滑鼠移到卡片 上時，顯示按鈕 */
-.flight-card:hover .flight-delete-btn {
-    opacity: 1; /* 變為不透明 */
-    visibility: visible; /* 可見並可點擊 */
-}
-
-.flight-delete-btn {
-    /* 移除點擊時的藍色外框 */
-    box-shadow: none !important;
-    border: none !important;
-    outline: none !important;
-    /* 確保文字顏色正確 (Bootstrap 預設 btn-link 會是藍色，這裡強制為 danger 紅色) */
-    text-decoration: none;
-}
 
 
 /* 餐廳列表項目樣式 */
@@ -684,4 +516,211 @@ footer {
 /* 針對按鈕內的圖示，確保它也跟著變色 */
 .btn-outline-mint:hover i {
     color: #ffffff;
+}
+
+
+/* 住宿卡片容器需設為相對定位，讓按鈕能定位在右上角 */
+.hotel-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* 垃圾桶按鈕基礎樣式 */
+.spot-delete-btn, .hotel-delete-btn, .flight-delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dee2e6;
+    color: #dc3545; /* 刪除紅 */
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* 關鍵：預設隱藏並稍微下移（產生浮現動畫感） */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px);
+    z-index: 10;
+}
+
+/* 當滑鼠移入卡片時，顯示按鈕 */
+.itinerary-item:hover .spot-delete-btn,
+.hotel-card:hover .hotel-delete-btn,
+.flight-card:hover .flight-delete-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* 按鈕懸停效果 */
+.spot-delete-btn:hover,
+.hotel-delete-btn:hover,
+.flight-delete-btn:hover {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 讓 Google InfoWindow 的內距消失，改用我們自己的控制 */
+.gm-style-iw {
+    padding: 0 !important;
+}
+
+.gm-style-iw-d {
+    overflow: hidden !important;
+}
+
+.info-window-content {
+    max-width: 400px; /* 根據需求調整 */
+}
+
+.info-window-img {
+    width: 100%;
+    height: 200px; /* 你可以自由修改這裡，例如 200px 或 220px */
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.info-window-content:hover .info-window-img {
+    transform: scale(1.05); /* 滑過時圖片微放大 */
+}
+
+.info-window-content .dropdown {
+    /* 確保按鈕上方有一點點間隔線，視覺上比較分明 */
+    border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+/* 針對底部按鈕的特別設定 */
+.info-window-content .dropdown .btn {
+    border-radius: 5px; /* 去除圓角，讓它貼齊視窗底部 */
+    width: 100%; /* 強制滿版 */
+    border: none; /* 移除邊框 */
+    /* [解決文字太靠邊]：增加上下 padding，讓按鈕變高，文字置中更舒服 */
+    padding-top: 10px;
+    padding-bottom: 10px;
+    /* 字體排版優化 */
+    display: flex; /* 使用 flex 讓圖示與文字垂直置中 */
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* 圖示跟文字之間的距離 */
+    font-size: 0.8rem; /* 字體大小適中 */
+    font-weight: bold; /* 稍微加粗 */
+    /* [解決陰影問題]：預設狀態移除所有陰影 */
+    box-shadow: none !important;
+    outline: none !important;
+    transition: background-color 0.2s, box-shadow 0.1s; /* 加入過渡動畫 */
+}
+
+/* 3. 點擊狀態 (Active) - 按下去時才出現陰影 */
+.info-window-content .dropdown .btn:active,
+.info-window-content .dropdown .btn.show { /* Dropdown 打開時也算 active */
+    /* 這裡設定「內陰影」或是「外部陰影」，讓它有按下去的感覺 */
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+
+
+/* 修正下拉選單的位置，避免擋住按鈕 */
+.info-window-content .dropdown-menu {
+    border-radius: 4px; /* 選單圓角 */
+    margin-top: 2px !important; /* 讓選單跟按鈕稍微有點距離 */
+}
+
+
+/* 愛心收藏按鈕 (修正版) */
+.wishlist-heart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.2s, background-color 0.2s;
+    border-radius: 50%;
+    margin-left: 8px;
+}
+
+.wishlist-heart:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+    transform: scale(1.1);
+}
+
+.wishlist-heart:active {
+    transform: scale(0.9);
+}
+
+/* 愛心選中狀態 */
+.wishlist-heart.active i {
+    color: #dc3545; 
+}
+
+/* 移除 InfoWindow 內部可能的水平分隔線 */
+.info-window-content hr {
+    display: none !important;
+}
+
+/* 確保內文區塊沒有上方邊框 */
+.info-window-content .p-3 {
+    border-top: none !important;
+}
+
+/* 1. 殺掉所有可能在 InfoWindow 出現的橫線 */
+.info-window-content hr {
+    display: none !important;
+}
+
+/* 2. 針對按鈕容器，強制移除上邊框 */
+.info-window-content .dropdown,
+.info-window-content .dropdown-menu {
+    border: none !important;
+    border-top: 0 !important;
+}
+
+/* 3. 確保 p-3 容器之間沒有邊框 */
+.info-window-content .p-3,
+.info-window-content .px-3 {
+    border: none !important;
+}
+
+/* 針對 InfoWindow 內的下拉選單 */
+.info-window-content .dropdown-menu {
+    /* 1. 增加選單寬度：讓選單可以比按鈕寬 (例如 120%) */
+    min-width: 130% !important;
+    /* 2. 移除橫向滾動條 */
+    overflow-x: hidden !important;
+    /* 3. 確保陰影不被切掉 */
+    border: none !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175) !important;
+}
+
+/* 針對選單內的文字項目 */
+.info-window-content .dropdown-item {
+    /* 4. 縮小字體：讓文字在一行內顯示 */
+    font-size: 0.8rem !important;
+    padding: 6px 10px !important;
+    /* 5. 強制不換行：確保維持在一橫排 */
+    white-space: nowrap !important;
+}
+
+.hotel-img img {
+    border: 1px solid #eee;
+    background-color: #f8f9fa;
+}
+
+.hotel-card {
+    transition: transform 0.2s;
+}
+
+.hotel-card:hover {
+    background-color: #fcfcfc;
+    border-color: #ddd;
 }

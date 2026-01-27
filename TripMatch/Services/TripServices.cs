@@ -269,8 +269,37 @@ namespace TripMatch.Services
                     CheckOutDate = accom.CheckOutDate,
                     RowVersion = Convert.ToBase64String(accom.RowVersion!)
                 };
+
+                //取得封面照
+                var placeSnapshot = await _context.PlacesSnapshots.FirstOrDefaultAsync(sp => sp.SpotId == accom.SpotId);    
+                if (placeSnapshot != null)
+                    {
+                    // 反序列化照片陣列
+                    List<string> photos = [];
+                    if (!string.IsNullOrWhiteSpace(placeSnapshot.PhotosSnapshot))
+                    {
+                        try
+                        {
+                            photos = System.Text.Json.JsonSerializer.Deserialize<List<string>>(placeSnapshot.PhotosSnapshot) ?? [];
+                        }
+                        catch
+                        {
+                            photos = [];
+                        }
+                    }
+                    // 取第一張照片作為封面照
+                    accomDto.PhotoUrl = photos.FirstOrDefault() ?? "";
+                }
+                else
+                {
+                    accomDto.PhotoUrl = "";
+                }
+
+
                 tripDetailDto.Accomadations.Add(accomDto);
             }
+
+           
 
 
 
