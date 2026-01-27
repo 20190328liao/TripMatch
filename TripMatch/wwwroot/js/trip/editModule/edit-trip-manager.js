@@ -15,7 +15,8 @@ let recModal;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
-
+let directionsService;
+let directionsRenderer;
 
 
 
@@ -706,6 +707,42 @@ function renderItinerary(items, dates, accommodations, flights) {
                 `;
 
                 itemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+
+
+
+
+                //// 【新增】如果不是最後一個景點，插入「路線資訊區塊」
+                //if (index < dayItems.length - 1) {
+                //    const nextItem = dayItems[index + 1];
+
+                //    // 取得起點與終點座標或 ID
+                //    const originId = item.profile?.placeId;
+                //    const destId = nextItem.profile?.placeId;
+                //    const originLat = item.profile?.lat;
+                //    const originLng = item.profile?.lng;
+                //    const destLat = nextItem.profile?.lat;
+                //    const destLng = nextItem.profile?.lng;
+                //    const routeHtml = `
+                //        <div class="route-info-block my-3 mx-4 p-3 shadow-sm border rounded-3" 
+                //             style="cursor: pointer; transition: transform 0.2s; background: #ffffff;"
+                //             data-origin-id="${originId}"
+                //             data-dest-id="${destId}"
+                //             data-origin-lat="${originLat}"
+                //             data-dest-lat="${destLat}"
+                //             data-origin-lng="${originLng}"
+                //             data-dest-lng="${destLng}">
+                //            <div class="d-flex align-items-center gap-2">
+                //                <div class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></div>
+                //                <span class="small text-secondary">點擊獲取最佳交通建議...</span>
+                //            </div>
+                //        </div>
+                //    `;
+                //    itemsContainer.insertAdjacentHTML('beforeend', routeHtml);
+                //}
+
+
+
+
             });
         }
 
@@ -854,6 +891,17 @@ function bindItemEvents() {
             input.value = '';
             btnWrapper.classList.remove('d-none');
             inputWrapper.classList.add('d-none');
+        });
+    });
+
+    document.querySelectorAll('.route-info-block').forEach(block => {
+        block.addEventListener('click', function () {
+            const data = this.dataset;
+            const origin = data.originId ? { placeId: data.originId } : { lat: parseFloat(data.originLat), lng: parseFloat(data.originLng) };
+            const destination = data.destId ? { placeId: data.destId } : { lat: parseFloat(data.destLat), lng: parseFloat(data.destLng) };
+
+            // 傳入 this (即點擊的那個區塊)
+            calculateAndDisplayRoute(origin, destination, this);
         });
     });
 }
@@ -1125,3 +1173,86 @@ async function deleteTripDay(dayNum) {
 
 // 為了讓 HTML onclick 能點到，需掛載到 window (或在 bindEvents 綁定)
 window.deleteTripDay = deleteTripDay;
+
+
+/**
+ * 計算並顯示路線，同時更新 UI 區塊資訊
+ * @param {Object} origin - 起點資訊 { placeId: '...', lat: ..., lng: ... }
+ * @param {Object} destination - 終點資訊 { placeId: '...', lat: ..., lng: ... }
+ * @param {HTMLElement} displayElement - 要顯示資訊的 HTML 容器元件
+ */
+function calculateAndDisplayRoute(origin, destination, displayElement) {
+    if (!window.currentMapInstance) return;
+
+    // 1. 確保服務已初始化
+    if (!window.directionsService) {
+        window.directionsService = new google.maps.DirectionsService();
+    }
+    if (!window.directionsRenderer) {
+        window.directionsRenderer = new google.maps.DirectionsRenderer({
+            map: window.currentMapInstance,
+            suppressMarkers: false, // 是否隱藏 A/B 標記，若想自訂標記可設為 true
+            polylineOptions: {
+                strokeColor: "blue", // 薄荷綠/翡翠綠
+                strokeWeight: 6,
+                strokeOpacity: 0.7
+            }
+        });
+    }
+
+    // 2. 準備要求參數
+    const request = {
+        origin: origin.placeId ? { placeId: origin.placeId } : { lat: parseFloat(origin.lat), lng: parseFloat(origin.lng) },
+        destination: destination.placeId ? { placeId: destination.placeId } : { lat: parseFloat(destination.lat), lng: parseFloat(destination.lng) },
+        travelMode: google.maps.TravelMode.DRIVING // 預設最佳建議 (開車)
+    };
+
+    // 3. 呼叫 Google Directions Service
+    window.directionsService.route(request, (response, status) => {
+        if (status === "OK") {
+            // 在地圖上畫出線條
+            window.directionsRenderer.setDirections(response);
+
+            const leg = response.routes[0].legs[0];
+
+            // --- 關鍵：正確組裝 Google Maps 外部連結 ---
+            // 使用官方規格 https://www.google.com/maps/dir/?api=1
+            const baseUrl = "https://www.google.com/maps/dir/?api=1";
+            const originParam = origin.placeId ? `&origin=unused&origin_place_id=${origin.placeId}` : `&origin=${origin.lat},${origin.lng}`;
+            const destParam = destination.placeId ? `&destination=unused&destination_place_id=${destination.placeId}` : `&destination=${destination.lat},${destination.lng}`;
+            const googleMapsUrl = `${baseUrl}${originParam}${destParam}&travelmode=driving`;
+
+            // 4. 更新 UI 內容
+            if (displayElement) {
+                displayElement.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between w-100 animate__animated animate__fadeIn">
+                        <div class="d-flex align-items-center">
+                            <div class="route-icon-circle me-3">
+                                <i class="bi bi-cursor-fill"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.9rem;">最佳路線建議</div>
+                                <div class="text-secondary" style="font-size: 0.8rem;">
+                                    預估 ${leg.duration.text} (${leg.distance.text})
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" 
+                           class="btn btn-sm shadow-sm rounded-pill px-3 google-map-link-btn"
+                           onclick="event.stopPropagation();">
+                            <i class="bi bi-geo-alt-fill me-1"></i>查看詳情
+                        </a>
+                    </div>
+                `;
+
+                // 套用薄荷綠動態樣式
+                displayElement.classList.add('route-active');
+            }
+        } else {
+            console.error("無法取得路線: " + status);
+            if (displayElement) {
+                displayElement.innerHTML = `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> 無法計算路線</span>`;
+            }
+        }
+    });
+}

@@ -39,7 +39,7 @@ footer {
 
 /* 左側面板 - 行程列表 */
 .left-panel {
-    width: 35vw;
+    width: 40vw;
     min-width: 320px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
@@ -127,18 +127,21 @@ footer {
     display: flex;
     gap: 15px;
     align-items: flex-start;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease-in-out;
     cursor: pointer;
     background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 輕微浮起效果 */
 }
 
-    .itinerary-item:hover {
-        background-color: #f8f9fa; /* 懸停效果 */
-    }
+.itinerary-item:hover {
+    background-color: rgba(218, 243, 243, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* 浮起陰影 */
+    transform: translateY(-2px); /* 微微上浮 */
+}
 
-    .itinerary-item:last-child {
-        border-bottom: none;
-    }
+.itinerary-item:last-child {
+    border-bottom: none;
+}
 
 /* --- 新增：時間軸圓點樣式 --- */
 /* 這是為了讓 JS 中的 <div class="timeline-dot"> 排版好看一點 */
@@ -285,8 +288,9 @@ footer {
 
 /* 滑鼠懸停時的效果 */
 .flight-card:hover {
-    transform: translateY(-2px); /* 輕微上浮 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: rgba(218, 243, 243, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* 浮起陰影 */
+    transform: translateY(-2px); /* 微微上浮 */
 }
 
 /* 新增日期標題樣式 */
@@ -408,14 +412,15 @@ footer {
 
 /* 餐廳列表項目樣式 */
 .restaurant-item {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 輕微浮起效果 */
     transition: all 0.2s ease-in-out;
 }
 
-    .restaurant-item:hover {
-        background-color: #fff5f5 !important; /* 懸停時變淡粉紅色 */
-        box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* 浮起陰影 */
-        transform: translateY(-2px); /* 微微上浮 */
-    }
+.restaurant-item:hover {
+    background-color: rgba(218, 243, 243, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* 浮起陰影 */
+    transform: translateY(-2px); /* 微微上浮 */
+}
 
 /* 確保通用樣式 */
 .object-fit-cover {
@@ -717,10 +722,29 @@ footer {
 }
 
 .hotel-card {
-    transition: transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* 輕微浮起效果 */
+    transition: all 0.2s ease-in-out;
 }
 
 .hotel-card:hover {
-    background-color: #fcfcfc;
-    border-color: #ddd;
+    background-color: rgba(218, 243, 243, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* 浮起陰影 */
+    transform: translateY(-2px); /* 微微上浮 */
+}
+
+.route-info-block {
+background-color: transparent;
+transition: all 0.2s;
+border-radius: 4px;
+margin-left: 25px; /* 配合 timeline 的位置 */
+}
+
+.route-info-block:hover {
+    background-color: #F0FBFA; /* 極淡薄荷綠 */
+    border-left: 2px solid #98FF98; /* 薄荷綠實線 */
+}
+
+.route-info-block span {
+    font-size: 0.75rem;
+    color: #6c757d;
 }
