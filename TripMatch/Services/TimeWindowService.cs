@@ -34,7 +34,7 @@ namespace TripMatch.Services
 
                 DateStart = request.DateStart?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today,
                 DateEnd = request.DateEnd?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today.AddDays(30),
-                Status = "JOINING",
+                Status = GroupStatus.PREF,
                 CreatedAt = DateTime.Now,
                 UpdateAt = DateTime.Now
             };
@@ -162,6 +162,8 @@ namespace TripMatch.Services
             pref.TotalBudget = request.TotalBudget;
 
             await _context.SaveChangesAsync();
+            // 嘗試推進Status
+            await TryAdvanceStatusAsync(groupId);
             return pref;
         }
 
@@ -202,6 +204,8 @@ namespace TripMatch.Services
             // ★★★ 修正結束 ★★★
 
             await _context.SaveChangesAsync();
+            // 嘗試推進Status
+            await TryAdvanceStatusAsync(groupId);
         }
 
         // 6. 算出推薦的時間區段 (核心演算法)
@@ -734,6 +738,8 @@ namespace TripMatch.Services
 
             // 先儲存投票紀錄，確保關聯表正確
             await _context.SaveChangesAsync();
+            // 嘗試推進Status
+            await TryAdvanceStatusAsync(groupId);
 
             // 4. 更新 Recommendation 表上的 Vote 計數 (Denormalization)
             // 雖然可以即時 Count，但為了列表效能，通常還是會維護一個數字欄位
@@ -919,7 +925,8 @@ namespace TripMatch.Services
             }
 
             // 7. 更新群組狀態並存檔
-            group.Status = "Converted";
+            group.Status = GroupStatus.JOINING;
+            group.UpdateAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -978,6 +985,11 @@ namespace TripMatch.Services
                 throw new KeyNotFoundException($"找不到群組 (ID: {groupId}) 或您不是該群組成員。");
             }
 
+            if (member.Group.Status == GroupStatus.CANCELLED)
+            {
+                throw new InvalidOperationException("此媒合群組已取消，無法再進行任何操作。");
+            }
+
             if (requireNotSubmitted && member.SubmittedAt != null)
             {
                 throw new InvalidOperationException("您已經提交過時間，無法再修改資料 (Submissions are locked)。");
@@ -985,6 +997,62 @@ namespace TripMatch.Services
 
             return member;
         }
+
+        // 改狀態
+        public async Task<string> TryAdvanceStatusAsync(int groupId)
+        {
+            var group = await _context.TravelGroups
+                .AsTracking()
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
+
+            if (group == null) throw new Exception("Group not found.");
+
+            if (group.Status == GroupStatus.JOINING) return group.Status;
+
+            // 1. 偏好完成: PREF -> VOTING
+            if(group.Status == GroupStatus.PREF)
+            {
+                var totalTarget = group.TargetNumber > 0
+                    ? group.TargetNumber
+                    : await _context.GroupMembers.CountAsync(m => m.GroupId == groupId);
+
+                var completedPrefUsers = await _context.Preferences
+                    .Where(p => p.GroupId == groupId && !string.IsNullOrWhiteSpace(p.PlacesToGo))
+                    .Select(p => p.UserId)
+                    .Distinct()
+                    .CountAsync();
+
+                var submittedCount = await _context.GroupMembers
+                    .CountAsync(m => m.GroupId == groupId && m.SubmittedAt != null);
+
+                if (completedPrefUsers >= totalTarget && submittedCount >= totalTarget)
+                {
+                    group.Status = GroupStatus.VOTING;
+                    group.UpdateAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    return group.Status;
+                }
+            }
+
+            // 3. 全員投票完成: VOTING -> RESULT
+            if (group.Status == GroupStatus.VOTING)
+            {
+                var allVoted = await CheckIfAllVotedAsync(groupId);
+
+                if (allVoted)
+                {
+                    group.Status = GroupStatus.RESULT;
+                    group.UpdateAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    return group.Status;
+                }
+            }
+
+            return group.Status;
+        }
+
         
+
+
     }
 }

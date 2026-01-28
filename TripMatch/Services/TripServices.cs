@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using TripMatch.Models;
 using TripMatch.Models.DTOs;
+using TripMatch.Models.DTOs.TimeWindow;
 using TripMatch.Services.Common;
 using TripMatch.Services.ExternalClients;
 
@@ -712,6 +713,7 @@ namespace TripMatch.Services
                     Lat = (double)spot.Lat,
                     Lng = (double)spot.Lng,
                     Rating = spot.Rating ?? 0,
+                    UserRatingsTotal = spot.UserRatingsTotal ?? 0,
                     PhotosSnapshot = !string.IsNullOrWhiteSpace(spot.PhotosSnapshot)
                         ? JsonSerializer.Deserialize<List<string>>(spot.PhotosSnapshot) ?? []
                         : []
@@ -822,18 +824,21 @@ namespace TripMatch.Services
         
 
             // 媒合中 groups
-            var matchingGroupsRaw = await _context.TravelGroups
+            var matchingGroupsRaw = await _context.GroupMembers
                 .AsNoTracking()
-                .Where(g => g.OwnerUserId == userId
-                            && g.Status != "JOINING"
-                            && (g.Status == "AAA" || g.Status == "BBB" || g.Status == "CCC" || g.Status == "DDD"))
-                .OrderByDescending(g => g.CreatedAt)
-                .Select(g => new
+                .Where(gm => gm.UserId == userId
+                            && gm.Group.Status != GroupStatus.JOINING
+                            && gm.Group.Status != GroupStatus.CANCELLED
+                            && (gm.Group.Status == GroupStatus.PREF || gm.Group.Status == GroupStatus.DATE || gm.Group.Status == GroupStatus.VOTING || gm.Group.Status == GroupStatus.RESULT))
+                .OrderByDescending(gm => gm.Group.CreatedAt)
+                .Select(gm => new
                 {
-                    g.GroupId,
-                    g.Title,
-                    g.Status
+                    gm.GroupId,
+                    gm.Group.Title,
+                    gm.Group.Status,
+                    gm.Role
                 })
+                .Distinct()
                 .ToListAsync();
 
             // 再投影成 DTO (要用 helper)
@@ -843,7 +848,8 @@ namespace TripMatch.Services
                 Title = g.Title,
                 Status = g.Status,
                 CoverImageUrl = $"https://picsum.photos/seed/GROUP-{g.GroupId}/800/400",
-                DetailsUrl = MapStatusToUrl(g.Status ?? "", g.GroupId)
+                DetailsUrl = MapStatusToUrl(g.Status ?? "", g.GroupId),
+                Role = (g.Role ?? "").ToLower()
             }).ToList();
 
             return new MyTripsDto { 
@@ -857,10 +863,10 @@ namespace TripMatch.Services
         {
             return status switch
             {
-                "AAA" => $"/Trip/aaa?groupId={groupId}",
-                "BBB" => $"/Trip/bbb?groupId={groupId}",
-                "CCC" => $"/Trip/ccc?groupId={groupId}",
-                "DDD" => $"/Trip/ddd?groupId={groupId}",
+                "PREF" => $"/Match/Preferences/{groupId}",
+                "DATE" => $"/Match/Availability/{groupId}",
+                "VOTING" => $"/Match/recommendations/{groupId}",
+                "RESULT" => $"/Match/Result/{groupId}",
                 _ => "#"
             };
         }
@@ -1013,6 +1019,56 @@ namespace TripMatch.Services
             }
 
             return code;
+        }
+
+        // 取得媒合中邀請碼
+        public async Task<string> GetGroupInviteCodeAsync(int userId, int groupId)
+        {
+            var isMember = await _context.GroupMembers
+                .AsNoTracking()
+                .AnyAsync(gm => gm.GroupId == groupId && gm.UserId == userId);
+
+            if (!isMember) throw new UnauthorizedAccessException("Not a member of this Group.");
+
+            var code = await _context.TravelGroups
+                .AsNoTracking()
+                .Where(g => g.GroupId == groupId)
+                .Select(g => g.InviteCode)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(code)) throw new Exception("InviteCode is empty.");
+
+            return code;
+        }
+
+        // 刪除媒合團 -> 狀態改Cancelled
+        public async Task CancelGroupAsync(int groupId, int operatorUserId)
+        {
+            var group = await _context.TravelGroups
+                .AsTracking()
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
+
+            if (group == null)
+                throw new Exception("Group not found.");
+
+            // 只允許還沒開團成功的群組取消
+            if (group.Status == GroupStatus.JOINING)
+                throw new Exception("Group already finalized. Cannot cancel.");
+
+            // 只允許 Owner
+            var isOwner = await _context.GroupMembers
+                .AnyAsync(m => m.GroupId == groupId
+                            && m.UserId == operatorUserId
+                            && m.Role == "Owner");
+
+            if (!isOwner)
+                throw new Exception("Only owner can cancel this group.");
+
+            // 只改狀態
+            group.Status = GroupStatus.CANCELLED;
+            group.UpdateAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
         }
 
         #endregion

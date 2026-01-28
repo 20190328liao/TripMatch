@@ -19,16 +19,28 @@
 
             .tm-bell-shaking { animation: tm-bell-shake 0.8s ease-in-out infinite; background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
 
-            /* pulse 實作：短暫高亮/放大，供 step4 使用 */
+            /* 鈴鐺 Pulse 動畫 */
             @keyframes tm-bell-pulse {
                 0% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,77,64,0.4); }
                 50% { transform: scale(1.14); box-shadow: 0 8px 30px rgba(0,77,64,0.45); }
                 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,77,64,0.4); }
             }
-            .tm-bell-pulse {
-                animation: tm-bell-pulse 650ms ease-in-out;
-            }
+            .tm-bell-pulse { animation: tm-bell-pulse 650ms ease-in-out; }
             
+            /* 全域提示樣式 */
+            @keyframes tm-guide-pulse {
+                0% { box-shadow: 0 0 0 0 rgba(98, 222, 177, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(98, 222, 177, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(98, 222, 177, 0); }
+            }
+            .guide-hint {
+                box-shadow: 0 0 0 4px rgba(98, 222, 177, 0.6) !important;
+                border-color: #62DEB1 !important;
+                animation: tm-guide-pulse 1.5s infinite;
+                z-index: 100;
+                position: relative;
+            }
+
             .tm-modal-overlay { 
                 position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
                 display: flex; align-items: center; justify-content: center; 
@@ -51,74 +63,47 @@
 
             .btn-back-link {
                 color: var(--color_Dark, #27354A);
-                text-decoration: none;
+                text-decoration: underline;
                 font-size: 0.9rem;
                 display: inline-block;
                 margin-top: 15px;
+                cursor: pointer;
+                background: none;
+                border: none;
             }
-            .btn-back-link:hover { text-decoration: none; opacity: 0.8; }
+            .btn-back-link:hover { opacity: 0.8; }
         `;
         document.head.appendChild(style);
     }
 
-    // Step 管理器：確保步驟依序執行，支援「自動前進」與「等待使用者完成再前進」
+    // Step 管理器
     ns.stepManager = {
-        steps: [],
-        index: -1,
-        running: false,
-        // 允許重啟：若已在跑或已執行過，先 cancel 再啟動新的序列
+        steps: [], index: -1, running: false,
         start(stepsArray) {
             if (!Array.isArray(stepsArray) || stepsArray.length === 0) return;
-            this.cancel();
-            this.steps = stepsArray.slice();
-            this.index = -1;
-            this.running = true;
-            this.next();
+            this.cancel(); this.steps = stepsArray.slice(); this.index = -1; this.running = true; this.next();
         },
         next() {
             if (!this.running) return;
             this.index++;
-            if (this.index >= this.steps.length) {
-                this.running = false;
-                return;
-            }
-
+            if (this.index >= this.steps.length) { this.running = false; return; }
             try {
                 const fn = this.steps[this.index];
                 if (typeof fn === 'function') {
                     const res = fn();
-                    // 如果該 step 回傳 true，代表需等待外部呼叫 stepDone()
-                    if (res === true) {
-                        return;
-                    } else {
-                        setTimeout(() => this.next(), 8);
-                    }
-                } else {
-                    this.next();
-                }
-            } catch (e) {
-                console.warn('stepManager step error', e);
-                this.next();
-            }
+                    if (res === true) return; else setTimeout(() => this.next(), 8);
+                } else { this.next(); }
+            } catch (e) { this.next(); }
         },
-        stepDone() {
-            // 小延遲讓 UI 轉場完成再下一步
-            setTimeout(() => this.next(), 120);
-        },
-        cancel() {
-            this.running = false;
-            this.steps = [];
-            this.index = -1;
-        }
+        stepDone() { setTimeout(() => this.next(), 120); },
+        cancel() { this.running = false; this.steps = []; this.index = -1; }
     };
 
-    // 方便啟動「pending 流程」：建立鈴鐺 -> 顯示 modal（等待使用者互動）-> 在 modal 完成後觸發搖動
     ns.startPendingSequence = function (payload = {}) {
-        // cancel 已在 stepManager.start 處理，可重複呼叫
         ns.stepManager.start([
-            () => ns.createBell(payload, { autoShake: false }), // step1 建立但不震動
-            () => ns.openPendingModal(payload),                 // step2 顯示 modal（回傳 true = 等待）
-            () => ns.shakeBell()                                // step3（在 modal 完成後執行搖動）
+            () => ns.createBell(payload, { autoShake: false }),
+            () => ns.openPendingModal(payload),
+            () => ns.shakeBell()
         ]);
     };
 
@@ -128,109 +113,15 @@
         return (path.includes('/membercenter') && hash === '#calendar_section') || path.includes('/match/calendarcheck');
     };
 
-    // 在檔案頂端 constants 之後新增儲存狀態
-ns._savedBellState = null;
-
-// 用新的 openPendingModal 取代原實作（會在 modal 開啟時暫時停用鈴鐺互動/移除 guide-hint）
-ns.openPendingModal = function (payload = {}) {
-    // 暫時停用鈴鐺的互動與 tooltip，避免其 ::after 或 guide-hint 擋到 modal
-    const bell = document.getElementById(BELL_ID);
-    if (bell) {
-        ns._savedBellState = {
-            pointerEvents: bell.style.pointerEvents || '',
-            hadGuideHint: bell.classList.contains('guide-hint')
-        };
-        bell.style.pointerEvents = 'none';
-        bell.classList.remove('guide-hint');
-    }
-
-    // 移除舊的 modal（保險）
-    ns.closePendingModal();
-
-    const html = `
-    <div class="tm-modal-overlay" id="${MODAL_ID}">
-        <div class="tm-modal-box">
-            <div style="font-size:3rem;margin-bottom:15px;">📅</div>
-            <h3 style="margin:0 0 10px;font-weight:700;color:#333;">發現未完成的行程</h3>
-            <p style="color:#666;font-size:0.95rem;margin-bottom:24px;line-height:1.5;">
-                您有針對群組 <b>${payload.groupId || '未命名'}</b> 的暫存時段，<br>
-                是否將您的「個人請假/空閒日期」匯入此行程？
-            </p>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <div style="display:flex;gap:10px;">
-                    <button id="btn-import-save" style="flex:1;padding:12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">匯入時段</button>
-                    <button id="btn-import-close" style="flex:1;padding:12px;background:#f3f4f6;color:#333;border:none;border-radius:8px;font-weight:600;cursor:pointer;">繼續編輯日曆</button>
-                </div>
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                    <a href="javascript:history.back()" class="btn-back-link" style="margin:0; font-size:0.85rem;">取消並回到上一頁</a>
-                    <button id="btn-dismiss-hints" style="background:transparent; border:none; color:#999; font-size:0.85rem; cursor:pointer; text-decoration:underline;">
-                        關閉教學提示
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>`;
-
-    document.body.insertAdjacentHTML('beforeend', html);
-
-    const btnSave = document.getElementById('btn-import-save');
-    if (btnSave) {
-        btnSave.onclick = () => {
-            document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload }));
-            ns.closePendingModal();
-        };
-    }
-
-    const btnClose = document.getElementById('btn-import-close');
-    if (btnClose) {
-        btnClose.onclick = () => {
-            const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
-            ns.closePendingModal();
-            if (isMatchPage) {
-                window.location.href = '/Auth/MemberCenter#calendar_section';
-            } else {
-                ns.createBell(payload);
-            }
-        };
-    }
-
-    const btnDismiss = document.getElementById('btn-dismiss-hints');
-    if (btnDismiss) {
-        btnDismiss.onclick = () => {
-            document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
-            ns.closePendingModal();
-            ns.createBell(payload);
-        };
-    }
-
-    return true;
-}
-
-// 修改 closePendingModal：在關閉 modal 時恢復鈴鐺原本狀態
-ns.closePendingModal = function () {
-    const el = document.getElementById(MODAL_ID);
-    if (el) el.remove();
-
-    // 恢復鈴鐺的互動與 guide-hint（如果之前有暫存）
-    const bell = document.getElementById(BELL_ID);
-    if (bell && ns._savedBellState) {
-        bell.style.pointerEvents = ns._savedBellState.pointerEvents || '';
-        if (ns._savedBellState.hadGuideHint) bell.classList.add('guide-hint');
-        ns._savedBellState = null;
-    } else if (bell) {
-        // 確保顯示並可互動
-        bell.style.pointerEvents = '';
-        bell.style.display = '';
-    }
-};
-
-    ns.showImportSuccess = function (count, groupId) {
-        showToast(`已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後返回行程確認...`, groupId);
+    ns.showNoDataNotice = function (groupId) {
+        showToast(`查無可用日期，<b>{sec}</b> 秒後跳轉至設定頁面...`, groupId, '/Auth/MemberCenter#calendar_section');
     };
 
-    ns.showNoDataNotice = function (groupId) {
-        showToast(`您尚未選擇休假日期，將於 <b>{sec}</b> 秒後進入編輯頁面...`, groupId, '/Auth/MemberCenter#calendar_section');
+    ns.showImportSuccess = function (count, groupId, redirectUrl = null) {
+        const msg = redirectUrl
+            ? `已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後返回行程確認...`
+            : `已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後更新...`;
+        showToast(msg, groupId, redirectUrl);
     };
 
     function showToast(messageTemplate, groupId, customRedirectUrl = null) {
@@ -241,7 +132,7 @@ ns.closePendingModal = function () {
         toast.id = TOAST_ID;
         toast.className = 'tm-import-toast';
 
-        let seconds = 3;
+        let seconds = 2;
         const update = () => {
             toast.innerHTML = `<span>${messageTemplate.replace('{sec}', seconds)}</span>`;
         };
@@ -253,49 +144,138 @@ ns.closePendingModal = function () {
             seconds--;
             if (seconds <= 0) {
                 clearInterval(timer);
-                window.location.href = customRedirectUrl || `/Match/CalendarCheck/${groupId}`;
+                if (customRedirectUrl) {
+                    window.location.href = customRedirectUrl;
+                } else {
+                    window.location.reload();
+                }
             } else {
                 update();
             }
         }, 1000);
     }
 
-    // 修改：createBell 現在若 element 已存在會重新綁定 handler 並顯示；若不存在才建立新元素
-    ns.createBell = function (payload, options = {}) {
-        const autoShake = options && options.autoShake === true;
-        let existing = document.getElementById(BELL_ID);
+    ns._savedBellState = null;
 
-        if (existing) {
-            // 重新綁定 handler，確保可點擊
-            existing.onclick = () => ns.openPendingModal(payload);
-            existing.style.display = '';
-            // 如果之前透過 openPendingModal 暫存了狀態，恢復 pointer-events 與 guide-hint 類別
-            if (ns._savedBellState) {
-                existing.style.pointerEvents = ns._savedBellState.pointerEvents || '';
-                if (ns._savedBellState.hadGuideHint) existing.classList.add('guide-hint');
-                ns._savedBellState = null;
-            } else {
-                existing.style.pointerEvents = '';
-            }
+    ns.openPendingModal = function (payload = {}) {
+        const bell = document.getElementById(BELL_ID);
+        if (bell) {
+            ns._savedBellState = {
+                pointerEvents: bell.style.pointerEvents || '',
+                hadGuideHint: bell.classList.contains('guide-hint')
+            };
+            bell.style.pointerEvents = 'none';
+            bell.classList.remove('guide-hint');
+        }
+        ns.closePendingModal();
 
-            if (autoShake) {
-                existing.classList.remove('tm-bell-pulse');
-                void existing.offsetWidth;
-                existing.classList.add('tm-bell-pulse');
-                setTimeout(() => existing.classList.remove('tm-bell-pulse'), 750);
-            }
-            return true;
+        const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
+        const groupId = payload.groupId || '';
+
+        const btnEditTitle = isMatchPage ? "前往設定頁面" : "繼續編輯日曆";
+        const btnBackTitle = isMatchPage ? "暫不匯入" : "返回行程確認";
+
+        const html = `
+        <div class="tm-modal-overlay" id="${MODAL_ID}">
+            <div class="tm-modal-box">
+                <div style="font-size:3rem;margin-bottom:15px;">📅</div>
+                <h3 style="margin:0 0 10px;font-weight:700;color:#333;">發現未完成的行程</h3>
+                <p style="color:#666;font-size:0.95rem;margin-bottom:24px;line-height:1.5;">
+                    您有針對群組 <b>${groupId || '未命名'}</b> 的暫存時段，<br>
+                    是否將您的「個人請假/空閒日期」匯入此行程？
+                </p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:10px;">
+                        <button id="btn-import-save" style="flex:1;padding:12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">匯入時段</button>
+                        <button id="btn-import-close" style="flex:1;padding:12px;background:#f3f4f6;color:#333;border:none;border-radius:8px;font-weight:600;cursor:pointer;">${btnEditTitle}</button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                        <button id="btn-back-link" class="btn-back-link" style="margin:0; font-size:0.85rem;">${btnBackTitle}</button>
+                        <button id="btn-dismiss-hints" style="background:transparent; border:none; color:#999; font-size:0.85rem; cursor:pointer; text-decoration:underline;">
+                            關閉教學提示
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', html);
+
+        const btnSave = document.getElementById('btn-import-save');
+        if (btnSave) {
+            btnSave.onclick = () => {
+                document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload }));
+                ns.closePendingModal();
+            };
         }
 
-        const bell = document.createElement('div');
-        bell.id = BELL_ID;
-        bell.style.cssText = `position:fixed;bottom:30px;right:30px;width:56px;height:56px;background:linear-gradient(135deg, #00b6b1, #006c4b);border-radius:50%;box-shadow:0 4px 15px rgba(0,77,64,0.4);z-index:9990;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,background 0.3s;`;
-        bell.innerHTML = `<svg width="24" height="24" viewBox="0 0 16 16" fill="white"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg><span style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border:2px solid #fff;border-radius:50%;"></span>`;
-        bell.onmouseenter = () => bell.style.transform = 'scale(1.1)';
-        bell.onmouseleave = () => bell.style.transform = 'scale(1)';
-        bell.onclick = () => ns.openPendingModal(payload);
-        document.body.appendChild(bell);
+        const btnClose = document.getElementById('btn-import-close');
+        if (btnClose) {
+            btnClose.onclick = () => {
+                ns.closePendingModal();
+                if (isMatchPage) {
+                    window.location.href = '/Auth/MemberCenter#calendar_section';
+                } else {
+                    ns.createBell(payload);
+                }
+            };
+        }
 
+        const btnBack = document.getElementById('btn-back-link');
+        if (btnBack) {
+            btnBack.onclick = () => {
+                ns.closePendingModal();
+                if (isMatchPage) {
+                    ns.createBell(payload);
+                } else {
+                    window.location.href = `/Match/CalendarCheck/${groupId}`;
+                }
+            }
+        }
+
+        const btnDismiss = document.getElementById('btn-dismiss-hints');
+        if (btnDismiss) {
+            btnDismiss.onclick = () => {
+                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+                ns.closePendingModal();
+                ns.createBell(payload);
+            };
+        }
+        return true;
+    };
+
+    ns.closePendingModal = function () {
+        const el = document.getElementById(MODAL_ID);
+        if (el) el.remove();
+        const bell = document.getElementById(BELL_ID);
+        if (bell) {
+            bell.style.pointerEvents = 'auto';
+            bell.style.display = '';
+            if (ns._savedBellState && ns._savedBellState.hadGuideHint) {
+                bell.classList.add('guide-hint');
+            }
+            ns._savedBellState = null;
+        }
+    };
+
+    ns.createBell = function (payload, options = {}) {
+        const autoShake = options && options.autoShake === true;
+        let bell = document.getElementById(BELL_ID);
+        if (!bell) {
+            bell = document.createElement('div');
+            bell.id = BELL_ID;
+            bell.style.cssText = `position:fixed;bottom:30px;right:30px;width:56px;height:56px;background:linear-gradient(135deg, #00b6b1, #006c4b);border-radius:50%;box-shadow:0 4px 15px rgba(0,77,64,0.4);z-index:9990;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s,background 0.3s;pointer-events:auto;`;
+            bell.innerHTML = `<svg width="24" height="24" viewBox="0 0 16 16" fill="white"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg><span style="position:absolute;top:0;right:0;width:14px;height:14px;background:#ef4444;border:2px solid #fff;border-radius:50%;"></span>`;
+            bell.onmouseenter = () => bell.style.transform = 'scale(1.1)';
+            bell.onmouseleave = () => bell.style.transform = 'scale(1)';
+            document.body.appendChild(bell);
+        }
+        bell.onclick = (e) => {
+            e.stopPropagation();
+            ns.openPendingModal(payload);
+        };
+        bell.style.display = '';
+        bell.style.pointerEvents = 'auto';
         if (autoShake) {
             bell.classList.remove('tm-bell-pulse');
             void bell.offsetWidth;
@@ -305,15 +285,12 @@ ns.closePendingModal = function () {
         return true;
     };
 
-    // pulseBell：輕微動畫，用於 modal 完成後的 step（不震動）
     ns.pulseBell = function () {
         const bell = document.getElementById(BELL_ID);
         if (!bell) return false;
         bell.classList.remove('tm-bell-pulse');
-        // force reflow to restart animation
         void bell.offsetWidth;
         bell.classList.add('tm-bell-pulse');
-        // 清除 class 在動畫結束後
         setTimeout(() => bell.classList.remove('tm-bell-pulse'), 750);
         return false;
     };
@@ -323,48 +300,103 @@ ns.closePendingModal = function () {
         if (el) el.remove();
     };
 
-    // 恢復 shake 動作：加入 tm-bell-shaking class，並於結束後移除
     ns.shakeBell = function () {
         const bell = document.getElementById(BELL_ID);
         if (!bell) return false;
-
-        // 避免重複加入動畫：先移除再強制 reflow
         bell.classList.remove('tm-bell-shaking');
         void bell.offsetWidth;
         bell.classList.add('tm-bell-shaking');
-
-        // 保持與原本行為相容（2.5s 後移除）
-        setTimeout(() => {
-            bell.classList.remove('tm-bell-shaking');
-        }, 2500);
-
+        setTimeout(() => { bell.classList.remove('tm-bell-shaking'); }, 2500);
         return false;
     };
 })();
 
-// 新增：在檔案末端（仍在同一 IIFE 內）加入自動初始化與 hash-change 處理
-// 將下列程式碼貼在檔案最後一段的 })(); 之前（或整個 IIFE 內的任意位置，確保在 ns.createBell 宣告之後）
-
-// 自動在允許的頁面建立鈴鐺（避免只有在某些使用者互動下才建立）
-function ensureBellOnAllowedPage() {
+// Helper Functions
+function getGroupIdFromPath() {
     try {
-        if (ns.isAllowedPendingPage()) {
-            // 傳入空 payload 或可從 server / data-attr 取得實際 payload
-            ns.createBell({}, { autoShake: false });
-        }
-    } catch (e) {
-        // 忽略初始化錯誤
-        console.warn('CalendarUI.ensureBellOnAllowedPage error', e);
-    }
+        const parts = (location.pathname || '').split('/').filter(Boolean);
+        const idx = parts.map(p => p.toLowerCase()).indexOf('calendarcheck');
+        if (idx >= 0 && parts.length > idx + 1) return parts[idx + 1];
+    } catch (e) { }
+    return null;
 }
 
-// DOM ready 時嘗試建立鈴鐺（首次載入）
+// ★ 修復：CalendarCheck 頁面要主動抓 ID
+function ensureBellOnAllowedPage() {
+    try {
+        const ns = window.CalendarUI || {};
+        if (!ns.isAllowedPendingPage || !ns.createBell) return;
+
+        if (ns.isAllowedPendingPage()) {
+            const path = (location.pathname || '').toLowerCase();
+            if (path.includes('/match/calendarcheck')) {
+
+                // 1. 嘗試從 URL 抓 GroupId
+                const currentGid = getGroupIdFromPath();
+
+                // 2. 建立鈴鐺時帶入 payload，這樣 openPendingModal 才有資料
+                ns.createBell({ groupId: currentGid }, { autoShake: false });
+
+                // 3. 檢查是否剛匯入回來 (旗標邏輯)
+                if (currentGid) {
+                    const key = 'tm_imported_group_' + currentGid;
+                    try {
+                        if (sessionStorage.getItem(key)) {
+                            sessionStorage.removeItem(key);
+                            if (typeof ns.startPendingSequence === 'function') {
+                                ns.startPendingSequence({ groupId: currentGid });
+                            }
+                        }
+                    } catch (e) { }
+                }
+            } else {
+                ns.createBell({}, { autoShake: false });
+            }
+        }
+    } catch (e) { }
+}
+
 document.addEventListener('DOMContentLoaded', ensureBellOnAllowedPage);
+window.addEventListener('hashchange', () => { setTimeout(ensureBellOnAllowedPage, 50); });
 
-// 當 hash 改變（例如導航至 #calendar_section）也嘗試建立或顯示鈴鐺
-window.addEventListener('hashchange', () => {
-    // 小延遲讓瀏覽器完成滾動/DOM 更新
-    setTimeout(ensureBellOnAllowedPage, 50);
-});
+(function () {
+    'use strict';
 
-// 如果有 AJAX 導航或前端路由，可在那邊呼叫 CalendarUI.createBell(...) 或 CalendarUI.startPendingSequence(...)
+    function dismissHints() {
+        try { localStorage.setItem('tm_hints_dismissed', '1'); } catch (e) { /* ignore */ }
+
+        // 移除頁面上所有 guide 提示樣式
+        document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
+
+        // 移除鈴鐺上的提示（若存在）
+        const bell = document.getElementById('tm-pending-bell');
+        if (bell) bell.classList.remove('guide-hint');
+
+        // 通知其它模組（原有程式可監聽此事件）
+        document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+
+        // 若 CalendarUI 提供關閉 modal 的方法，呼叫它以確保 modal 被關閉
+        try {
+            if (window.CalendarUI && typeof window.CalendarUI.closePendingModal === 'function') {
+                window.CalendarUI.closePendingModal();
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // 支援動態產生的按鈕：使用事件委派
+    document.addEventListener('click', function (ev) {
+        const btn = ev.target && ev.target.closest ? ev.target.closest('#btn-dismiss-hints') : null;
+        if (!btn) return;
+        ev.preventDefault();
+        dismissHints();
+    });
+
+    // 頁面載入時若已關閉過（localStorage），自動移除提示
+    try {
+        if (localStorage.getItem('tm_hints_dismissed') === '1') {
+            document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
+            const bell = document.getElementById('tm-pending-bell');
+            if (bell) bell.classList.remove('guide-hint');
+        }
+    } catch (e) { /* ignore */ }
+})();

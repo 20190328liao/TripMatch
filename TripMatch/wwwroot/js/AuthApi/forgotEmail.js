@@ -108,7 +108,7 @@
         if (step1) step1.classList.add('d-none');
         if (step2) step2.classList.remove('d-none');
 
-        hideForgotEmailLinks();
+        //hideForgotEmailLinks();
 
         try {
             const h3 = step2.querySelector('h3');

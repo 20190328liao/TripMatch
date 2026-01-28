@@ -59,11 +59,10 @@
     position: static;
     left: auto;
     flex: 1 1 auto;
-    padding-left: 45px;
-    border-bottom: 1px dashed rgba(42, 157, 143, 0.3);
+    text-indent: 2.5em;
+    border-bottom: 2px dashed rgba(42, 157, 143, 0.3);
     box-sizing: border-box;
     min-width: 0;
-    margin-bottom: 10px;
 }
 
     .info_value .form-control,
@@ -129,6 +128,7 @@
 .edit_link {
     font-size: 18pt;
     white-space: nowrap;
+    padding-bottom: 20px;
 }
 
 .btn-confirm, .btn-edit, .btn-danger1, .btn-primary2, .btn-outline2, .btn-Login {
@@ -279,7 +279,11 @@ align-content:center;
             padding: 0px;
         }
 }
-
+@media (min-width:992px) {
+    #inputName, #inputBackupEmail {
+        margin-left: 45px;
+    }
+}
 @media (max-width: 991.98px) {
 
 
@@ -319,18 +323,14 @@ align-content:center;
             max-width: 90% !important;
             box-sizing: border-box;
         }*/
-    /*    .info_label svg {
-        width: 24px;
-        height: 24px;
-        margin-right: 10px;
-        fill: var(--tm-teal);
-    }*/
+
    
     .edit_link {
         display: flex;
         margin-left: 0;
         padding-left: 0;
         padding-top: 5px;
+        padding-bottom:20px;
     }
     .info_row {
         font-size: 18pt;
@@ -344,10 +344,10 @@ align-content:center;
         white-space: normal;
         overflow: hidden;
     }
-
-    . .avatar_btns {
-        flex:1 1 auto;
-        display:flex;
+ 
+     .avatar_btns {
+        flex: 1 1 auto;
+        display: flex;
     }
 
 
@@ -384,7 +384,7 @@ align-content:center;
 
 }
 
-@media (max-width:575.98px) {
+@media (max-width:1200px) {
     #importCalendarMessage {
         right: 8px;
         left: 8px;
@@ -396,12 +396,13 @@ align-content:center;
         width: 90%;
     }
 
-        .info_value input,
-        .info_value button, .form-control {
-            min-width: 100%;
-            margin: 0;
-            white-space: nowrap;
-        }
+    .info_value input,
+    .info_value button, .form-control {
+        min-width: 100%;
+        margin: 0;
+        white-space: nowrap;
+        font-size: 16pt;
+    }
     .info_value {
         padding-left: 0 !important; /* 釋放左側空間給輸入框 */
     }
@@ -563,3 +564,89 @@ input[type="password"]::-ms-clear {
     margin-bottom: 10px;
 }
 
+#btnLogout, #btnEditAvatar {
+    font-size: 16pt;
+}
+
+.info_value button {
+    justify-content: center;
+    margin-top: 10px;
+    font-size: 18pt;
+}
+@media  (max-width: 991.98px)  {
+    .info_item {
+        width: 100%;
+    }
+
+    #inputName, #inputBackupEmail, #btnCancelName, #btnSaveName, #btnSaveBackupEmail, #btnCancelBackupEmail {
+        margin-left: 55px;
+    }
+}
+@media (max-width: 800px) {
+    .info_value span {
+        margin-left: 19px;
+    }
+
+}
+
+
+#inputName,
+#inputBackupEmail {
+    box-sizing: border-box;
+    display: block;
+    margin-left: auto;
+    width: clamp(180px, 40%, 420px);
+    max-width: 100%;
+ 
+}
+
+/* margin-left:auto 推到右側，並允許彈性縮放 */
+#btnCancelName,
+#btnSaveName,
+#btnSaveBackupEmail,
+#btnCancelBackupEmail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    box-sizing: border-box;
+    white-space: nowrap;
+    flex: 0 1 auto;
+    min-width: 8rem;
+    max-width: 48%;
+    padding: .45rem .9rem;
+    font-size: 16pt;
+
+}
+#displayBackupEmail {
+    white-space: nowrap;
+}
+.info_item,
+.info_value {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+/* 小螢幕調整：在窄版時讓輸入與按鈕佔滿並改為垂直堆疊（避免擠壓） */
+@media (max-width: 800px) {
+    #inputName,
+    #inputBackupEmail {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    #btnCancelName,
+    #btnSaveName,
+    #btnSaveBackupEmail,
+    #btnCancelBackupEmail {
+        width: 48%;
+        max-width: 48%;
+        margin-left: 0;
+    }
+
+    .info_item,
+    .info_value {
+        flex-wrap: wrap;
+    }
+}

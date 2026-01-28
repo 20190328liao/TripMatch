@@ -60,6 +60,9 @@ namespace TripMatch.Controllers.Api
         [HttpGet("{groupId}/status")]
         public async Task<IActionResult> GetGroupStatus(int groupId)
         {
+            // 嘗試推進 status
+            var currentStatus = await _timeWindowService.TryAdvanceStatusAsync(groupId);
+
             var group = await _context.TravelGroups.FirstOrDefaultAsync(g => g.GroupId == groupId);
             if (group == null) return NotFound(new { message = "找不到該群組" });
 
@@ -83,6 +86,7 @@ namespace TripMatch.Controllers.Api
                 dateStart = group.DateStart,
                 dateEnd = group.DateEnd,
                 travelDays = group.TravelDays,
+                dbstatus = currentStatus,
                 status = isComplete ? "COMPLETED" : "WAITING",
                 isComplete = isComplete,
 
@@ -117,6 +121,8 @@ namespace TripMatch.Controllers.Api
         {
             int userId = User.GetUserId();
             await _timeWindowService.UpsertPreferenceAsync(groupId, userId, request);
+            // 嘗試推進 Status
+            await _timeWindowService.TryAdvanceStatusAsync(groupId);
             return Ok(new { message = "儲存成功", groupId = groupId });
         }
 
@@ -129,7 +135,10 @@ namespace TripMatch.Controllers.Api
 
             // 1. 存檔 (呼叫 Service)
             await _timeWindowService.SaveAvailabilityAsync(groupId, userId, slots);
-
+            
+            // 嘗試推進 status
+            await _timeWindowService.TryAdvanceStatusAsync(groupId);
+            
             // ---------------------------------------------------------
             // ★ 修正邏輯：使用 GroupMembers 計算總人數
             // ---------------------------------------------------------
@@ -240,6 +249,9 @@ namespace TripMatch.Controllers.Api
 
                 // 檢查是否所有人都投完票了 (用來決定前端要不要跳轉)
                 bool isAllMembersVoted = await _timeWindowService.CheckIfAllVotedAsync(groupId);
+
+                // 嘗試推進 status
+                await _timeWindowService.TryAdvanceStatusAsync(groupId);
 
                 return Ok(new
                 {

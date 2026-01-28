@@ -56,7 +56,7 @@
             </div> <!-- ★ 補上這個缺失的 div (結束 forgot_form) -->
         </div> <!-- 結束 step1_content -->
         <div class="backEmailbtn">
-            <a href="@Url.Action("Login", "Auth")" class="forgotEmailDisplay and1">回到登入</a>｜<a href="@Url.Action("ForgotPassword", "Auth")" class="forgotEmailDisplay">忘記密碼</a>
+       
         </div>
        
         <!-- Step 2: 完成 -->
@@ -66,10 +66,12 @@
                 <h3>成功找回帳號：您的帳號是：</h3>
             </div>
     <button type="button" class="btn_next_step mt-3 btn_Gray" id="btnClearAndNew">重新註冊</button>
+          
         </div>
     </div>
-</div>
+    <div class="forgotWrap"><a href="@Url.Action("Login", "Auth")" class="forgotEmailDisplay">回到登入</a>｜<a href="@Url.Action("ForgotPassword", "Auth")" class="forgotEmailDisplay">忘記密碼</a></div>
 
+</div>
 
 @section Scripts {
     <script src="~/js/AuthApi/forgotEmail.js" asp-append-version="true"></script>

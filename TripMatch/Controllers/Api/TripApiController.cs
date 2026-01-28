@@ -97,6 +97,40 @@ namespace TripMatch.Controllers.Api
             }
         }
 
+        [HttpGet("groups/{groupId:int}/invite-code")]
+        public async Task<IActionResult> GroupInviteCode(int groupId)
+        {
+            var userId = _tagUserId.UserId.Value;
+            if(userId <= 0) return Unauthorized();
+
+            try
+            {
+                var code = await _tripServices.GetGroupInviteCodeAsync(userId, groupId);
+                return Ok(new { inviteCode = code });
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        [HttpPost("groups/{groupId}/cancel")]
+        public async Task<IActionResult> CancelGroup(int groupId)
+        {
+            var userId = _tagUserId.UserId.Value;
+
+            try
+            {
+                await _tripServices.CancelGroupAsync(groupId, userId);
+                return Ok(new { ok = true });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ok = false, message = ex.Message });
+            }
+        }
+
+
         #endregion
 
         #region 建立行程

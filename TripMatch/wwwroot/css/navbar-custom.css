@@ -39,7 +39,7 @@ nav.navbar {
 
 /* 展開時的樣式：置頂、白底、陰影、可捲動 */
     .navbar-collapse.collapse.show {
-        height: 27rem !important;
+        height: 32rem !important;
         position: absolute !important;
         top: 100% !important; /* 緊貼 navbar 底部 */
         left: 0 !important;
@@ -377,7 +377,6 @@ nav.navbar .dropdown-menu {
       right: auto !important;
       left: auto !important;
       width: auto !important;
-      height: 18rem !important;
       background: transparent !important;
       padding: 0 !important;
       overflow-y:hidden;
@@ -546,7 +545,6 @@ nav.navbar .dropdown-menu {
         position: absolute !important;
         top: var(--nav-height) !important;
         right: 0px !important;
-        height:18rem;
         padding-left: 10rem !important;
         width: 100%;
         background: #fff !important;
@@ -576,7 +574,6 @@ nav.navbar .dropdown-menu {
 /* 調整：統一 .navbar-collapse.show 的白色選單尺寸與捲動行為
    放在檔案末端以覆蓋先前規則 */
 .navbar-collapse.show {
-    height: 18rem;
     font-size: 18px !important;
 }
 

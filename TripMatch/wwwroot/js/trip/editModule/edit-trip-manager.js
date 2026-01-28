@@ -1,67 +1,106 @@
 ﻿import { TripApi } from './api/trip-api.js';
-import { ItineraryNavigator } from './components/itinerary-navigator.js';
 import { AddFlightModal } from './components/add-flight-modal.js';
 import { FlightRenderer } from './components/flight-renderer.js';
 import { RestaurantRenderer } from './components/restaurant-renderer.js';
 import { savePlaceToDatabase, showPlaceByGoogleId, renderPlaceOnMap } from './edit-map-manager.js';
-import { RecommendationModal } from './components/recommendation-modal.js';
+import { RecommendationPanel } from './components/recommendation-panel.js';
 import { SignalRManager } from './signalr-manager.js';
 
 
 const currentTripId = document.getElementById('current-trip-id').value;
 let DateStrings = [];
-let itineraryNavigator;
-let recModal;
+let recPanel;
 let addFlightModal;
 let flightRenderer;
 let restaurantRenderer;
+let directionsService;
+let directionsRenderer;
+
+// 全域切換 Tab 函式 (為了讓 HTML onclick 呼叫)
+window.switchTab = function (mode) {
+    // 1. 更新按鈕 UI
+    $('.seg-item').removeClass('active');
+    $(`#tab-${mode}`).addClass('active');
+
+    // 2. 【核心修改】切換內容區：移除舊的 active，加上新的 active
+    // CSS 會處理 display: flex 和 position: absolute
+    $('.itinerary-content').removeClass('tab-content-active');
+    $(`#${mode}-tab-content`).addClass('tab-content-active');
+
+    // 3. 數據載入邏輯 (探索與收藏)
+    if (mode === 'explore' || mode === 'favorites') {
+        const center = window.currentMapInstance ? window.currentMapInstance.getCenter() : { lat: 25, lng: 121 };
+        const geo = { 
+            lat: typeof center.lat === 'function' ? center.lat() : center.lat, 
+            lng: typeof center.lng === 'function' ? center.lng() : center.lng 
+        };
+        
+        if (recPanel) {
+            recPanel.load(`${mode}-tab-content`, geo, mode);
+        }
+    }
+};
 
 
 
-
-
-
+// edit-trip-manager.js
 
 export function initEditPage(mapInstance, tripSimpleInfo) {
-    //將 map 實體暫存到 window 或模組變數，供點擊列表時使用
     window.currentMapInstance = mapInstance;
-    DateStrings = tripSimpleInfo.dateStrings || [];   
+    DateStrings = tripSimpleInfo.dateStrings || [];
 
+    // 1. 初始化各個組件
+    recPanel = new RecommendationPanel(DateStrings);
+    addFlightModal = new AddFlightModal();
+    flightRenderer = new FlightRenderer('flight-wrapper');
+    restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
 
-    recModal = new RecommendationModal(DateStrings); 
+    // 2. 【核心修復】改用事件委派 (Event Delegation)
+    // 我們把監聽器掛在 '#place-list' 這個永遠不會消失的容器上
+    const $placeList = $('#place-list');
 
-    itineraryNavigator = new ItineraryNavigator(
-        'itinerary-nav-container',
-        'place-list',
-        handleAddDay
-    );  
+    // A. 處理行程卡片點擊 (顯示地圖)
+    $placeList.on('click', '.itinerary-item', function (e) {
+        // 如果點到的是按鈕或下拉選單，就不觸發地圖跳轉
+        if ($(e.target).closest('button, a, .dropdown').length) return;
 
-    // [新增] 監聽導覽列發出的事件
-    const navContainer = document.getElementById('itinerary-nav-container');
-
-    navContainer.addEventListener('explore-click', () => {
-        recModal.open(tripSimpleInfo.tripRegions[0], 'explore');
+        const spotId = $(this).data('spot-id');
+        if (spotId && window.showPlaceByGoogleId) {
+            window.showPlaceByGoogleId(spotId);
+        }
     });
 
-    navContainer.addEventListener('favorites-click', () => {
-        // 假設有全域變數 currentUserId，或從 hidden input 抓
-        // const userId = document.getElementById('current-user-id').value;
-        recModal.open(tripSimpleInfo.tripRegions[0], 'favorites');
+    // B. 處理刪除按鈕 (請確認你的 renderItinerary 產出的 HTML 有這個 class)
+    $placeList.on('click', '.btn-delete-item', function (e) {
+        e.stopPropagation();
+        const itemId = $(this).data('id');
+        // 呼叫你原本寫在裡面的刪除邏輯
+        if (confirm('確定要刪除嗎？')) {
+            handleDeleteItem(itemId);
+        }
     });
 
+    // C. 處理時間編輯按鈕
+    $placeList.on('click', '.btn-edit-time', function (e) {
+        e.stopPropagation();
+        const itemId = $(this).data('id');
+        openTimeEditModal(itemId); // 開啟時間編輯的 Modal
+    });
+
+    // 3. 其他原本就有的監聽邏輯
     document.body.addEventListener('add-spot-to-trip', (e) => {
-        const { placeId, spotId, dayNum } = e.detail;
-        console.log(`準備加入行程: PlaceID=${placeId}, Day=${dayNum}`);
-
+        const { placeId, dayNum } = e.detail;
         handleAddSpotFromModal(placeId, dayNum);
     });
 
-
-    addFlightModal = new AddFlightModal();
-    flightRenderer = new FlightRenderer('flight-wrapper'); 
-    restaurantRenderer = new RestaurantRenderer('restaurant-wrapper');
-    initTimeEditModal();
     initHotelEditModal();
+
+    initTimeEditModal();
+
+    // 初始化下拉選單
+    initNavDropdown(DateStrings);
+
+    // 最後載入數據
     loadTripData();
 }
 export function refreshItineraryList() {
@@ -94,6 +133,106 @@ export function flashItineraryElement(id) {
             setTimeout(() => $item.css('background-color', ''), 2000);
         }
     }
+}
+
+// 【新增】初始化導覽列下拉選單
+/**
+ * 初始化導覽下拉選單與跳轉功能
+ */
+function initNavDropdown(dates) {
+    const list = document.getElementById('day-jump-list');
+    const label = document.getElementById('current-day-label');
+    if (!list) return;
+
+    let html = '';
+
+    // 1. 先加三個固定分區
+    html += `
+        <li>
+            <a class="dropdown-item nav-jump-item" href="javascript:void(0)" data-target="#flight-wrapper">
+                <i class="bi bi-airplane me-2"></i> 航班
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item nav-jump-item" href="javascript:void(0)" data-target="#accommodation-wrapper">
+                <i class="bi bi-building me-2"></i> 住宿
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item nav-jump-item" href="javascript:void(0)" data-target="#restaurant-wrapper">
+                <i class="bi bi-cup-straw me-2"></i> 餐廳
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+    `;
+
+    // 2. 加各天的跳轉
+    dates.forEach((date, index) => {
+        const dayNum = index + 1;
+        const dateStr = new Date(date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+        html += `
+            <li>
+                <a class="dropdown-item day-jump-item" href="javascript:void(0)" data-day="${dayNum}">
+                    <span class="fw-bold me-2">Day ${dayNum}</span>
+                    <span class="text-muted small">${dateStr}</span>
+                </a>
+            </li>
+        `;
+    });
+
+    html += `<li><hr class="dropdown-divider"></li>`;
+    html += `<li><a class="dropdown-item text-primary" href="javascript:void(0)" id="btn-add-day-nav-inner"><i class="bi bi-plus-circle me-1"></i>新增天數</a></li>`;
+
+    list.innerHTML = html;
+
+    // 分區跳轉
+    $(list).find('.nav-jump-item').on('click', function () {
+        // 切回 itinerary 分頁
+        window.switchTab('itinerary');
+        // 用id找目標
+        const targetSel = $(this).data('target');
+        setTimeout(() => {
+            const sec = document.querySelector(targetSel);
+            const scrollContainer = document.getElementById('itinerary-tab-content');
+            if (sec && scrollContainer) {
+                // 讓目標元素頂到容器頂部
+                scrollContainer.scrollTo({
+                    top: sec.offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+    });
+
+    // 各天跳轉
+    $(list).find('.day-jump-item').on('click', function () {
+        const day = $(this).data('day');
+        //if (label) label.textContent = `Day ${day}`;
+
+        window.switchTab('itinerary');
+        setTimeout(() => {
+            const targetDayElement = document.getElementById(`day-${day}`);
+            const scrollContainer = document.getElementById('itinerary-tab-content');
+
+            if (targetDayElement && scrollContainer) {
+                const topPos = targetDayElement.offsetTop;
+
+                scrollContainer.scrollTo({
+                    top: topPos,
+                    behavior: 'smooth'
+                });
+            } else {
+                console.warn(`[定位失敗] 找不到 Day ${day} 元素或捲動容器`);
+            }
+        }, 100);
+    });
+
+    // 新增天數
+    $('#btn-add-day-nav-inner').on('click', function () {
+        if (typeof handleAddDay === 'function') {
+            handleAddDay();
+        }
+    });
 }
 
 function handleAddSpotFromModal(googlePlaceId, dayNum) {
@@ -135,6 +274,7 @@ function handleAddSpotFromModal(googlePlaceId, dayNum) {
                         // 1. 顯示成功提示 (Toast)
                         // 2. 重新整理列表
                         loadTripData();
+                        SignalRManager.broadcast(currentTripId, "新增景點", 0); 
                         alert(`已成功加入 Day ${dayNum}！`);
                     },
                     error: function () {
@@ -301,15 +441,13 @@ function initHotelAutocomplete(inputElement) {
 
 // 載入行程資料
 function loadTripData() {
-
-    // 取得行程列表容器
     const listContainer = $('#place-list');
 
-    // 顯示載入中，提示使用者程式正在運作    
+    // 顯示 Loading
     listContainer.html(`
         <div class="text-center p-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2 text-muted">正在載入行程...</p>
+            <p class="mt-2 text-muted small">同步行程中...</p>
         </div>
     `);
 
@@ -317,23 +455,25 @@ function loadTripData() {
         url: `/api/TripApi/detail/${currentTripId}`,
         type: 'GET',
         success: function (data) {
-            console.log("行程詳細資料:", data);
-            const items = data.itineraryItems || [];
             DateStrings = data.tripInfo.dateStrings || [];
+            const items = data.itineraryItems || [];
             const accommodations = data.accomadations || [];
-            const flights = data.flights || []; 
+            const flights = data.flights || [];
 
-            TripApi.getDetail(currentTripId).then(data => {
+            // 1. 渲染 HTML (這裡會銷毀舊 DOM)
+            renderItinerary(items, DateStrings, accommodations, flights);
 
-                console.log("行程詳細資料:", data);
+            // 2. 更新導覽列 Dropdown (確保 Day 1, Day 2... 與資料同步)
+            initNavDropdown(DateStrings);
 
-                renderItinerary(items, DateStrings, accommodations, flights);
-            });
-        
+            // 3. 更新探索面板的天數 (確保加入行程時日期正確)
+            if (recPanel) recPanel.updateDays(DateStrings);
+
+            // 4. 如果有使用 Tooltips，需在此重新初始化
+            // reinitTooltips();
         },
         error: function (xhr) {
-            console.error("載入失敗", xhr);
-            listContainer.html('<div class="text-danger text-center p-4">載入行程失敗，請重新整理。</div>');
+            listContainer.html('<div class="text-danger text-center p-4">資料載入失敗</div>');
         }
     });
 }
@@ -706,15 +846,49 @@ function renderItinerary(items, dates, accommodations, flights) {
                 `;
 
                 itemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+
+
+
+
+                //// 【新增】如果不是最後一個景點，插入「路線資訊區塊」
+                //if (index < dayItems.length - 1) {
+                //    const nextItem = dayItems[index + 1];
+
+                //    // 取得起點與終點座標或 ID
+                //    const originId = item.profile?.placeId;
+                //    const destId = nextItem.profile?.placeId;
+                //    const originLat = item.profile?.lat;
+                //    const originLng = item.profile?.lng;
+                //    const destLat = nextItem.profile?.lat;
+                //    const destLng = nextItem.profile?.lng;
+                //    const routeHtml = `
+                //        <div class="route-info-block my-3 mx-4 p-3 shadow-sm border rounded-3" 
+                //             style="cursor: pointer; transition: transform 0.2s; background: #ffffff;"
+                //             data-origin-id="${originId}"
+                //             data-dest-id="${destId}"
+                //             data-origin-lat="${originLat}"
+                //             data-dest-lat="${destLat}"
+                //             data-origin-lng="${originLng}"
+                //             data-dest-lng="${destLng}">
+                //            <div class="d-flex align-items-center gap-2">
+                //                <div class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></div>
+                //                <span class="small text-secondary">點擊獲取最佳交通建議...</span>
+                //            </div>
+                //        </div>
+                //    `;
+                //    itemsContainer.insertAdjacentHTML('beforeend', routeHtml);
+                //}
+
+
+
+
             });
         }
 
         container.appendChild(daySection);
   
     });
-
-    itineraryNavigator.updateDays(dates);
-    recModal.updateDays(dates);
+    recPanel.updateDays(dates);
     bindItemEvents();
 }
 
@@ -854,6 +1028,17 @@ function bindItemEvents() {
             input.value = '';
             btnWrapper.classList.remove('d-none');
             inputWrapper.classList.add('d-none');
+        });
+    });
+
+    document.querySelectorAll('.route-info-block').forEach(block => {
+        block.addEventListener('click', function () {
+            const data = this.dataset;
+            const origin = data.originId ? { placeId: data.originId } : { lat: parseFloat(data.originLat), lng: parseFloat(data.originLng) };
+            const destination = data.destId ? { placeId: data.destId } : { lat: parseFloat(data.destLat), lng: parseFloat(data.destLng) };
+
+            // 傳入 this (即點擊的那個區塊)
+            calculateAndDisplayRoute(origin, destination, this);
         });
     });
 }
@@ -1125,3 +1310,86 @@ async function deleteTripDay(dayNum) {
 
 // 為了讓 HTML onclick 能點到，需掛載到 window (或在 bindEvents 綁定)
 window.deleteTripDay = deleteTripDay;
+
+
+/**
+ * 計算並顯示路線，同時更新 UI 區塊資訊
+ * @param {Object} origin - 起點資訊 { placeId: '...', lat: ..., lng: ... }
+ * @param {Object} destination - 終點資訊 { placeId: '...', lat: ..., lng: ... }
+ * @param {HTMLElement} displayElement - 要顯示資訊的 HTML 容器元件
+ */
+function calculateAndDisplayRoute(origin, destination, displayElement) {
+    if (!window.currentMapInstance) return;
+
+    // 1. 確保服務已初始化
+    if (!window.directionsService) {
+        window.directionsService = new google.maps.DirectionsService();
+    }
+    if (!window.directionsRenderer) {
+        window.directionsRenderer = new google.maps.DirectionsRenderer({
+            map: window.currentMapInstance,
+            suppressMarkers: false, // 是否隱藏 A/B 標記，若想自訂標記可設為 true
+            polylineOptions: {
+                strokeColor: "blue", // 薄荷綠/翡翠綠
+                strokeWeight: 6,
+                strokeOpacity: 0.7
+            }
+        });
+    }
+
+    // 2. 準備要求參數
+    const request = {
+        origin: origin.placeId ? { placeId: origin.placeId } : { lat: parseFloat(origin.lat), lng: parseFloat(origin.lng) },
+        destination: destination.placeId ? { placeId: destination.placeId } : { lat: parseFloat(destination.lat), lng: parseFloat(destination.lng) },
+        travelMode: google.maps.TravelMode.DRIVING // 預設最佳建議 (開車)
+    };
+
+    // 3. 呼叫 Google Directions Service
+    window.directionsService.route(request, (response, status) => {
+        if (status === "OK") {
+            // 在地圖上畫出線條
+            window.directionsRenderer.setDirections(response);
+
+            const leg = response.routes[0].legs[0];
+
+            // --- 關鍵：正確組裝 Google Maps 外部連結 ---
+            // 使用官方規格 https://www.google.com/maps/dir/?api=1
+            const baseUrl = "https://www.google.com/maps/dir/?api=1";
+            const originParam = origin.placeId ? `&origin=unused&origin_place_id=${origin.placeId}` : `&origin=${origin.lat},${origin.lng}`;
+            const destParam = destination.placeId ? `&destination=unused&destination_place_id=${destination.placeId}` : `&destination=${destination.lat},${destination.lng}`;
+            const googleMapsUrl = `${baseUrl}${originParam}${destParam}&travelmode=driving`;
+
+            // 4. 更新 UI 內容
+            if (displayElement) {
+                displayElement.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between w-100 animate__animated animate__fadeIn">
+                        <div class="d-flex align-items-center">
+                            <div class="route-icon-circle me-3">
+                                <i class="bi bi-cursor-fill"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 0.9rem;">最佳路線建議</div>
+                                <div class="text-secondary" style="font-size: 0.8rem;">
+                                    預估 ${leg.duration.text} (${leg.distance.text})
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" 
+                           class="btn btn-sm shadow-sm rounded-pill px-3 google-map-link-btn"
+                           onclick="event.stopPropagation();">
+                            <i class="bi bi-geo-alt-fill me-1"></i>查看詳情
+                        </a>
+                    </div>
+                `;
+
+                // 套用薄荷綠動態樣式
+                displayElement.classList.add('route-active');
+            }
+        } else {
+            console.error("無法取得路線: " + status);
+            if (displayElement) {
+                displayElement.innerHTML = `<span class="text-danger small"><i class="bi bi-exclamation-triangle"></i> 無法計算路線</span>`;
+            }
+        }
+    });
+}

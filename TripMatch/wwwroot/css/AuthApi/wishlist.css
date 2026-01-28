@@ -67,7 +67,7 @@
             #wishlist_cards_wrapper #wishlist_cards .col {
                 display: flex;
                 box-sizing: border-box;
-                min-width: 350px !important;
+                min-width: 320px !important;
             }
 
     /* --- 桌面版分類選單佈局 --- */

@@ -263,6 +263,7 @@ namespace TripMatch.Models.DTOs
         public string Status { get; set; } = "";
         public string? CoverImageUrl { get; set; }
         public string DetailsUrl { get; set; } = "#";
+        public string Role { get; set; } = "member";
     }
 
 }

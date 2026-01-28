@@ -158,6 +158,18 @@
         let selectedRanges = [];
         let pollingInterval;
 
+        // --- 互動狀態變數 ---
+        // 1. 一般框選/點選
+        let isMouseDown = false;
+        let isDragging = false;
+        let dragAnchorDate = null;
+        let clickStartNode = null;
+
+        // 2. 調整邊界 (Resize)
+        let isResizing = false;
+        let resizingRange = null;    // 正在被調整的原始範圍
+        let resizeAnchor = null;     // 調整時「固定不動」的那一端日期
+
         function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
 
         function goToMemberCenter() {
@@ -165,37 +177,23 @@
             window.location.href = '/Auth/MemberCenter#calendar_section';
         }
 
-        // 修正：確實隱藏 Modal，包含清除 inline style
         function dismissCalendarModal() {
             sessionStorage.removeItem('calendar_check_pending');
             const modal = document.getElementById('calendarModal');
             if (modal) {
                 modal.classList.remove('active');
-                modal.style.display = 'none'; // 強制隱藏，覆蓋可能存在的 display:flex
+                modal.style.display = 'none';
             }
         }
 
-        // --- ★ 修改：引導提示 (改為固定選第一個可用位置) ---
-        function initGuideHints() {
-            document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
-            const availableCells = Array.from(document.querySelectorAll('.day-cell:not(.empty):not(.locked)'));
-
-            if (availableCells.length > 0) {
-                const target = availableCells[0];
-                target.classList.add('guide-highlight');
-                const removeHint = () => {
-                    target.classList.remove('guide-highlight');
-                    target.removeEventListener('mousedown', removeHint);
-                    target.removeEventListener('mouseenter', removeHint);
-                };
-                target.addEventListener('mousedown', removeHint);
-                target.addEventListener('mouseenter', removeHint);
+        // --- 全域渲染更新 ---
+        function forceRender() {
+            if (window._tripmatch_calendar_instance && window._tripmatch_calendar_instance.render) {
+                window._tripmatch_calendar_instance.render();
+            } else {
+                renderList();
             }
         }
-
-        document.addEventListener('calendarui:dismissHints', () => {
-            document.querySelectorAll('.guide-highlight').forEach(el => el.classList.remove('guide-highlight'));
-        });
 
         // --- 渲染清單 ---
         function renderList() {
@@ -223,18 +221,30 @@
                             ${r.days} 天 (${isEnough ? '符合需求' : '天數不足'})
                         </small>
                     </div>
-                    <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onclick="window.removeRange('${r.start}')">✕</button>
+                    <button class="btn btn-sm btn-light text-danger border-0 rounded-circle" style="width:30px;height:30px;" onmousedown="window.removeRange('${r.start}', event)">✕</button>
                 </div>`;
             }).join('');
             if($count) $count.textContent = selectedRanges.filter(r => r.valid).length;
         }
 
-        window.removeRange = function(startIso) {
+        // --- 刪除功能 ---
+        window.removeRange = function(startIso, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
             const idx = selectedRanges.findIndex(r => r.start === startIso);
             if(idx >= 0) {
                 selectedRanges.splice(idx, 1);
-                if(window._tripmatch_calendar_instance?.render) window._tripmatch_calendar_instance.render();
-                else renderList();
+                // 重置所有狀態
+                clickStartNode = null;
+                isMouseDown = false;
+                isDragging = false;
+                dragAnchorDate = null;
+                isResizing = false;
+                resizingRange = null;
+
+                forceRender();
             }
         };
 
@@ -242,8 +252,17 @@
         async function submitSlots() {
             if (!hasValidGroupId()) { alert('無效的揪團 ID'); return; }
             const validRanges = selectedRanges.filter(r => r.valid);
-            if (validRanges.length === 0) { alert("沒有符合天數要求的時段！"); return; }
-            if (!confirm(`提交 ${validRanges.length} 個時段？`)) return;
+            const invalidCount = selectedRanges.length - validRanges.length;
+
+            if (validRanges.length === 0) {
+                alert("您目前沒有符合行程天數 (" + targetDays + "天) 的時段。\n請調整您的選擇。");
+                return;
+            }
+
+            let msg = `即將提交 ${validRanges.length} 個有效時段。`;
+            if (invalidCount > 0) msg += `\n(另有 ${invalidCount} 個時段因天數不足將被忽略)`;
+
+            if (!confirm(msg)) return;
 
             const slots = validRanges.map(r => ({ startAt: r.start + "T00:00:00", endAt: r.end + "T23:59:59" }));
             const btn = document.getElementById('btnSubmit');
@@ -292,43 +311,352 @@
             let currentMonth = new Date().getMonth();
             let groupStart = null, groupEnd = null;
             let myLeaveDates = new Set();
-            let pendingStartDate = null;
             const todayIso = new Date().toISOString().split('T')[0];
-
-            let isDragging = false;
-            let anchorDate = null;
 
             window._tripmatch_calendar_instance = {
                 render: function() { renderMonth(); renderList(); },
                 importRanges: function(ranges) {
-                    if (!Array.isArray(ranges)) return;
+                    if (!Array.isArray(ranges) || ranges.length === 0) return;
+
+                    // 匯入防呆：詢問覆蓋
+                    if (selectedRanges.length > 0) {
+                        const choice = confirm("偵測到您已有選擇的時段。\n\n按「確定」：清空現有選擇，只保留匯入資料。\n按「取消」：保留現有選擇，並加入匯入資料。");
+                        if (choice) {
+                            selectedRanges = [];
+                        }
+                    }
+
                     ranges.forEach(r => {
                         let s = (r.startAt || r.start).slice(0, 10);
                         let e = (r.endAt || r.end).slice(0, 10);
                         if (groupStart && s < groupStart) s = groupStart;
                         if (groupEnd && e > groupEnd) e = groupEnd;
                         if (s > e) return;
-                        if (checkOverlap(s, e)) return;
+
+                        if (checkOverlap(s, e)) return; // 略過重疊
 
                         const dayCount = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
                         selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
                     });
+
                     renderMonth();
                     renderList();
+                    activateDashedGuide();
                 }
             };
 
+            function activateDashedGuide() {
+                const daysContainer = document.querySelector('.days');
+                if (daysContainer) {
+                    daysContainer.classList.add('guide-active');
+                    const removeGuide = () => {
+                        daysContainer.classList.remove('guide-active');
+                        document.removeEventListener('mousedown', removeGuide);
+                    };
+                    setTimeout(() => { document.addEventListener('mousedown', removeGuide); }, 200);
+                }
+            }
+
             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
             await loadMyExistingSlots();
-            loadImportedDraft();
 
-            document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
+            // ★ 修復：延遲載入匯入資料，確保變數初始化完成
+            setTimeout(loadImportedDraft, 100);
+
             document.addEventListener('mouseup', handleGlobalMouseUp);
+            document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
 
             buildMonthPanel();
             renderMonth();
             bindCalendarEvents();
 
+            // --- 滑鼠事件邏輯 (Resize + Drag + Click) ---
+
+            // 1. MouseDown
+            function handleMouseDown(iso, existingRange, type) {
+                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
+
+                // A. 調整模式 (點擊了 Start 或 End)
+                if (existingRange && (type === 'start' || type === 'end' || type === 'single')) {
+                    isResizing = true;
+                    resizingRange = existingRange;
+
+                    // 設定錨點 (固定不動的那一端)
+                    // 如果點 Start，錨點就是 End；如果點 End，錨點就是 Start
+                    // 如果是 Single，點哪裡都可以拉，這裡預設當作 Start 點擊，錨點設為 Start (變成拉 End)
+                    // 或根據滑鼠拖曳方向決定。為簡化，Single 視為點 Start，錨點=Start，允許拉出 End。
+
+                    if (type === 'start') {
+                        resizeAnchor = existingRange.end;
+                    } else if (type === 'end') {
+                        resizeAnchor = existingRange.start;
+                    } else { // single
+                        resizeAnchor = existingRange.start;
+                    }
+
+                    // 暫時移除該範圍，以顯示預覽
+                    const idx = selectedRanges.indexOf(existingRange);
+                    if (idx > -1) selectedRanges.splice(idx, 1);
+
+                    renderMonth();
+                    drawPreview(resizeAnchor, iso); // 立即繪製
+                }
+                // B. 新增模式 (點擊空白處)
+                else {
+                    isMouseDown = true;
+                    isDragging = false;
+                    dragAnchorDate = iso;
+                }
+            }
+
+            // 2. MouseOver
+            function handleMouseOver(hoverIso) {
+                clearPreview();
+
+                // A. 調整中 (Resize)
+                if (isResizing && resizeAnchor) {
+                    drawPreview(resizeAnchor, hoverIso);
+                    return;
+                }
+
+                // B. 框選中 (Drag)
+                if (isMouseDown) {
+                    isDragging = true;
+                    clickStartNode = null; // 取消點擊模式
+                    drawPreview(dragAnchorDate, hoverIso);
+                    return;
+                }
+
+                // C. 點擊模式 (Click)
+                if (!isMouseDown && !isResizing && clickStartNode) {
+                    drawPreview(clickStartNode, hoverIso);
+                }
+            }
+
+            // 輔助：繪製預覽
+            function drawPreview(start, end) {
+                if (start > end) { const t = start; start = end; end = t; }
+
+                const dayCount = calculateDays(start, end);
+                const isOverlap = checkOverlap(start, end);
+                const hasLocked = checkRangeHasLocked(start, end);
+
+                let previewClass = 'preview-valid';
+                if (isOverlap || hasLocked) previewClass = 'preview-invalid';
+                else if (dayCount < targetDays) previewClass = 'selecting';
+
+                document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
+                    const iso = cell.dataset.iso;
+                    if (iso >= start && iso <= end) {
+                        cell.classList.add(previewClass);
+                        if (iso === start) cell.classList.add('preview-start');
+                        if (iso === end) cell.classList.add('preview-end');
+                    }
+                });
+            }
+
+            // 3. MouseUp
+            function handleGlobalMouseUp(e) {
+                if (e.target.classList.contains('delete-btn')) return;
+
+                // A. 調整結束 (Resize Finish)
+                if (isResizing) {
+                    const cell = e.target.closest('.day-cell');
+                    if (cell && !cell.classList.contains('empty')) {
+                        const iso = cell.dataset.iso;
+                        commitRange(resizeAnchor, iso, true); // true=失敗時還原
+                    } else {
+                        // 放開在無效區 -> 還原
+                        commitRange(resizingRange.start, resizingRange.end);
+                    }
+                    isResizing = false;
+                    resizingRange = null;
+                    resizeAnchor = null;
+                    return;
+                }
+
+                // B. 拖曳結束 (Drag Finish)
+                if (isDragging) {
+                    commitSelectionFromPreview();
+                    isMouseDown = false;
+                    isDragging = false;
+                    dragAnchorDate = null;
+                    return;
+                }
+
+                // C. 點擊 (Click)
+                const cell = e.target.closest('.day-cell');
+                if (cell && !cell.classList.contains('empty') && !cell.classList.contains('locked') && isMouseDown) {
+                    const iso = cell.dataset.iso;
+
+                    // 如果點到空白處
+                    if (clickStartNode === null) {
+                        clickStartNode = iso;
+                        renderMonth();
+                    } else {
+                        drawPreview(clickStartNode, iso);
+                        commitSelectionFromPreview();
+                        clickStartNode = null;
+                    }
+                }
+
+                isMouseDown = false;
+                dragAnchorDate = null;
+            }
+
+            function commitSelectionFromPreview() {
+                const startCell = document.querySelector('.day-cell.preview-start');
+                const endCell = document.querySelector('.day-cell.preview-end');
+                if (startCell && endCell) {
+                    commitRange(startCell.dataset.iso, endCell.dataset.iso);
+                } else {
+                    clearPreview();
+                    forceRender();
+                }
+            }
+
+            function commitRange(s, e, isRestoreOnFail = false) {
+                // 排序日期
+                if (s > e) { const t = s; s = e; e = t; }
+
+                // 檢查重疊
+                if (checkOverlap(s, e)) {
+                    alert("位置重疊！");
+                    if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
+                    clearPreview();
+                    forceRender();
+                    return;
+                }
+                // 檢查鎖定
+                if (checkRangeHasLocked(s, e)) {
+                    alert("包含不可選日期！");
+                    if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
+                    clearPreview();
+                    forceRender();
+                    return;
+                }
+
+                const dayCount = calculateDays(s, e);
+                selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
+                clearPreview();
+                forceRender();
+            }
+
+            function clearPreview() {
+                document.querySelectorAll('.day-cell').forEach(cell => {
+                    cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end', 'selecting');
+                });
+            }
+
+            function isLocked(iso) {
+                if (!groupStart || !groupEnd) return true;
+                return iso < groupStart || iso > groupEnd;
+            }
+            // 檢查重疊 (確保不與 selectedRanges 中任何一個重疊)
+            function checkOverlap(start, end) {
+                return selectedRanges.some(r => (start <= r.end) && (end >= r.start));
+            }
+            function calculateDays(start, end) { return Math.round((new Date(end) - new Date(start)) / 86400000) + 1; }
+            function checkRangeHasLocked(start, end) {
+                let curr = new Date(start); const last = new Date(end);
+                while(curr <= last) {
+                    const z = curr.getTimezoneOffset() * 60 * 1000;
+                    const iso = new Date(curr - z).toISOString().split('T')[0];
+                    if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
+                }
+                return false;
+            }
+            function getDateRangeStatus(iso) {
+                for (let range of selectedRanges) {
+                    if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid, range: range };
+                    if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid, range: range };
+                    if (iso === range.start) return { type: 'start', isValid: range.valid, range: range };
+                    if (iso === range.end) return { type: 'end', isValid: range.valid, range: range };
+                }
+                return null;
+            }
+
+            // --- 渲染月曆 ---
+            function renderMonth() {
+                const $days = document.querySelector('.days');
+                const $monthDisplay = document.querySelector('.month-display');
+                const $yearDisplay = document.querySelector('.year-display');
+                if (!$days) return;
+
+                const firstDay = new Date(currentYear, currentMonth, 1);
+                if($monthDisplay) $monthDisplay.textContent = firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
+                if($yearDisplay) $yearDisplay.textContent = currentYear;
+                $days.innerHTML = '';
+
+                const startDay = (firstDay.getDay() + 6) % 7;
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+                for(let i=0; i<startDay; i++) { $days.innerHTML += `<div class="day-cell empty"></div>`; }
+
+                for(let d=1; d<=daysInMonth; d++) {
+                    const date = new Date(currentYear, currentMonth, d);
+                    const z = date.getTimezoneOffset() * 60 * 1000;
+                    const iso = new Date(date - z).toISOString().split('T')[0];
+
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    cell.innerHTML = `<span class="day-label">${d}</span>`;
+                    cell.dataset.iso = iso;
+
+                    if (isLocked(iso)) cell.classList.add('locked');
+                    else {
+                        if (iso === todayIso) cell.classList.add('today');
+                        if (myLeaveDates.has(iso)) cell.classList.add('has-leave');
+
+                        const status = getDateRangeStatus(iso);
+                        if (status) {
+                            cell.classList.add(status.isValid ? 'status-valid' : 'status-invalid');
+                            if (status.type === 'start') cell.classList.add('range-start');
+                            if (status.type === 'end') cell.classList.add('range-end');
+                            if (status.type === 'mid') cell.classList.add('range-mid');
+                            if (status.type === 'single') cell.classList.add('status-single');
+
+                            // 刪除按鈕
+                            if (status.type === 'start' || status.type === 'end' || status.type === 'single') {
+                                const delBtn = document.createElement('span');
+                                delBtn.className = 'delete-btn';
+                                delBtn.innerHTML = '✕';
+                                delBtn.title = '刪除';
+                                delBtn.onmousedown = (e) => window.removeRange(status.range.start, e);
+                                cell.appendChild(delBtn);
+                            }
+                        }
+
+                        if (clickStartNode === iso) {
+                            cell.classList.add('preview-start', 'preview-valid');
+                        }
+
+                        cell.onmousedown = (e) => {
+                            if (e.target.classList.contains('delete-btn')) return;
+                            e.preventDefault();
+
+                            // 判斷是否點擊了已存在範圍的 Start 或 End -> 啟動 Resize
+                            if (status) {
+                                handleMouseDown(iso, status.range, status.type);
+                            } else {
+                                handleMouseDown(iso, null, null);
+                            }
+                        };
+                        cell.onmousemove = (e) => {
+                            // 判斷是否為「拖曳中」
+                            if (isMouseDown && !isResizing && !isDragging) {
+                                isDragging = true;
+                                clickStartNode = null;
+                            }
+                            handleMouseOver(iso);
+                        };
+                    }
+                    $days.appendChild(cell);
+                }
+                renderList();
+            }
+
+            // ... (後端載入函式保持不變) ...
             async function loadGroupInfo() {
                 const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
                 if(res.ok) {
@@ -365,147 +693,6 @@
                     if (draft.groupId == currentGroupId && Array.isArray(draft.ranges)) window._tripmatch_calendar_instance.importRanges(draft.ranges);
                 }
             }
-
-            function handleMouseDown(iso, existingRange) {
-                document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
-                isDragging = true;
-                if (existingRange) {
-                    const idx = selectedRanges.indexOf(existingRange);
-                    if (idx > -1) selectedRanges.splice(idx, 1);
-                    if (iso === existingRange.start) anchorDate = existingRange.end;
-                    else if (iso === existingRange.end) anchorDate = existingRange.start;
-                    else anchorDate = iso;
-                } else {
-                    anchorDate = iso;
-                }
-                renderMonth();
-                handleMouseOver(iso);
-            }
-
-            function handleMouseOver(hoverIso) {
-                if (!isDragging || !anchorDate) return;
-                clearPreview();
-                const start = anchorDate < hoverIso ? anchorDate : hoverIso;
-                const end = anchorDate < hoverIso ? hoverIso : anchorDate;
-                const dayCount = calculateDays(start, end);
-                const isOverlap = checkOverlap(start, end);
-                const hasLocked = checkRangeHasLocked(start, end);
-                const isValid = (dayCount >= targetDays) && !isOverlap && !hasLocked;
-                const previewClass = isValid ? 'preview-valid' : 'preview-invalid';
-                document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
-                    const iso = cell.dataset.iso;
-                    if (iso >= start && iso <= end) {
-                        cell.classList.add(previewClass);
-                        if (iso === start) cell.classList.add('preview-start');
-                        if (iso === end) cell.classList.add('preview-end');
-                    }
-                });
-            }
-
-            function handleGlobalMouseUp() {
-                if (!isDragging) return;
-                isDragging = false;
-                const startCell = document.querySelector('.day-cell.preview-start');
-                const endCell = document.querySelector('.day-cell.preview-end');
-                if (startCell && endCell) {
-                    const s = startCell.dataset.iso;
-                    const e = endCell.dataset.iso;
-                    if (!checkOverlap(s, e) && !checkRangeHasLocked(s, e)) {
-                        const dayCount = calculateDays(s, e);
-                        selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
-                    }
-                }
-                anchorDate = null;
-                clearPreview();
-                renderMonth();
-            }
-
-            function clearPreview() {
-                document.querySelectorAll('.day-cell').forEach(cell => {
-                    cell.classList.remove('preview-valid', 'preview-invalid', 'preview-start', 'preview-end');
-                });
-            }
-
-            function isLocked(iso) {
-                if (!groupStart || !groupEnd) return true;
-                return iso < groupStart || iso > groupEnd;
-            }
-            function checkOverlap(start, end) {
-                return selectedRanges.some(r => !(end < r.start || start > r.end));
-            }
-            function calculateDays(start, end) { return Math.round((new Date(end) - new Date(start)) / 86400000) + 1; }
-            function checkRangeHasLocked(start, end) {
-                let curr = new Date(start); const last = new Date(end);
-                while(curr <= last) {
-                    const z = curr.getTimezoneOffset() * 60 * 1000;
-                    const iso = new Date(curr - z).toISOString().split('T')[0];
-                    if(isLocked(iso)) return true; curr.setDate(curr.getDate() + 1);
-                }
-                return false;
-            }
-            function getDateRangeStatus(iso) {
-                for (let range of selectedRanges) {
-                    if (iso === range.start && iso === range.end) return { type: 'single', isValid: range.valid, range: range };
-                    if (iso > range.start && iso < range.end) return { type: 'mid', isValid: range.valid, range: range };
-                    if (iso === range.start) return { type: 'start', isValid: range.valid, range: range };
-                    if (iso === range.end) return { type: 'end', isValid: range.valid, range: range };
-                }
-                return null;
-            }
-
-            function renderMonth() {
-                const $days = document.querySelector('.days');
-                const $monthDisplay = document.querySelector('.month-display');
-                const $yearDisplay = document.querySelector('.year-display');
-                if (!$days) return;
-
-                const firstDay = new Date(currentYear, currentMonth, 1);
-                if($monthDisplay) $monthDisplay.textContent = firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
-                if($yearDisplay) $yearDisplay.textContent = currentYear;
-                $days.innerHTML = '';
-
-                const startDay = (firstDay.getDay() + 6) % 7;
-                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-                for(let i=0; i<startDay; i++) { $days.innerHTML += `<div class="day-cell empty"></div>`; }
-
-                for(let d=1; d<=daysInMonth; d++) {
-                    const date = new Date(currentYear, currentMonth, d);
-                    const z = date.getTimezoneOffset() * 60 * 1000;
-                    const iso = new Date(date - z).toISOString().split('T')[0];
-                    const cell = document.createElement('div');
-                    cell.className = 'day-cell';
-                    cell.textContent = d;
-                    cell.dataset.iso = iso;
-
-                    if (isLocked(iso)) cell.classList.add('locked');
-                    else {
-                        if (iso === todayIso) cell.classList.add('today');
-                        if (myLeaveDates.has(iso)) cell.classList.add('has-leave');
-
-                        const status = getDateRangeStatus(iso);
-                        if (status) {
-                            cell.classList.add(status.isValid ? 'status-valid' : 'status-invalid');
-                            if (status.type === 'start') cell.classList.add('range-start');
-                            if (status.type === 'end') cell.classList.add('range-end');
-                            if (status.type === 'mid') cell.classList.add('range-mid');
-
-                            const dot = document.createElement('div');
-                            dot.className = 'dot';
-                            cell.appendChild(dot);
-                        }
-
-                        cell.onmousedown = (e) => {
-                            e.preventDefault();
-                            handleMouseDown(iso, status ? status.range : null);
-                        };
-                        cell.onmouseenter = () => handleMouseOver(iso);
-                    }
-                    $days.appendChild(cell);
-                }
-                renderList();
-            }
-
             function buildMonthPanel() {
                 const $grid = document.querySelector('.months-grid');
                 const $yearDisplay = document.querySelector('.year-display');
@@ -537,16 +724,13 @@
             }
         }
 
-        // --- 6. 頁面入口 ---
         document.addEventListener("DOMContentLoaded", async function() {
             const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
             const shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
 
-            // 綁定事件：避免 HTML onclick 找不到函式
             const importBtn = document.getElementById('btnImportFromCheck');
             if (importBtn) importBtn.addEventListener('click', goToMemberCenter);
 
-            // ★ 修改：手動綁定「先跳過」按鈕，確保事件正確觸發
             const closeBtn = document.getElementById('closeModal');
             if (closeBtn) {
                 closeBtn.addEventListener('click', dismissCalendarModal);
@@ -582,7 +766,6 @@
             } else {
                 if (typeof initCalendar === 'function') {
                     await initCalendar();
-                    setTimeout(initGuideHints, 600);
                 }
             }
         });

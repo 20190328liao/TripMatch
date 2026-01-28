@@ -78,7 +78,7 @@
 
     <!-- 把 status 用 server-side 初始值渲染 -->
     <span class="status-indicator" id="loginStatus">
-        @(User?.Identity?.IsAuthenticated == true ? "歡迎您，" + Html.Encode(displayName) + " 用戶" : "未登入")
+        @(User?.Identity?.IsAuthenticated == true ? "歡迎您，" + Html.Encode(displayName) : "未登入")
     </span>
     <h1 class="hero-title">輕鬆規劃您的旅遊行程</h1>
 
@@ -244,8 +244,22 @@
     </div>
 </section>
 <div class="goSpot">
-<div class="mascotWrap">
-    <canvas id="mascotCanvas" width="1015" height="400"></canvas>
+    <div class="mascotWrap">
+        <div id="spotBubble" class="spot-bubble" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 100;">
+            <a id="bubbleLink" href="#">
+                隨機景點探索🔎
+            </a>
+        </div>
+
+        <div class="mascot-container">
+            <canvas id="mascotCanvas"></canvas>
+        </div>
+    </div>
+        <div id="plane-trigger" class="plane-section">
+            <div id="airplane" class="airplane">
+                <img src="~/img/fly.png" alt="flying plane" style="width: 140px; height: auto;" />
+            </div>
+        </div>
 </div>
     </div>
 @* <div class="container text-center">

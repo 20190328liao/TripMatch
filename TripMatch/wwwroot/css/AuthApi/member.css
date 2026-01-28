@@ -10,14 +10,17 @@
     border: none;
     cursor: pointer;
 }
+
     .edit_link:hover {
         text-decoration: underline;
     }
+
 .bi-person, .bi-gear, .bi-envelope {
     margin-right: 8px;
     width: 25px;
     height: 25px;
 }
+
 #displayName, #displayBackupEmail {
     width: 50%;
 }
@@ -31,62 +34,77 @@ MemberCenter.cshtml
 .memberTitle {
     color: #000;
     font-weight: 700;
-    margin: 2rem 0 1.5rem 0;
-    z-index:10;
+    margin: 3.2rem 0 1.5rem 0;
+    z-index: 10;
 }
-#calendar_section .memberTitle::before {
-/*    top: 2%;*/
-bottom:2%;
+#calendar_section::after {
+    top: 0%;
 }
-.memberTitle::before {
+#calendar_section::before {
+    top: 1%;
+    /*    bottom: 2%;*/
+}
+
+/*.memberTitle::before {
     content: "";
     position: absolute;
-    opacity:50%;
+    opacity: 50%;
     left: 0%;
     bottom: 5%;
     transform: translateY(-50%);
     width: 90%;
-    height: 10px;
-/*    border: 8px dashed #e3f7f2;*/
-    background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
+    height: 10px;*/
+    /*    border: 8px dashed #e3f7f2;*/
+    /*background: linear-gradient(90deg, #89ead270 0%, #ffffffb4 100%);
     border-radius: 2px;
     animation-name: abc;
     animation-duration: 2s;
     animation-iteration-count: 1;
     animation-fill-mode: forwards;
     z-index: -1;
+}*/
+.member_section::after {
+    content: "";
+    position: absolute;
+    left: 0%;
+    top: 0%;
+    height: 20px;
+    width:35px;
+    background-color:aquamarine;
 }
-/*    .memberTitle::before {
-        content: "";
-        position: absolute;
-        left: 10%;
-        top: 12%;
-        transform: translateY(-50%);
-        width: 30%;
-        height: 2px;
-        background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
-        border-radius: 2px;
-        animation: abc ease-in-out 3s infinite;
-    }*/
+.member_section::before {
+    content: "";
+    position: absolute;
+    left: 2%;
+    top: 2%;
+    transform: translateY(-50%);
+    width: 30%;
+    height: 2px;
+    background: linear-gradient(125deg, #a8d9d3a6 80%, #ffffff00 100%);
+    border-radius: 2px;
+    animation: abc ease-in-out 3s infinite;
+}
 
-    @keyframes abc {
-        0%, 100% {
-            width: 5%;
-        }
-        50% {
-            width: 100%;
-        }
-        100% {
-            width: 100%;
-        }
+@keyframes abc {
+    0%, 100% {
+        width: 5%;
     }
 
-    .current-title {
-        position: relative;
-        padding-left: 22px;
-        margin-bottom: 0;
-        border-left: none;
+    50% {
+        width: 100%;
     }
+
+    100% {
+        width: 100%;
+    }
+}
+
+.current-title {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 0;
+    border-left: none;
+}
 
     .current-title::before {
         content: "";
@@ -126,11 +144,7 @@ bottom:2%;
     width: 100%;
 }
 
-.legend-hint {
-    font-size: 18pt;
-    margin-left: 15px;
-    margin-bottom: 15px;
-}
+
 
 .logoContent {
     font-weight: normal;
@@ -199,6 +213,7 @@ bottom:2%;
     background-color: var(--color_Gray, #C0C0C0);
     color: white;
 }
+
 .step_item.step_incomplete .step_label {
     color: var(--color_DarkGray, #464646);
 }
@@ -208,6 +223,7 @@ bottom:2%;
     background-color: var(--color_Light, #62DEB1);
     color: white;
 }
+
 .step_item.step_completed .step_label {
     color: var(--color_Dark, #00968A);
 }
@@ -218,6 +234,7 @@ bottom:2%;
     color: white;
     box-shadow: 0 0 12px rgba(237, 95, 0, 0.3);
 }
+
 .step_item.step_active .step_label {
     color: var(--color_font, #000);
     font-weight: 700;
@@ -234,10 +251,10 @@ bottom:2%;
     position: relative;
     z-index: 50;
     cursor: pointer;
-/*    animation: guide-pulse 2s infinite;*/
+    /*    animation: guide-pulse 2s infinite;*/
 }
 
-/*@keyframes guide-pulse {
+    /*@keyframes guide-pulse {
     0% {
         box-shadow: 0 0 0 0 rgba(0, 150, 81, 0.4);
     }
@@ -251,39 +268,39 @@ bottom:2%;
     }
 }*/
 
-/* 2. 定義通用浮窗 (Tooltip) 外觀 - 黑底白字 */
-.guide-hint::after {
-    /* content 由下方的個別設定決定 */
-    position: absolute;
-    bottom: 125%; /* 顯示在按鈕上方 */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #222; /* 黑底 */
-    color: #fff; /* 白字 */
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 16px;
-    white-space: nowrap;
-    pointer-events: none; /* 讓滑鼠可以穿透浮窗點擊按鈕 */
-    opacity: 0;
-    animation: tooltip-fade-in 0.3s forwards;
-    z-index: 100;
-}
+    /* 2. 定義通用浮窗 (Tooltip) 外觀 - 黑底白字 */
+    .guide-hint::after {
+        /* content 由下方的個別設定決定 */
+        position: absolute;
+        bottom: 125%; /* 顯示在按鈕上方 */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #222; /* 黑底 */
+        color: #fff; /* 白字 */
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 16px;
+        white-space: nowrap;
+        pointer-events: none; /* 讓滑鼠可以穿透浮窗點擊按鈕 */
+        opacity: 0;
+        animation: tooltip-fade-in 0.3s forwards;
+        z-index: 100;
+    }
 
-/* 浮窗下方的小三角形 */
-.guide-hint::before {
-    content: "";
-    position: absolute;
-    bottom: 115%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 6px;
-    border-style: solid;
-    border-color: #222 transparent transparent transparent;  同黑底色 
-    opacity: 0;
-    animation: tooltip-fade-in 0.3s forwards;
-    z-index: 100;
-}
+    /* 浮窗下方的小三角形 */
+    .guide-hint::before {
+        content: "";
+        position: absolute;
+        bottom: 115%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 6px;
+        border-style: solid;
+        border-color: #222 transparent transparent transparent;
+        opacity: 0;
+        animation: tooltip-fade-in 0.3s forwards;
+        z-index: 100;
+    }
 
 @keyframes tooltip-fade-in {
     to {
@@ -309,10 +326,10 @@ bottom:2%;
     top: 130%; /* 放在箭頭下方 */
     left: 50%; /* 水平置中 */
     transform: translateX(-50%);
-    background: black; 
-    align-content:center;
+    background: black;
+    align-content: center;
     padding: 10px 8px 18px;
-/*    border-radius: 4px;*/
+    /*    border-radius: 4px;*/
     font-size: 16px;
     color: #333;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -343,13 +360,14 @@ bottom:2%;
 .day-cell.guide-hint::after {
     content: "點擊此處選擇";
 }
+
 #tm-pending-bell.guide-hint::after {
     content: "Step 4: 點擊鈴鐺匯入行事曆";
     left: auto;
-    right: 125%; 
-    bottom: auto; 
-    top: 50%; 
-    transform: translateY(-50%); 
+    right: 125%;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
     width: max-content;
 }
 
@@ -374,26 +392,31 @@ bottom:2%;
    用於：會員中心、行事曆確認流程
    ========================================================================== */
 
+
 #tm-pending-bell {
     position: relative;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-#tm-pending-bell:hover {
-    transform: translateY(-4px) scale(1.05);
-}
+    #tm-pending-bell:hover {
+        transform: translateY(-4px) scale(1.05);
+    }
 
-#tm-pending-bell .badge-notify {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: var(--color_Contrast, #ED5F00);
-    color: white;
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 10pt;
-}
+    #tm-pending-bell .badge-notify {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: var(--color_Contrast, #ED5F00);
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 10pt;
+    }
 
 
 /* ==========================================================================
@@ -418,19 +441,26 @@ bottom:2%;
     animation: fadeInUp 0.4s ease;
 }
 
-.undo-toast button {
-    background: var(--color_Light, #62DEB1);
-    border: none;
-    color: #000;
-    padding: 2px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
+    .undo-toast button {
+        background: var(--color_Light, #62DEB1);
+        border: none;
+        color: #000;
+        padding: 2px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translate(-50%, 30px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
+    from {
+        opacity: 0;
+        transform: translate(-50%, 30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 /* 狀態標籤 */
@@ -469,30 +499,17 @@ bottom:2%;
     text-align: right;
 }
 
-/* 手機版：讓「修改密碼｜重設帳戶」在同一行並置中 */
-.info_item2 {
-    /* 預設行為不強制改變桌機顯示 */
-}
 
-.mobile-inline-links {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    white-space: nowrap; /* 不換行，確保在窄螢幕仍維持一行 */
-}
 
-.mobile-inline-links .info_label {
-    display: inline-block; /* 確保為行內區塊，避免被預設 block 推到下一行 */
-    padding: 0;
-}
 
-    /* 手機版：info_label 內 svg 在上方、文字在下方（只在小於 768px 時生效） */
+
+/* 手機版：info_label 內 svg 在上方、文字在下方（只在小於 768px 時生效） */
 @media (max-width: 798px) {
     .info_label svg {
-    display:inline-flex;
-    flex:3;
-    width:40px;
-    height:40px;
+        display: inline-flex;
+        flex: 3;
+        width: 40px;
+        height: 40px;
     }
 }
 
@@ -505,8 +522,8 @@ bottom:2%;
 /* 1. 切換按鈕樣式 (懸浮於左上角) */
 .btn-style-toggle {
     position: absolute;
-    top: 22vh;
-    left: 28vh;
+    top: 25%;
+    left: 65%;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 50%;
@@ -544,13 +561,13 @@ bottom:2%;
         padding: 4px;
         margin: 0 auto 20px auto;
     }
+
 .memberAvatar {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: border-radius 0.5s ease;
 }
-
 /* 3. 風格 A: 圓形 (Circle Style) */
 .avatar_frame.circle-style {
     border-radius: 50%;
@@ -562,7 +579,6 @@ bottom:2%;
     .avatar_frame.circle-style .memberAvatar {
         border-radius: 50%;
     }
-
 /* 4. 風格 B: 拍立得 (Polaroid Style) */
 .avatar_frame.polaroid-style {
     width: 150px;
@@ -579,7 +595,6 @@ bottom:2%;
         border-radius: 0; /* 圖片變方形 */
         border: 1px solid #eee; /* 圖片細邊框 */
     }
-
     /* 拍立得模式下，可以加一個迴紋針或膠帶效果 (選用) */
     .avatar_frame.polaroid-style::before {
         content: '';
@@ -595,3 +610,37 @@ bottom:2%;
         display: none; /* 預設隱藏，若想要膠帶效果可移除此行 */
     }
 
+.mobile-inline-links {
+    /*    display: inline-flex;*/
+    /*    align-items: center;
+    justify-content: center;*/
+    text-align: center;
+    white-space: nowrap;
+    width: 50%;
+}
+
+    .mobile-inline-links .info_label {
+        display: inline-block;
+        padding: 0;
+    }
+
+@media (max-width: 991.98px) {
+    .btn-style-toggle {
+        position: absolute;
+        top: 10%;
+        left: 60%;
+    }
+
+    .mobile-inline-links {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        white-space: nowrap; /* 不換行，確保在窄螢幕仍維持一行 */
+        width: 100%;
+    }
+
+        .mobile-inline-links .info_label {
+            display: inline-block; /* 確保為行內區塊，避免被預設 block 推到下一行 */
+            padding: 0;
+        }
+}

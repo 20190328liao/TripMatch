@@ -35,8 +35,9 @@
     padding-bottom: 24px;
 }
 /* 浮島式主要容器 */
-.member_section {
-    background: linear-gradient(to bottom, rgba(98, 222, 177, 0.15) 0%, #ffffff 80px, #ffffff 100%);
+/*.member_section {*/
+    /*    background: linear-gradient(to bottom, rgba(98, 222, 177, 0.15) 0%, #ffffff 80px, #ffffff 100%);*/
+    /*background-color: white;
     border-radius: var(--radius-card);
     padding: 30px 60px 43px 60px;
     margin-top: 40px;
@@ -44,7 +45,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
     position: relative;
     z-index: 0;
-}
+}*/
 
 .member_center_wrap {
     max-width: var(--mc-max-width);
@@ -62,7 +63,7 @@
     flex-wrap: wrap; /* 允許子項在需要時換行 */
     align-items: center;
     gap: 0.5rem;
-    padding-left: 45px; /* 保留原本左內距 */
+    text-indent: 2em;
     min-width: 0; /* 防止 flex 項撐破父容器 */
     white-space: normal !important; /* 允許文字換行（覆寫先前的 nowrap） */
     word-break: break-word;
@@ -80,12 +81,10 @@
     justify-content: left;
     align-items: center;
     /*    border: 1px solid rgb(188, 204, 219, 0.57);*/
-    height: 80vh;
     line-height: 1.65;
 }
 
 .profile_info_section {
-    height: 80vh;
     line-height: 1.65;
 }
     @media (min-width: 992px) {
@@ -114,7 +113,6 @@
         max-width: 400px;
         border-radius: 18px;
         padding: 25px;
-        background: #fff;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -144,7 +142,7 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 0.5rem;
-            padding-left: 45px;
+            text-indent: 2em;
             min-width: 0;
             width: 100%;
             white-space: normal !important;
@@ -161,6 +159,9 @@
                 box-sizing: border-box;
             }
 }
+
+
+
 
 @media (max-width: 991.98px) {
     .avatar_frame img {
@@ -182,12 +183,14 @@
     .member-page .profile_container .info_row {
         padding-left: 30px;
     }
-
+    .profile_avatar_section {
+        height: 18rem;
+    }
     .profile_avatar_section, .profile_info_section {
         width: 100%;
         max-width: none;
         min-width: 0;
-        max-height: 26rem;
+
         border-radius: 12px;
         box-sizing: border-box;
         align-content: center;
@@ -195,11 +198,11 @@
         margin-bottom: 30px;
     }
 
-    .profile_info_section {
-        white-space: normal;
-        font-size: 14pt;
-/*        height: 100%;*/
-    }
+        .profile_info_section {
+            white-space: normal;
+            font-size: 14pt;
+            /*        height: 100%;*/
+        }
 
     #profile_section .row {
         display: flex;
@@ -209,7 +212,6 @@
         width: 100%;
         margin: 0;
     }
-
 
 
     #profile_section [class*="col-"] {
@@ -236,14 +238,14 @@
 
 
 .member_section {
-    background: var(--folder-card);
+    background: white;
     border-radius: 0 0 10px 10px;
     box-shadow: 5px 5px 15px rgba(163,177,198, 0.6), -5px -5px 15px rgba(255,255,255, 0.5); /* 輕擬物陰影 */
     margin-top: 40px;
     padding: 2rem;
     position: relative;
     border-top: 5px solid var(--folder-tab);
-    overflow:
+    overflow:hidden;
     box-shadow: 0 10px 40px rgba(0,0,0,0.08);
     border: none;
 }
@@ -284,27 +286,32 @@
 }
 
 
-/* --- 檔案夾標籤 --- */
-.folder-tab {
-    position: absolute;
-    top: -40px; /* 往上突出 */
-    left: 0;
-    background: var(--folder-tab);
-    color: var(--folder-text);
-    padding: 10px 25px;
-    border-radius: 10px 10px 0 0;
-    font-weight: bold;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-}
 
-    .folder-tab::after {
-        /* 標籤右側的斜角裝飾 */
-        content: '';
-        position: absolute;
-        right: -20px;
-        bottom: 0;
-        border-bottom: 40px solid var(--folder-tab);
-        border-right: 20px solid transparent;
+.frame {
+    width: 100%;
+    height: 20px;
+    color: var(--color_Dark);
+}
+.mobile-inline-links {
+    margin-bottom: 30px;
+}
+    .mobile-inline-links .info_label {
+        display: flex;
+        flex-basis: auto;
     }
+.mobile-inline-links span {
+    gap: 70px;
+}
+#profile_section, #calendar_section, #wishlist_section {
+    max-height: 100%;
+    border-top: 10px solid var(--theme-teal-500);
+}
+.folder-tab::after {
+    /* 標籤右側的斜角裝飾 */
+    content: '';
+    position: absolute;
+    right: -20px;
+    bottom: 0;
+    border-bottom: 40px solid var(--folder-tab);
+    border-right: 20px solid transparent;
+}

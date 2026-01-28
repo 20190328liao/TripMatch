@@ -132,100 +132,114 @@ function joinTrip() {
 function createTrip() {
     window.location.href = '/Match/Create';
 }
-
-
 /* ==========================================
-   吉祥物 Canvas 動畫邏輯 (5組動作 + 尺寸修正版)
+   1. 吉祥物 Canvas 動畫函數定義 (9格動作 + 原地置中 + 隨機泡泡)
    ========================================== */
 function initMascotAnimation() {
     const canvas = document.getElementById('mascotCanvas');
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
 
-    // 設定互動游標
-    canvas.style.cursor = 'pointer';
-
     const spriteSheet = new Image();
-    // ★ 請確認您的新圖片檔名與路徑
     spriteSheet.src = "/img/animate.png";
 
     // === 參數設定 ===
-    const cols = 5;            // 總共有 5 個動作
-    const rows = 1;            // 直向 1 列
-    const totalFrames = 5;     // 總幀數
-
-    // ★ 精準裁切設定 (解決 1015mm vs 1000mm 的誤差)
-    // 如果圖片右邊有多餘留白，設為 true；如果圖片是剛好切分，設為 false
-    const usePreciseWidth = true;
-    const logicalWidthRatio = 200 / 1015; // 單格 200mm / 總寬 1015mm
-
-    // 動畫顯示設定
-    const animationSpeed = 15; // 速度 (數字越大越慢)
-    const maxDisplayHeight = 250;
+    const cols = 9;            // 總寬 1800 / 每格 200 = 9 格
+    const totalFrames = 9;
+    const animationSpeed = 30;
+    const maxDisplayHeight = 350; // 設定高度為 350
 
     let spriteWidth = 0;
     let spriteHeight = 0;
     let currentFrame = 0;
     let frameDrawn = 0;
     let isPaused = false;
-    let animationId; // 用於管理 requestAnimationFrame
+    let firstRoundCompleted = false; // 追蹤第一輪是否完成
 
-    // 點擊切換 暫停/播放
-    canvas.addEventListener('click', function () {
+    // 隨機景點清單 (Place ID)
+    const verifiedPlaceIds = [
+        "ChIJ_TooXM3gAGARQR6hXH3QAQ8", // 大阪城
+        "ChIJdePJiBvnAGAR3Brg9OzvKO0", // 
+        "ChIJpehwXdLgAGARwNLCvUGv5aY", // 
+        "ChIJTdPOeOPmAGAR_63Ex_WTubw"  //隨機大阪景點
+    ];
+
+    function showSpotBubble() {
+        const bubble = document.getElementById('spotBubble');
+        const link = document.getElementById('bubbleLink');
+
+        if (bubble && link) {
+            try {
+                // 隨機挑選 ID
+                const randomIndex = Math.floor(Math.random() * verifiedPlaceIds.length);
+                const randomId = verifiedPlaceIds[randomIndex];
+
+                // 修正點：請檢查您的 Controller 名稱。如果是 SpotController，路徑應為 /Spot/Details 或 /Spot
+                // 如果您的路由設定是直接導向單一頁面，請確認 Action 名稱
+                link.href = `${window.location.origin}/Spot?placeId=${randomId}`;
+
+                bubble.style.display = 'block';
+            } catch (error) {
+                // 保底方案：若出錯則導向景點首頁
+                link.href = `${window.location.origin}/Spot/Index`;
+                bubble.style.display = 'block';
+            }
+        }
+    }
+
+    // 點擊暫停功能
+    canvas.addEventListener('click', (e) => {
+        e.stopPropagation();
         isPaused = !isPaused;
     });
 
     spriteSheet.onload = function () {
-        // 計算單格尺寸
-        if (usePreciseWidth) {
-            // 使用比例計算：總寬 * (200/1015)
-            spriteWidth = spriteSheet.width * logicalWidthRatio;
-        } else {
-            // 標準均分計算
-            spriteWidth = spriteSheet.width / cols;
-        }
-
-        spriteHeight = spriteSheet.height / rows;
+        spriteWidth = spriteSheet.width / cols;
+        spriteHeight = spriteSheet.height;
+        resizeCanvas();
         animate();
     };
 
-    spriteSheet.onerror = function () {
-        console.error("找不到圖片，請確認路徑：/img/animate.png");
-    };
+    // 同步畫布解析度
+    function resizeCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
 
     function animate() {
-        // 清除畫布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 計算當前幀 (0 ~ 4 循環)
+        // 檢查是否跑完一輪：當 currentFrame 達到總幀數
+        if (!firstRoundCompleted && currentFrame >= totalFrames) {
+            firstRoundCompleted = true;
+            showSpotBubble();
+        }
+
         let position = currentFrame % totalFrames;
-
-        // 計算裁切 X 座標
-        // 這裡確保每次都精準移動一個 spriteWidth 的距離
         let srcX = position * spriteWidth;
-        let srcY = 0;
 
-        // === 縮放與置中邏輯 ===
-        // 計算縮放比例 (維持原圖比例)
-        const scaleRatio = maxDisplayHeight / spriteHeight;
+        // --- 比例與置中計算 ---
+        let targetHeight = maxDisplayHeight;
+        if (canvas.height < targetHeight) {
+            targetHeight = canvas.height;
+        }
 
-        const displayWidth = spriteWidth * scaleRatio;
-        const displayHeight = maxDisplayHeight;
+        const scaleRatio = targetHeight / spriteHeight;
+        const finalWidth = spriteWidth * scaleRatio;
+        const finalHeight = targetHeight;
 
-        // 計算置中座標 (在 1600 寬度的 Canvas 中置中)
-        const dx = (canvas.width - displayWidth) / 2;
-        const dy = (canvas.height - displayHeight) / 2;
+        // 水平置中
+        const dx = (canvas.width - finalWidth) / 2;
+        // 垂直靠底
+        const dy = canvas.height - finalHeight;
 
-        // 繪製圖片
-        // drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight)
         ctx.drawImage(
             spriteSheet,
-            srcX, srcY, spriteWidth, spriteHeight,
-            dx, dy, displayWidth, displayHeight
+            srcX, 0, spriteWidth, spriteHeight,
+            dx, dy, finalWidth, finalHeight
         );
 
-        // 更新下一幀
         if (!isPaused) {
             frameDrawn++;
             if (frameDrawn >= animationSpeed) {
@@ -233,12 +247,42 @@ function initMascotAnimation() {
                 frameDrawn = 0;
             }
         }
-
-        animationId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
     }
 }
-
-// 執行初始化
+/* ==========================================
+   2. 主程式初始化 (合併執行)
+   ========================================== */
 document.addEventListener("DOMContentLoaded", function () {
+
+    // --- 執行 A: 吉祥物動畫 ---
     initMascotAnimation();
+
+    // --- 執行 B: 飛機卷軸動畫 (這就是您原本被移除的部分) ---
+    const plane = document.getElementById('airplane');
+    const trigger = document.getElementById('plane-trigger');
+
+    if (plane && trigger) {
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.5 // 當區塊出現一半時觸發
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // 進入視窗：起飛
+                    plane.classList.add('take-off');
+                } else {
+                    // 離開視窗：重置 (下次捲動會再飛一次)
+                    // 如果只想要飛一次，可以把下面這行註解掉
+                    plane.classList.remove('take-off');
+                }
+            });
+        }, observerOptions);
+
+        observer.observe(trigger);
+    }
 });
+

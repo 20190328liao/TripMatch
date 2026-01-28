@@ -12,9 +12,14 @@ const tripId = document.getElementById('current-trip-id').value; // 取得行程
 // 2. 統一在內容載入後執行
 document.addEventListener("DOMContentLoaded", async function () {
 
-    // 【最優先步驟】啟動通訊中心
-    // 這裡定義收到訊息後的行為：跳通知 -> 刷新 -> 閃爍
-    SignalRManager.init(tripId, async (data) => {
+    const wrapper = document.querySelector('.itinerary-wrapper');
+    const displayName = wrapper ? wrapper.getAttribute('data-display-name') : "成員";
+
+    console.log("原生 JS 抓取測試:", displayName);
+
+    // 如果還是抓不到，印出整個 wrapper 看看
+    console.log("Wrapper 元素本人:", wrapper);
+    SignalRManager.init(tripId, displayName, async (data) => {
         showSimpleToast(data.message); // 跳通知
 
         // 呼叫 manager 的功能來同步畫面
