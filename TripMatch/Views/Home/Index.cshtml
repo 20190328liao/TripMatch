@@ -78,7 +78,7 @@
 
     <!-- 把 status 用 server-side 初始值渲染 -->
     <span class="status-indicator" id="loginStatus">
-        @(User?.Identity?.IsAuthenticated == true ? "歡迎您，" + Html.Encode(displayName) + " 用戶" : "未登入")
+        @(User?.Identity?.IsAuthenticated == true ? "歡迎您，" + Html.Encode(displayName) : "未登入")
     </span>
     <h1 class="hero-title">輕鬆規劃您的旅遊行程</h1>
 
