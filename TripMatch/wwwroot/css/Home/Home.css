@@ -772,12 +772,6 @@ body {
 
 
 
-.goSpot {
-    position: relative;
-    overflow: hidden;
-    z-index: 1;
-    min-height: 300px;
-}
 
 
     .goSpot::before {
@@ -880,27 +874,43 @@ margin-left: 8px;
 }
 
 /* 飛機動畫：飛向高空 */
-@keyframes flyUpRight {
+/* S 型波浪飛行軌跡 */
+@keyframes flyWave {
     0% {
         left: -150px;
-        bottom: 20px;
+        bottom: 50px;
         opacity: 0;
-        transform: rotate(-15deg) scale(0.8);
+        /* 剛開始機頭向上爬升 */
+        transform: rotate(-25deg) scale(0.8);
     }
 
-    15% {
+    10% {
         opacity: 1;
-        transform: rotate(-15deg) scale(1);
     }
-
+    /* 第一個波峰：飛高 */
+    30% {
+        bottom: 350px;
+        transform: rotate(-20deg) scale(0.9);
+    }
+    /* 波谷：稍微往下降，機頭放平 */
+    50% {
+        bottom: 250px;
+        transform: rotate(0deg) scale(1);
+    }
+    /* 第二個波峰：再拉高 */
+    70% {
+        bottom: 550px;
+        transform: rotate(-25deg) scale(1.05);
+    }
+    /* 結尾：衝向右上 */
     100% {
         left: 120%;
-        bottom: 700px; /* 飛出容器外 */
+        bottom: 900px;
         opacity: 1;
-        transform: rotate(-10deg) scale(1.1);
+        transform: rotate(-15deg) scale(1.1);
     }
 }
 
 .airplane.take-off {
-    animation: flyUpRight 3.5s ease-in-out 1s forwards;
+    animation: flyWave 12s ease-in-out 1s forwards;
 }

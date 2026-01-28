@@ -147,7 +147,7 @@ function initMascotAnimation() {
     // 總寬 1800 / 每格 200 = 9 格
     const cols = 9;
     const totalFrames = 9;
-    const animationSpeed = 12;
+    const animationSpeed = 30;
 
     // ★ 設定高度為 350
     const maxDisplayHeight = 350;
