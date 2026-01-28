@@ -161,7 +161,7 @@ function initMascotAnimation() {
         "ChIJ_TooXM3gAGARQR6hXH3QAQ8", // 大阪城
         "ChIJdePJiBvnAGAR3Brg9OzvKO0", // 
         "ChIJpehwXdLgAGARwNLCvUGv5aY", // 
-        "ChIJTdPOeOPmAGAR_63Ex_WTubw"  //
+        "ChIJTdPOeOPmAGAR_63Ex_WTubw"  //隨機大阪景點
     ];
 
     function showSpotBubble() {

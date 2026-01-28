@@ -716,23 +716,34 @@ if (document.readyState === 'loading') {
                     photoJson: JSON.stringify({ photoUrl: place.photoUrl || null })
                 };
 
+                // ★ 修正點：加入 headers 設定
                 const res = await fetch('/api/spot/wishlist', {
                     method: 'POST',
                     credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json', // 關鍵修正：加入這行
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     toast(`已將「${place.name || ''}」加入願望清單`);
-                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch {}
+                    // 手動同步 Spot.js 的狀態集合 (若存在)
+                    if (window.wishlistPlaceIdSet && externalId) {
+                        window.wishlistPlaceIdSet.add(externalId);
+                    }
+                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch { }
                     return;
                 }
 
                 if (res.status === 409) {
-                    // 重複
+                    // 重複時視為成功，但也需同步狀態
                     toast('重複儲存景點');
-                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch {}
+                    if (window.wishlistPlaceIdSet && externalId) {
+                        window.wishlistPlaceIdSet.add(externalId);
+                    }
+                    try { if (typeof window.updateWishlistButtonState === 'function') window.updateWishlistButtonState({ place_id: externalId }); } catch { }
                     return;
                 }
 
@@ -741,8 +752,6 @@ if (document.readyState === 'loading') {
                     window.location.href = loginUrl;
                     return;
                 }
-
-                // 非預期失敗，讓下面 fallback 處理（若有 spotId）
             }
 
             // fallback: 使用後端的 MemberCenter Toggle（以 spotId）
