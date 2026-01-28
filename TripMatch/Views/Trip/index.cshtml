@@ -109,6 +109,7 @@
                     data-kind="matching"
                     data-group-id="@g.GroupId"
                     data-status="@g.Status"
+                    data-group-role="@g.Role"
                     data-details-url="@g.DetailsUrl">
 
                     @* 圖片 *@
@@ -120,6 +121,16 @@
                         <div class="card-sub">@g.Status</div>
                     </div>
 
+                    @if(string.Equals(g.Role, "owner", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button"
+                                class="trash-btn"
+                                aria-label="刪除媒合中團"
+                                title="刪除"
+                                data-action="delete-group">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    }
                 </article>
             }
         </div>
