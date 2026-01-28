@@ -1,4 +1,5 @@
 ﻿import { GetDateStrings } from './edit-trip-manager.js';
+import { SignalRManager } from './signalr-manager.js';
 
 // 模組內的變數，外部無法直接存取，保持全域乾淨
 let map;
@@ -205,7 +206,7 @@ export function renderPlaceOnMap(place, existingSpotId) {
 
             <div class="px-3 pb-3">
                 <div class="dropdown">
-                    <button class="btn btn_light btn-sm w-100 rounded-1" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn_light w-100 rounded-1" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-plus-lg"></i> 加入行程
                     </button>
                     <ul class="dropdown-menu w-100 shadow border-0" style="max-height: 200px; overflow-y: auto;">
@@ -340,11 +341,13 @@ function handleAddPlaceToItinerary(spotId, place, day) {
         data: JSON.stringify(dto),
         success: function (response) {
             // 成功提示
-            alert(`景點已加入到第${day}天行程`);
+     
 
             // 呼叫全域函數重新整理列表
             if (typeof window.refreshItineraryList === "function") {
                 window.refreshItineraryList();
+                alert(`景點已加入到第${day}天行程`);
+                SignalRManager.broadcast(tripId, "新增景點", 0); 
             }
         },
         error: function (xhr) {

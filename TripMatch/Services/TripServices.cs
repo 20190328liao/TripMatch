@@ -713,6 +713,7 @@ namespace TripMatch.Services
                     Lat = (double)spot.Lat,
                     Lng = (double)spot.Lng,
                     Rating = spot.Rating ?? 0,
+                    UserRatingsTotal = spot.UserRatingsTotal ?? 0,
                     PhotosSnapshot = !string.IsNullOrWhiteSpace(spot.PhotosSnapshot)
                         ? JsonSerializer.Deserialize<List<string>>(spot.PhotosSnapshot) ?? []
                         : []
