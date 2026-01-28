@@ -208,7 +208,8 @@ function initMascotAnimation() {
         const displayHeight = maxDisplayHeight;
 
         // 計算置中座標 (在 Canvas 中置中)
-        const dx = (canvas.width - displayWidth) / 2;
+        const dx = canvas.width - displayWidth;
+
         const dy = (canvas.height - displayHeight) / 2;
 
         // 繪製圖片

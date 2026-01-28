@@ -824,21 +824,22 @@ body {
 margin-left: 8px;
 }
 .plane-section {
-    height: 300px; /* 增加高度讓飛行的仰角更明顯 */
+    height: 500px;
     position: relative;
     overflow: hidden;
     width: 100%;
     background: transparent;
+    z-index: 10;
+    pointer-events: none;
 }
 
 .airplane {
     position: absolute;
-    bottom: -50px; /* 初始藏在下方一點 */
-    left: -150px; /* 初始藏在左側畫面外 */
-    z-index: 10;
-    /* 飛機朝向右上，通常 fly.png 是水平的，所以要旋轉 */
+    bottom: -50px; 
+    left: -150px; 
     transform: rotate(-15deg);
     opacity: 0;
+    z-index: 20;
 }
 
     .airplane img {
