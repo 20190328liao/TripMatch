@@ -133,7 +133,7 @@ function createTrip() {
     window.location.href = '/Match/Create';
 }
 /* ==========================================
-   1. 吉祥物 Canvas 動畫函數定義 (9格動作 + 原地置中 + 350px版)
+   1. 吉祥物 Canvas 動畫函數定義 (9格動作 + 原地置中 + 隨機泡泡)
    ========================================== */
 function initMascotAnimation() {
     const canvas = document.getElementById('mascotCanvas');
@@ -143,20 +143,49 @@ function initMascotAnimation() {
     const spriteSheet = new Image();
     spriteSheet.src = "/img/animate.png";
 
-    // === 參數設定 (依據您的規格修正) ===
-    // 總寬 1800 / 每格 200 = 9 格
-    const cols = 9;
+    // === 參數設定 ===
+    const cols = 9;            // 總寬 1800 / 每格 200 = 9 格
     const totalFrames = 9;
     const animationSpeed = 30;
-
-    // ★ 設定高度為 350
-    const maxDisplayHeight = 350;
+    const maxDisplayHeight = 350; // 設定高度為 350
 
     let spriteWidth = 0;
     let spriteHeight = 0;
     let currentFrame = 0;
     let frameDrawn = 0;
     let isPaused = false;
+    let firstRoundCompleted = false; // 追蹤第一輪是否完成
+
+    // 隨機景點清單 (Place ID)
+    const verifiedPlaceIds = [
+        "ChIJ_TooXM3gAGARQR6hXH3QAQ8", // 大阪城
+        "ChIJdePJiBvnAGAR3Brg9OzvKO0", // 
+        "ChIJpehwXdLgAGARwNLCvUGv5aY", // 
+        "ChIJTdPOeOPmAGAR_63Ex_WTubw"  //
+    ];
+
+    function showSpotBubble() {
+        const bubble = document.getElementById('spotBubble');
+        const link = document.getElementById('bubbleLink');
+
+        if (bubble && link) {
+            try {
+                // 隨機挑選 ID
+                const randomIndex = Math.floor(Math.random() * verifiedPlaceIds.length);
+                const randomId = verifiedPlaceIds[randomIndex];
+
+                // 修正點：請檢查您的 Controller 名稱。如果是 SpotController，路徑應為 /Spot/Details 或 /Spot
+                // 如果您的路由設定是直接導向單一頁面，請確認 Action 名稱
+                link.href = `${window.location.origin}/Spot?placeId=${randomId}`;
+
+                bubble.style.display = 'block';
+            } catch (error) {
+                // 保底方案：若出錯則導向景點首頁
+                link.href = `${window.location.origin}/Spot/Index`;
+                bubble.style.display = 'block';
+            }
+        }
+    }
 
     // 點擊暫停功能
     canvas.addEventListener('click', (e) => {
@@ -165,7 +194,7 @@ function initMascotAnimation() {
     });
 
     spriteSheet.onload = function () {
-        spriteWidth = spriteSheet.width / cols; // 這裡會自動算出 200 (1800/9)
+        spriteWidth = spriteSheet.width / cols;
         spriteHeight = spriteSheet.height;
         resizeCanvas();
         animate();
@@ -181,28 +210,28 @@ function initMascotAnimation() {
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // 檢查是否跑完一輪：當 currentFrame 達到總幀數
+        if (!firstRoundCompleted && currentFrame >= totalFrames) {
+            firstRoundCompleted = true;
+            showSpotBubble();
+        }
+
         let position = currentFrame % totalFrames;
-        let srcX = position * spriteWidth; // 精準裁切：0, 200, 400...
+        let srcX = position * spriteWidth;
 
-        // === 比例計算 ===
+        // --- 比例與置中計算 ---
         let targetHeight = maxDisplayHeight;
-
-        // 如果容器比 350 還矮，就縮小配合容器
         if (canvas.height < targetHeight) {
             targetHeight = canvas.height;
         }
 
-        // 算出縮放比例 (保持原圖寬高比)
         const scaleRatio = targetHeight / spriteHeight;
         const finalWidth = spriteWidth * scaleRatio;
         const finalHeight = targetHeight;
 
-        // === ★ 座標計算 (原地置中) ===
-        // 水平置中： (畫布寬 - 圖片寬) / 2
-        // 這行確保它永遠固定在中間，不會向右滾
+        // 水平置中
         const dx = (canvas.width - finalWidth) / 2;
-
-        // 垂直靠底： 畫布高 - 圖片高
+        // 垂直靠底
         const dy = canvas.height - finalHeight;
 
         ctx.drawImage(
@@ -216,7 +245,6 @@ function initMascotAnimation() {
             if (frameDrawn >= animationSpeed) {
                 currentFrame++;
                 frameDrawn = 0;
-                // ★ 已移除 walkX，確保原地不動
             }
         }
         requestAnimationFrame(animate);
@@ -257,3 +285,4 @@ document.addEventListener("DOMContentLoaded", function () {
         observer.observe(trigger);
     }
 });
+

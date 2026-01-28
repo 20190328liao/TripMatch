@@ -3,6 +3,7 @@
     --primary-mint: #62DEB1;
     --dark-mint: #36b38c;
     --bg-light: #DAF3F3;
+
     --bg-lighter: #64dbc7;
     --text-main: #333;
     --white: #ffffff;
@@ -15,7 +16,7 @@
 /* 僅針對首頁調整 */
 body {
 /*    background-color: var(--primary-mint);*/
-/*    overflow-x: hidden;*/
+    overflow-x: hidden;
 }
 
 /* --- 2. 主視覺區 Hero Section --- */
@@ -31,6 +32,7 @@ body {
     box-shadow: 0 10px 30px -10px rgba(0, 121, 107, 0.3);
     margin-bottom: 40px;
 }
+
 /*顯示「未登入」狀態文字*/
 .status-indicator {
     font-size: 24px;
@@ -913,4 +915,61 @@ margin-left: 8px;
 
 .airplane.take-off {
     animation: flyWave 12s ease-in-out 1s forwards;
+}
+
+/*=======泡泡*/
+
+/* 泡泡彈窗樣式 */
+.spot-bubble {
+    width:250px;
+    position: absolute;
+    top: 20px;
+    left: 60%;
+    /* 核心修正：將元素向右移動自身寬度的 50%，達成真正的水平置中 */
+    transform: translateX(50%);
+    background-color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1000;
+    border: 2px solid var(--primary-mint);
+    animation: bubbleFloatCenter 3s ease-in-out infinite;
+}
+
+    .spot-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        border-width: 10px 10px 0;
+        border-style: solid;
+        border-color: white transparent transparent;
+    }
+
+    .spot-bubble a {
+        text-decoration: none;
+        color: var(--btn-dark);
+        font-weight: bold;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+/* 簡單的漂浮動畫 */
+@keyframes bubbleFloatCenter {
+    0%, 100% {
+        transform: translate(-50%, 0);
+    }
+
+    50% {
+        transform: translate(-50%, -10px);
+    }
+}
+#bubbleLink {
+    text-decoration: none;
+    font-weight: bold;
+    color: #00796B;
 }
