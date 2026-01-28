@@ -95,6 +95,8 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
 
     initHotelEditModal();
 
+    initTimeEditModal();
+
     // 初始化下拉選單
     initNavDropdown(DateStrings);
 
@@ -272,6 +274,7 @@ function handleAddSpotFromModal(googlePlaceId, dayNum) {
                         // 1. 顯示成功提示 (Toast)
                         // 2. 重新整理列表
                         loadTripData();
+                        SignalRManager.broadcast(currentTripId, "新增景點", 0); 
                         alert(`已成功加入 Day ${dayNum}！`);
                     },
                     error: function () {

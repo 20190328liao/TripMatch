@@ -1,9 +1,43 @@
 ﻿@using Microsoft.Extensions.Configuration
+@using System.Security.Claims
 @inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "編輯行程";
     Layout = "~/Views/Shared/_Layout-copy.cshtml";
+    var taggedUserId = ViewBag.TaggedUserId as int?;
+
+    // 1. 嘗試取得 FullName (對應 ClaimTypes.GivenName)
+    var fullName = User.FindFirstValue(ClaimTypes.GivenName);
+
+    // 2. 嘗試取得 UserName (對應 ClaimTypes.Name)
+    var userName = User.Identity?.Name;
+
+    // 3. 嘗試取得 Email
+    var email = User.FindFirstValue(ClaimTypes.Email);
+
+    // 4. 決定顯示名稱的優先順序
+    string displayName = "使用者";
+
+    if (!string.IsNullOrWhiteSpace(fullName))
+    {
+        displayName = fullName;
+    }
+    else if (!string.IsNullOrWhiteSpace(userName))
+    {
+        if (userName.Contains("@"))
+        {
+            displayName = userName.Split('@')[0];
+        }
+        else
+        {
+            displayName = userName;
+        }
+    }
+    else if (!string.IsNullOrWhiteSpace(email))
+    {
+        displayName = email.Split('@')[0];
+    }
 }
 
 @model int
@@ -15,7 +49,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 }
 
-<div class="itinerary-wrapper">
+<div class="itinerary-wrapper" data-trip-id="@Model" data-display-name="@displayName">
     <div class="left-panel">
         <input type="hidden" id="current-trip-id" value="@Model" />
 

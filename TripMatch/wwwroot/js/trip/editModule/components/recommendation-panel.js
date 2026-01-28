@@ -90,24 +90,26 @@ export class RecommendationPanel {
                   data-place-id="${item.externalPlaceId}" data-spot-id="${item.externalPlaceId}">
                    
                    <div class="d-flex gap-3">
-                       <div style="width: 300px; height: 200px; flex-shrink: 0;" class="rounded overflow-hidden bg-light">
+                       <div style="width: 240px; height: 160px; flex-shrink: 0;" class="rounded overflow-hidden bg-light">
                            <img src="${imgUrl}" class="w-100 h-100 object-fit-cover" alt="${item.nameZh}">
                        </div>
 
                        <div class="flex-grow-1 overflow-hidden">
-                           <h6 class="mb-1 fw-bold text-dark text-truncate">${item.nameZh}</h6>
-                           <div class="small text-warning mb-1">
-                               ${item.rating ? `<i class="bi bi-star-fill me-1"></i>${item.rating}` : ''} 
-                               <span class="text-muted">(${item.userRatingsTotal || 0})</span>
-                           </div>
-                           <div class="text-muted small text-truncate">
-                               <i class="bi bi-geo-alt me-1"></i>${item.address || "無地址"}
-                           </div>
+                            <h6 class="mb-1 fw-bold text-dark text-truncate" title="${item.nameZh}">
+                                ${item.nameZh}
+                            </h6>
+                            <div class="small text-warning mb-1">
+                                ${item.rating ? `<i class="bi bi-star-fill me-1"></i>${item.rating}` : ''} 
+                                <span class="text-muted">(${item.userRatingsTotal || 0})</span>
+                            </div>
+                            <div class="text-muted small text-truncate" title="${item.address || "無地址"}">
+                                <i class="bi bi-geo-alt me-1"></i>${item.address || "無地址"}
+                            </div>
                        </div>
                    </div>
 
                    <div class="dropdown w-100 mt-1">
-                        <button class="btn btn-outline-primary btn-sm w-100 rounded-pill" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-mint btn-sm w-100 rounded-pill" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-plus-lg me-1"></i>加入行程
                         </button>
                         <ul class="dropdown-menu shadow border-0 w-100 text-center">

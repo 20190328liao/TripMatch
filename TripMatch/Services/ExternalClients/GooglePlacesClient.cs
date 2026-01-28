@@ -54,17 +54,17 @@ namespace TripMatch.Services.ExternalClients
             }
             return null;
         }
-        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 10000)
+        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 50000)
         {
             var allCandidateIds = new List<string>();
             string? nextPageToken = null;
             int pageCount = 0;
-            const int MaxPages = 2;
+            const int MaxPages = 1;
                       
-            const int MinReviewCount = 100;
+            const int MinReviewCount = 500;
 
             // 【設定門檻】最低評分要求 (可選)
-            const double MinRating = 4.0;
+            const double MinRating = 3.9;
 
             do
             {

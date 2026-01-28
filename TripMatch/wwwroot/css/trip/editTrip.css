@@ -495,15 +495,35 @@ footer {
 }
 
 
-/* 讓列表項目懸停時圖片有微放大效果 */
-.rec-item:hover .object-fit-cover {
-    transform: scale(1.05);
-    transition: transform 0.3s ease;
+/* 1. 核心修正：確保 text-truncate 在 Flexbox 內生效 */
+.rec-item .flex-grow-1 {
+    min-width: 0; /* 這行最關鍵，防止長文字撐開容器 */
 }
 
-.rec-item:hover {
-    background-color: #f8f9fa; /* 淺灰背景 */
+/* 2. 提升互動感：針對 .rec-item (你 JS 中的主要類別) */
+.rec-item {
+    transition: all 0.2s ease;
+    cursor: pointer; /* 提示使用者這張卡片可以點擊預覽地圖 */
 }
+
+    .rec-item:hover {
+        background-color: #f8f9fa; /* 滑鼠移入變色 */
+        box-shadow: inset 4px 0 0 0 #00d1b2; /* 選配：在左側顯示一條小色塊，增加現代感 */
+    }
+
+    /* 3. 圖片顯示優化 */
+    .rec-item img {
+        transition: transform 0.3s ease;
+    }
+
+    .rec-item:hover img {
+        transform: scale(1.05); /* 輕微放大，讓 Mia 這種感性使用者覺得圖片更吸引人 */
+    }
+
+    /* 4. 修改按鈕區域的游標 (避免點擊按鈕時感覺是在點卡片) */
+    .rec-item .dropdown, .rec-item .btn {
+        cursor: default;
+    }
 
 
 /* 自定義外框按鈕 */
@@ -620,7 +640,7 @@ footer {
     justify-content: center;
     gap: 6px; /* 圖示跟文字之間的距離 */
     font-size: 0.8rem; /* 字體大小適中 */
-    font-weight: bold; /* 稍微加粗 */
+
     /* [解決陰影問題]：預設狀態移除所有陰影 */
     box-shadow: none !important;
     outline: none !important;
@@ -930,3 +950,4 @@ margin-left: 25px; /* 配合 timeline 的位置 */
 .seg-dropdown .dropdown-toggle::after {
     display: none !important;
 }
+

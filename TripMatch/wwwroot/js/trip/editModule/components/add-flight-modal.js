@@ -93,8 +93,8 @@ export class AddFlightModal {
                                 </div>
                             </div>
                             <div class="mt-3 pt-3 border-top gap-2 d-flex flex-column">
-                                <button class="btn btn-success w-100" id="btn-save-flight">確認並存入行程</button>
-                                <button class="btn btn-link w-100 btn-sm text-decoration-none" id="btn-back-search">重新輸入</button>
+                                <button class="btn btn_light w-100" id="btn-save-flight">確認並存入行程</button>
+                                <button class="btn btn_Gray w-100 btn-sm text-decoration-none" id="btn-back-search">重新輸入</button>
                             </div>
                         </div>
                     </div>
