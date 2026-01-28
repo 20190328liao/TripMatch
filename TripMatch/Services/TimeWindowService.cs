@@ -346,23 +346,72 @@ namespace TripMatch.Services
             var group = await _context.TravelGroups.FindAsync(groupId);
             if (group == null) return new List<Recommendation>(); // 防呆
 
-            // ★★★ 2. 新增這段：統計大家是否接受轉機 (Transfer) ★★★
+            // ★★★ 新增這段：統計大家是否接受轉機 (Transfer) ★★★
             // 先把群組所有人的偏好撈出來
             var allPreferences = await _context.Preferences
                 .Where(p => p.GroupId == groupId)
                 .ToListAsync();
             // 統計人數
-            int acceptTransferCount = allPreferences.Count(p => p.Tranfer); // 接受轉機的人數
-            int rejectTransferCount = allPreferences.Count(p => !p.Tranfer); // 不接受的人數
-
+            int acceptTransferCount = allPreferences.Count(p => p.Tranfer);
+            int rejectTransferCount = allPreferences.Count(p => !p.Tranfer);
             // 邏輯：如果「接受」的人 >= 「不接受」的人，就設為 True
             bool allowTransfer = acceptTransferCount >= rejectTransferCount;
+
             // 直接取用資料庫中的 TravelDays
             int tripDays = group.TravelDays;
 
             // 邏輯防呆：萬一資料庫異常存了 0 或負數，至少要算 1 天，否則日期計算會出錯
             if (tripDays < 1) tripDays = 1;
+            // ==========================================
+            // 統計星級偏好 (Star Rating)
+            // ==========================================
+            // 規則：計算平均值並四捨五入。若沒人填寫，預設為 4 星
+            int? starRating = null; // 預設為 null (無偏好)
+            var validRatings = allPreferences
+                .Where(p => p.HotelRating.HasValue)
+                .Select(p => p.HotelRating.Value)
+                .ToList();
 
+            if (validRatings.Any())
+            {
+                // 有人填寫才計算
+                double avg = validRatings.Average();
+                starRating = (int)Math.Round(avg);
+
+                // 限制範圍 3~5 (避免算出 1 星太差)
+                if (starRating < 3) starRating = 3;
+                if (starRating > 5) starRating = 5;
+            }
+
+            // ==========================================
+            // 統計預算偏好 (Hotel Budget)
+            // ==========================================
+            // 規則：取中位數 (Median)，更能代表大眾接受度，避免被極端值拉高
+            decimal? medianBudget = null;
+            var validBudgets = allPreferences
+                .Where(p => p.HotelBudget.HasValue)
+                .Select(p => p.HotelBudget.Value)
+                .OrderBy(x => x)
+                .ToList();
+
+            if (validBudgets.Any())
+            {
+                int count = validBudgets.Count;
+                if (count % 2 == 0)
+                {
+                    // 偶數取中間兩個平均
+                    medianBudget = (validBudgets[count / 2 - 1] + validBudgets[count / 2]) / 2.0m;
+                }
+                else
+                {
+                    // 奇數取中間
+                    medianBudget = validBudgets[count / 2];
+                }
+            }
+
+            // ==========================================
+            // 4. 開始產生推薦方案
+            // ==========================================
             var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
@@ -372,19 +421,16 @@ namespace TripMatch.Services
                     // 計算估價用的取樣區間
                     DateOnly priceCheckStart = range.StartDate;
                     DateOnly priceCheckEnd = range.StartDate.AddDays(tripDays - 1);
-
-                    // 防呆：確保不超出可用範圍
-                    if (priceCheckEnd > range.EndDate)
-                    {
-                        priceCheckEnd = range.EndDate;
-                    }
+                    if (priceCheckEnd > range.EndDate) priceCheckEnd = range.EndDate;
 
                     var travelInfo = await _travelInfoService.GetTravelInfoAsync(
-                                    place,
-                                    priceCheckStart,
-                                    priceCheckEnd,
-                                    allowTransfer // <--- 補上這個參數！
-                                );
+                                      place,
+                                      priceCheckStart,
+                                      priceCheckEnd,
+                                      allowTransfer,  // <--- 傳入統計後的轉機偏好
+                                      starRating,     // <--- 傳入統計後的星級
+                                      medianBudget    // <--- 傳入統計後的預算
+                                  );
 
                     var rec = new Recommendation
                     {
@@ -397,8 +443,8 @@ namespace TripMatch.Services
                         Location = place,
                         DepartFlight = travelInfo.DepartFlight,
                         ReturnFlight = travelInfo.ReturnFlight,
-                        Hotel = travelInfo.Hotel,
-                        Price = travelInfo.Price,
+                        Hotel = travelInfo.HotelName,
+                        Price = travelInfo.TotalPrice,
                         Vote = 0,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
@@ -448,7 +494,7 @@ namespace TripMatch.Services
             // 4. 轉換 ViewModel
             var cards = recs.Select(r =>
             {
-                // [人數計算] 比對 MemberTimeSlots
+                // [人數計算] (保持不變)
                 int availableCount = allMemberSlots
                     .Where(slot =>
                         DateOnly.FromDateTime(slot.StartAt) <= DateOnly.FromDateTime(r.StartDate) &&
@@ -458,15 +504,22 @@ namespace TripMatch.Services
                     .Distinct()
                     .Count();
 
-                // [地名解析] 沒有 PlaceName 欄位，直接切 Location
-                var displayName = r.Location.Contains("|")
-                    ? r.Location.Split('|')[0]
-                    : r.Location;
+                // [地名解析] 
+                // 假設資料庫存的是 "NRT" 或 "NRT|成田"
+                // 我們可以用 AirportData 反查城市名，讓顯示更友善
+                string code = r.Location.Contains("|") ? r.Location.Split('|')[0].Trim() : r.Location;
+                string cityName = AirportData.GetCityName(code);
+                // 如果 AirportData.GetCityName 沒找到，會回傳 code，所以這裡很安全
+
+                string displayName = string.IsNullOrEmpty(cityName) ? code : cityName;
 
                 return new RecommendationCard
                 {
                     RecommendationId = r.Index,
-                    PlaceName = displayName, // 填入解析後的地名
+
+                    // [修改] 顯示名稱改用城市名 (e.g. "東京")
+                    PlaceName = displayName,
+
                     DateRange = $"{r.StartDate:MM/dd} - {r.EndDate:MM/dd}",
                     TimeSlotId = $"{r.StartDate:MMdd}-{r.EndDate:MMdd}",
                     Price = r.Price,
@@ -474,7 +527,12 @@ namespace TripMatch.Services
                     ReturnFlight = r.ReturnFlight,
                     CurrentVotes = r.Vote,
                     IsVotedByCurrentUser = myVotes.Contains(r.Index),
-                    AvailableMembersCount = availableCount
+                    AvailableMembersCount = availableCount,
+
+                    // ★★★ [新增] 填入新欄位 ★★★
+                    PlaceCode = code,        // 傳給 API 用的代碼 (e.g. "NRT")
+                    StartDate = r.StartDate, // 完整日期物件
+                    EndDate = r.EndDate      // 完整日期物件
                 };
             }).ToList();
 
@@ -725,7 +783,6 @@ namespace TripMatch.Services
             var newTrip = new Trip
             {
                 Title = group.Title + " (媒合成功)",
-                // DateTime -> DateOnly 轉換
                 StartDate = DateOnly.FromDateTime(rec.StartDate),
                 EndDate = DateOnly.FromDateTime(rec.EndDate),
                 InviteCode = Guid.NewGuid(),
@@ -736,7 +793,6 @@ namespace TripMatch.Services
             _context.Trips.Add(newTrip); // 加入追蹤
 
             // 3. 建立航班 (Flights)
-            // 邏輯：解析字串 -> 建立物件 (關聯到 newTrip)
             var flights = new List<Flight>();
 
             // 去程
@@ -778,19 +834,16 @@ namespace TripMatch.Services
             }
             if (flights.Any()) _context.Flights.AddRange(flights);
 
-            // 4. ★★★ 建立住宿 (Accommodation) 與 景點快照 (PlacesSnapshot) ★★★
+            // 4. 建立住宿 (Accommodation) 與 景點快照 (PlacesSnapshot)
             if (!string.IsNullOrEmpty(rec.Hotel))
             {
-                // 因為 Accommodation 強制要求 SpotId，我們需要先建立一個對應的快照
-                // 由於推薦資料只有名字，我們建立一個基礎快照
                 var hotelSpot = new PlacesSnapshot
                 {
                     NameZh = rec.Hotel,
                     NameEn = rec.Hotel,
-                    // 產生一個臨時的 ID 避免與真實 Google Place ID 衝突
                     ExternalPlaceId = $"REC-TEMP-{Guid.NewGuid()}",
                     AddressSnapshot = rec.Location,
-                    Lat = 0, // 無經緯度資料，給預設值
+                    Lat = 0,
                     Lng = 0,
                     CreatedAt = DateTimeOffset.Now,
                     UpdatedAt = DateTimeOffset.Now
@@ -798,13 +851,12 @@ namespace TripMatch.Services
 
                 var accommodation = new Accommodation
                 {
-                    Trip = newTrip,        // 關聯行程
-                    Spot = hotelSpot,      // ★ 關聯快照 (EF 會自動先新增 Spot 取得 ID 再填入這裡)
+                    Trip = newTrip,
+                    Spot = hotelSpot,
 
-                    HotelName = rec.Hotel, // 冗餘欄位
+                    HotelName = rec.Hotel,
                     Address = rec.Location,
 
-                    // 欄位名稱修正：CheckInDate, CheckOutDate
                     CheckInDate = rec.StartDate,
                     CheckOutDate = rec.EndDate,
 
@@ -817,35 +869,41 @@ namespace TripMatch.Services
 
             // 5. 轉移成員 (GroupMember -> TripMember)
             var membersData = await _context.GroupMembers
-               .Where(gm => gm.GroupId == groupId)
-               .Join(_context.Preferences,
-                   gm => new { gm.GroupId, gm.UserId },
-                   p => new { p.GroupId, p.UserId },
-                   (gm, p) => new { gm, p })
-               .ToListAsync();
+                .Where(gm => gm.GroupId == groupId)
+                .Join(_context.Preferences,
+                    gm => new { gm.GroupId, gm.UserId },
+                    p => new { p.GroupId, p.UserId },
+                    (gm, p) => new { gm, p })
+                .ToListAsync();
 
             var tripMembers = membersData.Select(item => new TripMember
             {
-                Trip = newTrip,            // 關聯行程
+                Trip = newTrip,
                 UserId = item.gm.UserId,
 
-                // 角色轉換: String -> Byte
                 RoleType = (byte)(item.gm.Role == "Owner" ? 1 : 2),
-
-                // 預算轉換: TotalBudget -> Budget
                 Budget = item.p.TotalBudget,
 
-                // ★ 移除 Status (Model 中無此欄位)
                 JoinedAt = DateTimeOffset.Now
             }).ToList();
 
             _context.TripMembers.AddRange(tripMembers);
 
             // 6. 建立地區關聯 (TripRegions)
-            string searchName = rec.Location.Split('|')[0].Trim();
-            var region = await _context.GlobalRegions
-                .FirstOrDefaultAsync(r => r.Name == searchName || r.NameEn == searchName);
+            string iataCode = rec.Location.Trim(); // 例如 "NRT"
 
+            // 1. 利用既有的工具反查城市名稱 (例如取得 "東京" 或 "Tokyo")
+            // 假設 AirportData.GetCityName 是您現有的靜態輔助方法
+            string cityName = AirportData.GetCityName(iataCode);
+
+            // 2. 如果反查回來還是 IATA (代表查不到)，就用原本的；如果有查到，就用城市名搜尋
+            string searchKey = string.IsNullOrEmpty(cityName) ? iataCode : cityName;
+
+            // 3. 去 GlobalRegions 找對應的地區
+            var region = await _context.GlobalRegions
+                .FirstOrDefaultAsync(r => r.Name == searchKey || r.NameEn == searchKey);
+
+            // 4. 建立關聯
             if (region != null)
             {
                 _context.TripRegions.Add(new TripRegion
@@ -854,16 +912,19 @@ namespace TripMatch.Services
                     RegionId = region.Id
                 });
             }
+            else
+            {
+                // (選用) 如果完全找不到對應的 Region，這裡可以寫 Log 或是建立一個 "未分類" 的關聯
+                // Console.WriteLine($"找不到對應的地區: {searchKey} (Code: {iataCode})");
+            }
 
             // 7. 更新群組狀態並存檔
             group.Status = "Converted";
 
-            // 一次性儲存所有關聯變更
             await _context.SaveChangesAsync();
 
             return newTrip.Id;
         }
-
         // 輔助：解析航班字串 (依照你實際存入的格式實作)
         private (string FlightNo, string Carrier, DateTimeOffset Depart, DateTimeOffset Arrive)? ParseFlightString(string flightStr, DateTime baseDate)
         {

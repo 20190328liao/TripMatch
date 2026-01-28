@@ -30,6 +30,9 @@ namespace TripMatch.Models.DTOs.TimeWindow
         public bool IsVotedByCurrentUser { get; set; }
 
         public int AvailableMembersCount { get; set; } // 該時段有空的人數
+        public string PlaceCode { get; set; }   // 機場代碼 (e.g. "NRT")
+        public DateTime StartDate { get; set; } // 用於 API 參數
+        public DateTime EndDate { get; set; }   // 用於 API 參數
     }
 
     // ★★★ 這是您一直找不到的篩選器類別 ★★★

@@ -5,58 +5,46 @@ namespace TripMatch.Services
 {
     public static class AirportData
     {
-        // 這裡放您那 100+ 個城市代碼
-        public static readonly Dictionary<string, string> CityCodes = new(StringComparer.OrdinalIgnoreCase)
+        public static readonly Dictionary<string, string> CodeToCity = new()
         {
-            // --- 台灣 ---
-            { "Taipei", "TPE" }, { "Kaohsiung", "KHH" }, { "Taichung", "RMQ" },
-
-            // --- 日本 (擴充) ---
-            { "Tokyo", "TYO" }, { "Osaka", "OSA" }, { "Kyoto", "OSA" },
-            { "Sapporo", "SPK" }, { "Fukuoka", "FUK" }, { "Okinawa", "OKA" },
-            { "Nagoya", "NGO" }, { "Sendai", "SDJ" }, { "Hiroshima", "HIJ" },
-            { "Kumamoto", "KMJ" }, { "Kagoshima", "KOJ" },
-
-            // --- 韓國 ---
-            { "Seoul", "SEL" }, { "Busan", "PUS" }, { "Jeju", "CJU" }, { "Daegu", "TAE" },
-
-            // --- 中國/港澳 ---
-            { "Hong Kong", "HKG" }, { "Macau", "MFM" }, { "Shanghai", "SHA" },
-            { "Beijing", "BJS" }, { "Guangzhou", "CAN" }, { "Chengdu", "CTU" },
-
-            // --- 東南亞 ---
-            { "Bangkok", "BKK" }, { "Chiang Mai", "CNX" }, { "Phuket", "HKT" },
-            { "Singapore", "SIN" }, { "Kuala Lumpur", "KUL" }, { "Penang", "PEN" },
-            { "Ho Chi Minh City", "SGN" }, { "Hanoi", "HAN" }, { "Da Nang", "DAD" },
-            { "Manila", "MNL" }, { "Cebu", "CEB" }, { "Boracay", "MPH" },
-            { "Bali", "DPS" }, { "Jakarta", "JKT" },
-
-            // --- 美國 (擴充) ---
-            { "New York", "NYC" }, { "Los Angeles", "LAX" }, { "San Francisco", "SFO" },
-            { "Las Vegas", "LAS" }, { "Seattle", "SEA" }, { "Chicago", "CHI" },
-            { "Boston", "BOS" }, { "Miami", "MIA" }, { "Orlando", "MCO" },
-            { "Honolulu", "HNL" }, { "Guam", "GUM" }, { "Washington", "WAS" },
-
-            // --- 加拿大 ---
-            { "Vancouver", "YVR" }, { "Toronto", "YTO" }, { "Montreal", "YMQ" },
-
-            // --- 歐洲 (擴充) ---
-            { "London", "LON" }, { "Paris", "PAR" }, { "Frankfurt", "FRA" },
-            { "Munich", "MUC" }, { "Berlin", "BER" }, { "Amsterdam", "AMS" },
-            { "Rome", "ROM" }, { "Milan", "MIL" }, { "Venice", "VCE" },
-            { "Barcelona", "BCN" }, { "Madrid", "MAD" }, { "Vienna", "VIE" },
-            { "Prague", "PRG" }, { "Budapest", "BUD" }, { "Zurich", "ZRH" },
-            { "Geneva", "GVA" }, { "Athens", "ATH" }, { "Istanbul", "IST" },
-            { "Copenhagen", "CPH" }, { "Stockholm", "STO" }, { "Oslo", "OSL" },
-            { "Helsinki", "HEL" }, { "Reykjavik", "KEF" },
-
-            // --- 澳洲/紐西蘭 ---
-            { "Sydney", "SYD" }, { "Melbourne", "MEL" }, { "Brisbane", "BNE" },
-            { "Perth", "PER" }, { "Gold Coast", "OOL" },
-            { "Auckland", "AKL" }, { "Christchurch", "CHC" }, { "Queenstown", "ZQN" },
-
-            // --- 其他熱門 ---
-            { "Dubai", "DXB" }, { "Doha", "DOH" }, { "Maldives", "MLE" }
+            { "NRT", "東京" }, // 成田 -> 東京
+            { "HND", "東京" }, // 羽田 -> 東京
+            { "KIX", "大阪" }, // 關西 -> 大阪
+            { "ITM", "大阪" }, // 伊丹 -> 大阪
+            { "ICN", "首爾" },
+            { "GMP", "首爾" },
+            { "BKK", "曼谷" },
+            { "DMK", "曼谷" },
+            { "TPE", "台北" },
+            { "TSA", "台北" },
+            { "FUK", "福岡" },
+            { "CTS", "札幌" },
+            { "OKA", "沖繩" },
+            { "SIN", "新加坡"},
+            { "HKG", "香港" },
+            { "LHR", "倫敦" },
+            { "JFK", "紐約" },
+            { "LAX", "洛杉磯" },
+            { "SFO", "舊金山" },
+            { "AMS", "阿姆斯特丹" },
+            { "SYD", "雪梨" },
+            { "DXB", "杜拜" },
+            { "CDG", "巴黎" },
         };
+        public static string GetCityName(string airportCode)
+        {
+            if (string.IsNullOrWhiteSpace(airportCode)) return "";
+
+            // 轉大寫以防萬一
+            var code = airportCode.ToUpper().Trim();
+
+            if (CodeToCity.TryGetValue(code, out string cityName))
+            {
+                return cityName;
+            }
+
+            // 找不到時，回傳原代碼 (至少讓 Google Places 試著搜搜看)
+            return airportCode;
+        }
     }
 }
