@@ -20,6 +20,46 @@
                 return;
             }
 
+            // 媒合卡片刪除紐
+            const delBtn = e.target.closest('[data-action="delete-group"]');
+
+            if (delBtn) {
+                console.log("trash clicked", card.dataset.groupId, card.dataset.groupRole, card.dataset.kind);
+
+                e.stopPropagation();
+
+                const kind = card.dataset.kind;
+                if (kind !== "matching") return;
+
+                const role = (card.dataset.groupRole || "").toLowerCase();
+                if (role !== "owner") return;
+
+                const groupId = card.dataset.groupId;
+                const ok = confirm("確定刪除此團?此操作無法還原。");
+                if (!ok) return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/groups/${groupId}/cancel`, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    });
+
+                    const text = await res.text();
+                    const data = text ? JSON.parse(text) : null;
+
+                    if (!res.ok) {
+                        alert(data?.message || `刪除失敗(HTTP ${res.status})`);
+                        return;
+                    }
+                    card.remove();
+                }
+                catch (err) {
+                    console.error(err);
+                    alert("刪除失敗，請稍後再試。");
+                }
+                return;
+            }
+
             const menu = card.querySelector(".menu");
             const kebab = e.target.closest(".kebab-btn");
             const menuItem = e.target.closest(".menu-item");
@@ -134,18 +174,29 @@
             const members = await membersRes.json();
             const inviteData = await inviteRes.json();
 
-                // TripMember => 1:團主 2.成員
-                membersList.innerHTML = members
-                    .map(m => {
-                        const roleText = (m.roleType === 1) ? "團主" : "成員";
-                        const name = m.displayName ?? `User#${m.userId}`;
-                        return `<li>${roleText}:${escapeHtml(name)}</li>`;
-                    })
-                    .join("");
+            membersList.innerHTML = "";
+            if (!members.length) {
+                membersList.innerHTML = `<li>尚無成員</li>`;
+            } else {
+                // 找團主
+                const owner = members.find(m => m.roleType === 1);
 
-                if (!members.length) {
-                    membersList.innerHTML = `<li>尚無成員</li>`;
+                // 找成員
+                const membersName = members
+                    .filter(m => m.roleType !== 1)
+                    .map(m => escapeHtml(m.displayName ?? `User#${m.userId}`));
+
+                // 顯示團主
+                if (owner) {
+                    const ownerName = escapeHtml(owner.displayName ?? `User#${owner.userId}`);
+                    membersList.innerHTML += `<li>團主: ${ownerName}</li>`;
                 }
+
+                // 顯示團員
+                if (membersName.length > 0) {
+                    membersList.innerHTML += `<li>成員: ${membersName.join(", ")}</li>`;
+                }
+            }
 
             const code = inviteData?.inviteCode ?? "";
             const fullUrl = `${window.location.origin}/Trip/Join/${code}`;
