@@ -132,106 +132,96 @@ function joinTrip() {
 function createTrip() {
     window.location.href = '/Match/Create';
 }
-
-
 /* ==========================================
-   1. 吉祥物 Canvas 動畫函數定義
+   1. 吉祥物 Canvas 動畫函數定義 (9格動作 + 原地置中 + 350px版)
    ========================================== */
 function initMascotAnimation() {
     const canvas = document.getElementById('mascotCanvas');
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
 
-    // 設定互動游標
-    canvas.style.cursor = 'pointer';
-
     const spriteSheet = new Image();
-    // ★ 請確認您的新圖片檔名與路徑
     spriteSheet.src = "/img/animate.png";
 
-    // === 參數設定 ===
-    const cols = 9;             // 總共有 9 個動作
-    const rows = 1;             // 直向 1 列
-    const totalFrames = 9;      // 總幀數
+    // === 參數設定 (依據您的規格修正) ===
+    // 總寬 1800 / 每格 200 = 9 格
+    const cols = 9;
+    const totalFrames = 9;
+    const animationSpeed = 12;
 
-    // ★ 精準裁切設定
-    const usePreciseWidth = true;
-    const logicalWidthRatio = 200 / 1800; // 單格 200mm / 總寬 1800mm (修正為 1800 以符合您的圖片)
-
-    // 動畫顯示設定
-    const animationSpeed = 30; // 速度 (數字越大越慢)
-    const maxDisplayHeight = 250;
+    // ★ 設定高度為 350
+    const maxDisplayHeight = 350;
 
     let spriteWidth = 0;
     let spriteHeight = 0;
     let currentFrame = 0;
     let frameDrawn = 0;
     let isPaused = false;
-    let animationId;
 
-    // 點擊切換 暫停/播放
-    canvas.addEventListener('click', function () {
+    // 點擊暫停功能
+    canvas.addEventListener('click', (e) => {
+        e.stopPropagation();
         isPaused = !isPaused;
     });
 
     spriteSheet.onload = function () {
-        // 計算單格尺寸
-        if (usePreciseWidth) {
-            spriteWidth = spriteSheet.width * logicalWidthRatio;
-        } else {
-            spriteWidth = spriteSheet.width / cols;
-        }
-
-        spriteHeight = spriteSheet.height / rows;
+        spriteWidth = spriteSheet.width / cols; // 這裡會自動算出 200 (1800/9)
+        spriteHeight = spriteSheet.height;
+        resizeCanvas();
         animate();
     };
 
-    spriteSheet.onerror = function () {
-        console.error("找不到圖片，請確認路徑：/img/animate.png");
-    };
+    // 同步畫布解析度
+    function resizeCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
 
     function animate() {
-        // 清除畫布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 計算當前幀
         let position = currentFrame % totalFrames;
+        let srcX = position * spriteWidth; // 精準裁切：0, 200, 400...
 
-        // 計算裁切 X 座標
-        let srcX = position * spriteWidth;
-        let srcY = 0;
+        // === 比例計算 ===
+        let targetHeight = maxDisplayHeight;
 
-        // === 縮放與置中邏輯 ===
-        const scaleRatio = maxDisplayHeight / spriteHeight;
-        const displayWidth = spriteWidth * scaleRatio;
-        const displayHeight = maxDisplayHeight;
+        // 如果容器比 350 還矮，就縮小配合容器
+        if (canvas.height < targetHeight) {
+            targetHeight = canvas.height;
+        }
 
-        // 計算置中座標 (在 Canvas 中置中)
-        const dx = canvas.width - displayWidth;
+        // 算出縮放比例 (保持原圖寬高比)
+        const scaleRatio = targetHeight / spriteHeight;
+        const finalWidth = spriteWidth * scaleRatio;
+        const finalHeight = targetHeight;
 
-        const dy = (canvas.height - displayHeight) / 2;
+        // === ★ 座標計算 (原地置中) ===
+        // 水平置中： (畫布寬 - 圖片寬) / 2
+        // 這行確保它永遠固定在中間，不會向右滾
+        const dx = (canvas.width - finalWidth) / 2;
 
-        // 繪製圖片
+        // 垂直靠底： 畫布高 - 圖片高
+        const dy = canvas.height - finalHeight;
+
         ctx.drawImage(
             spriteSheet,
-            srcX, srcY, spriteWidth, spriteHeight,
-            dx, dy, displayWidth, displayHeight
+            srcX, 0, spriteWidth, spriteHeight,
+            dx, dy, finalWidth, finalHeight
         );
 
-        // 更新下一幀
         if (!isPaused) {
             frameDrawn++;
             if (frameDrawn >= animationSpeed) {
                 currentFrame++;
                 frameDrawn = 0;
+                // ★ 已移除 walkX，確保原地不動
             }
         }
-
-        animationId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
     }
 }
-
 /* ==========================================
    2. 主程式初始化 (合併執行)
    ========================================== */
@@ -240,10 +230,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // --- 執行 A: 吉祥物動畫 ---
     initMascotAnimation();
 
-    // --- 執行 B: 飛機卷軸動畫 ---
+    // --- 執行 B: 飛機卷軸動畫 (這就是您原本被移除的部分) ---
     const plane = document.getElementById('airplane');
     const trigger = document.getElementById('plane-trigger');
-
 
     if (plane && trigger) {
         const observerOptions = {
@@ -259,6 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     plane.classList.add('take-off');
                 } else {
                     // 離開視窗：重置 (下次捲動會再飛一次)
+                    // 如果只想要飛一次，可以把下面這行註解掉
                     plane.classList.remove('take-off');
                 }
             });
