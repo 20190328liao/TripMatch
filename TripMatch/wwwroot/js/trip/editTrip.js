@@ -14,13 +14,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const wrapper = document.querySelector('.itinerary-wrapper');
     const displayName = wrapper ? wrapper.getAttribute('data-display-name') : "成員";
+    const avatarUrl = wrapper ? wrapper.getAttribute('data-avatar-url') : "";
 
-    console.log("原生 JS 抓取測試:", displayName);
 
-    // 如果還是抓不到，印出整個 wrapper 看看
-    console.log("Wrapper 元素本人:", wrapper);
-    SignalRManager.init(tripId, displayName, async (data) => {
-        showSimpleToast(data.message); // 跳通知
+    SignalRManager.init(tripId, displayName, avatarUrl,async (data) => {
+        showSimpleToast(data); // 跳通知
 
         // 呼叫 manager 的功能來同步畫面
         if (typeof refreshItineraryList === 'function') {

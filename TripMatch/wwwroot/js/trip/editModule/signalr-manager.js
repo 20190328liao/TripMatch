@@ -1,16 +1,17 @@
 ﻿let connection = null;  
 let userName = "成員";
-
+let userImgUrl = "";
 export const SignalRManager = {
 
     //1. 初始化連線
-    init: async (tripId, displayName, onUpdateReceived) => {
+    init: async (tripId, displayName, avatarUrl,onUpdateReceived) => {
 
         if (connection) return; // 已經初始化過了
 
         userName = displayName;
+        userImgUrl = avatarUrl; 
 
-        console.log("使用者顯示名稱:", userName);
+        
 
         connection = new signalR.HubConnectionBuilder()
             .withUrl("/tripHub")
@@ -41,7 +42,7 @@ export const SignalRManager = {
         if (connection && connection.state === signalR.HubConnectionState.Connected) {
             const message = `${userName}${description}`;
             // 確保 targetId 是整數
-            connection.invoke("NotifyUpdate", tripId.toString(), parseInt(targetId), message)
+            connection.invoke("NotifyUpdate", tripId.toString(), parseInt(targetId), message, userImgUrl)
                 .catch(err => console.error("廣播失敗:", err));
         }
     }

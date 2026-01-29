@@ -16,6 +16,13 @@
     // 3. 嘗試取得 Email
     var email = User.FindFirstValue(ClaimTypes.Email);
 
+    // 4. 嘗試取得頭像圖案
+    var avatarUrl = User.FindFirst("Avatar")?.Value;
+    if (string.IsNullOrEmpty(avatarUrl))
+    {
+        avatarUrl = Url.Content("~/img/default_avatar.png");
+    }
+
     // 4. 決定顯示名稱的優先順序
     string displayName = "使用者";
 
@@ -49,7 +56,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 }
 
-<div class="itinerary-wrapper" data-trip-id="@Model" data-display-name="@displayName">
+<div class="itinerary-wrapper" data-trip-id="@Model" data-display-name="@displayName" data-avatar-url="@avatarUrl">
     <div class="left-panel">
         <input type="hidden" id="current-trip-id" value="@Model" />
 
