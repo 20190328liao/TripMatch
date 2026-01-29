@@ -107,10 +107,14 @@
         ]);
     };
 
+    // ★ 修改：嚴格限制只在 MemberCenter 的 #calendar_section 出現
     ns.isAllowedPendingPage = function () {
         const path = (location.pathname || '').toLowerCase();
-        const hash = location.hash;
-        return (path.includes('/membercenter') && hash === '#calendar_section') || path.includes('/match/calendarcheck');
+        const hash = (location.hash || '').toLowerCase();
+
+        // 條件：路徑包含 /auth/membercenter 且 hash 為 #calendar_section
+        // 對於 /Match/CalendarCheck/，此函式回傳 false，因此不會顯示鈴鐺
+        return path.includes('/auth/membercenter') && hash === '#calendar_section';
     };
 
     ns.showNoDataNotice = function (groupId) {
@@ -122,6 +126,21 @@
             ? `已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後返回行程確認...`
             : `已匯入 <b>${count}</b> 個時段，將於 <b>{sec}</b> 秒後更新...`;
         showToast(msg, groupId, redirectUrl);
+    };
+
+    ns.showToast = function (message, groupId, redirectUrl = null, autoRedirect = true) {
+        if (!autoRedirect) {
+            const old = document.getElementById(TOAST_ID);
+            if (old) old.remove();
+            const toast = document.createElement('div');
+            toast.id = TOAST_ID;
+            toast.className = 'tm-import-toast';
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { if (toast) toast.remove(); }, 3000);
+        } else {
+            showToast(message, groupId, redirectUrl);
+        }
     };
 
     function showToast(messageTemplate, groupId, customRedirectUrl = null) {
@@ -321,37 +340,18 @@ function getGroupIdFromPath() {
     return null;
 }
 
-// ★ 修復：CalendarCheck 頁面要主動抓 ID
+// 頁面初始化檢查
 function ensureBellOnAllowedPage() {
     try {
         const ns = window.CalendarUI || {};
         if (!ns.isAllowedPendingPage || !ns.createBell) return;
 
         if (ns.isAllowedPendingPage()) {
-            const path = (location.pathname || '').toLowerCase();
-            if (path.includes('/match/calendarcheck')) {
-
-                // 1. 嘗試從 URL 抓 GroupId
-                const currentGid = getGroupIdFromPath();
-
-                // 2. 建立鈴鐺時帶入 payload，這樣 openPendingModal 才有資料
-                ns.createBell({ groupId: currentGid }, { autoShake: false });
-
-                // 3. 檢查是否剛匯入回來 (旗標邏輯)
-                if (currentGid) {
-                    const key = 'tm_imported_group_' + currentGid;
-                    try {
-                        if (sessionStorage.getItem(key)) {
-                            sessionStorage.removeItem(key);
-                            if (typeof ns.startPendingSequence === 'function') {
-                                ns.startPendingSequence({ groupId: currentGid });
-                            }
-                        }
-                    } catch (e) { }
-                }
-            } else {
-                ns.createBell({}, { autoShake: false });
-            }
+            // 只有在符合 /auth/membercenter#calendar_section 時才建立
+            ns.createBell({}, { autoShake: false });
+        } else {
+            // 其他頁面一律移除
+            ns.destroyBell();
         }
     } catch (e) { }
 }
@@ -359,44 +359,32 @@ function ensureBellOnAllowedPage() {
 document.addEventListener('DOMContentLoaded', ensureBellOnAllowedPage);
 window.addEventListener('hashchange', () => { setTimeout(ensureBellOnAllowedPage, 50); });
 
+// Auto-Dismiss Hints Logic
 (function () {
     'use strict';
-
     function dismissHints() {
-        try { localStorage.setItem('tm_hints_dismissed', '1'); } catch (e) { /* ignore */ }
-
-        // 移除頁面上所有 guide 提示樣式
+        try { localStorage.setItem('tm_hints_dismissed', '1'); } catch (e) { }
         document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
-
-        // 移除鈴鐺上的提示（若存在）
         const bell = document.getElementById('tm-pending-bell');
         if (bell) bell.classList.remove('guide-hint');
-
-        // 通知其它模組（原有程式可監聽此事件）
         document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
-
-        // 若 CalendarUI 提供關閉 modal 的方法，呼叫它以確保 modal 被關閉
         try {
             if (window.CalendarUI && typeof window.CalendarUI.closePendingModal === 'function') {
                 window.CalendarUI.closePendingModal();
             }
-        } catch (e) { /* ignore */ }
+        } catch (e) { }
     }
-
-    // 支援動態產生的按鈕：使用事件委派
     document.addEventListener('click', function (ev) {
         const btn = ev.target && ev.target.closest ? ev.target.closest('#btn-dismiss-hints') : null;
         if (!btn) return;
         ev.preventDefault();
         dismissHints();
     });
-
-    // 頁面載入時若已關閉過（localStorage），自動移除提示
     try {
         if (localStorage.getItem('tm_hints_dismissed') === '1') {
             document.querySelectorAll('.guide-hint').forEach(el => el.classList.remove('guide-hint'));
             const bell = document.getElementById('tm-pending-bell');
             if (bell) bell.classList.remove('guide-hint');
         }
-    } catch (e) { /* ignore */ }
+    } catch (e) { }
 })();

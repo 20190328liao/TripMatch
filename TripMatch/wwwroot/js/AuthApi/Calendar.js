@@ -1,5 +1,4 @@
-﻿
-(async function () {
+﻿(async function () {
     async function fetchLockedRanges() {
         if (window.jQuery) {
             return new Promise((resolve) => {
@@ -28,7 +27,8 @@
 
     (function tryInit() {
         if (window.Calendar && typeof window.Calendar.init === 'function') {
-            window.Calendar.init({ lockedRanges });
+            // ★ 修改 1: 傳入 editMode: true，預設啟用編輯功能
+            window.Calendar.init({ lockedRanges, editMode: true });
         } else {
             setTimeout(tryInit, 100);
         }
@@ -48,7 +48,6 @@
     let showEnglishMonths = false;
 
     // --- CSS for Dragging Cursor ---
-    // ★ 修改重點：Hover 時一般箭頭 (default)，拖曳時 Grabbing
     const styleId = 'calendar-drag-style';
     if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
@@ -352,7 +351,11 @@
 
         if (typeof options.editMode !== 'undefined') {
             editMode = !!options.editMode;
-            if (editMode) $('body').addClass('calendar-editing');
+            if (editMode) {
+                $('body').addClass('calendar-editing');
+                // ★ 修改 2: 若預設開啟編輯，按鈕文字也要對應
+                $('.edit').text('編輯模式');
+            }
         }
 
         const draft = loadDraftFromSession();
@@ -364,6 +367,7 @@
                     selectedRanges = draft.ranges || [];
                     editMode = true;
                     $('body').addClass('calendar-editing');
+                    $('.edit').text('編輯模式');
                     renderMonth();
                 } else {
                     clearDraftSession();
@@ -381,6 +385,10 @@
     }
 
     function bindEvents() {
+        // ★ 修改 3: 新增變數以支援「拖曳新增範圍」
+        let mouseDownPos = null;
+        let wasDragging = false;
+
         $(document)
             .off('.calendar')
             .on('click.calendar', '.year-left', () => { currentYear--; buildMonthPanel(); renderMonth(); })
@@ -394,10 +402,10 @@
             })
             // --- 點擊建立範圍 (非拖曳時觸發) ---
             .on('click.calendar', '.day-cell:not(.locked)', function (e) {
+                if (wasDragging) { wasDragging = false; return; } // ★ 若剛結束拖曳，不觸發點擊事件
                 if (dragState) return;
                 if (!editMode) return;
 
-                // 避免點擊 X 按鈕時觸發選擇
                 if ($(e.target).hasClass('cell-delete') || $(e.target).closest('.cell-delete').length) return;
 
                 const iso = $(this).data('date');
@@ -406,7 +414,6 @@
             // --- 雙擊單選 ---
             .on('dblclick.calendar', '.day-cell:not(.locked)', function (e) {
                 if (!editMode) return;
-                // 避免點擊 X 按鈕時觸發
                 if ($(e.target).hasClass('cell-delete') || $(e.target).closest('.cell-delete').length) return;
 
                 const iso = $(this).data('date');
@@ -417,6 +424,7 @@
                     selectedSingles = selectedSingles.filter(s => s !== iso);
                 } else {
                     selectedSingles.push(iso);
+                    // 如果雙擊單日，自動移除重疊的 Range (優先權：單日 > Range)
                     selectedRanges = selectedRanges.filter(r => {
                         const arr = expandRangeToIsoDates(r.start, r.end);
                         return !arr.includes(iso);
@@ -430,13 +438,12 @@
                 if (!editMode) return;
                 if (e.button !== 0) return; // 只允許左鍵
 
-                // 檢查是否點擊到 X 按鈕，如果是則完全不啟動拖曳
                 if ($(e.target).hasClass('cell-delete') || $(e.target).closest('.cell-delete').length) return;
 
                 const $cell = $(this);
                 const iso = $cell.data('date');
 
-                // 檢查是否為 Range Start 或 End
+                // 檢查是否點到「已存在範圍」的起點或終點 (Resize 模式)
                 let foundIndex = -1;
                 let type = null;
 
@@ -446,59 +453,95 @@
                 });
 
                 if (foundIndex !== -1 && type) {
-                    e.preventDefault(); // 防止文字選取
-                    dragState = {
-                        index: foundIndex,
-                        type: type,
-                    };
+                    // Resize 模式：立即開始
+                    e.preventDefault();
+                    dragState = { index: foundIndex, type: type };
                     $('body').addClass('calendar-dragging');
+                } else {
+                    // ★ 修改 4: 記錄按下的位置，準備判斷是否為「新增範圍」
+                    if (!isLocked(iso) && !submittedDates.includes(iso)) {
+                        mouseDownPos = { x: e.clientX, y: e.clientY, iso: iso };
+                    }
                 }
             })
             // --- ★ 拖曳進行 (Global MouseMove) ---
             .on('mousemove.calendar', function (e) {
-                if (!dragState) return;
+                // A. Resize 模式
+                if (dragState) {
+                    const el = document.elementFromPoint(e.clientX, e.clientY);
+                    const $target = $(el).closest('.day-cell');
+                    if ($target.length === 0) return;
 
-                const el = document.elementFromPoint(e.clientX, e.clientY);
-                const $target = $(el).closest('.day-cell');
-                if ($target.length === 0) return;
+                    const hoverIso = $target.data('date');
+                    if (!hoverIso) return;
+                    if (isLocked(hoverIso)) return;
 
-                const hoverIso = $target.data('date');
-                if (!hoverIso) return;
-                if (isLocked(hoverIso)) return;
+                    const range = selectedRanges[dragState.index];
+                    if (!range) return;
 
-                const range = selectedRanges[dragState.index];
-                if (!range) return;
+                    let newStart = range.start;
+                    let newEnd = range.end;
 
-                let newStart = range.start;
-                let newEnd = range.end;
+                    if (dragState.type === 'start') {
+                        newStart = hoverIso;
+                    } else {
+                        newEnd = hoverIso;
+                    }
 
-                if (dragState.type === 'start') {
-                    newStart = hoverIso;
-                } else {
-                    newEnd = hoverIso;
+                    // 自動反轉邏輯
+                    if (DH.fromIso(newStart) > DH.fromIso(newEnd)) {
+                        const tmp = newStart;
+                        newStart = newEnd;
+                        newEnd = tmp;
+                        dragState.type = (dragState.type === 'start') ? 'end' : 'start';
+                    }
+
+                    // 檢查衝突 (排除自己)
+                    const candidate = expandRangeToIsoDates(newStart, newEnd);
+                    if (!hasIntersectionWithExisting(candidate, { ignoreDraftSingles: true, excludeRangeIndex: dragState.index })) {
+                        selectedRanges[dragState.index] = { start: newStart, end: newEnd };
+                        selectedSingles = selectedSingles.filter(s => !candidate.includes(s));
+                        renderMonth();
+                    }
+                    return;
                 }
 
-                // 自動反轉邏輯
-                if (DH.fromIso(newStart) > DH.fromIso(newEnd)) {
-                    const tmp = newStart;
-                    newStart = newEnd;
-                    newEnd = tmp;
-                    dragState.type = (dragState.type === 'start') ? 'end' : 'start';
-                }
+                // B. Create Mode (判斷是否拖曳一段距離)
+                if (mouseDownPos) {
+                    const dist = Math.sqrt(Math.pow(e.clientX - mouseDownPos.x, 2) + Math.pow(e.clientY - mouseDownPos.y, 2));
+                    if (dist > 5) { // 門檻值 5px
+                        const startIso = mouseDownPos.iso;
+                        mouseDownPos = null; // 消耗掉，避免重複觸發
 
-                // 檢查衝突 (排除自己)
-                const candidate = expandRangeToIsoDates(newStart, newEnd);
-                if (!hasIntersectionWithExisting(candidate, { ignoreDraftSingles: true, excludeRangeIndex: dragState.index })) {
-                    selectedRanges[dragState.index] = { start: newStart, end: newEnd };
-                    // 吸收單點
-                    selectedSingles = selectedSingles.filter(s => !candidate.includes(s));
-                    renderMonth();
+                        // 嘗試建立新範圍
+                        const candidate = [startIso];
+                        if (!hasIntersectionWithExisting(candidate, { ignoreDraftSingles: true })) {
+                            // 建立一個 1 天的範圍
+                            selectedRanges.push({ start: startIso, end: startIso });
+                            const newIndex = selectedRanges.length - 1;
+
+                            // 轉為 Resize 模式 (拉動 End)
+                            dragState = { index: newIndex, type: 'end' };
+
+                            // 清理重疊的單點
+                            if (selectedSingles.includes(startIso)) {
+                                selectedSingles = selectedSingles.filter(s => s !== startIso);
+                            }
+
+                            rangeDraftStart = null; // 清除點擊暫存
+                            $('body').addClass('calendar-dragging');
+                            renderMonth();
+                        }
+                    }
                 }
             })
             // --- ★ 拖曳結束 (Global MouseUp) ---
             .on('mouseup.calendar', function () {
+                mouseDownPos = null;
                 if (dragState) {
                     dragState = null;
+                    wasDragging = true; // 設定旗標，阻擋接下來的 click 事件
+                    setTimeout(() => wasDragging = false, 50);
                     $('body').removeClass('calendar-dragging');
                     saveDraftToSession();
                     renderSubmittedList();
@@ -660,7 +703,6 @@
             const isDraftSelected = selectedSingles.includes(iso) || selectedRanges.some(r => DH.isBetweenInclusive(date, DH.fromIso(r.start), DH.fromIso(r.end)));
             if (showDeleteButtons && !isLocked(iso) && (isDraftSelected || submittedDates.includes(iso))) {
                 const $del = $('<button>', { class: 'cell-delete', text: '×', title: '刪除', type: 'button' });
-                // ★ 關鍵修正：增加 mousedown 阻擋，避免點擊 X 時同時觸發 day-cell 的 mousedown (拖曳開始)
                 $del.on('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); });
                 $del.on('click', async function (e) { e.preventDefault(); e.stopPropagation(); await removeDate(iso); });
                 $del.on('dblclick', function (e) { e.preventDefault(); e.stopPropagation(); });

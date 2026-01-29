@@ -11,14 +11,36 @@
 }
 
 <link rel="stylesheet" href="~/css/Match/CalendarCheck.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
 <style>
+    /* --- 關鍵修改：控制鈴鐺顯示位置 --- */
+
+    /* 1. Modal 內：絕對隱藏鈴鐺 */
+    #calendarModal .fa-bell,
+    #calendarModal .bell-icon {
+        display: none !important;
+    }
+
+    /* 2. Calendar Section 內：強制顯示鈴鐺 */
+    #calendar_section .fa-bell,
+    #calendar_section .bell-icon {
+        display: inline-block !important;
+        color: #f39c12; /* 橘色鈴鐺 */
+        font-size: 1.2rem;
+        margin-left: 10px;
+        cursor: pointer;
+    }
 </style>
 
 <div class="page-wrap">
-    <div id="selectionSection" class="@(isSubmitted ? "d-none" : "")">
+    <div id="calendar_section" class="@(isSubmitted ? "d-none" : "")">
         <div class="calendar-container">
-            <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <h2 class="fw-bold mb-0" style="color:var(--text-dark)">確認您的可用時間</h2>
+                <i class="fa fa-bell" title="提醒事項"></i>
+            </div>
+
             <p class="text-center text-muted mb-4">系統已自動帶入您在會員中心的設定，請確認本次行程的可用時段</p>
 
             <div id="groupRangeInfo" class="text-center mb-4 d-none" style="font-size:0.95rem; color:var(--text-muted)">
@@ -159,23 +181,16 @@
         let pollingInterval;
 
         // --- 互動狀態變數 ---
-        // 1. 一般框選/點選
         let isMouseDown = false;
         let isDragging = false;
         let dragAnchorDate = null;
         let clickStartNode = null;
 
-        // 2. 調整邊界 (Resize)
         let isResizing = false;
-        let resizingRange = null;    // 正在被調整的原始範圍
-        let resizeAnchor = null;     // 調整時「固定不動」的那一端日期
+        let resizingRange = null;
+        let resizeAnchor = null;
 
         function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
-
-        function goToMemberCenter() {
-            sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
-            window.location.href = '/Auth/MemberCenter#calendar_section';
-        }
 
         function dismissCalendarModal() {
             sessionStorage.removeItem('calendar_check_pending');
@@ -236,7 +251,6 @@
             const idx = selectedRanges.findIndex(r => r.start === startIso);
             if(idx >= 0) {
                 selectedRanges.splice(idx, 1);
-                // 重置所有狀態
                 clickStartNode = null;
                 isMouseDown = false;
                 isDragging = false;
@@ -285,7 +299,7 @@
         }
 
         function showWaitingMode() {
-            document.getElementById('selectionSection')?.classList.add('d-none');
+            document.getElementById('calendar_section')?.classList.add('d-none');
             document.getElementById('waitingSection')?.classList.remove('d-none');
             if (hasValidGroupId()) checkStatus();
             pollingInterval = setInterval(() => { if (hasValidGroupId()) checkStatus(); }, 3000);
@@ -318,7 +332,6 @@
                 importRanges: function(ranges) {
                     if (!Array.isArray(ranges) || ranges.length === 0) return;
 
-                    // 匯入防呆：詢問覆蓋
                     if (selectedRanges.length > 0) {
                         const choice = confirm("偵測到您已有選擇的時段。\n\n按「確定」：清空現有選擇，只保留匯入資料。\n按「取消」：保留現有選擇，並加入匯入資料。");
                         if (choice) {
@@ -332,8 +345,7 @@
                         if (groupStart && s < groupStart) s = groupStart;
                         if (groupEnd && e > groupEnd) e = groupEnd;
                         if (s > e) return;
-
-                        if (checkOverlap(s, e)) return; // 略過重疊
+                        if (checkOverlap(s, e)) return;
 
                         const dayCount = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
                         selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
@@ -359,8 +371,6 @@
 
             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
             await loadMyExistingSlots();
-
-            // ★ 修復：延遲載入匯入資料，確保變數初始化完成
             setTimeout(loadImportedDraft, 100);
 
             document.addEventListener('mouseup', handleGlobalMouseUp);
@@ -370,73 +380,46 @@
             renderMonth();
             bindCalendarEvents();
 
-            // --- 滑鼠事件邏輯 (Resize + Drag + Click) ---
-
-            // 1. MouseDown
             function handleMouseDown(iso, existingRange, type) {
                 document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
-
-                // A. 調整模式 (點擊了 Start 或 End)
                 if (existingRange && (type === 'start' || type === 'end' || type === 'single')) {
                     isResizing = true;
                     resizingRange = existingRange;
+                    if (type === 'start') resizeAnchor = existingRange.end;
+                    else if (type === 'end') resizeAnchor = existingRange.start;
+                    else resizeAnchor = existingRange.start;
 
-                    // 設定錨點 (固定不動的那一端)
-                    // 如果點 Start，錨點就是 End；如果點 End，錨點就是 Start
-                    // 如果是 Single，點哪裡都可以拉，這裡預設當作 Start 點擊，錨點設為 Start (變成拉 End)
-                    // 或根據滑鼠拖曳方向決定。為簡化，Single 視為點 Start，錨點=Start，允許拉出 End。
-
-                    if (type === 'start') {
-                        resizeAnchor = existingRange.end;
-                    } else if (type === 'end') {
-                        resizeAnchor = existingRange.start;
-                    } else { // single
-                        resizeAnchor = existingRange.start;
-                    }
-
-                    // 暫時移除該範圍，以顯示預覽
                     const idx = selectedRanges.indexOf(existingRange);
                     if (idx > -1) selectedRanges.splice(idx, 1);
 
                     renderMonth();
-                    drawPreview(resizeAnchor, iso); // 立即繪製
-                }
-                // B. 新增模式 (點擊空白處)
-                else {
+                    drawPreview(resizeAnchor, iso);
+                } else {
                     isMouseDown = true;
                     isDragging = false;
                     dragAnchorDate = iso;
                 }
             }
 
-            // 2. MouseOver
             function handleMouseOver(hoverIso) {
                 clearPreview();
-
-                // A. 調整中 (Resize)
                 if (isResizing && resizeAnchor) {
                     drawPreview(resizeAnchor, hoverIso);
                     return;
                 }
-
-                // B. 框選中 (Drag)
                 if (isMouseDown) {
                     isDragging = true;
-                    clickStartNode = null; // 取消點擊模式
+                    clickStartNode = null;
                     drawPreview(dragAnchorDate, hoverIso);
                     return;
                 }
-
-                // C. 點擊模式 (Click)
                 if (!isMouseDown && !isResizing && clickStartNode) {
                     drawPreview(clickStartNode, hoverIso);
                 }
             }
 
-            // 輔助：繪製預覽
             function drawPreview(start, end) {
                 if (start > end) { const t = start; start = end; end = t; }
-
                 const dayCount = calculateDays(start, end);
                 const isOverlap = checkOverlap(start, end);
                 const hasLocked = checkRangeHasLocked(start, end);
@@ -455,18 +438,14 @@
                 });
             }
 
-            // 3. MouseUp
             function handleGlobalMouseUp(e) {
                 if (e.target.classList.contains('delete-btn')) return;
-
-                // A. 調整結束 (Resize Finish)
                 if (isResizing) {
                     const cell = e.target.closest('.day-cell');
                     if (cell && !cell.classList.contains('empty')) {
                         const iso = cell.dataset.iso;
-                        commitRange(resizeAnchor, iso, true); // true=失敗時還原
+                        commitRange(resizeAnchor, iso, true);
                     } else {
-                        // 放開在無效區 -> 還原
                         commitRange(resizingRange.start, resizingRange.end);
                     }
                     isResizing = false;
@@ -474,8 +453,6 @@
                     resizeAnchor = null;
                     return;
                 }
-
-                // B. 拖曳結束 (Drag Finish)
                 if (isDragging) {
                     commitSelectionFromPreview();
                     isMouseDown = false;
@@ -483,13 +460,9 @@
                     dragAnchorDate = null;
                     return;
                 }
-
-                // C. 點擊 (Click)
                 const cell = e.target.closest('.day-cell');
                 if (cell && !cell.classList.contains('empty') && !cell.classList.contains('locked') && isMouseDown) {
                     const iso = cell.dataset.iso;
-
-                    // 如果點到空白處
                     if (clickStartNode === null) {
                         clickStartNode = iso;
                         renderMonth();
@@ -499,7 +472,6 @@
                         clickStartNode = null;
                     }
                 }
-
                 isMouseDown = false;
                 dragAnchorDate = null;
             }
@@ -516,10 +488,7 @@
             }
 
             function commitRange(s, e, isRestoreOnFail = false) {
-                // 排序日期
                 if (s > e) { const t = s; s = e; e = t; }
-
-                // 檢查重疊
                 if (checkOverlap(s, e)) {
                     alert("位置重疊！");
                     if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
@@ -527,7 +496,6 @@
                     forceRender();
                     return;
                 }
-                // 檢查鎖定
                 if (checkRangeHasLocked(s, e)) {
                     alert("包含不可選日期！");
                     if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
@@ -535,7 +503,6 @@
                     forceRender();
                     return;
                 }
-
                 const dayCount = calculateDays(s, e);
                 selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
                 clearPreview();
@@ -552,7 +519,6 @@
                 if (!groupStart || !groupEnd) return true;
                 return iso < groupStart || iso > groupEnd;
             }
-            // 檢查重疊 (確保不與 selectedRanges 中任何一個重疊)
             function checkOverlap(start, end) {
                 return selectedRanges.some(r => (start <= r.end) && (end >= r.start));
             }
@@ -576,7 +542,6 @@
                 return null;
             }
 
-            // --- 渲染月曆 ---
             function renderMonth() {
                 const $days = document.querySelector('.days');
                 const $monthDisplay = document.querySelector('.month-display');
@@ -616,7 +581,6 @@
                             if (status.type === 'mid') cell.classList.add('range-mid');
                             if (status.type === 'single') cell.classList.add('status-single');
 
-                            // 刪除按鈕
                             if (status.type === 'start' || status.type === 'end' || status.type === 'single') {
                                 const delBtn = document.createElement('span');
                                 delBtn.className = 'delete-btn';
@@ -634,8 +598,6 @@
                         cell.onmousedown = (e) => {
                             if (e.target.classList.contains('delete-btn')) return;
                             e.preventDefault();
-
-                            // 判斷是否點擊了已存在範圍的 Start 或 End -> 啟動 Resize
                             if (status) {
                                 handleMouseDown(iso, status.range, status.type);
                             } else {
@@ -643,7 +605,6 @@
                             }
                         };
                         cell.onmousemove = (e) => {
-                            // 判斷是否為「拖曳中」
                             if (isMouseDown && !isResizing && !isDragging) {
                                 isDragging = true;
                                 clickStartNode = null;
@@ -656,7 +617,6 @@
                 renderList();
             }
 
-            // ... (後端載入函式保持不變) ...
             async function loadGroupInfo() {
                 const res = await fetch(`/api/timewindow/${currentGroupId}/status`);
                 if(res.ok) {
@@ -728,8 +688,49 @@
             const draftRaw = sessionStorage.getItem('calendar_draft_ranges');
             const shouldShowPrompt = "@((bool)(ViewData["ShowCalendarPrompt"] ?? false) ? "true" : "false")" === "true";
 
+            // --- 關鍵修改：重新定義匯入按鈕邏輯 ---
             const importBtn = document.getElementById('btnImportFromCheck');
-            if (importBtn) importBtn.addEventListener('click', goToMemberCenter);
+            if (importBtn) {
+                importBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+
+                    // 1. 檢查是否有請假資料 (呼叫 API 或使用已載入的資料)
+                    // 為了保險起見，我們直接呼叫 API 確認最新狀態
+                    let hasLeaveData = false;
+                    try {
+                        const res = await fetch('/api/auth/GetLeaves');
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.dates && data.dates.length > 0) {
+                                hasLeaveData = true;
+                            }
+                        }
+                    } catch(ex) {
+                        console.error("Check leaves failed", ex);
+                    }
+
+                    if (hasLeaveData) {
+                        // --- 情境 A：有資料 -> 匯入 (關閉 Modal，顯示已載入的資料) ---
+                        // 註：資料其實在 initCalendar 的 loadMyAvailability 已經載入並會顯示在日曆上
+                        // 這裡主要是給使用者「已完成」的感覺並關閉視窗
+                        dismissCalendarModal();
+
+                        // 可選：跳個提示
+                        // alert("已載入您的請假資料");
+                    } else {
+                        // --- 情境 B：沒資料 -> 導向至 #calendar_section ---
+                        dismissCalendarModal();
+                        const target = document.getElementById('calendar_section');
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth' });
+                            // 閃爍提醒效果 (可選)
+                            target.style.transition = 'background-color 0.5s';
+                            target.style.backgroundColor = '#fff3cd'; // 淺黃色
+                            setTimeout(() => { target.style.backgroundColor = ''; }, 1000);
+                        }
+                    }
+                });
+            }
 
             const closeBtn = document.getElementById('closeModal');
             if (closeBtn) {

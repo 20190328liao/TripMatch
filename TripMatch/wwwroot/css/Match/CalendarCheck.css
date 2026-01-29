@@ -781,3 +781,20 @@ body {
 .days.guide-active .day-cell::after {
     z-index: 10;
 }
+/* --- 關鍵設定：控制鈴鐺顯示位置 --- */
+
+/* 1. Modal 內：絕對隱藏鈴鐺 */
+#calendarModal .fa-bell,
+#calendarModal .bell-icon {
+    display: none !important;
+}
+
+/* 2. Calendar Section 內：強制顯示鈴鐺 */
+#calendar_section .fa-bell,
+#calendar_section .bell-icon {
+    display: inline-block !important; /* 或是 block，依您的排版 */
+    color: #f39c12; /* 範例顏色：橘色 */
+    font-size: 1.2rem;
+    margin-left: 10px;
+    cursor: pointer;
+}
