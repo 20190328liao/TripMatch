@@ -13,9 +13,9 @@ namespace TripMatch.Hubs
         }
 
         // 通知群組內的其他人，但不包含發送者自己
-        public async Task NotifyUpdate(string tripId, int targetId, string message)
+        public async Task NotifyUpdate(string tripId, int targetId, string message, string userImgUrl)
         {
-            await Clients.OthersInGroup(tripId).SendAsync("ReceiveItineraryUpdate", new { message, targetId });
+            await Clients.OthersInGroup(tripId).SendAsync("ReceiveItineraryUpdate", new { message, targetId , userImgUrl});
         }
     }
 }

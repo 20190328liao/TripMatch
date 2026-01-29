@@ -109,17 +109,37 @@ export function refreshItineraryList() {
 export function GetDateStrings() {
     return DateStrings;
 }
-export function showSimpleToast(msg) {
+export function showSimpleToast(data) {
     const toastId = 'toast-' + Date.now();
+
+    console.log("data", data);
+
+    // 如果沒有傳頭像，給一個預設圖
+    const imgUrl = data.userImgUrl || '/images/default-avatar.png';
+
+    console.log("imgUrl", imgUrl);
+
     const html = `
-        <div id="${toastId}" class="toast show align-items-center text-white bg-dark border-0 position-fixed bottom-0 end-0 m-3" style="z-index: 9999;">
-            <div class="d-flex">
-                <div class="toast-body">${msg}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        <div id="${toastId}" class="toast show align-items-center text-white bg-dark border-0 position-fixed bottom-0 end-0 m-3" 
+             style="z-index: 9999; min-width: 350px; border-radius: 50px !important;">
+            <div class="d-flex align-items-center py-2 px-3">
+                <div class="toast-avatar-container ms-2">
+                    <img src="${imgUrl}" alt="User" 
+                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);">
+                </div>
+                <div class="toast-body flex-grow-1 fs-5">${data.message}</div>
+                <button type="button" class="btn-close btn-close-white me-2" data-bs-dismiss="toast"></button>
             </div>
         </div>`;
+
     $('body').append(html);
-    setTimeout(() => $(`#${toastId}`).fadeOut(() => $(`#${toastId}`).remove()), 3000);
+
+    // 動畫效果：淡入後 3 秒淡出
+    setTimeout(() => {
+        $(`#${toastId}`).fadeOut(500, function () {
+            $(this).remove();
+        });
+    }, 3000);
 }
 export function flashItineraryElement(id) {
     if (id) {
@@ -774,10 +794,6 @@ function renderItinerary(items, dates, accommodations, flights) {
         } else {
             // B. 如果有行程 -> 正常渲染卡片
             dayItems.forEach((item, index) => {
-
-
-                console.log("渲染行程項目:", item);
-
                 const rawStart = item.startTime || "";
                 const rawEnd = item.endTime || "";
                 const displayStart = formatTime(item.startTime);
@@ -1188,8 +1204,7 @@ function addQuickPlaceToTrip(place, dayNum) {
                     window.currentMapInstance.setZoom(16);
                 }
 
-                // 提示使用者 (可選)
-                showSimpleToast(`已加入 Day ${dayNum}`);
+                SignalRManager.broadcast(currentTripId, "新增景點", 0); 
             },
             error: function (xhr) {
                 alert('加入失敗：' + (xhr.responseJSON?.message || "伺服器錯誤"));
