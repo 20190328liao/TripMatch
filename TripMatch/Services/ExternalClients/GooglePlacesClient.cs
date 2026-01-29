@@ -1,5 +1,7 @@
 ﻿using TripMatch.Models.DTOs;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Linq;
 
 namespace TripMatch.Services.ExternalClients
 {
@@ -15,7 +17,6 @@ namespace TripMatch.Services.ExternalClients
             // 使用冒號 (:) 來讀取 JSON 的階層：GoogleMaps -> ApiKey
             _apiKey = config["GoogleMaps:ApiKey"];
 
-            // 為了教學方便，如果抓不到金鑰，我們可以拋出錯誤提醒自己
             if (string.IsNullOrEmpty(_apiKey))
             {
                 throw new Exception("找不到 Google API Key，請檢查 appsettings.json 設定。");
@@ -24,7 +25,7 @@ namespace TripMatch.Services.ExternalClients
 
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
-            var fields = "name,address_components,formatted_address,rating,user_ratings_total,photos,geometry/location";
+            var fields = "name,formatted_address,rating,user_ratings_total,photos,geometry/location";
 
             var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}" +
                       $"&fields={fields}&key={_apiKey}&language={lang}";
@@ -54,17 +55,94 @@ namespace TripMatch.Services.ExternalClients
             }
             return null;
         }
-        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 50000)
+        public async Task<HotelBriefDto?> GetRecommendedHotelAsync(string locationQuery)
+        {
+            // 防呆：如果傳進來是空值，直接回傳 null
+            if (string.IsNullOrWhiteSpace(locationQuery)) return null;
+
+            // 組合搜尋關鍵字，例如："東京 hotel" 或 "Tokyo hotel"
+            // 這樣 Google Places Text Search 就能精準找到該地區的飯店
+            string query = $"{locationQuery} hotel";
+
+            // 使用 textsearch API
+            // type=lodging 代表找住宿
+            var url = $"https://maps.googleapis.com/maps/api/place/textsearch/json?" +
+                      $"query={Uri.EscapeDataString(query)}" +
+                      $"&type=lodging" +
+                      $"&language=zh-TW" +
+                      $"&key={_apiKey}";
+
+            try
+            {
+                var response = await _httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return null;
+
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+                var root = doc.RootElement;
+
+                // 檢查 API 回傳狀態
+                if (root.TryGetProperty("status", out var status) && status.GetString() != "OK")
+                {
+                    return null;
+                }
+
+                if (root.TryGetProperty("results", out var results) && results.GetArrayLength() > 0)
+                {
+                    // 策略：從前幾筆結果中，篩選評分 > 4.0 且評論數最多的
+                    var bestHotel = results.EnumerateArray()
+                        .Where(x => x.TryGetProperty("rating", out var r) && r.GetDouble() >= 4.0) // 評分門檻
+                        .OrderByDescending(x => x.TryGetProperty("user_ratings_total", out var c) ? c.GetInt32() : 0) // 評論數排序
+                        .FirstOrDefault();
+
+                    // 如果篩不到 (例如都沒評分)，就直接拿第一筆
+                    if (bestHotel.ValueKind == JsonValueKind.Undefined)
+                    {
+                        bestHotel = results[0];
+                    }
+
+                    // 解析資料
+                    string name = bestHotel.TryGetProperty("name", out var n) ? n.GetString() : "未知飯店";
+                    string address = bestHotel.TryGetProperty("formatted_address", out var a) ? a.GetString() : "";
+                    double rating = bestHotel.TryGetProperty("rating", out var rProp) ? rProp.GetDouble() : 0;
+                    string placeId = bestHotel.TryGetProperty("place_id", out var pid) ? pid.GetString() : "";
+
+                    // 取得價格等級 (0-4)，若無則預設 2 (適中)
+                    int priceLevel = 2;
+                    if (bestHotel.TryGetProperty("price_level", out var pl))
+                    {
+                        priceLevel = pl.GetInt32();
+                    }
+
+                    return new HotelBriefDto
+                    {
+                        Name = name,
+                        Rating = rating,
+                        Address = address,
+                        PriceLevel = priceLevel,
+                        PlaceId = placeId
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GooglePlacesClient] 飯店搜尋錯誤: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        public async Task<List<string>> GetNearbyAttractionsAsync(double? lat, double? lng, int radius = 10000)
         {
             var allCandidateIds = new List<string>();
             string? nextPageToken = null;
             int pageCount = 0;
-            const int MaxPages = 1;
+            const int MaxPages = 2;
                       
-            const int MinReviewCount = 500;
+            const int MinReviewCount = 100;
 
             // 【設定門檻】最低評分要求 (可選)
-            const double MinRating = 3.9;
+            const double MinRating = 4.0;
 
             do
             {
@@ -199,8 +277,14 @@ namespace TripMatch.Services.ExternalClients
                 return string.Empty;
             }
         }
-
+        // [新增] 飯店簡要資訊 DTO
+        public class HotelBriefDto
+        {
+            public string Name { get; set; } = "";
+            public double Rating { get; set; }
+            public string Address { get; set; } = "";
+            public int PriceLevel { get; set; } // 0: 免費, 1: 便宜, 2: 適中, 3: 昂貴, 4: 極奢
+            public string? PlaceId { get; set; }
+        }
     }
-
-
 }

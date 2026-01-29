@@ -7,37 +7,21 @@
 }
 
 <style>
-    /* --- 頁面專用樣式 --- */
+    /* ... (保留原本的 CSS) ... */
     .recommendation-container {
         max-width: 900px;
         margin: 0 auto;
         padding-bottom: 80px;
     }
 
-    /* 篩選卡片捲動容器 */
     .filter-scroll-container {
         display: flex;
         gap: 12px;
         overflow-x: auto;
         padding-bottom: 8px;
-        scrollbar-width: thin; /* Firefox */
+        scrollbar-width: thin;
     }
 
-        .filter-scroll-container::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .filter-scroll-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .filter-scroll-container::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 4px;
-        }
-
-    /* 篩選卡片本體 */
     .filter-card {
         cursor: pointer;
         border: 2px solid #E2E8F0;
@@ -46,7 +30,7 @@
         min-width: 160px;
         background: white;
         transition: all 0.2s;
-        flex: 0 0 auto; /* 防止被擠壓 */
+        flex: 0 0 auto;
         position: relative;
     }
 
@@ -60,20 +44,7 @@
             background-color: #EBF8FF;
             box-shadow: 0 4px 6px rgba(21, 93, 252, 0.15);
         }
-            /* 讓 active 狀態有個小勾勾或其他標示 (選用) */
-            .filter-card.active::after {
-                content: '';
-                position: absolute;
-                top: -5px;
-                right: -5px;
-                width: 10px;
-                height: 10px;
-                background: #155DFC;
-                border-radius: 50%;
-                border: 2px solid white;
-            }
 
-    /* 方案卡片樣式 */
     .option-card {
         background: #fff;
         border-radius: 16px;
@@ -89,7 +60,6 @@
             box-shadow: 0 12px 25px rgba(0,0,0,0.1);
         }
 
-    /* 狀態與標籤小元件 */
     .status-badge {
         background-color: #FEFCBF;
         color: #744210;
@@ -166,7 +136,6 @@
         line-height: 1.2;
     }
 
-    /* 背景色工具類別 */
     .bg-blue-100 {
         background-color: #DBEAFE;
     }
@@ -187,9 +156,7 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <div class="stat-card">
-                        <div class="stat-icon bg-blue-100 text-primary">
-                            <i class="bi bi-cash-coin"></i>
-                        </div>
+                        <div class="stat-icon bg-blue-100 text-primary"><i class="bi bi-cash-coin"></i></div>
                         <div class="stat-info">
                             <label>飯店預算 (中位數)</label>
                             <div class="stat-value">NT$ @Model.Summary.MedianHotelBudget.ToString("N0")</div>
@@ -197,37 +164,26 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
                     <div class="stat-card">
-                        <div class="stat-icon bg-green-100 text-success">
-                            <i class="bi bi-airplane-engines"></i>
-                        </div>
+                        <div class="stat-icon bg-green-100 text-success"><i class="bi bi-airplane-engines"></i></div>
                         <div class="stat-info w-100">
                             <label class="d-flex justify-content-between">
                                 <span>轉機接受度</span>
-                                <span style="font-size:12px; color:#666">
-                                    @Model.Summary.TransferAcceptCount 人接受 / @Model.Summary.TransferRejectCount 人拒絕
-                                </span>
+                                <span style="font-size:12px; color:#666">@Model.Summary.TransferAcceptCount 人接受 / @Model.Summary.TransferRejectCount 人拒絕</span>
                             </label>
                             <div class="progress mt-2" style="height: 8px;">
                                 @{
-                                    var total = Model.Summary.MemberCount;
-                                    var acceptPercent = total > 0 ? (Model.Summary.TransferAcceptCount * 100 / total) : 0;
+                                    var acceptPercent = Model.Summary.MemberCount > 0 ? (Model.Summary.TransferAcceptCount * 100 / Model.Summary.MemberCount) : 0;
                                 }
-                                <div class="progress-bar bg-success" role="progressbar"
-                                     style="width: @acceptPercent%"
-                                     aria-valuenow="@acceptPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-success" role="progressbar" style="width: @acceptPercent%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
                     <div class="stat-card">
-                        <div class="stat-icon bg-yellow-100 text-warning">
-                            <i class="bi bi-star-fill"></i>
-                        </div>
+                        <div class="stat-icon bg-yellow-100 text-warning"><i class="bi bi-star-fill"></i></div>
                         <div class="stat-info">
                             <label>期望星級 (平均)</label>
                             <div class="stat-value">@Model.Summary.AvgHotelRating <span style="font-size:14px">★</span></div>
@@ -238,32 +194,28 @@
             </div>
         </div>
     }
+
     <div class="text-center mb-5">
         <h2 class="fw-bold mb-2">推薦方案</h2>
-        <p class="text-muted">
-            根據團隊時間和偏好，為您找到 <span id="displayCount" class="fw-bold text-dark">@Model.TotalOptionsCount</span> 個最佳組合
-        </p>
+        <p class="text-muted">根據團隊時間和偏好，為您找到 <span id="displayCount" class="fw-bold text-dark">@Model.TotalOptionsCount</span> 個最佳組合</p>
         <div class="status-badge">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /></svg>
             全員投票決定最終方案
         </div>
     </div>
+
     @if (Model.IsVoteCompleted && Model.WinningCard != null)
     {
+        /* --- [狀態 A] 媒合成功 --- */
         <div class="winner-section text-center py-5 mb-4 bg-white rounded-4 shadow-sm border border-success">
-            <div class="mb-3">
-                <i class="bi bi-trophy-fill text-warning" style="font-size: 4rem;"></i>
-            </div>
+            <div class="mb-3"><i class="bi bi-trophy-fill text-warning" style="font-size: 4rem;"></i></div>
             <h2 class="fw-bold text-success mb-2">媒合成功！</h2>
             <p class="text-muted mb-4">經過全員投票，這是大家最喜歡的行程：</p>
 
             <div class="card d-inline-block text-start shadow-lg border-0" style="max-width: 500px; width: 100%;">
                 <div class="card-body p-4">
                     <h3 class="fw-bold">@Model.WinningCard.PlaceName</h3>
-                    <div class="text-secondary mb-3">
-                        <i class="bi bi-calendar-check me-2"></i> @Model.WinningCard.DateRange
-                    </div>
-
+                    <div class="text-secondary mb-3"><i class="bi bi-calendar-check me-2"></i> @Model.WinningCard.DateRange</div>
                     <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mb-3">
                         <div class="text-center">
                             <small class="text-muted d-block">得票數</small>
@@ -275,142 +227,110 @@
                             <span class="fs-4 fw-bold text-dark">NT$ @Model.WinningCard.Price.ToString("N0")</span>
                         </div>
                     </div>
-
                     <button onclick="finalizeAndCreateTrip()" class="btn btn-success btn-lg w-100 fw-bold">
                         <i class="bi bi-airplane-engines-fill me-2"></i> 建立行程並開始規劃
                     </button>
                 </div>
             </div>
         </div>
-
-        <style>
-            .filter-scroll-container, #cardsContainer, .stats-dashboard, #voteActionBar {
-                display: none !important;
-            }
-        </style>
     }
     else
     {
-    }
-    <div class="card border-0 shadow-sm mb-4 p-4 rounded-4 bg-white">
-        <div class="d-flex align-items-center mb-3">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#155DFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <h5 class="mb-0 fw-bold">選擇出發時間</h5>
+        /* --- [狀態 B] 投票進行中 --- */
+
+        <div class="card border-0 shadow-sm mb-4 p-4 rounded-4 bg-white">
+            <div class="d-flex align-items-center mb-3">
+                <h5 class="mb-0 fw-bold">選擇出發時間</h5>
+            </div>
+            @if (Model.TimeSlots.Count == 0)
+            {
+                <div class="alert alert-secondary text-center py-4">
+                    <h5 class="alert-heading">⚠️ 無共同時間</h5>
+                    <p class="mb-0">目前找不到大家都有空的時間段。</p>
+                </div>
+            }
+            else
+            {
+                <div class="filter-scroll-container">
+                    <div class="filter-card active" onclick="filterTimeSlot('all', this)">
+                        <div class="d-flex justify-content-between align-items-center mb-1"><small class="fw-bold text-dark">顯示全部</small></div>
+                        <small class="text-primary fw-bold mt-2 d-block">共 @Model.TotalOptionsCount 個方案</small>
+                    </div>
+                    @foreach (var slot in Model.TimeSlots)
+                    {
+                        <div class="filter-card" onclick="filterTimeSlot('@slot.Id', this)">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-bold text-dark">@slot.Label</small>
+                                <span class="badge bg-light text-secondary border">@slot.Duration 天</span>
+                            </div>
+                            <small class="text-muted d-block">@slot.DateRange</small>
+                            <small class="text-success fw-bold mt-2 d-block">@slot.AvailableCount 人可參加</small>
+                        </div>
+                    }
+                </div>
+            }
         </div>
 
-        @if (Model.TimeSlots.Count == 0)
-        {
-            <div class="alert alert-secondary text-center py-4">
-                <h5 class="alert-heading">⚠️ 無共同時間</h5>
-                <p class="mb-0">目前找不到大家都有空的時間段，請嘗試協調行事曆或放寬旅遊天數。</p>
-            </div>
-        }
-        else
-        {
-            <div class="filter-scroll-container">
-
-                <div class="filter-card active" onclick="filterTimeSlot('all', this)">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="fw-bold text-dark">顯示全部</small>
-                    </div>
-                    <small class="text-muted d-block">所有區間</small>
-                    <small class="text-primary fw-bold mt-2 d-block">
-                        共 @Model.TotalOptionsCount 個方案
-                    </small>
-                </div>
-
-                @foreach (var slot in Model.TimeSlots)
-                {
-                    <div class="filter-card" onclick="filterTimeSlot('@slot.Id', this)">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <small class="fw-bold text-dark">@slot.Label</small>
-                            <span class="badge bg-light text-secondary border">@slot.Duration 天</span>
-                        </div>
-                        <small class="text-muted d-block">@slot.DateRange</small>
-                        <small class="text-success fw-bold mt-2 d-block">
-                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" /></svg>
-                            @slot.AvailableCount 人可參加
-                        </small>
-                    </div>
-                }
-            </div>
-        }
-    </div>
-
-    <div id="cardsContainer">
-        @if (Model.OptionCards.Count == 0)
-        {
-            <div class="text-center py-5 text-muted">
-                <h4>沒有可顯示的方案</h4>
-            </div>
-        }
-
-        @foreach (var card in Model.OptionCards)
-        {
-            <div class="option-card" data-timeslot="@card.TimeSlotId">
-                <div class="row g-0">
-
-                    <div class="col-md-8 pe-md-4">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center">
-                                <h3 class="fw-bold mb-0 me-3 text-dark">@card.PlaceName</h3>
-
-                                <div class="vote-badge">
-                                    <span id="vote-count-@card.RecommendationId">@card.CurrentVotes</span> 票
+        <div id="cardsContainer">
+            @if (Model.OptionCards.Count == 0)
+            {
+                <div class="text-center py-5 text-muted"><h4>沒有可顯示的方案</h4></div>
+            }
+            @foreach (var card in Model.OptionCards)
+            {
+                <div class="option-card" data-timeslot="@card.TimeSlotId">
+                    <div class="row g-0">
+                        <div class="col-md-8 pe-md-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center">
+                                    <h3 class="fw-bold mb-0 me-3 text-dark">@card.PlaceName</h3>
+                                    <div class="vote-badge"><span id="vote-count-@card.RecommendationId">@card.CurrentVotes</span> 票</div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="text-secondary mb-3 small">
-                            <div class="mb-1 d-flex align-items-center">
-                                <i class="bi bi-calendar3 me-2"></i> @card.DateRange
+                            <div class="text-secondary mb-3 small">
+                                <div class="mb-1 d-flex align-items-center"><i class="bi bi-calendar3 me-2"></i> @card.DateRange</div>
+                                <div class="d-flex align-items-center"><i class="bi bi-people-fill me-2"></i> @card.AvailableMembersCount 位成員有空</div>
                             </div>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-people-fill me-2"></i> @card.AvailableMembersCount 位成員有空
+                            <div class="price-tag mb-3 mb-md-0">
+                                <small class="opacity-75 me-1">預估費用</small> NT$ @card.Price.ToString("N0")
                             </div>
                         </div>
+                        <div class="col-md-4 d-flex flex-column justify-content-center gap-2 border-start ps-md-4">
+                            <button class="btn btn-lg fw-bold w-100 shadow-sm @(card.IsVotedByCurrentUser ? "btn-primary" : "btn-outline-primary")"
+                                    id="btn-select-@card.RecommendationId"
+                                    onclick="toggleVoteSelection('@card.RecommendationId', this)">
+                                @if (card.IsVotedByCurrentUser)
+                                {
+                                    <span><i class="bi bi-check-lg"></i> 已選</span>
+                                }
+                                else
+                                {
 
-                        <div class="price-tag mb-3 mb-md-0">
-                            <small class="opacity-75 me-1">預估費用</small>
-                            NT$ @card.Price.ToString("N0")
+                                    <span><i class="bi bi-hand-thumbs-up"></i> 投票</span>
+                                }
+                            </button>
+                            <button class="btn btn-outline-secondary w-100 btn-view-details"
+                                    data-location="@card.PlaceCode" data-start="@card.StartDate.ToString("yyyy-MM-dd")" data-end="@card.EndDate.ToString("yyyy-MM-dd")">
+                                查看詳情
+                            </button>
                         </div>
                     </div>
-
-                    <div class="col-md-4 d-flex flex-column justify-content-center gap-2 border-start ps-md-4">
-
-                        <button class="btn btn-lg fw-bold w-100 shadow-sm @(card.IsVotedByCurrentUser ? "btn-primary" : "btn-outline-primary")"
-                                id="btn-select-@card.RecommendationId"
-                                onclick="toggleVoteSelection('@card.RecommendationId', this)">
-                            @if (card.IsVotedByCurrentUser)
-                            {
-                                <span><i class="bi bi-check-lg"></i> 已選</span>
-                            }
-                            else
-                            {
-                                <span><i class="bi bi-hand-thumbs-up"></i> 投票</span>
-                            }
-                        </button>
-
-                        <button class="btn btn-outline-secondary w-100" onclick="showDetailModal('@card.RecommendationId')">
-                            查看詳情
-                        </button>
-                    </div>
-
                 </div>
-            </div>
-        }
-    </div>
-</div>
-<div id="voteActionBar" class="fixed-bottom bg-white border-top p-3 shadow-lg" style="display: none; z-index: 1050;">
-    <div class="container d-flex justify-content-between align-items-center">
-        <div>
-            <span class="fw-bold fs-5">已選擇 <span id="selectedCount" class="text-primary display-6 fw-bold">0</span> 個方案</span>
-            <span class="text-muted ms-2 small">確認無誤後請送出</span>
+            }
         </div>
-        <button onclick="submitAllVotes()" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
-            確認送出投票 <i class="bi bi-send-fill ms-2"></i>
-        </button>
-    </div>
+
+        <div id="voteActionBar" class="fixed-bottom bg-white border-top p-3 shadow-lg" style="display: none; z-index: 1050;">
+            <div class="container d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold fs-5">已選擇 <span id="selectedCount" class="text-primary display-6 fw-bold">0</span> 個方案</span>
+                    <span class="text-muted ms-2 small">確認無誤後請送出</span>
+                </div>
+                <button onclick="submitAllVotes()" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
+                    確認送出投票 <i class="bi bi-send-fill ms-2"></i>
+                </button>
+            </div>
+        </div>
+    }
 </div>
 
 <style>
@@ -419,136 +339,200 @@
     }
 </style>
 
-<script>
-    // 1. 初始化：從後端 Model 載入使用者已選的項目 (如果有)
-    // 這裡我們利用 Razor 語法把 C# List 轉成 JS Array
-    const initialVotes = @Html.Raw(Json.Serialize(Model.OptionCards.Where(c => c.IsVotedByCurrentUser).Select(c => c.RecommendationId)));
-    let selectedRecIds = new Set(initialVotes);
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">行程預算詳情 (即時比價)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingSpinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">正在搜尋 Google Flights & Hotels 最新報價...</p>
+                </div>
+                <div id="realDataContent" class="d-none">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white"><i class="bi bi-airplane"></i> 推薦航班 (TPE ⇌ <span id="destCode"></span>)</div>
+                                <div class="card-body">
+                                    <p><strong>去程：</strong> <span id="departInfo"></span></p>
+                                    <p><strong>回程：</strong> <span id="returnInfo"></span></p>
+                                    <h4 class="text-primary text-end" id="flightPrice"></h4>
+                                    <a href="#" id="flightLink" target="_blank" class="btn btn-outline-primary w-100 mt-2">前往 Google Flights 訂票</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark"><i class="bi bi-building"></i> 推薦住宿</div>
+                                <div class="card-body">
+                                    <h5 class="card-title" id="hotelName"></h5>
+                                    <p class="card-text text-muted">系統自動搜尋當地高評分飯店</p>
+                                    <a href="#" id="hotelLink" target="_blank" class="btn btn-outline-warning w-100 mt-2 text-dark">前往 Google Hotels 訂房</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-success text-center">
+                        <h4>預估總旅費：<span id="totalPrice"></span> TWD /人</h4>
+                        <small class="text-muted">*此價格為 API 即時查詢結果，實際金額以訂購頁面為準</small>
+                    </div>
+                </div>
+                <div id="errorMsg" class="alert alert-danger d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    // 頁面載入時檢查是否要顯示 Action Bar
-    document.addEventListener("DOMContentLoaded", function() {
-        updateActionBar();
-    });
+@section Scripts {
+    <script>
+        const initialVotes = @Html.Raw(Json.Serialize(Model.OptionCards.Where(c => c.IsVotedByCurrentUser).Select(c => c.RecommendationId)));
+        let selectedRecIds = new Set(initialVotes);
 
-    // 2. 切換選取狀態
-    function toggleVoteSelection(recId, btn) {
-        // 轉型成整數比較保險
-        const id = parseInt(recId);
+        document.addEventListener("DOMContentLoaded", function() {
+            updateActionBar();
+        });
 
-        if (selectedRecIds.has(id)) {
-            // 取消選取
-            selectedRecIds.delete(id);
-            btn.classList.remove('btn-primary');
-            btn.classList.add('btn-outline-primary');
-            btn.innerHTML = '<i class="bi bi-hand-thumbs-up"></i> 投票';
-        } else {
-            // 加入選取
-            selectedRecIds.add(id);
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-primary');
-            btn.innerHTML = '<i class="bi bi-check-lg"></i> 已選';
+        function toggleVoteSelection(recId, btn) {
+            const id = parseInt(recId);
+            if (selectedRecIds.has(id)) {
+                selectedRecIds.delete(id);
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+                btn.innerHTML = '<i class="bi bi-hand-thumbs-up"></i> 投票';
+            } else {
+                selectedRecIds.add(id);
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary');
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> 已選';
+            }
+            updateActionBar();
         }
-        updateActionBar();
-    }
 
-    // 3. 更新下方浮動列
-    function updateActionBar() {
-        const bar = document.getElementById('voteActionBar');
-        const countSpan = document.getElementById('selectedCount');
+        function updateActionBar() {
+            const bar = document.getElementById('voteActionBar');
+            // ★ 安全檢查：如果 bar 不存在 (例如媒合成功畫面)，就直接結束
+            if (!bar) return;
 
-        countSpan.innerText = selectedRecIds.size;
+            const countSpan = document.getElementById('selectedCount');
+            countSpan.innerText = selectedRecIds.size;
 
-        // 只要有選或是原本有選過，就顯示 Bar，讓使用者有機會修改或確認
-        // 這裡邏輯可以自訂，例如：只要有更動就顯示
-        if (selectedRecIds.size > 0) {
-            bar.style.display = 'block';
-        } else {
-            bar.style.display = 'none';
+            if (selectedRecIds.size > 0) {
+                bar.style.display = 'block';
+            } else {
+                bar.style.display = 'none';
+            }
         }
-    }
 
-    // 4. 送出投票 (修復 JSON Error 的關鍵)
-    async function submitAllVotes() {
-        if (!confirm("確定要送出這些選擇嗎？")) return;
+        async function submitAllVotes() {
+            if (!confirm("確定要送出這些選擇嗎？")) return;
+            const payload = Array.from(selectedRecIds);
+            try {
+                const response = await fetch(`/api/timewindow/@Model.GroupId/vote-batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("投票成功！");
+                    location.reload();
+                } else {
+                    alert("錯誤：" + data.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("系統連線錯誤");
+            }
+        }
 
-        const payload = Array.from(selectedRecIds);
+        function filterTimeSlot(slotId, element) {
+            document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            const cards = document.querySelectorAll('.option-card');
+            let visibleCount = 0;
+            cards.forEach(card => {
+                if (slotId === 'all' || card.dataset.timeslot === slotId) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            const countEl = document.getElementById('displayCount');
+            if(countEl) countEl.innerText = visibleCount;
+        }
 
-        try {
-            // ★ 改打新的 vote-batch API
-            const response = await fetch(`/api/timewindow/@Model.GroupId/vote-batch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+        $(document).ready(function() {
+            $('.btn-view-details').click(function() {
+                var btn = $(this);
+                var location = btn.data('location');
+                var start = btn.data('start');
+                var end = btn.data('end');
+
+                $('#destCode').text(location);
+                $('#loadingSpinner').removeClass('d-none');
+                $('#realDataContent').addClass('d-none');
+                $('#errorMsg').addClass('d-none');
+
+                var modal = new bootstrap.Modal(document.getElementById('detailModal'));
+                modal.show();
+
+                $.ajax({
+                    url: '/api/timewindow/check-price',
+                    type: 'GET',
+                    data: { location: location, start: start, end: end, groupId: @Model.GroupId },
+                    success: function(res) {
+                        var data = res.data;
+                        $('#departInfo').text(data.departFlight);
+                        $('#returnInfo').text(data.returnFlight);
+                        $('#flightPrice').text('NT$ ' + formatCurrency(data.flightPrice));
+                        $('#flightLink').attr('href', data.flightLink);
+                        $('#hotelName').text(data.hotelName);
+                        $('#hotelLink').attr('href', data.hotelLink);
+                        $('#totalPrice').text(formatCurrency(data.totalPrice));
+                        $('#loadingSpinner').addClass('d-none');
+                        $('#realDataContent').removeClass('d-none');
+                    },
+                    error: function(err) {
+                        $('#loadingSpinner').addClass('d-none');
+                        $('#errorMsg').text('查詢失敗，請稍後再試').removeClass('d-none');
+                    }
+                });
             });
 
-            // 確保後端回傳的是 JSON
-            const data = await response.json();
-
-            if (response.ok) {
-                alert("投票成功！");
-                if (data.isAllMembersVoted) {
-                    // 如果全員投完，跳轉到結果頁 (路徑請自行確認)
-                    window.location.href = `/Match/FinalResult/@Model.GroupId`;
-                } else {
-                    location.reload(); // 重新整理看最新票數
-                }
-            } else {
-                alert("錯誤：" + data.message);
-            }
-        } catch (e) {
-            console.error(e);
-            alert("系統連線錯誤");
-        }
-    }
-
-    // (保留原本的篩選功能)
-    function filterTimeSlot(slotId, element) {
-        document.querySelectorAll('.filter-card').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
-        const cards = document.querySelectorAll('.option-card');
-        let visibleCount = 0;
-        cards.forEach(card => {
-            if (slotId === 'all' || card.dataset.timeslot === slotId) {
-                card.style.display = 'block';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
+            function formatCurrency(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
         });
-        const countEl = document.getElementById('displayCount');
-        if(countEl) countEl.innerText = visibleCount;
-    }
 
-    function showDetailModal(recId) {
-        alert("功能開發中: " + recId);
-    }
-    async function finalizeAndCreateTrip() {
-        const btn = document.querySelector('.winner-section button');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 建立資料中...';
+        async function finalizeAndCreateTrip() {
+            const btn = document.querySelector('.winner-section button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 建立資料中...';
 
-        try {
-            const response = await fetch(`/api/timewindow/@Model.GroupId/finalize`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // 成功後跳轉到 Trip/Edit
-                window.location.href = data.redirectUrl;
-            } else {
-                alert("建立失敗：" + data.message);
+            try {
+                const response = await fetch(`/api/timewindow/@Model.GroupId/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert("建立失敗：" + data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            } catch (e) {
+                console.error(e);
+                alert("系統錯誤");
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
-        } catch (e) {
-            console.error(e);
-            alert("系統錯誤");
-            btn.disabled = false;
-            btn.innerHTML = originalText;
         }
-    }
-</script>
+    </script>
+}

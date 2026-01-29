@@ -14,11 +14,13 @@ namespace TripMatch.Controllers.Api
     {
         private readonly TravelDbContext _context;
         private readonly TimeWindowService _timeWindowService;
+        private readonly TravelInfoService _travelInfoService;
 
-        public TimeWindowApiController(TravelDbContext context, TimeWindowService timeWindowService)
+        public TimeWindowApiController(TravelDbContext context, TimeWindowService timeWindowService, TravelInfoService travelInfoService)
         {
             _context = context;
             _timeWindowService = timeWindowService;
+            _travelInfoService = travelInfoService;
         }
 
         // 1. 開團 (POST /api/timewindow/create)
@@ -292,6 +294,102 @@ namespace TripMatch.Controllers.Api
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "建立失敗: " + ex.Message });
+            }
+        }
+
+        // 14. 查詢旅費預算 API
+        [HttpGet("check-price")]
+        public async Task<IActionResult> GetTravelPrice(
+            [FromQuery] string location,
+            [FromQuery] DateOnly start,
+            [FromQuery] DateOnly end,
+            [FromQuery] int groupId)
+        {
+            try
+            {
+                // 1. 參數防呆
+                if (string.IsNullOrEmpty(location))
+                    return BadRequest(new { message = "請提供地點 (機場代碼)" });
+
+                if (end <= start)
+                    return BadRequest(new { message = "回程日期必須晚於去程" });
+
+                // ==========================================
+                // ★★★ 2. 核心修正：讀取並統計偏好 ★★★
+                // ==========================================
+                var preferences = await _context.Preferences
+                    .Where(p => p.GroupId == groupId)
+                    .ToListAsync();
+
+                // (A) 統計轉機 (Transfer): 多數決
+                bool allowTransfer = true; // 預設值
+                if (preferences.Any())
+                {
+                    int accept = preferences.Count(p => p.Tranfer);
+                    int reject = preferences.Count(p => !p.Tranfer);
+                    allowTransfer = accept >= reject;
+                }
+
+                // (B) 統計星級 (Rating): 取平均值
+                int? starRating = null;
+                var validRatings = preferences
+                    .Where(p => p.HotelRating.HasValue)
+                    .Select(p => p.HotelRating.Value)
+                    .ToList();
+
+                if (validRatings.Any())
+                {
+                    starRating = (int)Math.Round(validRatings.Average());
+                    // 限制範圍 3~5
+                    if (starRating < 3) starRating = 3;
+                    if (starRating > 5) starRating = 5;
+                }
+
+                // (C) 統計預算 (Budget): 取中位數
+                decimal? medianBudget = null;
+                var validBudgets = preferences
+                    .Where(p => p.HotelBudget.HasValue)
+                    .Select(p => p.HotelBudget.Value)
+                    .OrderBy(x => x)
+                    .ToList();
+
+                if (validBudgets.Any())
+                {
+                    int count = validBudgets.Count;
+                    if (count % 2 == 0)
+                    {
+                        // 偶數取中間兩個平均
+                        medianBudget = (validBudgets[count / 2 - 1] + validBudgets[count / 2]) / 2.0m;
+                    }
+                    else
+                    {
+                        // 奇數取中間
+                        medianBudget = validBudgets[count / 2];
+                    }
+                }
+
+                // ==========================================
+                // ★★★ 3. 呼叫 Service (傳入統計後的參數) ★★★
+                // ==========================================
+                var result = await _travelInfoService.GetTravelInfoAsync(
+                    location,
+                    start,
+                    end,
+                    allowTransfer, // 傳入統計結果
+                    starRating,    // 傳入 int?
+                    medianBudget   // 傳入 decimal? (對應 maxPrice)
+                );
+
+                // 4. 回傳結果
+                return Ok(new
+                {
+                    message = "查詢成功",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "查詢外部 API 失敗", error = ex.Message });
             }
         }
     }
