@@ -497,9 +497,10 @@
             } else if (v.length > 25) {
                 valid = false;
                 message = '☐ 名稱長度不能超過25字';
-            } else if (!/^[\u4e00-\u9fa5a-zA-Z\s]+$/.test(v)) {
+                // ★★★ 修改處：在正則表達式中加入 0-9，並修改提示文字 ★★★
+            } else if (!/^[\u4e00-\u9fa5a-zA-Z0-9\s]+$/.test(v)) {
                 valid = false;
-                message = '☐ 只能輸入中文或英文';
+                message = '☐ 只能輸入中文、英文或數字'; // 修改錯誤訊息
             } else {
                 message = '☑ 名稱格式正確';
             }

@@ -506,9 +506,14 @@ align-content:center;
 
 /*會員中心定義*/
 
-.info_row #emailHint {
-    margin-left: 40px;
-    margin-bottom: 15px;
+.info_row #emailHint, .nameHint {
+    width: 100%; /* 關鍵：佔滿寬度 */
+    flex-basis: 100%; /* 關鍵：佔滿 Flex 空間 */
+    margin-top: 5px; /* 調整間距 */
+    margin-bottom: 5px;
+    /* 您原本的設定保留即可 */
+    display: flex;
+    flex-direction: column;
 }
 
 /* 針對自動填充的背景色修正 */
