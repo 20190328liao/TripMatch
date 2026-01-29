@@ -346,104 +346,37 @@ namespace TripMatch.Services
 
             if (!places.Any()) places.Add("未定地點");
 
-            // ★★★ 修改重點：嚴格讀取資料庫設定，不寫死預設值 ★★★
+            var settings = await GetGroupPreferenceSettingsAsync(groupId);
+
             var group = await _context.TravelGroups.FindAsync(groupId);
-            if (group == null) return new List<Recommendation>(); // 防呆
-
-            // ★★★ 新增這段：統計大家是否接受轉機 (Transfer) ★★★
-            // 先把群組所有人的偏好撈出來
-            var allPreferences = await _context.Preferences
-                .Where(p => p.GroupId == groupId)
-                .ToListAsync();
-            // 統計人數
-            int acceptTransferCount = allPreferences.Count(p => p.Tranfer);
-            int rejectTransferCount = allPreferences.Count(p => !p.Tranfer);
-            // 邏輯：如果「接受」的人 >= 「不接受」的人，就設為 True
-            bool allowTransfer = acceptTransferCount >= rejectTransferCount;
-
-            // 直接取用資料庫中的 TravelDays
-            int tripDays = group.TravelDays;
-
-            // 邏輯防呆：萬一資料庫異常存了 0 或負數，至少要算 1 天，否則日期計算會出錯
+            int tripDays = group?.TravelDays ?? 5; // 防呆
             if (tripDays < 1) tripDays = 1;
-            // ==========================================
-            // 統計星級偏好 (Star Rating)
-            // ==========================================
-            // 規則：計算平均值並四捨五入。若沒人填寫，預設為 4 星
-            int? starRating = null; // 預設為 null (無偏好)
-            var validRatings = allPreferences
-                .Where(p => p.HotelRating.HasValue)
-                .Select(p => p.HotelRating.Value)
-                .ToList();
 
-            if (validRatings.Any())
-            {
-                // 有人填寫才計算
-                double avg = validRatings.Average();
-                starRating = (int)Math.Round(avg);
-
-                // 限制範圍 3~5 (避免算出 1 星太差)
-                if (starRating < 3) starRating = 3;
-                if (starRating > 5) starRating = 5;
-            }
-
-            // ==========================================
-            // 統計預算偏好 (Hotel Budget)
-            // ==========================================
-            // 規則：取中位數 (Median)，更能代表大眾接受度，避免被極端值拉高
-            decimal? medianBudget = null;
-            var validBudgets = allPreferences
-                .Where(p => p.HotelBudget.HasValue)
-                .Select(p => p.HotelBudget.Value)
-                .OrderBy(x => x)
-                .ToList();
-
-            if (validBudgets.Any())
-            {
-                int count = validBudgets.Count;
-                if (count % 2 == 0)
-                {
-                    // 偶數取中間兩個平均
-                    medianBudget = (validBudgets[count / 2 - 1] + validBudgets[count / 2]) / 2.0m;
-                }
-                else
-                {
-                    // 奇數取中間
-                    medianBudget = validBudgets[count / 2];
-                }
-            }
-
-            // ==========================================
-            // 4. 開始產生推薦方案
-            // ==========================================
             var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
             {
                 foreach (var place in places)
                 {
-                    // 計算估價用的取樣區間
                     DateOnly priceCheckStart = range.StartDate;
                     DateOnly priceCheckEnd = range.StartDate.AddDays(tripDays - 1);
                     if (priceCheckEnd > range.EndDate) priceCheckEnd = range.EndDate;
 
+                    // 呼叫 TravelInfoService
                     var travelInfo = await _travelInfoService.GetTravelInfoAsync(
-                                      place,
-                                      priceCheckStart,
-                                      priceCheckEnd,
-                                      allowTransfer,  // <--- 傳入統計後的轉機偏好
-                                      starRating,     // <--- 傳入統計後的星級
-                                      medianBudget    // <--- 傳入統計後的預算
-                                  );
+                        place,
+                        priceCheckStart,
+                        priceCheckEnd,
+                        settings.AllowTransfer, // 使用共用設定
+                        settings.StarRating,    // 使用共用設定
+                        settings.MedianBudget   // 使用共用設定
+                    );
 
                     var rec = new Recommendation
                     {
                         GroupId = groupId,
-
-                        // 存入符合「旅遊天數」的方案區間
                         StartDate = priceCheckStart.ToDateTime(TimeOnly.MinValue),
                         EndDate = priceCheckEnd.ToDateTime(TimeOnly.MinValue),
-
                         Location = place,
                         DepartFlight = travelInfo.DepartFlight,
                         ReturnFlight = travelInfo.ReturnFlight,
@@ -463,7 +396,6 @@ namespace TripMatch.Services
 
             return newRecommendations;
         }
-
         // 8-2 拿畫面
         public async Task<RecommendationViewModel> GetRecommendationViewModelAsync(int groupId, int currentUserId)
         {
@@ -1050,9 +982,97 @@ namespace TripMatch.Services
 
             return group.Status;
         }
+        // 取得偏好參數
+        private async Task<(bool AllowTransfer, int? StarRating, decimal? MedianBudget)> GetGroupPreferenceSettingsAsync(int groupId)
+        {
+            var allPreferences = await _context.Preferences
+                .Where(p => p.GroupId == groupId)
+                .ToListAsync();
 
-        
+            // 1. 統計轉機 (Transfer)
+            bool allowTransfer = true;
+            if (allPreferences.Any())
+            {
+                int accept = allPreferences.Count(p => p.Tranfer);
+                int reject = allPreferences.Count(p => !p.Tranfer);
+                // 規則：接受 >= 不接受，就開啟轉機
+                allowTransfer = accept >= reject;
+            }
 
+            // 2. 統計星級 (Rating)
+            int? starRating = null;
+            var validRatings = allPreferences
+                .Where(p => p.HotelRating.HasValue)
+                .Select(p => p.HotelRating.Value)
+                .ToList();
 
+            if (validRatings.Any())
+            {
+                starRating = (int)Math.Round(validRatings.Average());
+                if (starRating < 3) starRating = 3;
+                if (starRating > 5) starRating = 5;
+            }
+
+            // 3. 統計預算 (Budget)
+            decimal? medianBudget = null;
+            var validBudgets = allPreferences
+                .Where(p => p.HotelBudget.HasValue)
+                .Select(p => p.HotelBudget.Value)
+                .OrderBy(x => x)
+                .ToList();
+
+            if (validBudgets.Any())
+            {
+                int count = validBudgets.Count;
+                if (count % 2 == 0)
+                    medianBudget = (validBudgets[count / 2 - 1] + validBudgets[count / 2]) / 2.0m;
+                else
+                    medianBudget = validBudgets[count / 2];
+            }
+
+            return (allowTransfer, starRating, medianBudget);
+        }
+        // 查即時價格
+        public async Task<object> GetLiveTravelPriceAsync(int groupId, string location, DateOnly start, DateOnly end)
+        {
+            // 1. 取得一致的偏好設定
+            var settings = await GetGroupPreferenceSettingsAsync(groupId);
+
+            // 2. 呼叫外部 API 查價
+            var result = await _travelInfoService.GetTravelInfoAsync(
+                location,
+                start,
+                end,
+                settings.AllowTransfer,
+                settings.StarRating,
+                settings.MedianBudget
+            );
+
+            // 3. ★★★ 關鍵補強：既然查到了最新價格，順便更新資料庫，讓列表也變準確 ★★★
+            // 找出對應的那筆 Recommendation (如果有的話)
+            var dateTimeStart = start.ToDateTime(TimeOnly.MinValue);
+            var dateTimeEnd = end.ToDateTime(TimeOnly.MinValue);
+
+            // 注意：這裡的比對條件要看你的邏輯，假設地點和日期完全吻合才更新
+            var existingRec = await _context.Recommendations
+                .FirstOrDefaultAsync(r =>
+                    r.GroupId == groupId &&
+                    r.Location == location &&
+                    r.StartDate == dateTimeStart);
+
+            if (existingRec != null)
+            {
+                // 如果價格差異很大，或者有新資訊，就更新
+                existingRec.Price = result.TotalPrice;
+                existingRec.DepartFlight = result.DepartFlight;
+                existingRec.ReturnFlight = result.ReturnFlight;
+                existingRec.Hotel = result.HotelName;
+                existingRec.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+            }
+
+            return result;
+        }
     }
 }

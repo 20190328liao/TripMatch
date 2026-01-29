@@ -5,13 +5,10 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using TripMatch.Models.DTOs.External; // 確保有引用 SerpApi 的 DTO (包含 Flight 和 Hotel)
+using TripMatch.Models.DTOs.External;
 
 namespace TripMatch.Services
 {
-    /// <summary>
-    /// 負責與外部 API (SerpApi / Google Flights / Google Hotels) 溝通的服務
-    /// </summary>
     public class TravelInfoService
     {
         private readonly IConfiguration _configuration;
@@ -23,18 +20,14 @@ namespace TripMatch.Services
             _httpClient = httpClient;
         }
 
-        /// <summary>
-        /// 主方法：根據地點代碼、日期、轉機偏好，查詢航班與飯店價格
-        /// </summary>
         public async Task<TravelInfoResult> GetTravelInfoAsync(string placeRawString,
             DateOnly startDate,
             DateOnly endDate,
             bool allowTransfer,
-            int? starRating = null,  // 沒人投星級時為 null
-            decimal? maxPrice = null // 沒人投預算時為 null
+            int? starRating = null,
+            decimal? maxPrice = null
         )
         {
-            // 1. 解析輸入 (前端現在傳來的是機場代碼，例如 "NRT" 或 "NRT|成田")
             string targetCode = placeRawString;
             if (!string.IsNullOrEmpty(placeRawString) && placeRawString.Contains('|'))
             {
@@ -43,91 +36,60 @@ namespace TripMatch.Services
 
             string cityNameForHotel = AirportData.GetCityName(targetCode);
 
-            // 2. 檢查開關：是否使用模擬數據 (省錢模式)
+            // Mock 模式檢查
             bool useMock = _configuration.GetValue<bool>("SerpApi:UseMock");
             if (useMock)
             {
                 return await GetMockDataAsync(cityNameForHotel, startDate, endDate);
             }
 
-            // --- 3. 真實 API 並行呼叫 (加快速度) ---
-
-            // Task A: 查機票 (使用機場代碼 targetCode)
+            // --- 並行呼叫 ---
             var flightTask = FetchFlightsAsync(targetCode, startDate, endDate, allowTransfer);
-
-            // Task B: 查飯店 (使用城市名稱 cityNameForHotel)
             var hotelTask = FetchHotelPricesAsync(cityNameForHotel, startDate, endDate, starRating, maxPrice);
 
-            // 等待兩者都完成
             await Task.WhenAll(flightTask, hotelTask);
 
             var flightResult = flightTask.Result;
             var hotelResult = hotelTask.Result;
 
-            // 4. 產生訂購連結 (Deep Links)
+            // 產生連結
             string flightLink = GenerateGoogleFlightsLink(targetCode, startDate, endDate);
-            string hotelLink = GenerateGoogleHotelsLink(cityNameForHotel, startDate, endDate, starRating, maxPrice);
 
-            // --- 整合結果 ---
+            // ★★★ 飯店連結邏輯 ★★★
+            string hotelLink;
+            if (hotelResult != null && !string.IsNullOrEmpty(hotelResult.Value.Url))
+            {
+                hotelLink = hotelResult.Value.Url; // 優先用 API 給的
+            }
+            else
+            {
+                hotelLink = GenerateGoogleHotelsLink(cityNameForHotel, startDate, endDate, starRating, maxPrice); // 備案
+            }
+
             return new TravelInfoResult
             {
-                // 機票資訊
+                // 機票
                 DepartFlight = flightResult?.DepartInfo ?? "查無航班",
-                ReturnFlight = flightResult?.ReturnInfo ?? "查無航班",
-
-                // 價格拆分 (方便除錯或顯示)
+                ReturnFlight = flightResult?.ReturnInfo ?? "查無航班", // 這裡現在會更準確
                 FlightPrice = flightResult?.Price ?? 0,
 
-                // 飯店資訊
-                HotelName = hotelResult?.Name ?? "當地熱門飯店",
-
-                // 總旅費計算：機票 + 飯店總價
-                // (注意：如果查不到飯店，就只算機票錢，或者你可以加一個保底估算)
+                // 飯店
+                HotelName = hotelResult?.Name ?? "當地熱門飯店 (API 無回應)", // 如果 null 顯示這個
                 TotalPrice = (flightResult?.Price ?? 0) + (hotelResult?.TotalPrice ?? 0),
+
                 FlightLink = flightLink,
                 HotelLink = hotelLink
             };
         }
-        // [新增] 產生 Google Flights 連結
-        private string GenerateGoogleFlightsLink(string destinationCode, DateOnly start, DateOnly end)
-        {
-            // 格式: https://www.google.com/travel/flights?q=Flights%20to%20NRT%20from%20TPE%20on%202024-05-01%20through%202024-05-05
-            string query = $"Flights to {destinationCode} from TPE on {start:yyyy-MM-dd} through {end:yyyy-MM-dd}";
-            return $"https://www.google.com/travel/flights?q={Uri.EscapeDataString(query)}";
-        }
 
-        // [新增] 產生 Google Hotels 連結
-        private string GenerateGoogleHotelsLink(string cityName, DateOnly start, DateOnly end, int? rating, decimal? maxPrice)
-        {
-            string query = $"{cityName} {rating} star hotel";
-
-            var link = $"https://www.google.com/travel/hotels?" +
-                       $"q={Uri.EscapeDataString(query)}" +
-                       $"&checkin={start:yyyy-MM-dd}" +
-                       $"&checkout={end:yyyy-MM-dd}";
-
-            // 如果有預算，嘗試帶入 (Google Travel URL 參數較複雜，這裡我們試著加在 query 或使用 price filter)
-            // 為了簡單有效，我們將 "under {price}" 加到搜尋關鍵字中，這對 Google 搜尋非常有效
-            if (maxPrice.HasValue)
-            {
-                string priceQuery = $"{cityName} {rating} star hotel under {maxPrice.Value} TWD";
-                link = $"https://www.google.com/travel/hotels?" +
-                       $"q={Uri.EscapeDataString(priceQuery)}" +
-                       $"&checkin={start:yyyy-MM-dd}" +
-                       $"&checkout={end:yyyy-MM-dd}";
-            }
-
-            return link;
-        }
-
-        // --- 私有方法：查機票 (SerpApi Google Flights) ---
+        // --- 查機票 (修正回程邏輯) ---
         private async Task<(string DepartInfo, string ReturnInfo, decimal Price)?> FetchFlightsAsync(string arrivalId, DateOnly startDate, DateOnly endDate, bool allowTransfer)
         {
             string apiKey = _configuration["SerpApi:Key"];
-            string stopsParam = allowTransfer ? "0" : "1"; // 0=Any, 1=1 stop or fewer
+            string stopsParam = allowTransfer ? "0" : "1";
 
             string url = $"https://serpapi.com/search.json?engine=google_flights" +
-                         $"&departure_id=TPE" +               // 固定從台北出發
+                         $"&departure_id=TPE" +
                          $"&arrival_id={arrivalId}" +
                          $"&outbound_date={startDate:yyyy-MM-dd}" +
                          $"&return_date={endDate:yyyy-MM-dd}" +
@@ -144,36 +106,50 @@ namespace TripMatch.Services
 
                 var best = data?.best_flights?.FirstOrDefault();
 
-                if (best != null)
+                if (best != null && best.flights != null)
                 {
-                    string depInfo = ExtractFlightInfo(best.flights.FirstOrDefault());
-                    string retInfo = ExtractFlightInfo(best.flights.LastOrDefault());
+                    // ★★★ 修正邏輯：精準抓取去程與回程 ★★★
+
+                    // 1. 去程：第一段一定是從 TPE 出發 (或列表的第一個)
+                    var departSegment = best.flights.FirstOrDefault();
+
+                    // 2. 回程：找出第一段「出發地不是 TPE」且「出發地接近目的地」的段落
+                    // 簡單判斷：列表後半段的第一個，或是「出發地」等於「目的地」的段落
+                    // 這裡用一個比較通用的邏輯：找出列表中第一個「出發機場」跟「去程出發機場」不一樣的段落
+                    var returnSegment = best.flights.FirstOrDefault(f =>
+                        f.departure_airport?.id != departSegment?.departure_airport?.id &&
+                        f.departure_airport?.id != "TPE");
+
+                    // 如果找不到 (例如單程或資料怪異)，就拿最後一段 (雖然可能是錯的但比沒有好)
+                    if (returnSegment == null && best.flights.Count > 1)
+                    {
+                        returnSegment = best.flights.LastOrDefault();
+                    }
+
+                    string depInfo = ExtractFlightInfo(departSegment);
+                    string retInfo = ExtractFlightInfo(returnSegment);
+
+                    // Debug: 如果只有一段，標記一下
+                    if (best.flights.Count == 1) retInfo += " (單程?)";
+
                     return (depInfo, retInfo, best.price);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TravelInfoService-Flight] Error: {ex.Message}");
+                Console.WriteLine($"[Flight Error] {ex.Message}");
+                return ($"Error: {ex.Message}", "N/A", 0);
             }
             return null;
         }
 
-        // --- 私有方法：查飯店 (SerpApi Google Hotels) ---
-        // [修正版] 支援可空星級 (int?) 與可空預算 (decimal?) 的飯店搜尋方法
-        private async Task<(string Name, decimal TotalPrice)?> FetchHotelPricesAsync(string cityName, DateOnly checkIn, DateOnly checkOut, int? rating, decimal? maxPrice)
+        // --- 查飯店 (顯示錯誤訊息版) ---
+        private async Task<(string Name, decimal TotalPrice, string Url)?> FetchHotelPricesAsync(string cityName, DateOnly checkIn, DateOnly checkOut, int? rating, decimal? maxPrice)
         {
             string apiKey = _configuration["SerpApi:Key"];
-
-            // 1. 動態組裝關鍵字
-            // 如果 rating 是 null -> 搜尋 "Tokyo hotel" (廣泛搜尋)
-            // 如果 rating 是 4 -> 搜尋 "Tokyo 4 star hotel" (精確搜尋)
             string query = $"{cityName} hotel";
-            if (rating.HasValue)
-            {
-                query = $"{cityName} {rating} star hotel";
-            }
+            if (rating.HasValue) query = $"{cityName} {rating} star hotel";
 
-            // 2. 組裝基礎 URL
             var url = $"https://serpapi.com/search.json?engine=google_hotels" +
                       $"&q={Uri.EscapeDataString(query)}" +
                       $"&check_in_date={checkIn:yyyy-MM-dd}" +
@@ -183,34 +159,30 @@ namespace TripMatch.Services
                       $"&gl=tw" +
                       $"&api_key={apiKey}";
 
-            // 3. 加入預算限制 (如果有的話)
-            // SerpApi 的 max_price 參數可以過濾每晚價格
-            if (maxPrice.HasValue)
-            {
-                url += $"&max_price={(int)maxPrice.Value}";
-            }
+            if (maxPrice.HasValue) url += $"&max_price={(int)maxPrice.Value}";
 
             try
             {
                 var responseString = await _httpClient.GetStringAsync(url);
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+                // 這裡會用到我們之前修好的 DTO
                 var data = JsonSerializer.Deserialize<SerpApiHotelResponse>(responseString, options);
+
+                // 取得直連網址
+                string directLink = data?.search_metadata?.google_hotels_url;
 
                 if (data?.properties != null && data.properties.Any())
                 {
-                    // 策略：取第一間有標價的飯店
+                    // 抓第一間有價格的
                     var bestHotel = data.properties.FirstOrDefault(p => p.total_rate?.extracted_lowest != null || p.rate_per_night?.extracted_lowest != null);
 
                     if (bestHotel != null)
                     {
                         string displayName = bestHotel.name;
-                        if (bestHotel.overall_rating > 0)
-                            displayName += $" ({bestHotel.overall_rating}★)";
+                        if (bestHotel.overall_rating > 0) displayName += $" ({bestHotel.overall_rating}★)";
 
-                        // 優先取總價 (total_rate)
                         decimal price = bestHotel.total_rate?.extracted_lowest ?? 0;
-
-                        // 若無總價 (API 有時只回傳每晚單價)，則手動計算總價
                         if (price == 0 && bestHotel.rate_per_night?.extracted_lowest != null)
                         {
                             int nights = checkOut.DayNumber - checkIn.DayNumber;
@@ -218,19 +190,29 @@ namespace TripMatch.Services
                             price = (decimal)bestHotel.rate_per_night.extracted_lowest * nights;
                         }
 
-                        return (displayName, price);
+                        if (string.IsNullOrEmpty(directLink))
+                            directLink = GenerateGoogleHotelsLink(cityName, checkIn, checkOut, rating, maxPrice);
+
+                        return (displayName, price, directLink);
                     }
+                }
+                else
+                {
+                    // ★★★ 如果 JSON 解析成功但沒飯店，回傳這個訊息 ★★★
+                    return ($"無搜尋結果 (Query: {query})", 0, null);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TravelInfoService-Hotel] Error: {ex.Message}");
+                // ★★★ 關鍵修正：將錯誤訊息回傳到畫面上！ ★★★
+                // 這樣你在前端卡片上看到 "Error: ..." 就知道發生什麼事了
+                return ($"API Error: {ex.Message}", 0, null);
             }
 
-            return null; // 查無資料
+            return null;
         }
 
-        // --- 輔助方法 ---
+        // --- 輔助與備案 ---
         private string ExtractFlightInfo(FlightSegment segment)
         {
             if (segment == null) return "N/A";
@@ -240,42 +222,50 @@ namespace TripMatch.Services
             return $"{segment.airline} {segment.flight_number} ({timeOnly})";
         }
 
-        // --- Mock 數據 ---
+        // 保留備案
+        private string GenerateGoogleFlightsLink(string destinationCode, DateOnly start, DateOnly end)
+        {
+            string query = $"Flights to {destinationCode} from TPE on {start:yyyy-MM-dd} through {end:yyyy-MM-dd}";
+            return $"https://www.google.com/travel/flights?q={Uri.EscapeDataString(query)}";
+        }
+
+        private string GenerateGoogleHotelsLink(string cityName, DateOnly start, DateOnly end, int? rating, decimal? maxPrice)
+        {
+            string baseQuery = $"{cityName} hotel";
+            if (rating.HasValue) baseQuery = $"{cityName} {rating} star hotel";
+            string dateQuery = $"check in {start:yyyy-MM-dd} check out {end:yyyy-MM-dd}";
+            string fullQuery = $"{baseQuery} {dateQuery}";
+            if (maxPrice.HasValue) fullQuery += $" under {maxPrice.Value} TWD";
+
+            return $"https://www.google.com/travel/hotels?q={Uri.EscapeDataString(fullQuery)}";
+        }
+
         private async Task<TravelInfoResult> GetMockDataAsync(string cityName, DateOnly startDate, DateOnly endDate)
         {
             await Task.Delay(500);
-            var nights = endDate.DayNumber - startDate.DayNumber;
-            if (nights < 1) nights = 1;
-
-            var random = new Random();
-            decimal flightPrice = 12000 + (nights * 500); // 隨便算
-            decimal hotelPrice = 3000 * nights;
-
             return new TravelInfoResult
             {
-                DepartFlight = $"BR-{random.Next(100, 999)} (09:00 - 13:00)",
-                ReturnFlight = $"CI-{random.Next(100, 999)} (14:00 - 18:00)",
-                FlightPrice = flightPrice,
-                HotelName = $"{cityName} 皇家大飯店 (Royal Hotel)",
-                TotalPrice = flightPrice + hotelPrice
+                DepartFlight = "MOCK-101 (10:00)",
+                ReturnFlight = "MOCK-102 (14:00)",
+                FlightPrice = 15000,
+                HotelName = $"{cityName} Mock Hotel",
+                TotalPrice = 20000,
+                HotelLink = "#",
+                FlightLink = "#"
             };
         }
     }
-
-    /// <summary>
-    /// 回傳結果 DTO (建議如果有多個檔案使用，移到 Models 資料夾)
-    /// </summary>
     public class TravelInfoResult
     {
         public string DepartFlight { get; set; }
         public string ReturnFlight { get; set; }
 
-        public decimal FlightPrice { get; set; } // 單純機票錢
-        public decimal TotalPrice { get; set; }  // 機票 + 住宿
+        public decimal FlightPrice { get; set; }
+        public decimal TotalPrice { get; set; }
 
         public string HotelName { get; set; }
 
-        public string FlightLink { get; set; } // 機票訂購連結
-        public string HotelLink { get; set; }  // 飯店訂購連結
+        public string FlightLink { get; set; }
+        public string HotelLink { get; set; }
     }
 }
