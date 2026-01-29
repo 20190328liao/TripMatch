@@ -25,7 +25,7 @@ namespace TripMatch.Models.DTOs.External
         public string google_hotels_url { get; set; }
 
         public string raw_html_file { get; set; }
-        public string total_time_taken { get; set; }
+        public object total_time_taken { get; set; }
     }
 
     // --- 以下保持不變 ---
