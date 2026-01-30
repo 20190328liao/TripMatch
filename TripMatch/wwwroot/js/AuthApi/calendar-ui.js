@@ -68,7 +68,7 @@
             /* (1) 編輯按鈕 (.btn-edit) */
             .btn-edit.guide-hint { position: relative; }
             .btn-edit.guide-hint::after {
-                content: "Step 1: 點擊開始編輯";
+                content: "Step 1: 默認可直接編輯，按一下是防止誤觸";
                 bottom: auto; top: -45px; 
             }
             .btn-edit.guide-hint::before {
