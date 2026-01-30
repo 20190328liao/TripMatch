@@ -1,5 +1,4 @@
-﻿
-/* ==========================================================================
+﻿/* ==========================================================================
    【核心功能區】AuthComponents.css 原有邏輯
    ========================================================================== */
 
@@ -653,5 +652,38 @@ input[type="password"]::-ms-clear {
     .info_item,
     .info_value {
         flex-wrap: wrap;
+
     }
+    .info_row {
+        margin-top: 30px;
+    }
+
+    .avatar_btns_container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* 讓內部按鈕在手機版佔滿寬度 */
+        .avatar_btns_container .btn,
+        .avatar_btns_container button {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+    /* 小螢幕按鈕微調（視需要可再調整） */
+    .avatar_btns_container .btn {
+        padding: .55rem .9rem;
+        font-size: 16pt;
+    }
+
+        .avatar_btns_container .btn-sm {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+ 
 }
