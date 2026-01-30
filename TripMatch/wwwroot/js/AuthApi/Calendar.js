@@ -159,12 +159,12 @@
         });
     }
 
-    function notifyLockedSelection(message) {
-        if (typeof window.showPopup === 'function') {
-            try { window.showPopup({ title: '日期衝突', message: message || '選擇的日期包含已鎖定或重疊的期間。', type: 'error', autoClose: true, seconds: 3 }); return; } catch { }
-        }
-        console.log(message || 'Conflict detected');
-    }
+    //function notifyLockedSelection(message) {
+    //    if (typeof window.showPopup === 'function') {
+    //        try { window.showPopup({ title: '日期衝突', message: message || '選擇的日期包含已鎖定或重疊的期間。', type: 'error', autoClose: true, seconds: 3 }); return; } catch { }
+    //    }
+    //    console.log(message || 'Conflict detected');
+    //}
 
     function renderSubmittedList() {
         const $el = $('#calendarRange');
