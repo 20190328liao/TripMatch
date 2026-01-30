@@ -72,6 +72,46 @@
         document.head.appendChild(style);
     }
 
+    // --- 黑底白字 Toast（簡潔、可重用） ---
+    function showBlackToast(htmlText, seconds = 2) {
+        try {
+            const ID = 'tm-calendar-toast';
+            const old = document.getElementById(ID);
+            if (old) old.remove();
+            const t = document.createElement('div');
+            t.id = ID;
+            t.innerHTML = htmlText;
+            t.style.cssText = [
+                'position:fixed',
+                'top:20px',
+                'left:50%',
+                'transform:translateX(-50%)',
+                'background:rgba(0,0,0,0.92)',
+                'color:#fff',
+                'padding:10px 16px',
+                'border-radius:8px',
+                'z-index:120000',
+                'font-weight:600',
+                'box-shadow:0 10px 30px rgba(0,0,0,0.3)',
+                'max-width:90%',
+                'text-align:center',
+                'line-height:1.3'
+            ].join(';');
+            document.body.appendChild(t);
+
+            let remaining = seconds;
+            const timer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    t.style.transition = 'opacity 260ms';
+                    t.style.opacity = '0';
+                    setTimeout(() => { try { t.remove(); } catch (e) { } }, 300);
+                }
+            }, 1000);
+        } catch (e) { console.warn('showBlackToast failed', e); }
+    }
+
     function dedupeDates(arr) {
         if (!Array.isArray(arr)) return [];
         try {
@@ -254,10 +294,20 @@
                 });
             });
             if (ok) {
-                setListHeaderMessage('儲存成功', 3);
+                // 依據操作型態呈現更清楚的訊息
+                let toastMsg = '儲存成功';
+                if (addedDates && addedDates.length > 0 && (!removedDates || removedDates.length === 0)) toastMsg = '提交成功';
+                else if (removedDates && removedDates.length > 0 && (!addedDates || addedDates.length === 0)) toastMsg = '刪除成功';
+                else if ((addedDates && addedDates.length > 0) || (removedDates && removedDates.length > 0)) toastMsg = '更新成功';
+
+                setListHeaderMessage(toastMsg, 3);
+                // 顯示黑底白字提示（符合需求）
+                showBlackToast(toastMsg, 2);
+
                 document.dispatchEvent(new CustomEvent('calendar:saved'));
             } else {
                 setListHeaderMessage('同步失敗，請稍後重試', 4);
+                showBlackToast('同步失敗，請稍後重試', 3);
             }
             return ok;
         } catch (e) { return false; }
