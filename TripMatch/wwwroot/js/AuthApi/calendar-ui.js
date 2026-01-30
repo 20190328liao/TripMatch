@@ -211,7 +211,16 @@
         ns.closePendingModal();
 
         const isMatchPage = location.pathname.toLowerCase().includes('/match/calendarcheck');
-        const groupId = payload.groupId || '';
+
+        // 變更：優先使用 payload.groupId，若沒有則回退到先前儲存的 tm_last_pending_groupId
+        let groupId = payload.groupId || '';
+        if (!groupId) {
+            try {
+                const stored = sessionStorage.getItem('tm_last_pending_groupId');
+                if (stored) groupId = stored;
+            } catch (e) { /* ignore */ }
+        }
+
         const btnEditTitle = isMatchPage ? "前往設定頁面" : "繼續編輯日曆";
         const btnBackTitle = isMatchPage ? "暫不匯入" : "返回行程確認";
 
@@ -251,7 +260,21 @@
         };
 
         const btnBack = document.getElementById('btn-back-link');
-        if (btnBack) btnBack.onclick = () => { ns.closePendingModal(); if (isMatchPage) ns.createBell(payload); else window.location.href = `/Match/CalendarCheck/${groupId}`; };
+        if (btnBack) btnBack.onclick = () => {
+            ns.closePendingModal();
+            if (isMatchPage) {
+                ns.createBell(payload);
+            } else {
+                // 變更：若 modal 裡的 groupId 為空，嘗試從 sessionStorage 取回最後一次儲存的 groupId
+                let targetGroupId = groupId || '';
+                if (!targetGroupId) {
+                    try {
+                        targetGroupId = sessionStorage.getItem('tm_last_pending_groupId') || '';
+                    } catch (e) { targetGroupId = ''; }
+                }
+                window.location.href = `/Match/CalendarCheck/${targetGroupId}`;
+            }
+        };
 
         const btnDismiss = document.getElementById('btn-dismiss-hints');
         if (btnDismiss) btnDismiss.onclick = () => { document.dispatchEvent(new CustomEvent('calendarui:dismissHints')); ns.closePendingModal(); ns.createBell(payload); };
@@ -305,7 +328,12 @@ function ensureBellOnAllowedPage() {
         if (ns.isAllowedPendingPage()) {
             let payload = {};
             const raw = sessionStorage.getItem('calendar_check_pending');
-            if (raw) { try { payload = JSON.parse(raw); } catch { } }
+            if (raw) { try { payload = JSON.parse(raw); 
+                    // 變更：若 payload 含 groupId，儲存到 tm_last_pending_groupId，讓後續返回行程可以使用
+                    if (payload && payload.groupId) {
+                        try { sessionStorage.setItem('tm_last_pending_groupId', payload.groupId); } catch (e) { /* ignore */ }
+                    }
+                } catch { } }
 
             ns.createBell(payload, { autoShake: false });
 
@@ -314,7 +342,8 @@ function ensureBellOnAllowedPage() {
                     if (typeof ns.startPendingSequence === 'function') {
                         ns.startPendingSequence(payload);
                     }
-                    sessionStorage.removeItem('calendar_check_pending');
+                    // 保留原有行為：移除原始 pending 資訊（tm_last_pending_groupId 仍保留作為回退）
+                    try { sessionStorage.removeItem('calendar_check_pending'); } catch (e) { }
                 }, 600);
             }
         } else {
