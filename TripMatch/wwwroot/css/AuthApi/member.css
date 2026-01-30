@@ -316,7 +316,7 @@ MemberCenter.cshtml
 
 /* 第一步：編輯按鈕 (.btn-edit) */
 .btn-edit.guide-hint::after {
-    content: "Step 1: 點擊開始編輯";
+    content: "Step 1: 默認可直接編輯，按一下是防止誤觸";
 }
 
 /* 第二步：月份切換箭頭 (.nav-btn) */
