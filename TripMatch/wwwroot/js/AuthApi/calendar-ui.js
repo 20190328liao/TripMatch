@@ -247,7 +247,22 @@
         document.body.insertAdjacentHTML('beforeend', html);
 
         const btnSave = document.getElementById('btn-import-save');
-        if (btnSave) btnSave.onclick = () => { document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload })); ns.closePendingModal(); };
+        if (btnSave) {
+            btnSave.onclick = () => {
+                // 1) 派發事件給可能的 listener（保留舊行為）
+                try { document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload })); } catch (e) { /* ignore */ }
+
+                // 2) 將 pending flag 寫回 sessionStorage，讓 /Match/CalendarCheck/{groupId} 在載入時能接手處理匯入
+                try { sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: groupId })); } catch (e) { /* ignore */ }
+
+                // 3) 顯示黑底白字的提示（使用內建 showToast）並在倒數後導回 CalendarCheck/{groupId}
+                const redirectUrl = groupId ? `/Match/CalendarCheck/${encodeURIComponent(groupId)}` : '/Match/CalendarCheck';
+                showToast(`正在從個人行事曆匯入資料，將於 <b>{sec}</b> 秒後返回行程確認...`, groupId, redirectUrl);
+
+                // 關閉 modal
+                ns.closePendingModal();
+            };
+        }
 
         const btnClose = document.getElementById('btn-import-close');
         if (btnClose) btnClose.onclick = () => {
