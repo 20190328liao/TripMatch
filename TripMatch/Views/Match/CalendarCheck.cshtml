@@ -11,45 +11,22 @@
 <link rel="stylesheet" href="~/css/Match/CalendarCheck.css" />
 
 <style>
-    /* 隱藏此頁面的鈴鐺 (如果全域 JS 仍嘗試載入的話) */
-    #tm-pending-bell {
-        display: none !important;
-    }
-
-    .instruction-box {
-        background-color: #f8f9fa;
-        border-left: 4px solid var(--primary-mint);
-        padding: 12px 16px;
-        margin-bottom: 20px;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        color: #555;
-        text-align: left;
-    }
-
-        .instruction-box i {
-            color: var(--primary-mint);
-            margin-right: 6px;
-            font-size: 1.1rem;
-        }
 </style>
 
 <div class="page-wrap">
     <div id="selectionSection" class="@(isSubmitted ? "d-none" : "")">
-        <div class="calendar-container">
-            <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
-            <p class="text-center text-muted mb-3">系統將自動匯入您在會員中心的設定，請確認本次行程的可用時段</p>
-
-            <div class="d-flex justify-content-center mb-4">
-                <div class="instruction-box">
-                    <ul class="changeList mb-0 ps-3 mt-1">
-                        <p>操作說明：</p>
-                        <li>請先<strong>單擊</strong>開始和結束日期來建立區間。</li>
-                        <li>建立後，可<strong>久按並拖曳</strong>該區間來調整位置。</li>
-                        <li>若需選擇單日，請直接<strong>雙擊</strong>該日期。</li>
-                    </ul>
-                </div>
+        <div class="calendar-container position-relative">
+            
+            <div class="header-actions">
+                <a href="/Auth/MemberCenter#calendar_section" onclick="goToMemberCenter(event)" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold" style="border-color:var(--primary-mint); color:var(--primary-mint);">
+                    <i class="bi bi-pencil-square me-1"></i>編輯行事曆
+                </a>
             </div>
+
+            <h2 class="text-center fw-bold mb-2" style="color:var(--text-dark)">確認您的可用時間</h2>
+            <p class="text-center text-muted mb-3">請確認本次行程的可用時段，或從個人行事曆匯入</p>
+
+
 
             <div id="groupRangeInfo" class="text-center mb-4 d-none" style="font-size:0.95rem; color:var(--text-muted)">
                 揪團期間：尚未設定
@@ -92,7 +69,18 @@
                         <div>週一</div><div>週二</div><div>週三</div><div>週四</div><div>週五</div><div>週六</div><div style="color:#ed5f00">週日</div>
                     </div>
                     <div class="days"></div>
+                    <div class="d-flex justify-content-center mb-4">
+                        <div class="instruction-box">
+                            <div><i class="bi bi-info-circle-fill"></i> <strong>操作說明：</strong></div>
+                            <ul class="mb-0 ps-3 mt-1">
+                                <li>請先<span class="instruction-highlight">單擊</span>開始和結束日期來建立區間。</li>
+                                <li>建立後，可<span class="instruction-highlight">久按並拖曳</span>該區間來調整位置。</li>
+                                <li>若需選擇單日，請直接<span class="instruction-highlight">雙擊</span>該日期。</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
+
             </div>
 
             <div class="row mt-5">
@@ -122,6 +110,48 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="calendarModal" style="display:none;">
+    <div class="custom-modal">
+        <div class="modal-top-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5v-5z" /></svg>
+        </div>
+
+        <h2 class="modal-title">設定你的行事曆</h2>
+        <p class="modal-subtitle">同步您的行事曆，讓時間媒合更快速、更準確</p>
+
+        <div class="feature-box">
+            <div class="feature-item">
+                <div class="feature-icon icon-blue">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" /></svg>
+                </div>
+                <div class="feature-text">
+                    <h4>自動偵測可用時間</h4>
+                    <p>系統會自動分析您的行事曆，標示出可以出發的日期</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon icon-green">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 6 6.5 9.5 3 12l3.5 2.5L9 18l2.5-3.5L15 12l-3.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" /></svg>
+                </div>
+                <div class="feature-text">
+                    <h4>一次設定，永久使用</h4>
+                    <p>之後每次時間媒合都可以直接帶入，省去重複設定的麻煩</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid">
+            <button id="btnImportFromCheck" class="btn btn-primary-mint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" /></svg>
+                匯入個人行事曆
+            </button>
+            <button id="closeModal" class="btn btn-secondary-light">
+                先跳過，稍後再設定
+            </button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/AuthApi/Datehelper.js" asp-append-version="true"></script>
     <script src="~/js/AuthApi/calendar-ui.js" asp-append-version="true"></script>
@@ -136,26 +166,35 @@
         let selectedRanges = [];
         let pollingInterval;
 
-        // --- 互動狀態變數 ---
-        let isMouseDown = false;
-        let isDragging = false;
-        let dragAnchorDate = null;
         let clickStartNode = null;
-
         let isResizing = false;
-        let resizingRange = null;
-        let resizeAnchor = null;
+        let resizingRange = null;    
+        let resizeAnchor = null;     
 
         function hasValidGroupId() { return Number.isInteger(currentGroupIdInt) && currentGroupIdInt > 0; }
 
-        // 導向會員中心
-        function goToMemberCenter() {
-            // 標記來自哪個 Group，以便會員中心知道要提示什麼 (選擇性)
+        function goToMemberCenter(e) {
+            if(e) e.preventDefault();
             sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: currentGroupId }));
             window.location.href = '/Auth/MemberCenter#calendar_section';
         }
 
-        // --- 全域渲染更新 ---
+        // --- Modal 控制函式 ---
+        function showModal() {
+            const modal = document.getElementById('calendarModal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
+        }
+        function closeModal() {
+            const modal = document.getElementById('calendarModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        }
+
         function forceRender() {
             if (window._tripmatch_calendar_instance && window._tripmatch_calendar_instance.render) {
                 window._tripmatch_calendar_instance.render();
@@ -164,7 +203,6 @@
             }
         }
 
-        // --- 渲染清單 ---
         function renderList() {
             const $list = document.getElementById('calendarList');
             const $count = document.getElementById('selectedCount');
@@ -205,16 +243,12 @@
             if(idx >= 0) {
                 selectedRanges.splice(idx, 1);
                 clickStartNode = null;
-                isMouseDown = false;
-                isDragging = false;
-                dragAnchorDate = null;
                 isResizing = false;
                 resizingRange = null;
                 forceRender();
             }
         };
 
-        // --- 提交與狀態 ---
         async function submitSlots() {
             if (!hasValidGroupId()) { alert('無效的揪團 ID'); return; }
             const validRanges = selectedRanges.filter(r => r.valid);
@@ -271,7 +305,6 @@
             } catch(e) {}
         }
 
-        // --- 行事曆核心 ---
         async function initCalendar() {
             let currentYear = new Date().getFullYear();
             let currentMonth = new Date().getMonth();
@@ -283,14 +316,13 @@
                 render: function() { renderMonth(); renderList(); },
                 importRanges: function(ranges) {
                     if (!Array.isArray(ranges) || ranges.length === 0) return;
-                    // 直接匯入，不需詢問覆蓋，因為這是頁面初始化的預設行為
                     ranges.forEach(r => {
                         let s = (r.startAt || r.start).slice(0, 10);
                         let e = (r.endAt || r.end).slice(0, 10);
                         if (groupStart && s < groupStart) s = groupStart;
                         if (groupEnd && e > groupEnd) e = groupEnd;
                         if (s > e) return;
-                        if (checkOverlap(s, e)) return;
+                        if (checkOverlap(s, e)) return; 
 
                         const dayCount = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
                         selectedRanges.push({ start: s, end: e, days: dayCount, valid: dayCount >= targetDays });
@@ -300,40 +332,29 @@
                 }
             };
 
-            // ★ 核心邏輯：判斷資料表 LeaveDate 是否有資料
-            async function checkAndAutoImportLeaveDates() {
+            window.handleImportAction = async function() {
                 try {
-                    // 1. 先確認是否已經有此 Group 的已提交資料 (Old submit)
-                    // 如果有，loadMyExistingSlots 會處理，這裡就不強制匯入 LeaveDate
-                    // 但為了體驗，通常我們會將 LeaveDate 當作「預設值」填入空白處，
-                    // 這裡簡化邏輯：如果 selectedRanges 空的，就嘗試載入 LeaveDate。
-
-                    if (selectedRanges.length > 0) return;
-
-                    // 2. 呼叫 GetLeaves
                     const res = await fetch('/api/auth/GetLeaves', { credentials: 'include' });
                     if (res.ok) {
                         const data = await res.json();
                         const dates = data.dates || [];
 
                         if (dates.length > 0) {
-                            // A. 有資料 -> 轉換並匯入
                             const ranges = convertDatesToRanges(dates);
                             window._tripmatch_calendar_instance.importRanges(ranges);
-                            console.log(`[AutoImport] 已匯入 ${ranges.length} 個區間`);
+                            closeModal();
                         } else {
-                            // B. 沒資料 -> 導向 MemberCenter
-                            console.log("[AutoImport] 無 LeaveDate 資料，導向會員中心");
-                            alert("系統偵測到您尚未設定「可安排時間 (Leave Dates)」。\n\n將為您導向至會員中心進行設定。");
-                            goToMemberCenter();
+                            alert("系統偵測到您尚未設定「可安排時間」。\n\n將為您導向至會員中心進行設定。");
+                            goToMemberCenter(null);
                         }
                     } else {
                         console.error("無法取得 LeaveDate");
                     }
                 } catch (e) {
-                    console.error("[AutoImport] Error:", e);
+                    console.error("[ImportAction] Error:", e);
+                    alert("連線錯誤，請稍後再試");
                 }
-            }
+            };
 
             function convertDatesToRanges(dateStrings) {
                 if (!dateStrings || dateStrings.length === 0) return [];
@@ -346,7 +367,7 @@
                     const d1 = new Date(prev);
                     const d2 = new Date(curr);
                     const diff = Math.round((d2 - d1) / 86400000);
-                    if (diff === 1) { prev = curr; }
+                    if (diff === 1) { prev = curr; } 
                     else {
                         ranges.push({ start: start, end: prev });
                         start = curr; prev = curr;
@@ -357,10 +378,7 @@
             }
 
             await Promise.all([loadGroupInfo(), loadMyAvailability()]);
-            await loadMyExistingSlots(); // 載入此行程已提交過的 (如果有)
-
-            // 執行自動匯入/導向邏輯
-            await checkAndAutoImportLeaveDates();
+            await loadMyExistingSlots(); 
 
             document.addEventListener('mouseup', handleGlobalMouseUp);
             document.querySelector('.days')?.addEventListener('mouseleave', clearPreview);
@@ -369,25 +387,17 @@
             renderMonth();
             bindCalendarEvents();
 
-            // ... (Event Handlers 保持不變) ...
-
             function handleMouseDown(iso, existingRange, type) {
                 document.dispatchEvent(new CustomEvent('calendarui:dismissHints'));
                 if (existingRange && (type === 'start' || type === 'end' || type === 'single')) {
                     isResizing = true;
                     resizingRange = existingRange;
                     if (type === 'start') resizeAnchor = existingRange.end;
-                    else resizeAnchor = existingRange.start; // end or single
-
+                    else resizeAnchor = existingRange.start;
                     const idx = selectedRanges.indexOf(existingRange);
                     if (idx > -1) selectedRanges.splice(idx, 1);
                     renderMonth();
-                    drawPreview(resizeAnchor, iso);
-                }
-                else {
-                    isMouseDown = true;
-                    isDragging = false;
-                    dragAnchorDate = iso;
+                    drawPreview(resizeAnchor, iso); 
                 }
             }
 
@@ -397,13 +407,7 @@
                     drawPreview(resizeAnchor, hoverIso);
                     return;
                 }
-                if (isMouseDown) {
-                    isDragging = true;
-                    clickStartNode = null;
-                    drawPreview(dragAnchorDate, hoverIso);
-                    return;
-                }
-                if (!isMouseDown && !isResizing && clickStartNode) {
+                if (!isResizing && clickStartNode) {
                     drawPreview(clickStartNode, hoverIso);
                 }
             }
@@ -429,12 +433,12 @@
 
             function handleGlobalMouseUp(e) {
                 if (e.target.classList.contains('delete-btn')) return;
-
                 if (isResizing) {
                     const cell = e.target.closest('.day-cell');
                     if (cell && !cell.classList.contains('empty')) {
                         const iso = cell.dataset.iso;
-                        commitRange(resizeAnchor, iso, true);
+                        // ★ 修改：這裡若失敗會還原，但不再 alert
+                        commitRange(resizeAnchor, iso, true); 
                     } else {
                         commitRange(resizingRange.start, resizingRange.end);
                     }
@@ -443,15 +447,6 @@
                     resizeAnchor = null;
                     return;
                 }
-
-                if (isDragging) {
-                    commitSelectionFromPreview();
-                    isMouseDown = false;
-                    isDragging = false;
-                    dragAnchorDate = null;
-                    return;
-                }
-
                 const cell = e.target.closest('.day-cell');
                 if (cell && !cell.classList.contains('empty') && !cell.classList.contains('locked') && isMouseDown) {
                     const iso = cell.dataset.iso;
@@ -479,15 +474,16 @@
                 }
             }
 
+            // ★ 修改：移除 alert
             function commitRange(s, e, isRestoreOnFail = false) {
                 if (s > e) { const t = s; s = e; e = t; }
                 if (checkOverlap(s, e)) {
-                    alert("位置重疊！");
+                    // alert("位置重疊！");  <-- 移除
                     if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
                     clearPreview(); forceRender(); return;
                 }
                 if (checkRangeHasLocked(s, e)) {
-                    alert("包含不可選日期！");
+                    // alert("包含不可選日期！"); <-- 移除
                     if (isRestoreOnFail && resizingRange) selectedRanges.push(resizingRange);
                     clearPreview(); forceRender(); return;
                 }
@@ -585,18 +581,14 @@
 
                         cell.onmousedown = (e) => {
                             if (e.target.classList.contains('delete-btn')) return;
-                            e.preventDefault();
+                            e.preventDefault(); 
                             if (status) {
                                 handleMouseDown(iso, status.range, status.type);
                             } else {
-                                handleMouseDown(iso, null, null);
+                                isMouseDown = true; 
                             }
                         };
                         cell.onmousemove = (e) => {
-                            if (isMouseDown && !isResizing && !isDragging) {
-                                isDragging = true;
-                                clickStartNode = null;
-                            }
                             handleMouseOver(iso);
                         };
                     }
@@ -666,11 +658,29 @@
         }
 
         document.addEventListener("DOMContentLoaded", async function() {
+            // 綁定 Modal 按鈕事件
+            const importBtn = document.getElementById('btnImportFromCheck');
+            const closeBtn = document.getElementById('closeModal');
+            
+            if (importBtn) {
+                // ★ 這裡的監聽器是重點：點擊按鈕時才執行匯入檢查
+                importBtn.addEventListener('click', async () => {
+                    if(window.handleImportAction) await window.handleImportAction();
+                });
+            }
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeModal);
+            }
+
             if (!hasValidGroupId()) return;
 
             if (isSubmittedInit) {
                 showWaitingMode();
             } else {
+                // ★ 先顯示 Modal
+                showModal(); 
+                
+                // 再初始化日曆背景 (不自動匯入 LeaveDate)
                 if (typeof initCalendar === 'function') {
                     await initCalendar();
                 }

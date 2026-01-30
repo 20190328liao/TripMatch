@@ -645,3 +645,27 @@ MemberCenter.cshtml
         }
 }
 
+/* ... (原有的 CSS) ... */
+
+/* ★ 新增：強制設定 .edit (編輯模式/鎖定模式) 與 .confirm (提交) 按鈕的高度 */
+.calendarBtnWrap .btn1 {
+    height: 38pt !important;
+    line-height: 1.2; /* 確保文字垂直置中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18pt; /* 稍微放大字體配合高度 */
+}
+
+/* 如果 .edit 還有其他特殊設定，也可以單獨加強 */
+.calendarBtnWrap .edit {
+    min-height: 38pt;
+}
+    /* 編輯模式啟動時的橘色狀態 */
+    .calendarBtnWrap .edit.active-orange {
+        background-color: #ED5F00 !important; /* 橘色 */
+        color: #fff !important;
+        border-color: #ED5F00 !important;
+        box-shadow: 0 0 0 4px rgba(237, 95, 0, 0.2); /* 模擬 Focus 光暈 */
+    }
+
