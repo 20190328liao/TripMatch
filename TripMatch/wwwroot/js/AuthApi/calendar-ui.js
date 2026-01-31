@@ -229,7 +229,7 @@
             <div class="tm-modal-box">
                 <div style="font-size:3rem;margin-bottom:15px;">📅</div>
                 <h3 style="margin:0 0 10px;font-weight:700;color:#333;">發現未完成的行程</h3>
-                <p style="color:#666;font-size:0.95rem;margin-bottom:24px;line-height:1.5;">
+                <p style="color:#666;font-size:0.95rem;margin-bottom:24px;line-height:1.4;">
                     您有針對群組 <b>${groupId || '未命名'}</b> 的暫存時段，<br>是否將您的「個人請假/空閒日期」匯入此行程？
                 </p>
                 <div style="display:flex;flex-direction:column;gap:10px;">
@@ -253,9 +253,8 @@
                 try { document.dispatchEvent(new CustomEvent('calendarui:importConfirmed', { detail: payload })); } catch (e) { /* ignore */ }
 
                 // 2) 將 pending flag 寫回 sessionStorage，讓 /Match/CalendarCheck/{groupId} 在載入時能接手處理匯入
+                ns.closePendingModal();
                 try { sessionStorage.setItem('calendar_check_pending', JSON.stringify({ groupId: groupId })); } catch (e) { /* ignore */ }
-
-                // 3) 顯示黑底白字的提示（使用內建 showToast）並在倒數後導回 CalendarCheck/{groupId}
                 const redirectUrl = groupId ? `/Match/CalendarCheck/${encodeURIComponent(groupId)}` : '/Match/CalendarCheck';
                 showToast(`正在從個人行事曆匯入資料，將於 <b>{sec}</b> 秒後返回行程確認...`, groupId, redirectUrl);
 

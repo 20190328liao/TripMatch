@@ -694,6 +694,20 @@
                     await initCalendar();
                 }
             }
+
+            // DOMContentLoaded -> 在 initCalendar 完成後
+            // 如果發現 pending flag 且 groupId 符合：
+            try { sessionStorage.removeItem('calendar_check_pending'); } catch (e) { /* ignore */ }
+
+            // 關閉頁面上的匯入 modal
+            closeModal();
+
+            // 呼叫已存在的匯入邏輯（若有）
+            if (typeof window.handleImportAction === 'function') {
+                await window.handleImportAction();
+            } else {
+                // 備援：fetch /api/auth/GetLeaves 並呼叫 window._tripmatch_calendar_instance.importRanges 或 window.Calendar.importDates
+            }
         });
     </script>
 }
