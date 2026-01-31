@@ -570,7 +570,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         const btn = card.querySelector('.btn-view-details');
 
                         // --- ★★★ 新增邏輯：檢查資料是否已經是新的 ★★★ ---
-                        // 注意：這需要您的 HTML 按鈕上有 data-updated="@card.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
                         const updatedStr = btn.dataset.updated;
 
                         if (updatedStr) {
