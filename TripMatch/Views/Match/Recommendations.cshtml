@@ -310,7 +310,9 @@
                                 }
                             </button>
                             <button class="btn btn-outline-secondary w-100 btn-view-details"
-                                    data-location="@card.PlaceCode" data-start="@card.StartDate.ToString("yyyy-MM-dd")" data-end="@card.EndDate.ToString("yyyy-MM-dd")">
+                                    data-location="@card.PlaceCode" data-start="@card.StartDate.ToString("yyyy-MM-dd")" data-end="@card.EndDate.ToString("yyyy-MM-dd")"
+                               
+                                    data-updated="@card.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")">
                                 查看詳情
                             </button>
                         </div>
@@ -486,16 +488,33 @@
                     data: { location: location, start: start, end: end, groupId: @Model.GroupId },
                     success: function(res) {
                         var data = res.data;
-                        $('#departInfo').text(data.departFlight);
-                        $('#returnInfo').text(data.returnFlight);
-                        $('#flightPrice').text('NT$ ' + formatCurrency(data.flightPrice));
-                        $('#flightLink').attr('href', data.flightLink);
-                        $('#hotelName').text(data.hotelName);
-                        $('#hotelLink').attr('href', data.hotelLink);
-                        $('#totalPrice').text(formatCurrency(data.totalPrice));
-                        $('#loadingSpinner').addClass('d-none');
-                        $('#realDataContent').removeClass('d-none');
-                    },
+                          // ★★★ 修正重點：把 .text() 改為 .html() ★★★
+            // 這樣後端傳來的 <span class='badge'> 才會被瀏覽器解讀為樣式，而不是文字
+            $('#departInfo').html(data.departFlight);
+            $('#returnInfo').html(data.returnFlight);
+
+            $('#flightPrice').text('NT$ ' + formatCurrency(data.flightPrice));
+            $('#flightLink').attr('href', data.flightLink);
+
+            // 如果飯店名稱也有特殊樣式，這裡也可以改用 .html()
+            $('#hotelName').html(data.hotelName);
+            $('#hotelLink').attr('href', data.hotelLink);
+            $('#totalPrice').text(formatCurrency(data.totalPrice));
+
+            $('#loadingSpinner').addClass('d-none');
+            $('#realDataContent').removeClass('d-none');
+                // 2. ★★★ 新增：順便更新背後卡片上的價格 ★★★
+        // 找到對應的卡片 (假設您有點擊按鈕時存下 cardId，或是透過 DOM 查找)
+        // 這裡示範用 jQuery 查找這顆按鈕所在的卡片
+             var card = btn.closest('.option-card');
+            if (card.length > 0) {
+                // 更新價格標籤
+                card.find('.price-tag').html('<small class="opacity-75 me-1">預估費用</small> NT$ ' + formatCurrency(data.totalPrice));
+
+                // 更新航班資訊 (選用)
+                // card.find('.depart-flight-info').html(data.departFlight);
+            }
+        },
                     error: function(err) {
                         $('#loadingSpinner').addClass('d-none');
                         $('#errorMsg').text('查詢失敗，請稍後再試').removeClass('d-none');
@@ -534,5 +553,73 @@
                 btn.innerHTML = originalText;
             }
         }
+document.addEventListener("DOMContentLoaded", function() {
+    updateActionBar();
+    
+    // ★★★ 新增：頁面載入後，延遲 1 秒開始背景更新價格 ★★★
+    setTimeout(autoUpdatePrices, 1000);
+});
+
+        async function autoUpdatePrices() {
+                    const cards = document.querySelectorAll('.option-card');
+                    const now = new Date();
+                    const validHours = 1;   // ★ 設定門檻：1 小時內的資料視為「準確」，不重新查詢
+
+                    // 為了不卡住瀏覽器，我們一張一張慢慢查
+                    for (const card of cards) {
+                        const btn = card.querySelector('.btn-view-details');
+
+                        // --- ★★★ 新增邏輯：檢查資料是否已經是新的 ★★★ ---
+                        // 注意：這需要您的 HTML 按鈕上有 data-updated="@card.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                        const updatedStr = btn.dataset.updated;
+
+                        if (updatedStr) {
+                            const lastUpdated = new Date(updatedStr);
+                            // 計算時間差 (毫秒 -> 小時)
+                            const diffHours = (now - lastUpdated) / (1000 * 60 * 60);
+
+                            // 如果時間差小於設定時限 (例如 1 小時)，視為價格正確，直接跳過
+                            if (diffHours < validHours) {
+                                // (選用) 在 Console 顯示跳過訊息方便除錯
+                                // console.log(`方案 ${btn.dataset.location} 資料很新 (${diffHours.toFixed(2)} 小時前)，跳過。`);
+                                continue;
+                            }
+                        }
+                        // ----------------------------------------------------
+
+                        // 準備查詢參數
+                        const location = btn.dataset.location;
+                        const start = btn.dataset.start;
+                        const end = btn.dataset.end;
+
+                        // 顯示 loading 狀態
+                        const priceTag = card.querySelector('.price-tag');
+                        const originalText = priceTag.innerHTML;
+                        priceTag.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 更新中...';
+
+                        try {
+                            // 呼叫後端 API
+                            const response = await fetch(`/api/timewindow/check-price?groupId=@Model.GroupId&location=${location}&start=${start}&end=${end}`);
+                            const res = await response.json();
+
+                            if (res.success) {
+                                // 更新 UI 顯示最新價格
+                                priceTag.innerHTML = '<small class="opacity-75 me-1">最新報價</small> NT$ ' + formatCurrency(res.data.totalPrice);
+
+                                // ★★★ 關鍵：查詢成功後，更新按鈕上的時間，避免使用者沒重整頁面時腳本重複查
+                                btn.dataset.updated = new Date().toISOString();
+                            } else {
+                                // 失敗則恢復原狀
+                                priceTag.innerHTML = originalText;
+                            }
+                        } catch (e) {
+                            priceTag.innerHTML = originalText;
+                        }
+
+                        // 每查完一張，休息 2 秒再查下一張，避免 API 爆量
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                }
+
     </script>
 }

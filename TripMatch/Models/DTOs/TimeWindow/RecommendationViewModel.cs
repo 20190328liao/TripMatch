@@ -23,6 +23,8 @@ namespace TripMatch.Models.DTOs.TimeWindow
         public string TimeSlotId { get; set; } // 用來篩選的 ID
 
         public decimal Price { get; set; }
+        // ★★★ 新增這個欄位，用來接收資料庫的更新時間 ★★★
+        public DateTime UpdatedAt { get; set; }
         public string DepartFlight { get; set; }
         public string ReturnFlight { get; set; }
 
