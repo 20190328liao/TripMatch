@@ -65,6 +65,170 @@ footer {
 }
 
 /* =========================================
+   6. 響應式 RWD 最終修正版 (1120px 以下)
+   ========================================= */
+
+@media (max-width: 1120px) {
+
+    /* --- 1. 解除外層限制 --- */
+    /* 讓 body 和 wrapper 不要干涉內部彈出視窗 */
+    body, html {
+        overflow: visible !important;
+    }
+
+    .itinerary-wrapper {
+        width: 100vw;
+        height: calc(100vh - 60px);
+        overflow: hidden; /* 這裡 hidden 是為了防止整個頁面捲動 */
+        position: relative;
+    }
+
+    /* --- 2. 左側面板重構：Flex Column --- */
+    .left-panel {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: 100% !important;
+        border-right: none;
+        /* 關鍵佈局：垂直排列 */
+        display: flex !important;
+        flex-direction: column !important;
+        /* 面板本身「不」捲動，也不隱藏溢出，這樣絕對定位的選單才能顯示 */
+        overflow: visible !important;
+        position: static !important; /* 嘗試移除 relative 限制 */
+    }
+
+    /* --- 3. 隱藏右側地圖 --- */
+    .right-panel {
+        display: none !important;
+    }
+
+    /* --- 4. 導覽列：固定在頂部，層級最高 --- */
+    /* 這是最關鍵的部分：確保它物理上位於內容層之上 */
+    .itinerary-nav-container {
+        flex: 0 0 auto; /* 不縮放，高度自動 */
+        width: 100%;
+        background: #fff;
+        z-index: 9999 !important; /* 核彈級 Z-index */
+        position: relative;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* 加陰影確保視覺覆蓋 */
+    }
+
+    .segmented-control {
+        overflow: visible !important;
+    }
+
+    /* --- 5. 下拉選單強制定位 --- */
+    .seg-dropdown .dropdown-menu {
+        position: absolute !important;
+        top: 100% !important; /* 緊接在按鈕下方 */
+        left: 0 !important;
+        min-width: 200px;
+        z-index: 10000 !important; /* 比導覽列更高 */
+        display: none; /* 預設隱藏，由 JS 控制 */
+        /* 視覺樣式，確保不被背景吃掉 */
+        background-color: white !important;
+        border: 1px solid #ddd !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    }
+
+        .seg-dropdown .dropdown-menu.show {
+            display: block !important;
+        }
+
+    /* --- 6. 內容區塊：只有這裡可以捲動 --- */
+    /* 這裡負責吃掉剩下的高度，並產生捲軸 */
+    .tab-content-wrapper {
+        flex: 1 1 auto; /* 吃掉剩餘空間 */
+        position: relative;
+        z-index: 1; /* 層級低於導覽列 */
+        height: 0; /* 配合 flex-grow 生效 */
+        min-height: 0;
+        overflow: hidden; /* 內部再處理捲動 */
+    }
+
+    .itinerary-content {
+        height: 100%;
+        overflow-y: auto !important; /* 捲軸只在這裡 */
+        padding-bottom: 100px;
+        z-index: 1;
+        position: relative;
+    }
+
+    /* 1. 確保 header 容器不會限制選單顯示 */
+    .day-header {
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 50 !important; /* 確保比下一天高 */
+    }
+
+    /* 2. 強制選單定位 (核心修正) */
+    .day-header .dropdown-menu {
+        /* 關閉 Bootstrap 的動態位移 (Popper.js) */
+        position: absolute !important;
+        transform: none !important;
+        /* 手動指定位置：出現在按鈕的左下方 */
+        top: 100% !important;
+        right: 0 !important;
+        left: auto !important;
+        /* 確保選單不會消失 */
+        display: none;
+        margin: 0;
+        z-index: 9999 !important;
+        background-color: #fff !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+        border: 1px solid #ddd !important;
+    }
+
+        /* 當按鈕點擊後，Bootstrap 會加上 .show，我們強迫它顯示 */
+        .day-header .dropdown-menu.show {
+            display: block !important;
+        }
+
+    /* 3. 解決「被下一天蓋住」的問題 */
+    /* 當某一天標題內的選單開啟時，大幅提升那一天的層級 */
+    .day-header:focus-within {
+        z-index: 1000 !important;
+    }
+
+    /* 1. 確保推薦清單的容器不會切掉選單 */
+    #explore-tab-content,
+    #favorites-tab-content,
+    .rec-item {
+        overflow: visible !important;
+    }
+
+    /* 2. 修正推薦卡片 (rec-item) 的層級 */
+    /* 點擊時，提升該張卡片的層級，確保選單不會被下一張卡片遮住 */
+    .rec-item:focus-within {
+        z-index: 50 !important;
+    }
+
+    /* 3. 強制推薦面板內的下拉選單定位 */
+    .rec-item .dropdown-menu {
+        position: absolute !important;
+        transform: none !important; /* 關閉 Bootstrap JS 位移計算 */
+        top: 100% !important; /* 出現在按鈕正下方 */
+        left: 0 !important;
+        right: auto !important;
+        display: none;
+        z-index: 10000 !important;
+        background-color: white !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+        min-width: 160px;
+    }
+
+        /* 當 Bootstrap 激活選單時強制顯示 */
+        .rec-item .dropdown-menu.show {
+            display: block !important;
+        }
+
+    /* 4. 如果是在手機上，讓選單寬度更適中 */
+    .rec-item .dropdown-item {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+}
+/* =========================================
    3. 左側面板詳細樣式 (新整合部分)
    ========================================= */
 
@@ -950,4 +1114,5 @@ margin-left: 25px; /* 配合 timeline 的位置 */
 .seg-dropdown .dropdown-toggle::after {
     display: none !important;
 }
+
 
