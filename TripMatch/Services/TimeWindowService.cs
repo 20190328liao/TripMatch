@@ -352,9 +352,6 @@ namespace TripMatch.Services
             int tripDays = group?.TravelDays ?? 5; // 防呆
             if (tripDays < 1) tripDays = 1;
 
-            // 計算群組人數（若 TargetNumber > 0 優先使用）
-            int memberCount = (group?.TargetNumber > 0) ? group!.TargetNumber : await _context.GroupMembers.CountAsync(m => m.GroupId == groupId);
-
             var newRecommendations = new List<Recommendation>();
 
             foreach (var range in timeRanges)
@@ -370,10 +367,9 @@ namespace TripMatch.Services
                         place,
                         priceCheckStart,
                         priceCheckEnd,
-                        settings.AllowTransfer,
-                        memberCount, // <--- 補上這個參數！
-                        settings.StarRating,
-                        settings.MedianBudget
+                        settings.AllowTransfer, // 使用共用設定
+                        settings.StarRating,    // 使用共用設定
+                        settings.MedianBudget   // 使用共用設定
                     );
 
                     var rec = new Recommendation
@@ -463,7 +459,6 @@ namespace TripMatch.Services
                     DateRange = $"{r.StartDate:MM/dd} - {r.EndDate:MM/dd}",
                     TimeSlotId = $"{r.StartDate:MMdd}-{r.EndDate:MMdd}",
                     Price = r.Price,
-                    UpdatedAt = r.UpdatedAt,
                     DepartFlight = r.DepartFlight,
                     ReturnFlight = r.ReturnFlight,
                     CurrentVotes = r.Vote,
@@ -971,6 +966,20 @@ namespace TripMatch.Services
                 }
             }
 
+            // 3. 全員投票完成: VOTING -> RESULT
+            if (group.Status == GroupStatus.VOTING)
+            {
+                var allVoted = await CheckIfAllVotedAsync(groupId);
+
+                if (allVoted)
+                {
+                    group.Status = GroupStatus.RESULT;
+                    group.UpdateAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    return group.Status;
+                }
+            }
+
             return group.Status;
         }
         // 取得偏好參數
@@ -1024,17 +1033,10 @@ namespace TripMatch.Services
             return (allowTransfer, starRating, medianBudget);
         }
         // 查即時價格
-        // 查即時價格 (修正版：查完順便更新資料庫)
         public async Task<object> GetLiveTravelPriceAsync(int groupId, string location, DateOnly start, DateOnly end)
         {
             // 1. 取得一致的偏好設定
             var settings = await GetGroupPreferenceSettingsAsync(groupId);
-
-            // 計算 memberCount
-            var group = await _context.TravelGroups.FindAsync(groupId);
-            int memberCount = (group != null && group.TargetNumber > 0)
-                ? group.TargetNumber
-                : await _context.GroupMembers.CountAsync(m => m.GroupId == groupId);
 
             // 2. 呼叫外部 API 查價
             var result = await _travelInfoService.GetTravelInfoAsync(
@@ -1042,7 +1044,6 @@ namespace TripMatch.Services
                 start,
                 end,
                 settings.AllowTransfer,
-                memberCount,            // 傳入人數
                 settings.StarRating,
                 settings.MedianBudget
             );
@@ -1053,14 +1054,11 @@ namespace TripMatch.Services
             var dateTimeEnd = end.ToDateTime(TimeOnly.MinValue);
 
             // 注意：這裡的比對條件要看你的邏輯，假設地點和日期完全吻合才更新
-            // 有時候 Location 可能是 "TPE|台北"，所以用 Contains 或 Split 比較保險
-            // 但最準確的是直接用 RecommendationId (如果您前端有傳的話)
-            // 這裡先用日期 + 地點模糊比對
             var existingRec = await _context.Recommendations
                 .FirstOrDefaultAsync(r =>
                     r.GroupId == groupId &&
-                    (r.Location == location || r.Location.StartsWith(location)) &&
-                    r.StartDate == dateTimeStart); // 這裡只比對開始日期，因為通常同一天開始的方案只有一個
+                    r.Location == location &&
+                    r.StartDate == dateTimeStart);
 
             if (existingRec != null)
             {
