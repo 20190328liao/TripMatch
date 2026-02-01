@@ -23,6 +23,27 @@ namespace TripMatch.Services.ExternalClients
             }
         }
 
+        //透過名稱與地址取的PlaceId
+        public async Task<string?> GetPlaceIdByNameAndAddressAsync(string name, string address, string lang = "zh-TW")
+        {
+            var input = $"{name} {address}";
+            var url = $"https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input={Uri.EscapeDataString(input)}&inputtype=textquery&fields=place_id&key={_apiKey}&language={lang}";
+
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode) return null;
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var doc = await JsonDocument.ParseAsync(stream);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+            {
+                return candidates[0].GetProperty("place_id").GetString();
+            }
+
+            return null;
+        }
+
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
             var fields = "name,formatted_address,rating,user_ratings_total,photos,geometry/location";

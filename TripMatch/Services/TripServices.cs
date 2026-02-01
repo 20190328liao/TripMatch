@@ -435,9 +435,6 @@ namespace TripMatch.Services
         public async Task<bool> TryAddSpotToTrip(int? userId, ItineraryItemDto dto)
         {
 
-
-
-
             // 1. 自動計算 SortOrder (取得該行程當天目前的最高序號 + 1)int? userId, ItineraryItemDto dto
             int nextSortOrder = await _context.ItineraryItems
                 .Where(x => x.TripId == dto.TripId && x.DayNumber == dto.DayNumber)
@@ -764,7 +761,7 @@ namespace TripMatch.Services
                         Lng = placeDetail.Result.Geometry.Location.Lng,
                         Rating = placeDetail.Result.Rating ?? 0,
                         UserRatingsTotal = placeDetail.Result.UserRatingsTotal ?? 0,
-                        PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()
+                        PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()    
                     };
                     popularSpots.Add(spotDto);
                 }

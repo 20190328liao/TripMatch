@@ -1,11 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Humanizer;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using TripMatch.Models;
+using TripMatch.Models.DTOs;
 using TripMatch.Models.DTOs.External;
 using TripMatch.Models.DTOs.TimeWindow;
+using TripMatch.Services.ExternalClients;
 
 namespace TripMatch.Services
 {
@@ -13,11 +16,13 @@ namespace TripMatch.Services
     {
         private readonly TravelDbContext _context;
         private readonly TravelInfoService _travelInfoService;
+        private readonly GooglePlacesClient _googlePlacesClient;
 
-        public TimeWindowService(TravelDbContext context, TravelInfoService travelInfoService)
+        public TimeWindowService(TravelDbContext context, TravelInfoService travelInfoService, GooglePlacesClient googlePlacesClient)
         {
             _context = context;
             _travelInfoService = travelInfoService;
+            _googlePlacesClient = googlePlacesClient;
         }
 
         // 1. 建團 (團長開團)
@@ -740,6 +745,7 @@ namespace TripMatch.Services
             };
 
             _context.Trips.Add(newTrip); // 加入追蹤
+            await _context.SaveChangesAsync(); // 先存一次，取得 newTrip.Id
 
             // 3. 建立航班 (Flights)
             var flights = new List<Flight>();
@@ -747,12 +753,12 @@ namespace TripMatch.Services
             // 去程
             if (!string.IsNullOrEmpty(rec.DepartFlight))
             {
-                var flightData = ParseFlightString(rec.DepartFlight, rec.StartDate);
+                var flightData = ParseFlightString2(rec.DepartFlight, rec.StartDate);
                 if (flightData != null)
                 {
                     flights.Add(new Flight
                     {
-                        Trip = newTrip,    // 透過物件關聯
+                        TripId = newTrip.Id,    
                         FlightNumber = flightData.Value.FlightNo,
                         Carrier = flightData.Value.Carrier,
                         DepartUtc = flightData.Value.Depart,
@@ -766,7 +772,7 @@ namespace TripMatch.Services
             // 回程
             if (!string.IsNullOrEmpty(rec.ReturnFlight))
             {
-                var flightData = ParseFlightString(rec.ReturnFlight, rec.EndDate);
+                var flightData = ParseFlightString2(rec.ReturnFlight, rec.EndDate);
                 if (flightData != null)
                 {
                     flights.Add(new Flight
@@ -786,34 +792,57 @@ namespace TripMatch.Services
             // 4. 建立住宿 (Accommodation) 與 景點快照 (PlacesSnapshot)
             if (!string.IsNullOrEmpty(rec.Hotel))
             {
-                var hotelSpot = new PlacesSnapshot
+                // 透過google api 取得更完整的飯店資訊
+                // 1. 透過店名與地址取得PlaceId和經緯度
+                var placeId = await _googlePlacesClient.GetPlaceIdByNameAndAddressAsync(rec.Hotel, rec.Location);
+                //預設台北的經緯度
+                GeoDto geo = new GeoDto { Lat = 25.033964, Lng = 121.564468 };
+                if (placeId != null)
                 {
-                    NameZh = rec.Hotel,
-                    NameEn = rec.Hotel,
-                    ExternalPlaceId = $"REC-TEMP-{Guid.NewGuid()}",
-                    AddressSnapshot = rec.Location,
-                    Lat = 0,
-                    Lng = 0,
-                    CreatedAt = DateTimeOffset.Now,
-                    UpdatedAt = DateTimeOffset.Now
-                };
+                    var placeDetails = await _googlePlacesClient.GetPlaceDetailsAsync(placeId);
 
-                var accommodation = new Accommodation
-                {
-                    Trip = newTrip,
-                    Spot = hotelSpot,
+                    if (placeDetails != null)
+                    {
+                        var hotelSpot = new PlacesSnapshot
+                        {
+                            NameZh = placeDetails.Result.Name,
+                            NameEn = placeDetails.Result.Name,
+                            ExternalPlaceId = placeId,
+                            AddressSnapshot = placeDetails.Result.FormattedAddress,
+                            Lat = (decimal)placeDetails.Result.Geometry.Location.Lat,
+                            Lng = (decimal)placeDetails.Result.Geometry.Location.Lng,
+                            Rating = placeDetails.Result.Rating ?? 0,
+                            UserRatingsTotal = placeDetails.Result.UserRatingsTotal ?? 0,
+                            // 將照片參考轉換成 URL 400 * 400 ，並序列化存起來   
+                            PhotosSnapshot = placeDetails.Result.Photos != null
+                                    ? System.Text.Json.JsonSerializer.Serialize(
+                                        placeDetails.Result.Photos.Select(photo =>
+                                            _googlePlacesClient.GetPhotoUrl(photo.PhotoReference, 400)).ToList()
+                                      )
+                                    : null,
 
-                    HotelName = rec.Hotel,
-                    Address = rec.Location,
+                            CreatedAt = DateTimeOffset.Now,
+                            UpdatedAt = DateTimeOffset.Now
+                        };
 
-                    CheckInDate = rec.StartDate,
-                    CheckOutDate = rec.EndDate,
+                        _context.PlacesSnapshots.Add(hotelSpot);
+                        await _context.SaveChangesAsync();
+                        var accommodation = new Accommodation
+                        {
+                            TripId = newTrip.Id,
+                            SpotId = hotelSpot.SpotId,
+                            HotelName = hotelSpot.NameZh,
+                            Address = hotelSpot.AddressSnapshot,
+                            CheckInDate = rec.StartDate,
+                            CheckOutDate = rec.EndDate,
+                            Price = rec.Price,
+                            CreatedAt = DateTimeOffset.Now
+                        };
 
-                    Price = rec.Price,
-                    CreatedAt = DateTimeOffset.Now
-                };
-
-                _context.Accommodations.Add(accommodation);
+                        _context.Accommodations.Add(accommodation);
+                        _context.SaveChanges();// 先存一次，取得 hotelSpot.Id}
+                    }       
+                }
             }
 
             // 5. 轉移成員 (GroupMember -> TripMember)
@@ -910,6 +939,61 @@ namespace TripMatch.Services
             }
 
             return null;
+        }
+
+        private (string FlightNo, string Carrier, DateTimeOffset Depart, DateTimeOffset Arrive)? ParseFlightString2(string flightStr, DateTime baseDate)
+        {
+            // 1. 修改後的 Regex：
+            // ^(?<name>[\u4e00-\u9fa5]*)?  -> 選擇性抓取開頭的中文字(如：樂桃航空)
+            // \s* -> 忽略空格
+            // (?<no>[A-Z0-9]{2}\s?\d+)     -> 抓取航班號(如：MM 26 或 MM26)
+            // \s*\(                        -> 忽略空格並找到括號
+            // (?<time1>\d{2}:\d{2})        -> 抓取第一個時間
+            // (?:\s*-\s*(?<time2>\d{2}:\d{2}))? -> 選擇性抓取「 - 第二個時間」
+            // \)                           -> 結尾括號
+            var regex = new Regex(@"^(?<name>[\u4e00-\u9fa5]*)?\s*(?<no>[A-Z0-9]{2}\s?\d+)\s*\((?<time1>\d{2}:\d{2})(?:\s*-\s*(?<time2>\d{2}:\d{2}))?\)");
+
+            var match = regex.Match(flightStr.Trim());
+
+            if (!match.Success) return null;
+
+            // 處理航班號：移除中間可能存在的空格，例如 "MM 26" -> "MM26"
+            string rawFlightNo = match.Groups["no"].Value.Replace(" ", "");
+            string time1 = match.Groups["time1"].Value;
+            string time2 = match.Groups["time2"].Success ? match.Groups["time2"].Value : null;
+
+            // 2. 取得航空公司代號
+            // 優先從航班號前兩碼抓取 (如 BR, MM, JX)
+            string carrier = rawFlightNo.Length >= 2 ? rawFlightNo.Substring(0, 2) : "Unknown";
+
+            // 3. 組合時間邏輯
+            DateTime dtDep;
+            DateTime dtArr;
+
+            if (!string.IsNullOrEmpty(time2))
+            {
+                // 格式 A: 有兩個時間 (出發 - 抵達)
+                TimeSpan.TryParse(time1, out TimeSpan tsDep);
+                TimeSpan.TryParse(time2, out TimeSpan tsArr);
+                dtDep = baseDate.Date + tsDep;
+                dtArr = baseDate.Date + tsArr;
+            }
+            else
+            {
+                // 格式 B: 只有一個時間 (假設為抵達時間，或根據需求調整)
+                // 這裡暫定將唯一的那個時間設為 Arrive，Depart 設為最小值或相同
+                TimeSpan.TryParse(time1, out TimeSpan tsSingle);
+                dtArr = baseDate.Date + tsSingle;
+                dtDep = dtArr; // 只有單一時間時，暫時讓出發等於抵達，或視業務邏輯改寫
+            }
+
+            // 跨日處理
+            if (dtArr < dtDep)
+            {
+                dtArr = dtArr.AddDays(1);
+            }
+
+            return (rawFlightNo, carrier, new DateTimeOffset(dtDep), new DateTimeOffset(dtArr));
         }
 
 
