@@ -100,6 +100,9 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
     // 初始化下拉選單
     initNavDropdown(DateStrings);
 
+    // 【修改】將所有事件綁定移到這裡 (Event Delegation)
+    bindGlobalEvents();
+
     // 最後載入數據
     loadTripData();
 }
@@ -154,6 +157,162 @@ export function flashItineraryElement(id) {
         }
     }
 }
+
+// 【新增】全域事件綁定 (一次性綁定在父層，解決局部更新後事件失效問題)
+function bindGlobalEvents() {
+    const $placeList = $('#place-list');
+
+    // 1. 行程卡片點擊 (顯示地圖)
+    $placeList.on('click', '.itinerary-item', function (e) {
+        if ($(e.target).closest('button, a, .dropdown, .edit-time-trigger').length) return;
+
+        // 嘗試取得 Google Place ID 與 Spot ID
+        const googlePlaceId = this.getAttribute('data-external-id');
+        const spotId = this.getAttribute('data-spot-id');
+
+        // 呼叫 Map Manager
+        if (googlePlaceId) {
+            showPlaceByGoogleId(googlePlaceId, spotId);
+        } else {
+            const lat = parseFloat(this.getAttribute('data-lat'));
+            const lng = parseFloat(this.getAttribute('data-lng'));
+            if (!isNaN(lat) && !isNaN(lng) && window.currentMapInstance) {
+                window.currentMapInstance.panTo({ lat, lng });
+                window.currentMapInstance.setZoom(17);
+            }
+        }
+    });
+
+    // 2. 編輯時間觸發
+    $placeList.on('click', '.edit-time-trigger', function (e) {
+        e.stopPropagation();
+        const itemId = this.dataset.id;
+        const rowVersion = this.dataset.version;
+        const start = (this.dataset.start || "").substring(0, 5);
+        const end = (this.dataset.end || "").substring(0, 5);
+
+        document.getElementById('edit-item-id').value = itemId;
+        document.getElementById('edit-item-rowVersion').value = rowVersion;
+        document.getElementById('edit-start-time').value = start;
+        document.getElementById('edit-end-time').value = end;
+
+        const modal = new bootstrap.Modal(document.getElementById('timeEditModal'));
+        modal.show();
+    });
+
+    // 3. 刪除行程按鈕
+    $placeList.on('click', '.spot-delete-btn', function (e) {
+        e.stopPropagation();
+        const card = this.closest('.itinerary-item');
+        const id = card.getAttribute('data-id');
+
+        if (confirm('確定要移除此景點嗎？')) {
+            $.ajax({
+                url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
+                type: 'DELETE',
+                success: function () {
+                    SignalRManager.broadcast(currentTripId, "刪除行程", 0);
+                    refreshItineraryList();
+                },
+                error: function (xhr) {
+                    alert('發生錯誤：' + xhr.responseText);
+                }
+            });
+        }
+    });
+
+    // 4. 刪除天數
+    $placeList.on('click', '.delete-day-btn', async function (e) {
+        e.preventDefault();
+        const dayNum = parseInt(this.getAttribute('data-day'));
+        await deleteTripDay(dayNum);
+    });
+
+    // 5. 快速新增 - 打開輸入框
+    $placeList.on('click', '.quick-add-btn', function () {
+        const wrapper = this.closest('.quick-add-section');
+        const btnWrapper = wrapper.querySelector('.quick-add-btn-wrapper');
+        const inputWrapper = wrapper.querySelector('.quick-add-input-wrapper');
+        const input = wrapper.querySelector('.quick-search-input');
+        const dayBlock = wrapper.closest('.day-block');
+        const dayNum = dayBlock.getAttribute('data-day');
+
+        btnWrapper.classList.add('d-none');
+        inputWrapper.classList.remove('d-none');
+        input.focus();
+        initQuickAutocomplete(input, dayNum);
+    });
+
+    // 6. 快速新增 - 取消
+    $placeList.on('click', '.cancel-quick-add', function () {
+        const wrapper = this.closest('.quick-add-section');
+        wrapper.querySelector('.quick-add-btn-wrapper').classList.remove('d-none');
+        wrapper.querySelector('.quick-add-input-wrapper').classList.add('d-none');
+        wrapper.querySelector('.quick-search-input').value = '';
+    });
+
+    // 7. 路線資訊點擊
+    $placeList.on('click', '.route-info-block', function () {
+        const data = this.dataset;
+        const origin = data.originId ? { placeId: data.originId } : { lat: parseFloat(data.originLat), lng: parseFloat(data.originLng) };
+        const destination = data.destId ? { placeId: data.destId } : { lat: parseFloat(data.destLat), lng: parseFloat(data.destLng) };
+        calculateAndDisplayRoute(origin, destination, this);
+    });
+
+    // 8. 住宿刪除
+    $placeList.on('click', '.hotel-delete-btn', async function () {
+        const hotelId = this.dataset.id;
+        const version = this.dataset.version;
+        if (confirm("確定移除此住宿？")) {
+            try {
+                await TripApi.deleteAccommodation(hotelId, version);
+                refreshItineraryList();
+                SignalRManager.broadcast(currentTripId, "刪除住宿", 0);
+            } catch (error) {
+                alert("無法移除住宿：" + error);
+                refreshItineraryList();
+            }
+        }
+    });
+
+    // 9. 住宿新增按鈕
+    $placeList.on('click', '#btn-add-hotel', function () {
+        document.getElementById('hotel-search-input').value = '';
+        document.getElementById('hotel-checkin').value = '';
+        document.getElementById('hotel-checkout').value = '';
+        document.getElementById('hotel-selected-info').classList.add('d-none');
+        selectedHotelPlace = null;
+        const modal = new bootstrap.Modal(document.getElementById('hotelEditModal'));
+        modal.show();
+    });
+
+    // 10. 航班新增 (需綁定在 container 上因為 flight-wrapper 可能被重繪)
+    $placeList.on('click', '#btn-add-flight-trigger', () => {
+        addFlightModal.open(currentTripId, () => loadTripData());
+    });
+
+    // 11. 航班刪除
+    $placeList.on('click', '.flight-delete-btn', async function (e) {
+        const flightId = e.currentTarget.dataset.id;
+        const rowVersion = e.currentTarget.dataset.version;
+        if (confirm("確定要刪除這筆航班資訊嗎？")) {
+            try {
+                await TripApi.deleteFlight(currentTripId, flightId, rowVersion);
+                refreshItineraryList();
+            } catch (error) {
+                alert("操作失敗：" + error);
+                loadTripData();
+            }
+        }
+    });
+
+    // 12. 接收從 Component 發出的事件 (如餐廳加入)
+    document.body.addEventListener('add-spot-to-trip', (e) => {
+        const { placeId, dayNum } = e.detail;
+        handleAddSpotFromModal(placeId, dayNum);
+    });
+}
+
 
 // 【新增】初始化導覽列下拉選單
 /**
@@ -461,15 +620,8 @@ function initHotelAutocomplete(inputElement) {
 
 // 載入行程資料
 function loadTripData() {
-    const listContainer = $('#place-list');
-
-    // 顯示 Loading
-    listContainer.html(`
-        <div class="text-center p-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2 text-muted small">同步行程中...</p>
-        </div>
-    `);
+    // 【修改】移除 listContainer.html(...) 的 Loading 顯示
+    // 避免每次更新畫面都變白
 
     $.ajax({
         url: `/api/TripApi/detail/${currentTripId}`,
@@ -480,23 +632,297 @@ function loadTripData() {
             const accommodations = data.accomadations || [];
             const flights = data.flights || [];
 
-            // 1. 渲染 HTML (這裡會銷毀舊 DOM)
-            renderItinerary(items, DateStrings, accommodations, flights);
+            // 【修改】呼叫智慧更新函式
+            smartRenderItinerary(items, DateStrings, accommodations, flights);
 
-            // 2. 更新導覽列 Dropdown (確保 Day 1, Day 2... 與資料同步)
             initNavDropdown(DateStrings);
-
-            // 3. 更新探索面板的天數 (確保加入行程時日期正確)
             if (recPanel) recPanel.updateDays(DateStrings);
-
-            // 4. 如果有使用 Tooltips，需在此重新初始化
-            // reinitTooltips();
         },
         error: function (xhr) {
-            listContainer.html('<div class="text-danger text-center p-4">資料載入失敗</div>');
+            console.error("資料載入失敗", xhr);
         }
     });
 }
+
+/**
+ * 【新增】智慧更新：只更新變動部分，保持捲軸位置
+ */
+function smartRenderItinerary(items, dates, accommodations, flights) {
+    const container = document.getElementById('place-list');
+    const scrollContainer = document.getElementById('itinerary-tab-content');
+
+    // 1. 記錄當前捲動位置
+    const currentScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
+    // --- A. 航班區塊 ---
+    let flightWrapper = document.getElementById('flight-wrapper');
+    if (!flightWrapper) {
+        flightWrapper = document.createElement('div');
+        flightWrapper.id = 'flight-wrapper';
+        container.prepend(flightWrapper);
+    }
+    // FlightRenderer 內部可能會有自己的 diff，這裡直接呼叫 render
+    flightRenderer.render(flights || []);
+
+    // --- B. 住宿區塊 (Diff 更新) ---
+    updateAccommodationSection(accommodations);
+
+    // --- C. 餐廳區塊 ---
+    // 確保容器存在
+    let restaurantWrapper = document.getElementById('restaurant-wrapper');
+    if (!restaurantWrapper) {
+        restaurantWrapper = document.createElement('div');
+        restaurantWrapper.id = 'restaurant-wrapper';
+        // 插入到住宿後面 (如果住宿還沒建，就插到航班後)
+        const accWrapper = document.getElementById('accommodation-wrapper');
+        if (accWrapper) accWrapper.after(restaurantWrapper);
+        else flightWrapper.after(restaurantWrapper);
+    }
+    restaurantRenderer.render(items || [], dates);
+    restaurantRenderer.bindEvents((data) => handleSpotClick(data));
+
+
+    // --- D. 行程列表 (核心 Diff) ---
+    const groupedItems = items.reduce((acc, item) => {
+        const day = item.dayNumber;
+        if (!acc[day]) acc[day] = [];
+        acc[day].push(item);
+        return acc;
+    }, {});
+
+    // 遍歷每一天
+    dates.forEach((dateString, index) => {
+        const dayNum = index + 1;
+        const dayItems = groupedItems[dayNum] || [];
+
+        // 排序
+        dayItems.sort((a, b) => {
+            const timeA = a.startTime || "";
+            const timeB = b.startTime || "";
+            if (timeA !== timeB) return timeA.localeCompare(timeB);
+            return a.sortOrder - b.sortOrder;
+        });
+
+        // 1. 檢查該天容器是否存在
+        let daySection = document.getElementById(`day-${dayNum}`);
+        if (!daySection) {
+            daySection = createDayElement(dayNum, dateString);
+            container.appendChild(daySection);
+        }
+
+        // 2. 更新日期文字 (如果變更)
+        const dateSmall = daySection.querySelector('.day-header small');
+        if (dateSmall && dateSmall.textContent !== dateString) {
+            dateSmall.textContent = dateString;
+        }
+
+        // 3. 生成內容 HTML
+        const newContentHtml = generateDayItemsHtml(dayItems);
+        const timelineContainer = daySection.querySelector('.timeline-container');
+
+        // 4. 【關鍵】比對 HTML 內容，只有不同時才寫入 (防止閃爍與捲動重置)
+        if (timelineContainer.innerHTML.trim() !== newContentHtml.trim()) {
+            timelineContainer.innerHTML = newContentHtml;
+        }
+    });
+
+    // 移除多餘的天數 (例如刪除天數後)
+    const existingDays = container.querySelectorAll('.day-block');
+    existingDays.forEach(el => {
+        const day = parseInt(el.getAttribute('data-day'));
+        if (day > dates.length) {
+            el.remove();
+        }
+    });
+
+    // 2. 還原捲動位置 (瀏覽器通常會自動處理，但強制設定更保險)
+    if (scrollContainer) {
+        scrollContainer.scrollTop = currentScrollTop;
+    }
+}
+
+// 【新增】輔助：建立 Day 區塊骨架
+function createDayElement(dayNum, dateString) {
+    const div = document.createElement('div');
+    div.className = 'day-block mb-4';
+    div.id = `day-${dayNum}`;
+    div.setAttribute('data-day', dayNum);
+    div.innerHTML = `
+        <div class="day-header">
+            <span>Day ${dayNum} <small class="text-secondary fw-normal ms-2">${dateString}</small></span>
+            <div class="dropdown">
+                <button class="btn btn-sm text-secondary p-0" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static">
+                <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item text-danger delete-day-btn" href="javascript:void(0)" data-day="${dayNum}">
+                           <i class="bi bi-calendar-minus me-2"></i>刪除此天
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="timeline-container" style="min-height: 50px;"></div>
+        <div class="quick-add-section p-3 border-top">
+            <div class="quick-add-btn-wrapper text-center">
+                <button class="btn btn-outline-mint btn-sm w-100 rounded-pill quick-add-btn">
+                    <i class="bi bi-plus-lg me-1"></i> 新增景點
+                </button>
+            </div>
+            <div class="quick-add-input-wrapper d-none">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 quick-search-input" placeholder="搜尋景點..." autocomplete="off">
+                    <button class="btn btn-outline-secondary cancel-quick-add" type="button"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+        </div>
+    `;
+    return div;
+}
+
+// 【新增】輔助：生成行程項目 HTML 字串
+function generateDayItemsHtml(dayItems) {
+    if (dayItems.length === 0) {
+        return `
+            <div class="text-center py-4 text-muted empty-day-placeholder" style="border: 2px dashed #f0f0f0; margin: 10px; border-radius: 8px;">
+                <small>目前沒有安排行程</small><br>
+                <small style="font-size: 0.75rem;">可從右側地圖搜尋加入</small>
+            </div>
+        `;
+    }
+
+    let html = '';
+    dayItems.forEach((item, index) => {
+        const rawStart = item.startTime || "";
+        const rawEnd = item.endTime || "";
+        const displayStart = formatTime(item.startTime);
+        const displayEnd = formatTime(item.endTime);
+        const spotName = item.profile ? item.profile.name_ZH : "未命名景點";
+        const spotAddress = item.profile ? item.profile.address : "無地址資訊";
+        const lat = item.profile ? item.profile.lat : null;
+        const lng = item.profile ? item.profile.lng : null;
+        const googlePlaceId = item.profile ? item.profile.placeId : ""
+        const photoUrl = item.profile ? item.profile.photoUrl : ""
+
+        html += `
+            <div class="itinerary-card itinerary-item"
+                 data-id="${item.id}"
+                 data-spot-id="${item.spotId}"
+                 data-lat="${lat}"
+                 data-lng="${lng}"
+                 data-external-id="${googlePlaceId}">
+                
+                <div class="timeline-dot text-muted small">${index + 1}</div>
+                <div class="d-flex w-100 gap-3">
+                    <div class="place-time border-end pe-2 edit-time-trigger"
+                        style="cursor: pointer;"
+                        title="點擊編輯時間"
+                        data-id="${item.id}" 
+                        data-version="${item.rowVersion}"
+                        data-start="${rawStart}" 
+                        data-end="${rawEnd}">     
+                        <div class="fw-bold text-primary">${displayStart}</div>
+                        <div class="text-muted small">${displayEnd}</div>
+                    </div>
+                    <div class="place-content d-flex flex-grow-1 gap-2 overflow-hidden"> 
+                         <div class="place-img" style="min-width: 60px; width: 60px; height: 60px;">
+                            <img src="${photoUrl || 'default-placeholder.png'}" 
+                                 class="rounded object-fit-cover w-100 h-100" 
+                                 alt="${spotName}">
+                        </div>
+                        <div class="place-info overflow-hidden">
+                            <div class="place-title text-truncate fw-bold" title="${spotName}">${spotName}</div>
+                            <div class="place-address text-muted small text-truncate">
+                                <i class="bi bi-geo-alt-fill text-secondary me-1"></i>${spotAddress}
+                            </div>
+                        </div>
+                    </div>   
+                    <button class="spot-delete-btn" title="移除景點">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // 路線資訊區塊 (選擇性加入)
+        /* if (index < dayItems.length - 1) { ... generate route html ... } */
+    });
+    return html;
+}
+
+// 【新增】輔助：住宿區塊 Diff 更新
+function updateAccommodationSection(accommodations) {
+    const container = document.getElementById('place-list');
+    let hotelSection = document.getElementById('accommodation-wrapper');
+
+    // 如果沒有就建立
+    if (!hotelSection) {
+        hotelSection = document.createElement('div');
+        hotelSection.id = 'accommodation-wrapper';
+        hotelSection.className = 'hotel-section mb-4 p-3 bg-white rounded shadow-sm border';
+
+        // 插入位置：在航班之後
+        const flightWrapper = document.getElementById('flight-wrapper');
+        if (flightWrapper) flightWrapper.after(hotelSection);
+        else container.prepend(hotelSection);
+    }
+
+    // 生成 HTML
+    let hotelHtml = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold m-0 text-success"><i class="bi bi-building me-2"></i>住宿安排</h6>          
+        </div>
+        <div class="hotel-list-container">
+    `;
+
+    if (accommodations.length === 0) {
+        hotelHtml += `<div class="text-center py-3 text-muted small bg-light rounded border border-dashed">尚未安排住宿</div>`;
+    } else {
+        accommodations.forEach(hotel => {
+            const hotelName = hotel.hotelName || "未命名飯店";
+            const address = hotel.address || "";
+            const checkIn = hotel.checkInDate ? new Date(hotel.checkInDate).toLocaleDateString() : "--";
+            const checkOut = hotel.checkOutDate ? new Date(hotel.checkOutDate).toLocaleDateString() : "--";
+            const photoUrl = hotel.photoUrl || 'https://via.placeholder.com/70?text=No+Image';
+
+            hotelHtml += `
+                <div class="hotel-card d-flex gap-3 mb-2 p-2 border rounded position-relative">
+                    <div class="hotel-img" style="min-width: 60px; width: 60px; height: 60px;">
+                        <img src="${photoUrl}" class="rounded object-fit-cover w-100 h-100" alt="${hotelName}">
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="fw-bold text-truncate" title="${hotelName}">${hotelName}</div>
+                        <div class="text-muted small text-truncate"><i class="bi bi-geo-alt me-1"></i>${address}</div>
+                        <div class="text-muted small mt-1">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border">
+                                <i class="bi bi-calendar-check me-1"></i>${checkIn} - ${checkOut}
+                            </span>
+                        </div>
+                    </div>
+                    <button class="hotel-delete-btn" data-id="${hotel.id}" data-version="${hotel.rowVersion || ''}" title="移除住宿">
+                        <i class="bi bi-trash"></i>
+                    </button>                 
+                </div>
+            `;
+        });
+    }
+
+    hotelHtml += `
+        <div class="quick-add-section p-3 border-top">
+            <button id="btn-add-hotel" class="btn btn-outline-mint btn-sm w-100 rounded-pill">
+                <i class="bi bi-plus-lg me-1"></i> 新增住宿
+            </button>
+        </div>
+    `;
+
+    // 【關鍵】只有變動時才更新
+    if (hotelSection.innerHTML.trim() !== hotelHtml.trim()) {
+        hotelSection.innerHTML = hotelHtml;
+    }
+}
+
 
 /**
  * 渲染行程列表 (包含空天數)
