@@ -165,7 +165,7 @@
         async function showSuccessPopup() {
             const opts = {
                 title: '密碼更新成功',
-                message: '您的密碼已更新，請使用新密碼登入（如需）。',
+                message: '您的密碼已更新，請使用新密碼登入。',
                 type: 'success',
                 autoClose: true,
                 seconds: 3,
