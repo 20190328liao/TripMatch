@@ -735,62 +735,75 @@
 			}
 
 			async function savePreferences(event) {
-				event.preventDefault();
+    event.preventDefault();
 
-				const budgetVal = document.getElementById('budget').value;
-				const transferVal = document.getElementById('transfer').value;
-				const starsVal = document.getElementById('stars').value;
-				const totalBudgetVal = document.getElementById('totalBudget').value;
+    const budgetVal = document.getElementById('budget').value;
+    const transferVal = document.getElementById('transfer').value;
+    const starsVal = document.getElementById('stars').value;
+    const totalBudgetVal = document.getElementById('totalBudget').value;
 
-				if (!budgetVal || !transferVal || !starsVal || !totalBudgetVal) {
-					alert("請完成所有必填選項！");
-					return;
-				}
+    if (!budgetVal || !transferVal || !starsVal || !totalBudgetVal) {
+        alert("請完成所有必填選項！");
+        return;
+    }
 
-				const hotelBudget = parseInt(budgetVal);
-				const isTransfer = (transferVal === "true");
-				const hotelRating = (starsVal === "flex") ? null : parseInt(starsVal);
+    const hotelBudget = parseInt(budgetVal, 10);
+    const isTransfer = (transferVal === "true");
+    const hotelRating = (starsVal === "flex") ? null : parseInt(starsVal, 10);
 
-				// 將 Set 轉為字串，用逗號分隔
-				const placesString = Array.from(selectedLocationNames).join(",");
-				const totalBudget = parseInt(totalBudgetVal);
+    const placesString = Array.from(selectedLocationNames).join(",");
+    const totalBudget = parseInt(totalBudgetVal, 10);
 
-				const payload = {
-					HotelBudget: hotelBudget,
-					Transfer: isTransfer,
-					HotelRating: hotelRating,
-					PlacesToGo: placesString,
-					TotalBudget: totalBudget
-				};
+    const payload = {
+        HotelBudget: hotelBudget,
+        Transfer: isTransfer,
+        HotelRating: hotelRating,
+        PlacesToGo: placesString,
+        TotalBudget: totalBudget
+    };
 
-				const btn = document.getElementById('btnSubmit');
-				const originalText = btn.innerText;
-				btn.disabled = true;
-				btn.innerText = "儲存中...";
+    const btn = document.getElementById('btnSubmit');
+    const originalText = btn ? btn.innerText : '';
+    if (btn) { btn.disabled = true; btn.innerText = "儲存中..."; }
 
-				try {
-					const response = await fetch(`/api/timewindow/${groupId}/preferences`, {
-						method: 'PUT',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(payload)
-					});
+    try {
+        const response = await fetch(`/api/timewindow/${groupId}/preferences`, {
+            method: 'PUT',
+            credentials: 'include', // 攜帶 cookie（避免 401）
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': window.csrfToken || '' // 如果需要 CSRF token
+            },
+            body: JSON.stringify(payload)
+        });
 
-					if (response.ok) {
-						alert("偏好儲存成功！");
-						window.location.href = `/Match/CalendarCheck/${groupId}`;
-					} else {
-						const errData = await response.json();
-						alert("儲存失敗: " + (errData.message || "未知錯誤"));
-						btn.disabled = false;
-						btn.innerText = originalText;
-					}
-				} catch(e) {
-					console.error(e);
-					alert("連線錯誤");
-					btn.disabled = false;
-					btn.innerText = originalText;
-				}
-			}
+        if (response.ok) {
+            alert("偏好儲存成功！");
+            window.location.href = `/Match/CalendarCheck/${groupId}`;
+            return;
+        }
+
+        // 若非 2xx，嘗試解析後端回傳的錯誤訊息（JSON 或純文字）
+        let errText = `狀態碼 ${response.status}`;
+        try {
+            const j = await response.json();
+            errText = j && j.message ? j.message : JSON.stringify(j);
+        } catch (jsonErr) {
+            try {
+                const txt = await response.text();
+                if (txt) errText = txt;
+            } catch { /* ignore */ }
+        }
+
+        alert("儲存失敗: " + errText);
+        console.error("savePreferences failed:", response.status, errText);
+    } catch (e) {
+        console.error("savePreferences network/error:", e);
+        alert("連線錯誤，請稍後再試");
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = originalText; }
+    }
+}
 
 			function escapeHtml(text) {
 				if (!text) return text;

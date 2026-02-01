@@ -781,3 +781,74 @@ body {
 .days.guide-active .day-cell::after {
     z-index: 10;
 }
+/* --- 關鍵設定：控制鈴鐺顯示位置 --- */
+
+/* 1. Modal 內：絕對隱藏鈴鐺 */
+#calendarModal .fa-bell,
+#calendarModal .bell-icon {
+    display: none !important;
+}
+
+/* 2. Calendar Section 內：強制顯示鈴鐺 */
+#calendar_section .fa-bell,
+#calendar_section .bell-icon {
+    display: inline-block !important; /* 或是 block，依您的排版 */
+    color: #f39c12; /* 範例顏色：橘色 */
+    font-size: 1.2rem;
+    margin-left: 10px;
+    cursor: pointer;
+}
+.changeList li{
+    line-height: 1.6;
+    font-size: 16pt;
+    margin-left: 30px;
+}
+.calendar-container p {
+    font-size: 14pt;
+}
+/* 隱藏全域 JS 產生的鈴鐺，避免與本頁邏輯衝突 */
+#tm-pending-bell {
+    display: none !important;
+}
+
+.instruction-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-mint);
+    padding: 12px 16px;
+    margin: 30px 0;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #555;
+    text-align: left;
+}
+    .instruction-box li, .instruction-box strong {
+        font-size: 14pt;
+    }
+    .instruction-box i {
+        color: var(--primary-mint);
+        margin-right: 6px;
+        font-size: 1.1rem;
+    }
+
+.instruction-highlight {
+    font-weight: bold;
+    color: var(--dark-mint);
+}
+/* 標題區域按鈕樣式 */
+.header-actions {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .header-actions {
+        position: relative;
+        right: auto;
+        top: auto;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+}
+

@@ -4,6 +4,7 @@ using TripMatch.Models.DTOs.TimeWindow;
 using TripMatch.Services;
 using Microsoft.EntityFrameworkCore;
 using TripMatch.Models;
+using Microsoft.Extensions.Logging;
 
 namespace TripMatch.Controllers.Api
 {
@@ -15,12 +16,14 @@ namespace TripMatch.Controllers.Api
         private readonly TravelDbContext _context;
         private readonly TimeWindowService _timeWindowService;
         private readonly TravelInfoService _travelInfoService;
+        private readonly ILogger<TimeWindowApiController> _logger;
 
-        public TimeWindowApiController(TravelDbContext context, TimeWindowService timeWindowService, TravelInfoService travelInfoService)
+        public TimeWindowApiController(TravelDbContext context, TimeWindowService timeWindowService, TravelInfoService travelInfoService, ILogger<TimeWindowApiController> logger)
         {
             _context = context;
             _timeWindowService = timeWindowService;
             _travelInfoService = travelInfoService;
+            _logger = logger;
         }
 
         // 1. 開團 (POST /api/timewindow/create)
@@ -52,6 +55,7 @@ namespace TripMatch.Controllers.Api
             }
             catch (Exception ex)
             {
+                _logger.LogWarning(ex, "JoinGroup failed for user {UserId} invite {Invite}", userId, request?.InviteCode);
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -120,10 +124,30 @@ namespace TripMatch.Controllers.Api
         public async Task<IActionResult> UpsertPreferences(int groupId, [FromBody] UpsertPreferenceRequest request)
         {
             int userId = User.GetUserId();
-            await _timeWindowService.UpsertPreferenceAsync(groupId, userId, request);
-            // 嘗試推進 Status
-            await _timeWindowService.TryAdvanceStatusAsync(groupId);
-            return Ok(new { message = "儲存成功", groupId = groupId });
+            try
+            {
+                await _timeWindowService.UpsertPreferenceAsync(groupId, userId, request);
+                // 嘗試推進 Status（若有需要）
+                await _timeWindowService.TryAdvanceStatusAsync(groupId);
+                return Ok(new { message = "儲存成功", groupId = groupId });
+            }
+            catch (KeyNotFoundException knf)
+            {
+                _logger.LogInformation(knf, "UpsertPreferences - NotFound: group {GroupId}, user {UserId}", groupId, userId);
+                return NotFound(new { message = knf.Message });
+            }
+            catch (InvalidOperationException ioe)
+            {
+                // 例如：已提交或群組已取消等商業邏輯錯誤
+                _logger.LogInformation(ioe, "UpsertPreferences - InvalidOperation: group {GroupId}, user {UserId}", groupId, userId);
+                return BadRequest(new { message = ioe.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UpsertPreferences failed for group {GroupId}, user {UserId}", groupId, userId);
+                // 回傳較少敏感資訊給前端，但會在日誌看到完整例外
+                return StatusCode(500, new { message = "伺服器發生錯誤，請稍後再試" });
+            }
         }
 
         // 5. 提交時間 (POST /api/timewindow/{groupId}/available)
@@ -202,6 +226,7 @@ namespace TripMatch.Controllers.Api
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "GeneratePlans failed for group {GroupId}", groupId);
                 return StatusCode(500, new { message = "生成方案失敗", error = ex.Message });
             }
         }

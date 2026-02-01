@@ -740,7 +740,7 @@ function renderItinerary(items, dates, accommodations, flights) {
             <span>Day ${dayNum} <small class="text-secondary fw-normal ms-2">${dateString}</small></span>
 
             <div class="dropdown">
-                <button class="btn btn-sm text-secondary p-0" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm text-secondary p-0" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static">
                 <i class="bi bi-three-dots"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">

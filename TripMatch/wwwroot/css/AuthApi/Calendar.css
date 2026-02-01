@@ -235,6 +235,7 @@
     --cal-dot-size: 18px;
     --cal-border-width: 1px;
     --cal-font-normal: 14pt;
+    --dark-mint: #36b38c;
 }
 
 .day-cell .day-label {
@@ -704,5 +705,37 @@
 /* 確保父層 day-cell 允許絕對定位 */
 .day-cell {
     position: relative;
-    /* ...原有樣式... */
+   cursor:pointer;
+}
+.instruction-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-mint);
+    padding: 12px 16px;
+    margin: 30px 0;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #555;
+    text-align: left;
+}
+
+    .instruction-box li, .instruction-box strong {
+        font-size: 14pt;
+    }
+
+    .instruction-box i {
+        color: var(--primary-mint);
+        margin-right: 6px;
+        font-size: 1.1rem;
+    }
+
+.instruction-highlight {
+    font-weight: bold;
+    color: var(--dark-mint);
+}
+/* 標題區域按鈕樣式 */
+.header-actions {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 10;
 }

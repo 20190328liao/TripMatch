@@ -13,13 +13,42 @@
 }
 @section Styles {
     @* <link href="~/css/AuthApi/member.css" rel="stylesheet" asp-append-version="true" />
-  
+   
     <link rel="stylesheet" href="~/css/AuthApi/Calendar.css" asp-append-version="true" /> *@
 
     <style>
-   
+        /* ★ 新增：說明方塊樣式 */
+        .instruction-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-mint);
+            padding: 12px 16px;
+            margin: 30px 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #555;
+            text-align: left;
+        }
 
- 
+            .instruction-box li, .instruction-box strong {
+                font-size: 14pt;
+            }
+
+            .instruction-box i {
+                color: var(--primary-mint);
+                margin-right: 6px;
+                font-size: 1.1rem;
+            }
+
+        .instruction-highlight {
+            font-weight: bold;
+            color: var(--dark-mint);
+        }
+
+        /* 確保清單有預設的縮排與樣式 */
+        .instruction-box ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+        }
     </style>
 }
 
@@ -27,18 +56,15 @@
 <div class="main-content2">
     <div class="member_center_wrap container">
 
-        <!-- =============================================
-             區塊一：個人資料
-             ============================================= -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
 
-                <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
+            <h2 class="memberTitle mb-0 titleWrap titleH2"><span class="current-title"></span>個人資料</h2>
 
-            </div>
+        </div>
         <section class="member_section" id="profile_section">
             <div class="folder-tab">
-        <span class="tab-text"></span>
-    </div>
+                <span class="tab-text"></span>
+            </div>
             <div class="art-decoration">
                 <svg class="shape-circle" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="50" cy="50" r="50" fill="currentColor" />
@@ -47,8 +73,7 @@
                     <path fill="currentColor" d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,197.3C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                 </svg>
             </div>
-            @* <!-- 通知列 -->
-        <div class="notification_bar">
+            @* <div class="notification_bar">
             <i class="bi bi-bell"></i>
         </div> *@
 
@@ -102,7 +127,7 @@
                                     <button id="btnEditName" class="btn btn_link edit_link p-0">編輯</button>
                                     <button id="btnSaveName" class="btn btn_light btn-sm d-none">確認</button>
                                     <button id="btnCancelName" class="btn btn_light btn-sm d-none">取消</button>
-                                <div id="name_hint" class="nameHint d-block mt-1"></div>
+                                    <div id="name_hint" class="nameHint d-block mt-1"></div>
                                 </div>
                                 <label class="info_label">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
@@ -115,10 +140,10 @@
                                     <button id="btnEditBackupEmail" class="btn btn_link edit_link p-0">編輯</button>
                                     <button id="btnSaveBackupEmail" class="btn btn_light btn-sm d-none">寄驗證信</button>
                                     <button id="btnCancelBackupEmail" class="btn btn_light btn-sm d-none">取消</button>
-                            <div id="emailHint" class="emailHint d-block "></div>
+                                    <div id="emailHint" class="emailHint d-block "></div>
                                 </div>
                             </div>
-                         
+
                         </div>
                     </div>
 
@@ -138,16 +163,25 @@
             </div>
         </section>
 
-        <!-- =============================================
-             區塊二：個人行事曆
-             ============================================= -->
-            <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
-            <div class="calendar_legend mb-3">
-               
-            </div>
+        <h2 class="memberTitle titleWrap titleH2" id="Calendar"><span class="current-title"></span>個人行事曆</h2>
+        <div class="calendar_legend mb-3">
+        </div>
         <section class="member_section" id="calendar_section">
-                <div class="frame"></div>
-            <div class="legend-hint w-100">* 請會員選擇休假日期並儲存，如果需要單日，請於日期點兩下：</div>
+            <div class="frame"></div>
+
+            <div class="instruction-box w-100">
+                <div class="mb-2">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>請會員選擇休假日期，編輯請按下提交：</strong>
+                </div>
+                <ul class="mb-0 ps-3 mt-1">
+                    <li>請先<span class="instruction-highlight">單擊</span>開始和結束日期來建立區間。</li>
+                    <li>建立後，可<span class="instruction-highlight">久按並拖曳</span>該區間來調整位置。</li>
+                    <li>若需選擇單日，請直接<span class="instruction-highlight">雙擊</span>該日期。</li>
+                    <li>默認可編輯狀態，點擊<span class="instruction-highlight">編輯模式</span>，改為<span class="instruction-highlight">鎖定模式</span>防止誤觸。</li>
+                    <li>按下刪除，功能為<span class="instruction-highlight">單擊</span>可直接刪除。</li>
+                </ul>
+            </div>
             <div class="calendar_legend mb-3 mt-3">
                 <div class="legend-item"><span class="dot today"></span>今天</div>
                 <div class="legend-item"><span class="dot locked"></span>非揪團期間</div>
@@ -159,76 +193,69 @@
                 <div class="legend-item"><span class="dot old-submit"></span>舊提交</div>
                 <div class="legend-item"><span class="dot new-submit"></span>新提交</div>
             </div>
+
             <div class="container calendar-container">
                 <div class="calendar-three-col">
-                    <!-- 左：月份選擇器 + 已選時段（將原本的 list-panel 移入此處） -->
                     <div class="month-panel-wrapper">
-                    <div class="months-panel">
-                        <header class="year-header d-flex justify-content-between align-items-center">
+                        <div class="months-panel">
+                            <header class="year-header d-flex justify-content-between align-items-center">
                                 <button class="year-left nav-btn">◂</button>
-                            <div class="year-display">2026年</div>
+                                <div class="year-display">2026年</div>
                                 <button class="year-right nav-btn">▸</button>
-                        </header>
+                            </header>
 
-                        <div class="months-grid mt-2"></div>
+                            <div class="months-grid mt-2"></div>
 
-                        <hr/>
+                            <hr />
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
-                            <span class="badge rounded-pill" id="selectedCount">0</span>
-                        </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0 fw-bold" style="color:var(--dark-mint)">已選時段</h6>
+                                <span class="badge rounded-pill" id="selectedCount">0</span>
+                            </div>
 
-                        <div class="list-scroll-area">
-                            <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
-                                @* 由 Calendar.js 填入；若本月無選擇會顯示「本月份尚無選擇的日期」 *@
+                            <div class="list-scroll-area">
+                                <div id="calendarList" class="calendar-list" aria-live="polite" role="region">
+                                    @* 由 Calendar.js 填入；若本月無選擇會顯示「本月份尚無選擇的日期」 *@
+                                </div>
                             </div>
                         </div>
                     </div>
-                    </div>
-                    <!-- 右：清單，保留右側如需其他內容可放此處 -->
                     <div class="months-panel-wrapper">
-                        <!-- 中：日曆 -->
-                    <div class="month-panel">
-                        <header class="month-header d-flex justify-content-between align-items-center">
+                        <div class="month-panel">
+                            <header class="month-header d-flex justify-content-between align-items-center">
                                 <button class="month-left nav-btn">◂</button>
-                            <div class="month-display">January 2026</div>
+                                <div class="month-display">January 2026</div>
                                 <button class="month-right nav-btn">▸</button>
-                        </header>
+                            </header>
 
-                        <div class="week mt-2 d-flex justify-content-between small text-muted">
-                            <div>週一</div>
-                            <div>週二</div>
-                            <div>週三</div>
-                            <div>週四</div>
-                            <div>週五</div>
-                            <div>週六</div>
-                            <div>週日</div>
+                            <div class="week mt-2 d-flex justify-content-between small text-muted">
+                                <div>週一</div>
+                                <div>週二</div>
+                                <div>週三</div>
+                                <div>週四</div>
+                                <div>週五</div>
+                                <div>週六</div>
+                                <div>週日</div>
+                            </div>
+
+                            <div class="days mt-2"></div>
                         </div>
-
-                        <div class="days mt-2"></div>
-                    </div>
                     </div>
 
                 </div>
                 <div class="calendarBtnWrap d-flex flex-column flex-md-row flex-wrap gap-2 w-100 mt-3">
                     <button class="confirm btn1 btn-confirm" id="btn-confirm">提交</button>
-                    <button class="edit btn1 btn-edit">開始編輯</button>
-                    <button class="btn-delete btn1 btn-danger1">刪除</button>
 
+                    <button class="edit btn1 btn-edit">當前鎖定</button>
+
+                    <button class="btn-delete btn1 btn-danger1">刪除</button>
                     <input type="file" id="importCalendarInput" accept=".json" style="display:none;" />
                     <button type="button" id="btnExportCalendar" class="btn2 btn-outline2">匯出檔</button>
                     <button type="button" id="btnImportCalendar" class="btn2 btn-primary2">匯入檔</button>
                 </div>
-
-
             </div>
         </section>
 
-        <!-- =============================================
-             區塊三：願望清單
-             ============================================= -->
-        <!-- 願望清單卡片容器：由 wishlist.js 動態塞入 -->
         @model IEnumerable<TripMatch.Models.Settings.WishlistCard>
         @{
             ViewData["Title"] = "會員中心";
@@ -236,22 +263,20 @@
             var cards = Model ?? Enumerable.Empty<TripMatch.Models.Settings.WishlistCard>();
         }
 
-            <div class="section_header d-flex align-items-center justify-content-between">
-                <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
-            </div>
+        <div class="section_header d-flex align-items-center justify-content-between">
+            <h2 class="memberTitle titleWrap titleH2" id="Wishlist"><span class="current-title"></span>願望清單</h2>
+        </div>
         <section class="member_section" id="wishlist_section">
             <div class="folder-tab"></div>
-                <div class="edit_cards_link text-muted small">
-                    <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
-                </div>
+            <div class="edit_cards_link text-muted small">
+                <i class="bi bi-info-circle me-1"></i>點擊 View More 查看詳情
+            </div>
 
 
-            <!-- 分類按鈕群組 (左側面板將顯示此處) -->
             <div id="wishlist_cards_wrapper" class="wishlist_cards_container container mt-4" style="padding:0;">
                 <div class="row g-3">
                     <aside class="col-12 col-lg-3 wishlist-left-panel">
                         <div id="wishlist_categories" class="wishlist_categories mb-3">
-                            <!-- 由 wishlist.js 動態填充 -->
                         </div>
                     </aside>
 
@@ -337,5 +362,3 @@
         });
     </script>
 }
-
-

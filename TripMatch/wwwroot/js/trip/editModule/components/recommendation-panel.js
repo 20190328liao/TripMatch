@@ -109,7 +109,7 @@ export class RecommendationPanel {
                    </div>
 
                    <div class="dropdown w-100 mt-1">
-                        <button class="btn btn-outline-mint btn-sm w-100 rounded-pill" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-mint btn-sm w-100 rounded-pill" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
                             <i class="bi bi-plus-lg me-1"></i>加入行程
                         </button>
                         <ul class="dropdown-menu shadow border-0 w-100 text-center">

@@ -407,7 +407,7 @@ function fillPanelFromPlaceDetails(place) {
     updateWishlistButtonState(place);
 
     pName.textContent = dto.name;
-    pRating.textContent = dto.rating ? dto.rating.toFixed(1) : '0.0';
+    pRating.textContent = dto.rating ? dto.rating.toFixed(1) : '--';
     pAddress.textContent = dto.address;
     pPhone.textContent = dto.phone;
 
@@ -498,48 +498,88 @@ function refreshPopular() {
 
         const type = getNearbyTypeByTab();
 
-        api.searchPopular({ center, radius, type }, (err, results) => {
-            // 忽略過期回應
-            // debug 版本
-            if (seq !== popularReqSeq) {
-                console.debug("[popular stale response ignored", { seq, lastest: popularReqSeq });
-                return;
+        // 前端直接打 Api
+        //api.searchPopular({ center, radius, type }, (err, results) => {
+        //    // 忽略過期回應
+        //    // debug 版本
+        //    if (seq !== popularReqSeq) {
+        //        console.debug("[popular stale response ignored", { seq, lastest: popularReqSeq });
+        //        return;
+        //    }
+
+        //    if (err) {
+        //        console.warn("[searchPopular error]", err);
+        //        showToast(err.message || "熱門景點讀取失敗");
+        //        return;
+        //    }
+
+        //    // 確定 safe 是陣列
+        //    const safe = Array.isArray(results) ? results.map(toPopularDTO) : [];
+        //    // debug 版本
+        //    console.debug("[popular] raw results count", safe.length);
+
+        //    // debug 版本
+        //    // 統計：每一層 filter 篩掉多少
+        //    const withLatLng = safe.filter(p => p?.placeId && typeof p.lat === "number" && typeof p.lng === "number");
+        //    console.debug("[popular] with placeId+latlng", withLatLng.length);
+
+        //    const inBounds = withLatLng.filter(p => bounds.contains(new google.maps.LatLng(p.lat, p.lng)));
+        //    console.debug("[popular] in bounds", inBounds.length);
+
+        //    const passRating = inBounds.filter(p => (p.rating || 0) >= 4.0);
+        //    console.debug("[popular] pass rating >= 3.7", passRating.length)
+
+
+        //    const list = safe
+        //        .filter(p => p?.placeId && typeof p.lat === "number" && typeof p.lng === "number")
+        //        .filter(p => bounds.contains(new google.maps.LatLng(p.lat, p.lng)))
+        //        .filter(p => (p.rating || 0) >= 4.0)
+        //        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        //        .slice(0, 24);
+        //    // 排序 -> 篩選前12個
+
+        //    renderPopularCards(list);
+        //    renderPopularMarkers(list);
+        //});
+
+        // request 發出時
+        console.log(`[popular][${seq}] request`, { center, radius, type });
+        // 改由後端控制Api
+        (async () => {
+            try {
+                const qs = new URLSearchParams({
+                    lat: String(center.lat),
+                    lng: String(center.lng),
+                    radius: String(radius),
+                    type: type || ""
+                });
+
+                const list = await apiFetch(`/api/spot/popular?${qs.toString()}`);
+
+                // response 回來
+                console.log(`[popular][${seq}] response`, list?.length);
+                // 忽略過期請求
+                if (seq !== popularReqSeq) {
+                    console.debug("[popular stale response ignored]", seq);
+                    return;
+                }
+
+                const safe = Array.isArray(list) ? list : [];
+
+                const inBounds = safe
+                    .filter(p => p?.placeId && typeof p.lat === "number" && typeof p.lng === "number")
+                    .filter(p => bounds.contains(new google.maps.LatLng(p.lat, p.lng)));
+
+                // 真的 render 的那筆
+                console.log(`[popular][${seq}] ✅ render`, inBounds.length);
+
+                renderPopularCards(inBounds);
+                renderPopularMarkers(inBounds);
+            } catch (err) {
+                console.error(err);
+                showToast(err?.message || "熱門景點讀取失敗");
             }
-
-            if (err) {
-                console.warn("[searchPopular error]", err);
-                showToast(err.message || "熱門景點讀取失敗");
-                return;
-            }
-
-            // 確定 safe 是陣列
-            const safe = Array.isArray(results) ? results.map(toPopularDTO) : [];
-            // debug 版本
-            console.debug("[popular] raw results count", safe.length);
-
-            // debug 版本
-            // 統計：每一層 filter 篩掉多少
-            const withLatLng = safe.filter(p => p?.placeId && typeof p.lat === "number" && typeof p.lng === "number");
-            console.debug("[popular] with placeId+latlng", withLatLng.length);
-
-            const inBounds = withLatLng.filter(p => bounds.contains(new google.maps.LatLng(p.lat, p.lng)));
-            console.debug("[popular] in bounds", inBounds.length);
-
-            const passRating = inBounds.filter(p => (p.rating || 0) >= 4.0);
-            console.debug("[popular] pass rating >= 3.7", passRating.length)
-
-
-            const list = safe
-                .filter(p => p?.placeId && typeof p.lat === "number" && typeof p.lng === "number")
-                .filter(p => bounds.contains(new google.maps.LatLng(p.lat, p.lng)))
-                .filter(p => (p.rating || 0) >= 4.0)
-                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-                .slice(0, 12);
-            // 排序 -> 篩選前12個
-
-            renderPopularCards(list);
-            renderPopularMarkers(list);
-        });
+        })();
     }, 250);
 }
 
