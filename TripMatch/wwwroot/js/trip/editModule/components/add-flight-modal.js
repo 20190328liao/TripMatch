@@ -1,4 +1,5 @@
 ﻿import { TripApi } from '../api/trip-api.js';
+
 export class AddFlightModal {
     constructor() {
         this.renderHtml();
@@ -6,7 +7,8 @@ export class AddFlightModal {
         this.bsModal = new bootstrap.Modal(this.modalEl);
         this.tripId = null;
         this.onSuccess = null;
-        this.storeData = {}; // 暫存資料
+        this.storeData = []; // 改為陣列以支援來回航班
+        this.isRoundTrip = false; // 追蹤是否為來回
 
         // 自動補全用的防抖定時器
         this.autocompleteTimeout = null;
@@ -37,6 +39,17 @@ export class AddFlightModal {
             .ac-name { font-size: 0.9em; color: #333; font-weight: 500; }
             .ac-country { font-size: 0.75em; color: #777; }
             .ac-type { font-size: 0.7em; padding: 2px 5px; background: #eee; border-radius: 4px; color: #666; }
+            
+            /* Toggle Button Style */
+            .trip-type-selector .btn-check:checked + .btn {
+                background-color: #eb6123;
+                color: white;
+                border-color: #eb6123;
+            }
+            .trip-type-selector .btn {
+                color: #eb6123;
+                border-color: #eb6123;
+            }
         </style>
 
         <div class="modal fade" id="flightFillModal" tabindex="-1" aria-hidden="true">
@@ -48,10 +61,18 @@ export class AddFlightModal {
                     </div>
                     <div class="modal-body p-4">
                         <div id="flight-input-section">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">出發日期</label>
-                                <input type="date" id="f-date" class="form-control">
+                            <!-- Trip Type Selection -->
+                            <div class="d-flex justify-content-center mb-4 trip-type-selector">
+                                <div class="btn-group" role="group">
+                                    <input type="radio" class="btn-check" name="tripType" id="type-oneway" value="oneway" checked>
+                                    <label class="btn btn-outline-primary px-4" for="type-oneway">單程</label>
+
+                                    <input type="radio" class="btn-check" name="tripType" id="type-round" value="round">
+                                    <label class="btn btn-outline-primary px-4" for="type-round">來回</label>
+                                </div>
                             </div>
+
+                            <!-- Shared Route Info -->
                             <div class="row g-2 mb-3">
                                 <div class="col-6 position-relative">
                                     <label class="form-label small fw-bold">出發機場 (IATA)</label>
@@ -64,11 +85,40 @@ export class AddFlightModal {
                                     <ul id="f-arr-results" class="autocomplete-results d-none"></ul>
                                 </div>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label small fw-bold">航班編號</label>
-                                <input type="text" id="f-no" class="form-control text-uppercase" placeholder="例如: BR198">
+
+                            <hr class="my-3">
+
+                            <!-- Outbound Flight -->
+                            <div class="mb-3">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-airplane-engines"></i> 去程航班</h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">出發日期</label>
+                                        <input type="date" id="f-date" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">航班編號</label>
+                                        <input type="text" id="f-no" class="form-control text-uppercase" placeholder="例如: BR198">
+                                    </div>
+                                </div>
                             </div>
-                            <button id="btn-search-flight" class="btn btn_light w-100 py-2">搜尋航班資訊</button>
+
+                            <!-- Inbound Flight (Hidden by default) -->
+                            <div id="return-flight-section" class="mb-3 d-none">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-airplane-engines" style="transform: rotate(180deg); display: inline-block;"></i> 回程航班</h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">回程日期</label>
+                                        <input type="date" id="r-date" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">航班編號</label>
+                                        <input type="text" id="r-no" class="form-control text-uppercase" placeholder="例如: BR197">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="btn-search-flight" class="btn btn_light w-100 py-2 mt-3">搜尋航班資訊</button>
                         </div>
 
                         <div id="flight-loading" class="text-center py-4 d-none">
@@ -77,21 +127,9 @@ export class AddFlightModal {
                         </div>
 
                         <div id="flight-preview-section" class="d-none border rounded p-3 mt-3 bg-light">
-                            <div class="d-flex justify-content-between mb-3">
-                                <span class="badge bg-primary" id="p-airline">--</span>
-                                <span class="fw-bold" id="p-flightNo">--</span>
-                            </div>
-                            <div class="row text-center align-items-center">
-                                <div class="col-5">
-                                    <div class="h4 mb-0" id="p-depTime">--:--</div>
-                                    <div class="text-primary fw-bold" id="p-depIata">--</div>
-                                </div>
-                                <div class="col-2 text-muted">→</div>
-                                <div class="col-5">
-                                    <div class="h4 mb-0" id="p-arrTime">--:--</div>
-                                    <div class="text-primary fw-bold" id="p-arrIata">--</div>
-                                </div>
-                            </div>
+                            <!-- Preview Container -->
+                            <div id="preview-container"></div>
+                            
                             <div class="mt-3 pt-3 border-top gap-2 d-flex flex-column">
                                 <button class="btn btn_light w-100" id="btn-save-flight">確認並存入行程</button>
                                 <button class="btn btn_Gray w-100 btn-sm text-decoration-none" id="btn-back-search">重新輸入</button>
@@ -105,6 +143,19 @@ export class AddFlightModal {
     }
 
     bindEvents() {
+        // Toggle Trip Type
+        document.querySelectorAll('input[name="tripType"]').forEach(el => {
+            el.addEventListener('change', (e) => {
+                this.isRoundTrip = e.target.value === 'round';
+                const returnSection = document.getElementById('return-flight-section');
+                if (this.isRoundTrip) {
+                    returnSection.classList.remove('d-none');
+                } else {
+                    returnSection.classList.add('d-none');
+                }
+            });
+        });
+
         // 搜尋按鈕
         document.getElementById('btn-search-flight').addEventListener('click', () => this.search());
 
@@ -133,14 +184,19 @@ export class AddFlightModal {
         // Modal 關閉時重置
         this.modalEl.addEventListener('hidden.bs.modal', () => {
             this.toggleView('input');
-            ['f-date', 'f-dep', 'f-arr', 'f-no'].forEach(id => {
-                document.getElementById(id).value = '';
+            ['f-date', 'f-dep', 'f-arr', 'f-no', 'r-date', 'r-no'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
             });
+            // Reset to One Way
+            document.getElementById('type-oneway').checked = true;
+            this.isRoundTrip = false;
+            document.getElementById('return-flight-section').classList.add('d-none');
+
             document.querySelectorAll('.autocomplete-results').forEach(el => el.innerHTML = '');
         });
     }
 
-    // 自動補全邏輯處理 (擷取自 flight-3-2.html 並優化)
     handleAutocomplete(event, resultListId) {
         const query = event.target.value.trim();
         const resultsList = document.getElementById(resultListId);
@@ -216,40 +272,36 @@ export class AddFlightModal {
     }
 
     async search() {
-        const date = document.getElementById('f-date').value;
         const dep = document.getElementById('f-dep').value.toUpperCase();
         const arr = document.getElementById('f-arr').value.toUpperCase();
+
+        // Outbound
+        const fDate = document.getElementById('f-date').value;
         const fNo = document.getElementById('f-no').value.toUpperCase().replace(/\s+/g, '');
 
-        if (!date || !dep || !arr || !fNo) return alert("請填寫完整資訊");
+        if (!fDate || !dep || !arr || !fNo) return alert("請填寫完整的去程資訊");
 
         this.toggleView('loading');
+        this.storeData = [];
 
         try {
-            const routeRes = await TripApi.searchFlightRoute(dep, arr);
-            const matched = routeRes.response.find(r =>
-                (r.airline_iata + r.flight_number) === fNo ||
-                (r.airline_icao + r.flight_number) === fNo
-            );
+            // Process Outbound
+            const outboundData = await this.processSingleFlight(fDate, dep, arr, fNo);
+            this.storeData.push(outboundData);
 
-            if (!matched) throw new Error("找不到此航班，請檢查代碼。");
+            // Process Inbound if RoundTrip
+            if (this.isRoundTrip) {
+                const rDate = document.getElementById('r-date').value;
+                const rNo = document.getElementById('r-no').value.toUpperCase().replace(/\s+/g, '');
 
-            const flightRes = await TripApi.searchFlightDetail(fNo);
-            const d = flightRes.response || {};
+                if (!rDate || !rNo) throw new Error("請填寫完整的來回程資訊");
 
-            const actualDate = this.patchFlightData(matched, date);
+                // Check dates logic (optional)
+                if (new Date(rDate) < new Date(fDate)) throw new Error("回程日期不能早於去程日期");
 
-            this.storeData = {
-                tripId: parseInt(this.tripId),
-                carrier: d.airline_name || matched.airline_name || "未知航空",
-                flightNumber: fNo,
-                depTimeLocal: actualDate.actualDepLocal,
-                depTimeUtc: actualDate.actualDepUtc,
-                arrTimeLocal: actualDate.actualArrLocal,
-                arrTimeUtc: actualDate.actualArrUtc,
-                fromAirport: dep,
-                toAirport: arr,
-            };
+                const inboundData = await this.processSingleFlight(rDate, arr, dep, rNo); // Swap dep/arr
+                this.storeData.push(inboundData);
+            }
 
             this.renderPreview(this.storeData);
             this.toggleView('preview');
@@ -258,6 +310,33 @@ export class AddFlightModal {
             alert(err.message || "查詢失敗");
             this.toggleView('input');
         }
+    }
+
+    async processSingleFlight(date, dep, arr, flightNo) {
+        const routeRes = await TripApi.searchFlightRoute(dep, arr);
+        const matched = routeRes.response.find(r =>
+            (r.airline_iata + r.flight_number) === flightNo ||
+            (r.airline_icao + r.flight_number) === flightNo
+        );
+
+        if (!matched) throw new Error(`找不到航班 ${flightNo} (從 ${dep} 到 ${arr})，請檢查代碼。`);
+
+        const flightRes = await TripApi.searchFlightDetail(flightNo);
+        const d = flightRes.response || {};
+
+        const actualDate = this.patchFlightData(matched, date);
+
+        return {
+            tripId: parseInt(this.tripId),
+            carrier: d.airline_name || matched.airline_name || "未知航空",
+            flightNumber: flightNo,
+            depTimeLocal: actualDate.actualDepLocal,
+            depTimeUtc: actualDate.actualDepUtc,
+            arrTimeLocal: actualDate.actualArrLocal,
+            arrTimeUtc: actualDate.actualArrUtc,
+            fromAirport: dep,
+            toAirport: arr,
+        };
     }
 
     patchFlightData(apiData, userSelectedDate) {
@@ -316,19 +395,43 @@ export class AddFlightModal {
         };
     }
 
-    renderPreview(data) {
-        document.getElementById('p-airline').innerText = data.carrier;
-        document.getElementById('p-flightNo').innerText = data.flightNumber;
-        document.getElementById('p-depTime').innerText = data.depTimeLocal;
-        document.getElementById('p-arrTime').innerText = data.arrTimeLocal;
-        document.getElementById('p-depIata').innerText = data.fromAirport;
-        document.getElementById('p-arrIata').innerText = data.toAirport;
+    renderPreview(dataList) {
+        const container = document.getElementById('preview-container');
+        container.innerHTML = '';
+
+        dataList.forEach((data, index) => {
+            const label = index === 0 ? '去程' : '回程';
+            const html = `
+                <div class="mb-3 ${index > 0 ? 'pt-3 border-top' : ''}">
+                    <div class="text-primary fw-bold small mb-2">${label} (${data.flightNumber})</div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-primary">${data.carrier}</span>
+                    </div>
+                    <div class="row text-center align-items-center">
+                        <div class="col-5">
+                            <div class="h5 mb-0">${data.depTimeLocal.split(' ')[1]}</div>
+                            <small class="text-muted">${data.depTimeLocal.split(' ')[0]}</small>
+                            <div class="text-primary fw-bold">${data.fromAirport}</div>
+                        </div>
+                        <div class="col-2 text-muted">→</div>
+                        <div class="col-5">
+                            <div class="h5 mb-0">${data.arrTimeLocal.split(' ')[1]}</div>
+                            <small class="text-muted">${data.arrTimeLocal.split(' ')[0]}</small>
+                            <div class="text-primary fw-bold">${data.toAirport}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
     }
 
     async save() {
         try {
-            // 這裡會等待 API 完成
-            await TripApi.addFlight(this.storeData);
+            // 逐一儲存
+            for (const flightData of this.storeData) {
+                await TripApi.addFlight(flightData);
+            }
 
             // 走到這一行代表成功了
             this.bsModal.hide();
