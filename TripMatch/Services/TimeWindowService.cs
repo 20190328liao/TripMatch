@@ -971,20 +971,6 @@ namespace TripMatch.Services
                 }
             }
 
-            // 3. 全員投票完成: VOTING -> RESULT
-            if (group.Status == GroupStatus.VOTING)
-            {
-                var allVoted = await CheckIfAllVotedAsync(groupId);
-
-                if (allVoted)
-                {
-                    group.Status = GroupStatus.RESULT;
-                    group.UpdateAt = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-                    return group.Status;
-                }
-            }
-
             return group.Status;
         }
         // 取得偏好參數

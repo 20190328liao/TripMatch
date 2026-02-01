@@ -113,6 +113,10 @@ namespace TripMatch
             // 註冊旅遊資訊服務
             builder.Services.AddHttpClient<TravelInfoService>();
 
+            // 註冊 MemoryCache + HttpClient
+            builder.Services.AddMemoryCache();
+            builder.Services.AddHttpClient("GooglePlaces");
+
 
             // --- 建立應用程式 ---
             var app = builder.Build();

@@ -864,9 +864,9 @@ namespace TripMatch.Services
             return status switch
             {
                 "PREF" => $"/Match/Preferences/{groupId}",
-                "DATE" => $"/Match/Availability/{groupId}",
+                "DATE" => $"/Match/CalendarCheck/{groupId}",
                 "VOTING" => $"/Match/recommendations/{groupId}",
-                "RESULT" => $"/Match/Result/{groupId}",
+                //"RESULT" => $"/Match/Result/{groupId}",
                 _ => "#"
             };
         }
