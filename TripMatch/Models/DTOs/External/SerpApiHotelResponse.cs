@@ -24,7 +24,9 @@ namespace TripMatch.Models.DTOs.External
         // 這就是我們要的飯店專屬連結
         public string google_hotels_url { get; set; }
 
+        public string prettify_html_file { get; set; }
         public string raw_html_file { get; set; }
+
         public object total_time_taken { get; set; }
     }
 

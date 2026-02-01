@@ -232,11 +232,7 @@ namespace TripMatch.Controllers
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             int.TryParse(userIdString, out int currentUserId);
 
-            bool hasData = await _context.Recommendations.AnyAsync(r => r.GroupId == id);
-            if (!hasData)
-            {
-                await _timeWindowService.GenerateRecommendationsAsync(id);
-            }
+            await _timeWindowService.GenerateRecommendationsAsync(id);
 
             var viewModel = await _timeWindowService.GetRecommendationViewModelAsync(id, currentUserId);
 

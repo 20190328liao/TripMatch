@@ -377,7 +377,7 @@
                     </div>
                     <div class="alert alert-success text-center">
                         <h4>預估總旅費：<span id="totalPrice"></span> TWD /人</h4>
-                        <small class="text-muted">*此價格為 API 即時查詢結果，實際金額以訂購頁面為準</small>
+                        <small class="text-muted">*此價格為即時查詢結果，實際金額以訂購頁面為準</small>
                     </div>
                 </div>
                 <div id="errorMsg" class="alert alert-danger d-none"></div>
@@ -534,5 +534,73 @@
                 btn.innerHTML = originalText;
             }
         }
+document.addEventListener("DOMContentLoaded", function() {
+    updateActionBar();
+    
+    // ★★★ 新增：頁面載入後，延遲 1 秒開始背景更新價格 ★★★
+    setTimeout(autoUpdatePrices, 1000);
+});
+
+        async function autoUpdatePrices() {
+                    const cards = document.querySelectorAll('.option-card');
+                    const now = new Date();
+                    const validHours = 1;   // ★ 設定門檻：1 小時內的資料視為「準確」，不重新查詢
+
+                    // 為了不卡住瀏覽器，我們一張一張慢慢查
+                    for (const card of cards) {
+                        const btn = card.querySelector('.btn-view-details');
+
+                        // --- ★★★ 新增邏輯：檢查資料是否已經是新的 ★★★ ---
+                        // 注意：這需要您的 HTML 按鈕上有 data-updated="card.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                        const updatedStr = btn.dataset.updated;
+
+                        if (updatedStr) {
+                            const lastUpdated = new Date(updatedStr);
+                            // 計算時間差 (毫秒 -> 小時)
+                            const diffHours = (now - lastUpdated) / (1000 * 60 * 60);
+
+                            // 如果時間差小於設定時限 (例如 1 小時)，視為價格正確，直接跳過
+                            if (diffHours < validHours) {
+                                // (選用) 在 Console 顯示跳過訊息方便除錯
+                                // console.log(`方案 ${btn.dataset.location} 資料很新 (${diffHours.toFixed(2)} 小時前)，跳過。`);
+                                continue;
+                            }
+                        }
+                        // ----------------------------------------------------
+
+                        // 準備查詢參數
+                        const location = btn.dataset.location;
+                        const start = btn.dataset.start;
+                        const end = btn.dataset.end;
+
+                        // 顯示 loading 狀態
+                        const priceTag = card.querySelector('.price-tag');
+                        const originalText = priceTag.innerHTML;
+                        priceTag.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 更新中...';
+
+                        try {
+                            // 呼叫後端 API
+                            const response = await fetch(`/api/timewindow/check-price?groupId=@Model.GroupId&location=${location}&start=${start}&end=${end}`);
+                            const res = await response.json();
+
+                            if (res.success) {
+                                // 更新 UI 顯示最新價格
+                                priceTag.innerHTML = '<small class="opacity-75 me-1">最新報價</small> NT$ ' + formatCurrency(res.data.totalPrice);
+
+                                // ★★★ 關鍵：查詢成功後，更新按鈕上的時間，避免使用者沒重整頁面時腳本重複查
+                                btn.dataset.updated = new Date().toISOString();
+                            } else {
+                                // 失敗則恢復原狀
+                                priceTag.innerHTML = originalText;
+                            }
+                        } catch (e) {
+                            priceTag.innerHTML = originalText;
+                        }
+
+                        // 每查完一張，休息 2 秒再查下一張，避免 API 爆量
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                }
+
     </script>
 }
