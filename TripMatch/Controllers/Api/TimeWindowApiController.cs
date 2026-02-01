@@ -191,12 +191,12 @@ namespace TripMatch.Controllers.Api
         }
 
         // 8. 產生並取得完整方案 (GET /api/timewindow/{groupId}/generate-plans)
-        [HttpGet("{groupId}/generate-plans")]
+        [HttpPost("{groupId}/generate-plans")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> GeneratePlans(int groupId)
         {
             try
             {
-                // Todo: 這一步會跑比較久 (因為要 Call 外部 API)，前端記得顯示 Loading
                 var recommendations = await _timeWindowService.GenerateRecommendationsAsync(groupId);
                 return Ok(recommendations);
             }
@@ -205,6 +205,7 @@ namespace TripMatch.Controllers.Api
                 return StatusCode(500, new { message = "生成方案失敗", error = ex.Message });
             }
         }
+
 
         // 9. 取得個人在「此群組期間內」的可用時間 (GET /api/timewindow/{groupId}/my-schedule)
         [HttpGet("{groupId}/my-schedule")]

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -313,25 +314,37 @@ namespace TripMatch.Services
         }
 
         // 8. 方案卡
-        public async Task<List<Recommendation>> GenerateRecommendationsAsync(int groupId)
+        public async Task<List<Recommendation>> GenerateRecommendationsAsync(int groupId, bool forceRegenerate = false)
         {
-            // 1. 檢查是否已經有生成過的方案
-            var existingRecs = await _context.Recommendations
-        .Where(r => r.GroupId == groupId)
-        .ToListAsync();
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-            // ★ 開發階段修改：如果有舊資料，先刪除，強制重新生成 ★
-            if (existingRecs.Any())
+            // 1) 先查：若已存在且不強制重算 -> 直接回傳
+            var existingRecs = await _context.Recommendations
+                .Where(r => r.GroupId == groupId)
+                .ToListAsync();
+
+            if (existingRecs.Any() && !forceRegenerate)
+            {
+                await tx.CommitAsync();
+                return existingRecs;
+            }
+
+            // 2) 若要重算：先刪掉舊資料
+            if (existingRecs.Any() && forceRegenerate)
             {
                 _context.Recommendations.RemoveRange(existingRecs);
                 await _context.SaveChangesAsync();
             }
 
-            // 2. 取得共同時間段
+            // 3) 取得共同時間段
             var timeRanges = await GetCommonTimeRangesAsync(groupId);
-            if (!timeRanges.Any()) return new List<Recommendation>();
+            if (!timeRanges.Any())
+            {
+                await tx.CommitAsync();
+                return new List<Recommendation>();
+            }
 
-            // 3. 取得地點偏好 (邏輯不變)
+            // 4) 地點偏好
             var rawPlaces = await _context.Preferences
                 .Where(p => p.GroupId == groupId && !string.IsNullOrEmpty(p.PlacesToGo))
                 .Select(p => p.PlacesToGo)
@@ -349,8 +362,7 @@ namespace TripMatch.Services
             var settings = await GetGroupPreferenceSettingsAsync(groupId);
 
             var group = await _context.TravelGroups.FindAsync(groupId);
-            int tripDays = group?.TravelDays ?? 5; // 防呆
-            if (tripDays < 1) tripDays = 1;
+            int tripDays = Math.Max(group?.TravelDays ?? 5, 1);
 
             var newRecommendations = new List<Recommendation>();
 
@@ -362,17 +374,16 @@ namespace TripMatch.Services
                     DateOnly priceCheckEnd = range.StartDate.AddDays(tripDays - 1);
                     if (priceCheckEnd > range.EndDate) priceCheckEnd = range.EndDate;
 
-                    // 呼叫 TravelInfoService
                     var travelInfo = await _travelInfoService.GetTravelInfoAsync(
                         place,
                         priceCheckStart,
                         priceCheckEnd,
-                        settings.AllowTransfer, // 使用共用設定
-                        settings.StarRating,    // 使用共用設定
-                        settings.MedianBudget   // 使用共用設定
+                        settings.AllowTransfer,
+                        settings.StarRating,
+                        settings.MedianBudget
                     );
 
-                    var rec = new Recommendation
+                    newRecommendations.Add(new Recommendation
                     {
                         GroupId = groupId,
                         StartDate = priceCheckStart.ToDateTime(TimeOnly.MinValue),
@@ -385,17 +396,17 @@ namespace TripMatch.Services
                         Vote = 0,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
-                    };
-
-                    newRecommendations.Add(rec);
+                    });
                 }
             }
 
             await _context.Recommendations.AddRangeAsync(newRecommendations);
             await _context.SaveChangesAsync();
 
+            await tx.CommitAsync();
             return newRecommendations;
         }
+
         // 8-2 拿畫面
         public async Task<RecommendationViewModel> GetRecommendationViewModelAsync(int groupId, int currentUserId)
         {

@@ -19,6 +19,8 @@
         public List<FlightSegment> flights { get; set; }
         public int price { get; set; } // 這是單人價格
         public int total_duration { get; set; }
+        public string departure_token { get; set; }
+
     }
 
     public class FlightSegment
