@@ -773,7 +773,9 @@ namespace TripMatch.Services
                         {
                             Trip = newTrip,
                             FlightNumber = flightData.Value.FlightNo,
-                            Carrier = flightData.Value.Carrier,
+                            Carrier = flightData.Value.AirlineName,
+                            FromAirport = flightData.Value.From,
+                            ToAirport = flightData.Value.To,
                             DepartUtc = flightData.Value.Depart,
                             ArriveUtc = flightData.Value.Arrive,
                             Price = 0,
@@ -796,7 +798,9 @@ namespace TripMatch.Services
                         {
                             Trip = newTrip,
                             FlightNumber = flightData.Value.FlightNo,
-                            Carrier = flightData.Value.Carrier,
+                            Carrier = flightData.Value.AirlineName,
+                            FromAirport = flightData.Value.From,
+                            ToAirport = flightData.Value.To,
                             DepartUtc = flightData.Value.Depart,
                             ArriveUtc = flightData.Value.Arrive,
                             Price = 0,
@@ -963,17 +967,16 @@ namespace TripMatch.Services
 
             return newTrip.Id;
         }
-        // 輔助：解析航班字串 (依照你實際存入的格式實作)
-        private (string FlightNo, string Carrier, string AirlineName, string From, string To,
-          DateTimeOffset Depart, DateTimeOffset Arrive)?
-         ParseFlightString(string flightStr, DateTime baseDate)
+
+        private static (string FlightNo, string Carrier, string AirlineName, string From, string To, DateTimeOffset Depart, DateTimeOffset Arrive)?
+        ParseFlightString(string flightStr, DateTime baseDate)
         {
             if (string.IsNullOrWhiteSpace(flightStr)) return null;
 
-            // 例：TPE→NRT | EVA Airways BR198 (08:50→12:55)
-            var regex = new System.Text.RegularExpressions.Regex(
+            // 正則表達式保持不變，負責解析字串結構
+            var regex = new Regex(
                 @"^(?<from>[A-Z]{3})→(?<to>[A-Z]{3})\s*\|\s*(?<airline>.+?)\s+(?<carrier>[A-Z0-9]{2})\s*(?<num>\d+)\s*\((?<dep>\d{1,2}:\d{2})→(?<arr>\d{1,2}:\d{2})\)\s*$",
-                System.Text.RegularExpressions.RegexOptions.Compiled
+                RegexOptions.Compiled
             );
 
             var m = regex.Match(flightStr.Trim());
@@ -989,12 +992,39 @@ namespace TripMatch.Services
             if (!TimeSpan.TryParse(m.Groups["dep"].Value, out var tsDep)) return null;
             if (!TimeSpan.TryParse(m.Groups["arr"].Value, out var tsArr)) return null;
 
+            // 1. 基礎日期時間 (不含時區)
             var dtDep = baseDate.Date + tsDep;
             var dtArr = baseDate.Date + tsArr;
-            if (dtArr < dtDep) dtArr = dtArr.AddDays(1); // 跨日
 
-            return (flightNo, carrier, airlineName, from, to,
-                    new DateTimeOffset(dtDep), new DateTimeOffset(dtArr));
+            // 跨日處理 (若抵達時間看起來比出發早，通常是隔天)
+            if (tsArr < tsDep)
+            {
+                dtArr = dtArr.AddDays(1);
+            }
+
+            // 2. 定義時區 Offset
+            TimeSpan offsetTaiwan = TimeSpan.FromHours(8); // TPE, KHH 等
+            TimeSpan offsetJapan = TimeSpan.FromHours(9);  // KIX, NRT 等
+
+            // 3. 判斷出發地時區
+            TimeSpan depOffset = (from == "KIX") ? offsetJapan : offsetTaiwan;
+
+            // 4. 判斷抵達地時區
+            TimeSpan arrOffset = (to == "KIX") ? offsetJapan : offsetTaiwan;
+
+            // 5. 建立 DateTimeOffset
+            // 注意：DateTimeOffset 建構子會把時間視為「當地時間」，並附加上 Offset
+            var depDto = new DateTimeOffset(dtDep, depOffset);
+            var arrDto = new DateTimeOffset(dtArr, arrOffset);
+
+            // 特別修正：
+            // 如果是「跨時區飛行」(例如 TPE -> KIX)，
+            // 上面的 dtArr 是指「抵達地的當地時間」，所以邏輯是正確的。
+            // 但如果上面的 "跨日判斷" 是基於 "時間數值" 比較的 (例如 23:00 -> 02:00)，
+            // 在同時區沒問題。但在跨時區時，有時會因為時差讓數值看起來怪怪的。
+            // 不過針對短程航班 (台日)，通常用上面的 tsArr < tsDep 判斷跨日是足夠的。
+
+            return (flightNo, carrier, airlineName, from, to, depDto, arrDto);
         }
 
 

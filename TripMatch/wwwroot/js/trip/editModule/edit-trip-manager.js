@@ -87,11 +87,6 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
         openTimeEditModal(itemId); // 開啟時間編輯的 Modal
     });
 
-    // 3. 其他原本就有的監聽邏輯
-    document.body.addEventListener('add-spot-to-trip', (e) => {
-        const { placeId, dayNum } = e.detail;
-        handleAddSpotFromModal(placeId, dayNum);
-    });
 
     initHotelEditModal();
 
@@ -429,7 +424,8 @@ function handleAddSpotFromModal(googlePlaceId, dayNum) {
                 try {
                     // 改呼叫智慧計算函式
                     await calculateTimeAndAddSpot(tripId, spotId, dayNum, place);
-
+                    //通知已加入指定天行程
+                    alert(`景點已加入 Day ${dayNum}！`);
                     loadTripData();
                     SignalRManager.broadcast(tripId, "新增景點", 0);
 
