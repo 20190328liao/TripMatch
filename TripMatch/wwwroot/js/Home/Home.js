@@ -32,7 +32,7 @@ function toggleLogin() {
     if (isLoggedIn) {
         // 更新首頁內容
         if (statusText) {
-            statusText.innerText = "歡迎您，" + name + " 用戶";
+            statusText.innerText = "歡迎您，" + name;
             statusText.style.color = "var(--btn-dark)";
         }
         if (actionBtn) actionBtn.innerText = "下一步 (開始規劃)";
