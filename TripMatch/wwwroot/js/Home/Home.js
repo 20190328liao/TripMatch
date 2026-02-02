@@ -77,7 +77,7 @@ function updateAuthUi() {
   const mainBtn = document.getElementById('mainActionButton');
 
   if (statusEl) {
-    statusEl.innerText = isAuth ? ('歡迎您，' + name + ' 用戶') : '未登入';
+    statusEl.innerText = isAuth ? ('歡迎您，' + name) : '未登入';
     statusEl.style.color = isAuth ? 'var(--btn-dark)' : 'white';
   }
 
