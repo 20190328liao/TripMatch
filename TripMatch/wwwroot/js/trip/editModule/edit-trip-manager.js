@@ -87,11 +87,6 @@ export function initEditPage(mapInstance, tripSimpleInfo) {
         openTimeEditModal(itemId); // 開啟時間編輯的 Modal
     });
 
-    // 3. 其他原本就有的監聽邏輯
-    document.body.addEventListener('add-spot-to-trip', (e) => {
-        const { placeId, dayNum } = e.detail;
-        handleAddSpotFromModal(placeId, dayNum);
-    });
 
     initHotelEditModal();
 
@@ -414,56 +409,32 @@ function initNavDropdown(dates) {
     });
 }
 
+// 【修改】地圖/收藏加入
 function handleAddSpotFromModal(googlePlaceId, dayNum) {
-
-    // 1. 這裡需要一個方法：依據 PlaceID 取得 Place Details 並存入 DB
-    // 我們可以重複利用 savePlaceToDatabase，但它需要 Place Result 物件
-    // 所以我們需要先用 Places Service 查一次詳情 (因為列表 API 給的資料可能不夠詳細存 DB)
-
     if (!window.currentMapInstance) return;
-
     const service = new google.maps.places.PlacesService(window.currentMapInstance);
+
     service.getDetails({ placeId: googlePlaceId }, (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK) {
+            savePlaceToDatabase(place).then(async spotId => {
+                if (!spotId) return alert("儲存景點失敗");
 
-            // 2. 存入 DB 取得 SpotId
-            savePlaceToDatabase(place).then(spotId => {
-                if (!spotId) {
-                    alert("儲存景點失敗");
-                    return;
+                const tripId = document.getElementById('current-trip-id').value;
+
+                try {
+                    // 改呼叫智慧計算函式
+                    await calculateTimeAndAddSpot(tripId, spotId, dayNum, place);
+                    //通知已加入指定天行程
+                    alert(`景點已加入 Day ${dayNum}！`);
+                    loadTripData();
+                    SignalRManager.broadcast(tripId, "新增景點", 0);
+
+                    // 可以加個簡單提示，告知使用者自動排在幾點
+                    // alert(`已加入 Day ${dayNum}！`); 
+                } catch (err) {
+                    alert("加入行程失敗");
                 }
-
-                // 3. 呼叫加入行程 API
-                const dto = {
-                    TripId: parseInt(document.getElementById('current-trip-id').value),
-                    SpotId: parseInt(spotId),
-                    DayNumber: parseInt(dayNum),
-                    StartTime: "08:00:00", // 預設時間
-                    EndTime: "09:00:00",
-                    SortOrder: 99
-                };
-
-                $.ajax({
-                    url: '/api/TripApi/AddSpotToTrip',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(dto),
-                    success: function () {
-                        // 成功！
-                        // 1. 顯示成功提示 (Toast)
-                        // 2. 重新整理列表
-                        loadTripData();
-                        SignalRManager.broadcast(currentTripId, "新增景點", 0); 
-                        alert(`已成功加入 Day ${dayNum}！`);
-                    },
-                    error: function () {
-                        alert("加入行程失敗");
-                    }
-                });
             });
-
-        } else {
-            alert("無法取得景點詳情，加入失敗");
         }
     });
 }
@@ -846,8 +817,34 @@ function generateDayItemsHtml(dayItems) {
             </div>
         `;
 
-        // 路線資訊區塊 (選擇性加入)
-        /* if (index < dayItems.length - 1) { ... generate route html ... } */
+        // 【新增】路線資訊區塊：如果不是最後一個，插入路線計算區塊
+        //if (index < dayItems.length - 1) {
+        //    const nextItem = dayItems[index + 1];
+
+        //    // 取得起點與終點座標或 Place ID
+        //    const originId = item.profile?.placeId || "";
+        //    const destId = nextItem.profile?.placeId || "";
+        //    const originLat = item.profile?.lat || 0;
+        //    const originLng = item.profile?.lng || 0;
+        //    const destLat = nextItem.profile?.lat || 0;
+        //    const destLng = nextItem.profile?.lng || 0;
+
+        //    html += `
+        //        <div class="route-info-block my-2 mx-4 p-2 shadow-sm border rounded-3" 
+        //             style="cursor: pointer; transition: transform 0.2s; background: #ffffff; font-size: 0.85rem;"
+        //             data-origin-id="${originId}"
+        //             data-dest-id="${destId}"
+        //             data-origin-lat="${originLat}"
+        //             data-dest-lat="${destLat}"
+        //             data-origin-lng="${originLng}"
+        //             data-dest-lng="${destLng}">
+        //            <div class="d-flex align-items-center gap-2 text-muted">
+        //                <i class="bi bi-arrow-down-circle text-success"></i>
+        //                <span>點擊載入交通時間...</span>
+        //            </div>
+        //        </div>
+        //    `;
+        //}
     });
     return html;
 }
@@ -1591,51 +1588,27 @@ function initQuickAutocomplete(inputElement, dayNum) {
 }
 
 // 【新增 helper】處理快速加入行程 (複製 edit-map-manager 的邏輯並簡化)
+// 【修改】快速新增
 function addQuickPlaceToTrip(place, dayNum) {
-    // 1. 先存 Snapshot (因為需要 SpotId)
-    savePlaceToDatabase(place).then(spotId => {
-        if (!spotId) {
-            alert("儲存景點失敗，無法加入");
-            return;
-        }
+    savePlaceToDatabase(place).then(async spotId => {
+        if (!spotId) return alert("儲存景點失敗");
 
-        // 2. 呼叫加入行程 API
         const tripId = document.getElementById('current-trip-id').value;
 
-        const dto = {
-            TripId: parseInt(tripId),
-            SpotId: parseInt(spotId),
-            DayNumber: parseInt(dayNum),
-            StartTime: "08:00:00", // 預設時間，或者您可以讓 input 旁邊多兩個時間選擇器
-            EndTime: "09:00:00",
-            SortOrder: 0
-        };
+        try {
+            // 改呼叫智慧計算函式
+            // 注意：這裡傳入 place 物件是為了取經緯度給 Google 算路徑
+            await calculateTimeAndAddSpot(tripId, spotId, dayNum, place);
 
-        $.ajax({
-            url: '/api/TripApi/AddSpotToTrip',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(dto),
-            success: function (response) {
-                // 成功後重新整理列表
-                refreshItineraryList();
-
-                // 【關鍵修改】：呼叫地圖渲染功能，顯示標記與 InfoWindow
-                if (typeof renderPlaceOnMap === 'function') {
-                    // 傳入 Google Place 物件與剛產生的 spotId
-                    renderPlaceOnMap(place, spotId);
-                } else if (window.currentMapInstance && place.geometry.location) {
-                    // 備案邏輯
-                    window.currentMapInstance.panTo(place.geometry.location);
-                    window.currentMapInstance.setZoom(16);
-                }
-
-                SignalRManager.broadcast(currentTripId, "新增景點", 0); 
-            },
-            error: function (xhr) {
-                alert('加入失敗：' + (xhr.responseJSON?.message || "伺服器錯誤"));
+            refreshItineraryList();
+            if (window.currentMapInstance && place.geometry && place.geometry.location) {
+                renderPlaceOnMap(place, spotId);
             }
-        });
+            SignalRManager.broadcast(tripId, "新增景點", 0);
+        } catch (err) {
+            console.error(err);
+            alert('加入失敗');
+        }
     });
 }
 
@@ -1833,4 +1806,108 @@ function calculateAndDisplayRoute(origin, destination, displayElement) {
             }
         }
     });
+}
+
+// 【新增】智慧加入景點核心：自動計算通勤時間
+async function calculateTimeAndAddSpot(tripId, spotId, dayNum, placeLocation) {
+    // 1. 取得該天目前的行程列表 (從全域變數或 DOM 讀取)
+    // 這裡我們直接分析 DOM 比較快，因為它已經排序好了
+    const dayContainer = document.querySelector(`#day-${dayNum} .timeline-container`);
+    const lastItem = dayContainer ? dayContainer.lastElementChild : null; // 注意：要排除 route-info-block，稍微嚴謹一點找 .itinerary-item
+
+    // 嚴謹地找出最後一個行程卡片
+    const allItems = dayContainer ? dayContainer.querySelectorAll('.itinerary-item') : [];
+    const lastCard = allItems.length > 0 ? allItems[allItems.length - 1] : null;
+
+    let startTimeStr = "09:00:00"; // 預設：若當天沒行程，從早上 9 點開始
+
+    // 2. 如果有上一個景點，計算交通時間
+    if (lastCard) {
+        // 取得上一個景點的結束時間 (從 DOM dataset 讀取，格式 HH:mm)
+        const lastEndTimeRaw = lastCard.querySelector('.edit-time-trigger').dataset.end || "09:00";
+
+        // 取得上一個景點的位置 (經緯度 or PlaceId)
+        const originLat = parseFloat(lastCard.dataset.lat);
+        const originLng = parseFloat(lastCard.dataset.lng);
+        const originPlaceId = lastCard.dataset.externalId;
+
+        // 準備 Google Maps 請求物件
+        const origin = originPlaceId ? { placeId: originPlaceId } : { lat: originLat, lng: originLng };
+        const destination = placeLocation.place_id ? { placeId: placeLocation.place_id } : placeLocation.geometry.location;
+
+        try {
+            // 呼叫 Google Directions Service
+            const durationSec = await getTravelDuration(origin, destination);
+
+            // 計算新開始時間：上一景點結束 + 交通時間
+            startTimeStr = addSecondsToTime(lastEndTimeRaw, durationSec);
+
+            console.log(`[智慧排程] 上一景點結束: ${lastEndTimeRaw}, 交通: ${Math.round(durationSec / 60)}分, 新開始: ${startTimeStr}`);
+
+        } catch (err) {
+            console.warn("無法計算交通時間，使用預設邏輯", err);
+            // 失敗時，直接接續上一個時間 (不加交通) 或加個緩衝 30 分鐘
+            startTimeStr = addSecondsToTime(lastEndTimeRaw, 1800);
+        }
+    }
+
+    // 3. 計算結束時間 (預設停留 1.5 小時 = 5400 秒)
+    const endTimeStr = addSecondsToTime(startTimeStr.substring(0, 5), 5400);
+
+    // 4. 組裝 DTO
+    const dto = {
+        TripId: parseInt(tripId),
+        SpotId: parseInt(spotId),
+        DayNumber: parseInt(dayNum),
+        StartTime: startTimeStr, // 格式 HH:mm:ss
+        EndTime: endTimeStr,
+        SortOrder: 999 // 設大一點讓後端排在最後，或者後端會依時間排序
+    };
+
+    // 5. 發送 API
+    return $.ajax({
+        url: '/api/TripApi/AddSpotToTrip',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(dto)
+    });
+}
+
+// 【新增 helper】封裝 Google Directions 為 Promise
+function getTravelDuration(origin, destination) {
+    return new Promise((resolve, reject) => {
+        if (!window.directionsService) window.directionsService = new google.maps.DirectionsService();
+
+        const request = {
+            origin: origin,
+            destination: destination,
+            travelMode: google.maps.TravelMode.DRIVING // 預設開車
+        };
+
+        window.directionsService.route(request, (result, status) => {
+            if (status === 'OK' && result.routes[0] && result.routes[0].legs[0]) {
+                // 回傳秒數
+                resolve(result.routes[0].legs[0].duration.value);
+            } else {
+                reject(status);
+            }
+        });
+    });
+}
+
+// 【新增 helper】時間計算工具 (HH:mm -> +seconds -> HH:mm:ss)
+function addSecondsToTime(timeStr, secondsToAdd) {
+    // timeStr 可能是 "09:00" 或 "09:00:00"
+    const parts = timeStr.split(':');
+    let date = new Date();
+    date.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+
+    // 加上秒數
+    date.setSeconds(date.getSeconds() + secondsToAdd);
+
+    // 轉回字串 HH:mm:ss
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const s = "00";
+    return `${h}:${m}:${s}`;
 }

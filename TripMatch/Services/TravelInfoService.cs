@@ -192,7 +192,8 @@ namespace TripMatch.Services
                     if (bestHotel != null)
                     {
                         string displayName = bestHotel.name;
-                        if (bestHotel.overall_rating > 0) displayName += $" ({bestHotel.overall_rating}★)";
+                        if (bestHotel.overall_rating > 0)
+                            displayName += $" ({bestHotel.overall_rating}★)";
 
                         decimal price = bestHotel.total_rate?.extracted_lowest ?? 0;
                         if (price == 0 && bestHotel.rate_per_night?.extracted_lowest != null)
@@ -230,10 +231,18 @@ namespace TripMatch.Services
         private string ExtractFlightInfo(FlightSegment segment)
         {
             if (segment == null) return "N/A";
-            string timeOnly = segment.departure_airport?.time ?? "";
-            var timeParts = timeOnly.Split(' ');
-            if (timeParts.Length > 1) timeOnly = timeParts[1];
-            return $"{segment.airline} {segment.flight_number} ({timeOnly})";
+
+            string from = segment.departure_airport?.id ?? "";
+            string to = segment.arrival_airport?.id ?? "";
+
+            string dep = segment.departure_airport?.time ?? "";
+            string arr = segment.arrival_airport?.time ?? "";
+
+            // "2026-02-20 08:50" -> "08:50"
+            dep = dep.Contains(' ') ? dep.Split(' ')[1] : dep;
+            arr = arr.Contains(' ') ? arr.Split(' ')[1] : arr;
+
+            return $"{segment.airline} {segment.flight_number} ({dep}→{arr})";
         }
 
         private string FormatItinerary(List<FlightSegment> segs)
@@ -289,7 +298,6 @@ namespace TripMatch.Services
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<SerpApiFlightResponse>(body, options);
         }
-
 
 
         // 保留備案
