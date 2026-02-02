@@ -242,7 +242,7 @@ namespace TripMatch.Services
             dep = dep.Contains(' ') ? dep.Split(' ')[1] : dep;
             arr = arr.Contains(' ') ? arr.Split(' ')[1] : arr;
 
-            return $"{from}→{to} | {segment.airline} {segment.flight_number} ({dep}→{arr})";
+            return $"{segment.airline} {segment.flight_number} ({dep}→{arr})";
         }
 
         private string FormatItinerary(List<FlightSegment> segs)
