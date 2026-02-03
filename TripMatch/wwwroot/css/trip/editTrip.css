@@ -39,7 +39,6 @@ footer {
 
 /* 左側面板 - 行程列表 */
 .left-panel {
-    width: 40vw;
     min-width: 320px;
     background-color: #f8f9fa;
     border-right: 1px solid #dee2e6;
@@ -943,7 +942,7 @@ margin-left: 25px; /* 配合 timeline 的位置 */
 
 /* 1. 確保左側總面板是高度鎖定的 Flex 容器 */
 .left-panel {
-    width: 40vw;
+    width: 50vw;
     min-width: 320px;
     height: 100%; /* 這裡必須是 100% */
     display: flex;

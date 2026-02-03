@@ -752,16 +752,18 @@ namespace TripMatch.Services
                 var placeDetail = await _googlePlacesClient.GetPlaceDetailsAsync(placesResponse[i], "zh-TW");
                 if (placeDetail != null)
                 {
-                    PlaceSnapshotDto spotDto = new PlaceSnapshotDto
+           
+                    PlaceSnapshotDto spotDto = new ()
                     {
                         ExternalPlaceId = placesResponse[i],
                         NameZh = placeDetail.Result.Name,
                         Address = placeDetail.Result.FormattedAddress,
+                        description = placeDetail.Result.EditorialSummary?.Overview ?? "", // 修正：加上 ?. 避免 null 取值
                         Lat = placeDetail.Result.Geometry.Location.Lat,
                         Lng = placeDetail.Result.Geometry.Location.Lng,
                         Rating = placeDetail.Result.Rating ?? 0,
                         UserRatingsTotal = placeDetail.Result.UserRatingsTotal ?? 0,
-                        PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()    
+                        PhotosSnapshot = placeDetail.Result.Photos?.Select(p => _googlePlacesClient.GetPhotoUrl(p.PhotoReference)).ToList() ?? new List<string>()
                     };
                     popularSpots.Add(spotDto);
                 }

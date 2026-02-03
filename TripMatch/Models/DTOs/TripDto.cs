@@ -142,6 +142,7 @@ namespace TripMatch.Models.DTOs
         public string NameEn { get; set; } = String.Empty;
         public List<string> LocationCategory { get; set; } = [];
         public string Address { get; set; } = String.Empty;
+        public string description { get; set; } = String.Empty; 
         public double Lat { get; set; }
         public double Lng { get; set; }
         public decimal Rating { get; set; }
@@ -212,6 +213,9 @@ namespace TripMatch.Models.DTOs
 
         [JsonPropertyName("photos")]
         public List<GooglePhoto> Photos { get; set; } = new List<GooglePhoto>();
+
+        [JsonPropertyName("editorial_summary")]
+        public PlaceEditorialSummary? EditorialSummary { get; set; }
     }
 
     // 1. 定義 Geometry 物件
@@ -264,6 +268,15 @@ namespace TripMatch.Models.DTOs
         public string? CoverImageUrl { get; set; }
         public string DetailsUrl { get; set; } = "#";
         public string Role { get; set; } = "member";
+    }
+
+    public class PlaceEditorialSummary
+    {
+        [JsonPropertyName("overview")]
+        public string? Overview { get; set; }
+
+        [JsonPropertyName("language")]
+        public string? Language { get; set; }
     }
 
 }

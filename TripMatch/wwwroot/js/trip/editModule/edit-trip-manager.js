@@ -199,6 +199,7 @@ function bindGlobalEvents() {
     $placeList.on('click', '.spot-delete-btn', function (e) {
         e.stopPropagation();
         const card = this.closest('.itinerary-item');
+        const dayNum = card.getAttribute('data-day-num');
         const id = card.getAttribute('data-id');
 
         if (confirm('確定要移除此景點嗎？')) {
@@ -206,7 +207,7 @@ function bindGlobalEvents() {
                 url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
                 type: 'DELETE',
                 success: function () {
-                    SignalRManager.broadcast(currentTripId, "刪除行程", 0);
+                    SignalRManager.broadcast(currentTripId, `剛刪除第${dayNum}天的景點`, 0); 
                     refreshItineraryList();
                 },
                 error: function (xhr) {
@@ -262,7 +263,7 @@ function bindGlobalEvents() {
             try {
                 await TripApi.deleteAccommodation(hotelId, version);
                 refreshItineraryList();
-                SignalRManager.broadcast(currentTripId, "刪除住宿", 0);
+                SignalRManager.broadcast(currentTripId, "剛刪除住宿", 0);
             } catch (error) {
                 alert("無法移除住宿：" + error);
                 refreshItineraryList();
@@ -427,7 +428,7 @@ function handleAddSpotFromModal(googlePlaceId, dayNum) {
                     //通知已加入指定天行程
                     alert(`景點已加入 Day ${dayNum}！`);
                     loadTripData();
-                    SignalRManager.broadcast(tripId, "新增景點", 0);
+                    SignalRManager.broadcast(tripId, `剛新增第${dayNum}天的景點`, 0);
 
                     // 可以加個簡單提示，告知使用者自動排在幾點
                     // alert(`已加入 Day ${dayNum}！`); 
@@ -450,7 +451,7 @@ function handleAddDay() {
         type: 'POST',
         success: function (newDate) {   
             loadTripData();    
-            SignalRManager.broadcast(currentTripId, `往後新增一天的行程`, 0);
+            SignalRManager.broadcast(currentTripId, `剛往後新增一天的行程`, 0);
         },
         error: function (err) {
             alert("新增天數失敗");
@@ -688,7 +689,7 @@ function smartRenderItinerary(items, dates, accommodations, flights) {
         }
 
         // 3. 生成內容 HTML
-        const newContentHtml = generateDayItemsHtml(dayItems);
+        const newContentHtml = generateDayItemsHtml(dayNum,dayItems);
         const timelineContainer = daySection.querySelector('.timeline-container');
 
         // 4. 【關鍵】比對 HTML 內容，只有不同時才寫入 (防止閃爍與捲動重置)
@@ -754,7 +755,7 @@ function createDayElement(dayNum, dateString) {
 }
 
 // 【新增】輔助：生成行程項目 HTML 字串
-function generateDayItemsHtml(dayItems) {
+function generateDayItemsHtml(dayNum,dayItems) {
     if (dayItems.length === 0) {
         return `
             <div class="text-center py-4 text-muted empty-day-placeholder" style="border: 2px dashed #f0f0f0; margin: 10px; border-radius: 8px;">
@@ -779,6 +780,7 @@ function generateDayItemsHtml(dayItems) {
 
         html += `
             <div class="itinerary-card itinerary-item"
+                 data-day-num="${dayNum}"
                  data-id="${item.id}"
                  data-spot-id="${item.spotId}"
                  data-lat="${lat}"
@@ -1090,7 +1092,7 @@ function renderItinerary(items, dates, accommodations, flights) {
                     // 成功後執行載入資料的方法
                     if (typeof loadTripData === 'function') {
                         loadTripData();
-                        SignalRManager.broadcast(currentTripId, "刪除住宿", 0); 
+                        SignalRManager.broadcast(currentTripId, "剛刪除了住宿", 0); 
                     } else {
                         location.reload(); // 備案：重新整理頁面
                     }
@@ -1391,9 +1393,8 @@ function bindItemEvents() {
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             const card = this.closest('.itinerary-item');
-            const id = card.getAttribute('data-id');
-
-
+            const dayNum = card.getAttribute('data-day-num');
+            const id = card.getAttribute('data-id');    
 
             if (confirm('確定要移除此景點嗎？')) {
                 console.log(`準備刪除行程 ID: ${id}`);
@@ -1403,7 +1404,7 @@ function bindItemEvents() {
                     url: `/api/TripApi/DeleteSpotFromTrip/${id}`,
                     type: 'DELETE',
                     success: function (result) {
-                        SignalRManager.broadcast(currentTripId, "刪除行程", 0); 
+                        SignalRManager.broadcast(currentTripId, `剛刪除第${dayNum}天的景點`, 0); 
                         refreshItineraryList();
                                   
 
@@ -1525,7 +1526,7 @@ function saveEditedTime() {
         data: JSON.stringify(updateDto),
         success: function (response) {
             refreshItineraryList();
-            SignalRManager.broadcast(updateDto.TripId, "更新行程時間", response.targetId);              
+            SignalRManager.broadcast(updateDto.TripId, "剛更新景點時間", response.targetId);              
         },
         error: function (xhr) {
             // 這裡只處理「儲存」這件事發生的錯誤
@@ -1604,7 +1605,7 @@ function addQuickPlaceToTrip(place, dayNum) {
             if (window.currentMapInstance && place.geometry && place.geometry.location) {
                 renderPlaceOnMap(place, spotId);
             }
-            SignalRManager.broadcast(tripId, "新增景點", 0);
+            SignalRManager.broadcast(tripId, `剛新增第${dayNum}天的景點`, 0);
         } catch (err) {
             console.error(err);
             alert('加入失敗');
@@ -1654,7 +1655,7 @@ function saveHotelData() {
                 // 重新整理
                 refreshItineraryList();
 
-                SignalRManager.broadcast(currentTripId, "新增住宿", 0); 
+                SignalRManager.broadcast(currentTripId, "剛新增住宿", 0); 
             },
             error: function (xhr) {
                 alert("新增住宿失敗：" + (xhr.responseJSON?.message || "Error"));
@@ -1710,7 +1711,7 @@ async function deleteTripDay(dayNum) {
                 // 如果刪除後導致日期變動，建議重新載入頁面確保全域變數同步
                 window.location.reload();
 
-                SignalRManager.broadcast(currentTripId, `刪除第 ${dayNum} 天，後續行程已自動遞補。`, 0);
+                SignalRManager.broadcast(currentTripId, `剛刪除第 ${dayNum} 天的行程，後續行程已自動遞補。`, 0);
             },
             error: function (xhr) {
                 const errorMsg = xhr.responseJSON?.message || "刪除天數失敗";

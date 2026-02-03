@@ -102,6 +102,13 @@ export class RecommendationPanel {
                                 ${item.rating ? `<i class="bi bi-star-fill me-1"></i>${item.rating}` : ''} 
                                 <span class="text-muted">(${item.userRatingsTotal || 0})</span>
                             </div>
+
+                            ${item.description ? `
+                               <div class="text-secondary small mb-2 text-wrap-2-lines" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                                   ${item.description}
+                               </div>
+                               ` : ''}
+
                             <div class="text-muted small text-truncate" title="${item.address || "無地址"}">
                                 <i class="bi bi-geo-alt me-1"></i>${item.address || "無地址"}
                             </div>

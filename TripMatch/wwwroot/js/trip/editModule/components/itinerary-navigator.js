@@ -32,7 +32,7 @@
                         </button>
                         <ul class="dropdown-menu shadow-sm border-0">
                             <li><a class="dropdown-item" href="#" data-target="flight-wrapper"><i class="bi bi-airplane me-2 text-primary"></i>航班資訊</a></li>
-                            <li><a class="dropdown-item" href="#" data-target="accommodation-wrapper"><i class="bi bi-building me-2 text-success"></i>住宿安排</a></li>
+                            <li><a class="dropdown-item" href="#" data-target="accommodation-wrapper"><i class="bi bi-building me-2 text-success"></i>住宿資訊</a></li>
                             <li><a class="dropdown-item" href="#" data-target="restaurant-wrapper"><i class="bi bi-cup-hot me-2 text-danger"></i>美食總覽</a></li>
                         </ul>
                     </div>

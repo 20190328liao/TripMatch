@@ -46,7 +46,7 @@ namespace TripMatch.Services.ExternalClients
 
         public async Task<GooglePlaceDetailDto?> GetPlaceDetailsAsync(string placeId, string lang = "zh-TW")
         {
-            var fields = "name,formatted_address,rating,user_ratings_total,photos,geometry/location";
+            var fields = "name,formatted_address,rating,user_ratings_total,photos,geometry/location,editorial_summary";
 
             var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={Uri.EscapeDataString(placeId)}" +
                       $"&fields={fields}&key={_apiKey}&language={lang}";
