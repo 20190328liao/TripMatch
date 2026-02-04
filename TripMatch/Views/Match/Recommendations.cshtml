@@ -546,12 +546,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     const now = new Date();
                     const validHours = 1;   // ★ 設定門檻：1 小時內的資料視為「準確」，不重新查詢
 
-                    // 為了不卡住瀏覽器，我們一張一張慢慢查
                     for (const card of cards) {
                         const btn = card.querySelector('.btn-view-details');
 
                         // --- ★★★ 新增邏輯：檢查資料是否已經是新的 ★★★ ---
-                        // 注意：這需要您的 HTML 按鈕上有 data-updated="card.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
                         const updatedStr = btn.dataset.updated;
 
                         if (updatedStr) {
@@ -561,9 +559,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                             // 如果時間差小於設定時限 (例如 1 小時)，視為價格正確，直接跳過
                             if (diffHours < validHours) {
-                                // (選用) 在 Console 顯示跳過訊息方便除錯
-                                // console.log(`方案 ${btn.dataset.location} 資料很新 (${diffHours.toFixed(2)} 小時前)，跳過。`);
-                                continue;
+                                 continue;
                             }
                         }
                         // ----------------------------------------------------

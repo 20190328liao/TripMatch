@@ -219,7 +219,6 @@ namespace TripMatch.Services
             catch (Exception ex)
             {
                 // ★★★ 關鍵修正：將錯誤訊息回傳到畫面上！ ★★★
-                // 這樣你在前端卡片上看到 "Error: ..." 就知道發生什麼事了
                 return ($"API Error: {ex.Message}", 0,
                         GenerateGoogleHotelsLink(cityName, checkIn, checkOut, rating, maxPrice));
             }

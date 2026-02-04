@@ -203,9 +203,7 @@ namespace TripMatch.Services
                 // 設定提交時間，這樣 Count(m => m.SubmittedAt != null) 才會抓到人
                 member.SubmittedAt = DateTime.Now;
 
-                // 如果你的系統允許重複修改，可以不鎖定；
-                // 但通常「提交」後為了讓其他人能媒合，會視為已確認。
-                _context.GroupMembers.Update(member);
+                 _context.GroupMembers.Update(member);
             }
             // ★★★ 修正結束 ★★★
 
@@ -419,9 +417,6 @@ namespace TripMatch.Services
             var group = await _context.TravelGroups.FindAsync(groupId);
             if (group == null) return new RecommendationViewModel();
 
-            // ★★★ 修正：沒有 JoinedCount，我們直接查資料庫算實際人數 ★★★
-            // 雖然這個變數在下面計算 AvailableMembersCount 時沒用到(是用 TimeSlots 算)，
-            // 但如果您想顯示 "5人中的3人有空"，這個總人數還是需要的。
             var totalMemberCount = await _context.GroupMembers
                 .CountAsync(m => m.GroupId == groupId);
 
@@ -457,8 +452,7 @@ namespace TripMatch.Services
                     .Count();
 
                 // [地名解析] 
-                // 假設資料庫存的是 "NRT" 或 "NRT|成田"
-                // 我們可以用 AirportData 反查城市名，讓顯示更友善
+                // 用 AirportData 反查城市名，讓顯示更友善
                 string code = r.Location.Contains("|") ? r.Location.Split('|')[0].Trim() : r.Location;
                 string cityName = AirportData.GetCityName(code);
                 // 如果 AirportData.GetCityName 沒找到，會回傳 code，所以這裡很安全
@@ -480,8 +474,6 @@ namespace TripMatch.Services
                     CurrentVotes = r.Vote,
                     IsVotedByCurrentUser = myVotes.Contains(r.Index),
                     AvailableMembersCount = availableCount,
-
-                    // ★★★ [新增] 填入新欄位 ★★★
                     PlaceCode = code,        // 傳給 API 用的代碼 (e.g. "NRT")
                     StartDate = r.StartDate, // 完整日期物件
                     EndDate = r.EndDate      // 完整日期物件
@@ -932,19 +924,16 @@ namespace TripMatch.Services
 
             // 6. 建立地區關聯 (TripRegions)
             string iataCode = rec.Location.Trim(); // 例如 "NRT"
-
-            // 1. 利用既有的工具反查城市名稱 (例如取得 "東京" 或 "Tokyo")
-            // 假設 AirportData.GetCityName 是您現有的靜態輔助方法
             string cityName = AirportData.GetCityName(iataCode);
 
-            // 2. 如果反查回來還是 IATA (代表查不到)，就用原本的；如果有查到，就用城市名搜尋
+            // 如果反查回來還是 IATA (代表查不到)，就用原本的；如果有查到，就用城市名搜尋
             string searchKey = string.IsNullOrEmpty(cityName) ? iataCode : cityName;
 
-            // 3. 去 GlobalRegions 找對應的地區
+            // 去 GlobalRegions 找對應的地區
             var region = await _context.GlobalRegions
                 .FirstOrDefaultAsync(r => r.Name == searchKey || r.NameEn == searchKey);
 
-            // 4. 建立關聯
+            // 建立關聯
             if (region != null)
             {
                 _context.TripRegions.Add(new TripRegion
@@ -955,8 +944,7 @@ namespace TripMatch.Services
             }
             else
             {
-                // (選用) 如果完全找不到對應的 Region，這裡可以寫 Log 或是建立一個 "未分類" 的關聯
-                // Console.WriteLine($"找不到對應的地區: {searchKey} (Code: {iataCode})");
+                Console.WriteLine($"找不到對應的地區: {searchKey} (Code: {iataCode})");
             }
 
             // 7. 更新群組狀態並存檔
@@ -1179,7 +1167,7 @@ namespace TripMatch.Services
             var dateTimeStart = start.ToDateTime(TimeOnly.MinValue);
             var dateTimeEnd = end.ToDateTime(TimeOnly.MinValue);
 
-            // 注意：這裡的比對條件要看你的邏輯，假設地點和日期完全吻合才更新
+            // 注意：假設地點和日期完全吻合才更新
             var existingRec = await _context.Recommendations
                 .FirstOrDefaultAsync(r =>
                     r.GroupId == groupId &&
