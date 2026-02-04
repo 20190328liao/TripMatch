@@ -142,7 +142,7 @@ namespace TripMatch.Services
                     i.DayNumber == req.DayNo &&
                     i.SpotId == spotId);
 
-            if (exists) return (false, "This place already exists in that day.", 0, spotId);
+            if (exists) return (false, "該天已有此行程", 0, spotId);
 
             // 4) SortOrder
             var maxSort = await _context.ItineraryItems

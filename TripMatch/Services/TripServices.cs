@@ -846,6 +846,7 @@ namespace TripMatch.Services
                 GroupId = g.GroupId,
                 Title = g.Title,
                 Status = g.Status,
+                StatusText = MapStatusToText(g.Status ?? ""),
                 CoverImageUrl = $"https://picsum.photos/seed/GROUP-{g.GroupId}/800/400",
                 DetailsUrl = MapStatusToUrl(g.Status ?? "", g.GroupId),
                 Role = (g.Role ?? "").ToLower()
@@ -867,6 +868,17 @@ namespace TripMatch.Services
                 "VOTING" => $"/Match/recommendations/{groupId}",
                 //"RESULT" => $"/Match/Result/{groupId}",
                 _ => "#"
+            };
+        }
+
+        // 轉換成使用者看的文字
+        private static string MapStatusToText(string status)
+        {
+            return status switch
+            {
+                GroupStatus.PREF => "偏好設定",
+                GroupStatus.VOTING => "投票中",
+                _ => status // fallback：至少不要空白
             };
         }
 
