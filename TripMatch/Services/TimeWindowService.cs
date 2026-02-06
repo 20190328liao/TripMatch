@@ -10,6 +10,7 @@ using TripMatch.Models.DTOs.External;
 using TripMatch.Models.DTOs.TimeWindow;
 using TripMatch.Services.ExternalClients;
 
+
 namespace TripMatch.Services
 {
     public class TimeWindowService
@@ -17,6 +18,7 @@ namespace TripMatch.Services
         private readonly TravelDbContext _context;
         private readonly TravelInfoService _travelInfoService;
         private readonly GooglePlacesClient _googlePlacesClient;
+              
 
         public TimeWindowService(TravelDbContext context, TravelInfoService travelInfoService, GooglePlacesClient googlePlacesClient)
         {
@@ -880,13 +882,29 @@ namespace TripMatch.Services
                     };
                 }
 
-                _context.PlacesSnapshots.Add(hotelSpot);
-                await _context.SaveChangesAsync();
+                //如果景點已存在 則不加入並用已存在的spot
+                var existingPlace = await _context.PlacesSnapshots.FirstOrDefaultAsync(ps => ps.ExternalPlaceId == hotelSpot.ExternalPlaceId); ;
+                
+                int hotelSpotId = -1;
+
+                if (existingPlace != null) 
+                {
+                    hotelSpotId = existingPlace.SpotId;
+                } 
+                else
+                {
+                    _context.PlacesSnapshots.Add(hotelSpot);
+                    await _context.SaveChangesAsync();
+                    hotelSpotId = hotelSpot.SpotId;
+                }
+
+
+              
 
                 var accommodation = new Accommodation
                 {
                     TripId = newTrip.Id,
-                    SpotId = hotelSpot.SpotId,
+                    SpotId = hotelSpotId,
                     HotelName = hotelSpot.NameZh,         
                     Address = hotelSpot.AddressSnapshot,
                     CheckInDate = rec.StartDate,
